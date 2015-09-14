@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
     implements Sender
 {
-    private final SocketChannel channel;
+    private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final String host;
     private final int port;
 
@@ -27,24 +28,30 @@ public class TCPSender
     {
         this.port = port;
         this.host = host;
-        this.channel = SocketChannel.open(new InetSocketAddress(host, port));
     }
 
-    public SocketChannel getChannel()
+    private synchronized SocketChannel getOrOpenChannel()
+            throws IOException
     {
-        return channel;
+        if (channel.get() == null) {
+            channel.set(SocketChannel.open(new InetSocketAddress(host, port)));
+        }
+        return channel.get();
     }
 
     public void send(ByteBuffer data)
             throws IOException
     {
-        channel.write(data);
+        getOrOpenChannel().write(data);
     }
 
     @Override
     public void close()
             throws IOException
     {
-        channel.close();
+        SocketChannel socketChannel;
+        if ((socketChannel = channel.getAndSet(null)) != null) {
+            socketChannel.close();
+        }
     }
 }

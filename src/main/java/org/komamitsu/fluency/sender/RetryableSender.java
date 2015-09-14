@@ -3,12 +3,11 @@ package org.komamitsu.fluency.sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-abstract class RetryableSender
+public class RetryableSender
         implements Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
@@ -18,6 +17,13 @@ abstract class RetryableSender
     private final RetryInterval retryInterval;
     private final RetryStrategy retryStrategy;
     private final Sender baseSender;
+
+    @Override
+    public void close()
+            throws IOException
+    {
+        baseSender.close();
+    }
 
     public class RetryOverException
             extends IOException
@@ -46,6 +52,11 @@ abstract class RetryableSender
         this(baseSender, retryInterval, DEFAULT_RETRY_STRATEGY);
     }
 
+    public RetryableSender(Sender baseSender)
+    {
+        this(baseSender, DEFAULT_RETRY_INTERVAL, DEFAULT_RETRY_STRATEGY);
+    }
+
     @Override
     public void send(ByteBuffer data)
             throws RetryOverException
@@ -53,7 +64,7 @@ abstract class RetryableSender
         IOException firstException = null;
 
         int retry = 0;
-        while (retryInterval.isRetriedOver(retry)) {
+        while (!retryInterval.isRetriedOver(retry)) {
             try {
                 baseSender.send(data);
                 return;

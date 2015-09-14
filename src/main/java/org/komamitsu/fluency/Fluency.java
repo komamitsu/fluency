@@ -6,6 +6,7 @@ import org.komamitsu.fluency.buffer.BufferConfig;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.FlusherConfig;
 import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.msgpack.core.MessagePack;
@@ -37,7 +38,7 @@ public class Fluency
     public static Fluency defaultFluency(String host, int port)
             throws IOException
     {
-        return new Fluency.Builder(new TCPSender(host, port)).build();
+        return new Fluency.Builder(new RetryableSender(new TCPSender(host, port))).build();
     }
 
     private Fluency(Sender sender, StreamBuffer buffer, Flusher flusher, MessagePack.Config msgpackConfig)
