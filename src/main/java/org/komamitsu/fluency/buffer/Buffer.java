@@ -6,6 +6,7 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 abstract class Buffer
     implements Closeable
@@ -29,8 +30,8 @@ abstract class Buffer
         this.bufferConfig = bufferConfig;
     }
 
-    public abstract void append(ByteBuffer byteBuffer)
-            throws BufferFullException;
+    public abstract void append(String tag, long timestamp, Map<String, Object> data)
+            throws IOException;
 
     public abstract void flush(Sender sender)
             throws IOException;
