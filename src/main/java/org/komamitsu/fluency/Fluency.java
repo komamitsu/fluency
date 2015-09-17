@@ -1,7 +1,9 @@
 package org.komamitsu.fluency;
 
-import org.komamitsu.fluency.buffer.MessageBuffer;
+import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.BufferConfig;
+import org.komamitsu.fluency.buffer.MessageBuffer;
+import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.FlusherConfig;
 import org.komamitsu.fluency.flusher.SyncFlusher;
@@ -23,7 +25,7 @@ public class Fluency
 {
     private static final Logger LOG = LoggerFactory.getLogger(Fluency.class);
     private final Sender sender;
-    private final MessageBuffer buffer;
+    private final Buffer buffer;
     private final Flusher flusher;
 
     public static Fluency defaultFluency(String host, int port)
@@ -32,7 +34,7 @@ public class Fluency
         return new Fluency.Builder(new RetryableSender(new TCPSender(host, port))).build();
     }
 
-    private Fluency(Sender sender, MessageBuffer buffer, Flusher flusher)
+    private Fluency(Sender sender, Buffer buffer, Flusher flusher)
     {
         this.sender = sender;
         this.buffer = buffer;
@@ -43,7 +45,7 @@ public class Fluency
             throws IOException
     {
         buffer.append(tag, timestamp, data);
-        flusher.onUpdate(this);
+        flusher.onUpdate(this, buffer);
     }
 
     public void emit(String tag, Map<String, Object> data)
@@ -63,7 +65,7 @@ public class Fluency
     public void close()
             throws IOException
     {
-        flusher.flush(this);
+        flusher.flush(this, buffer);
         sender.close();
     }
 
@@ -98,7 +100,8 @@ public class Fluency
 
         public Fluency build()
         {
-            MessageBuffer buffer = new MessageBuffer(bufferConfig);
+            // TODO: Make the class of `buffer` configurable
+            Buffer buffer = new PackedForwardBuffer(bufferConfig);
             Exception exception = null;
             Constructor<? extends Flusher> constructor = null;
             try {

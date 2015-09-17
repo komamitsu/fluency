@@ -23,8 +23,8 @@ public class FlusherConfig
     
     public static class Builder
     {
-        private int flushIntervalMillis = 500;
-        private float bufferOccupancyThreshold = 0.4f;
+        private int flushIntervalMillis = 600;
+        private float bufferOccupancyThreshold = 0.6f;
 
         public void setFlushIntervalMillis(int flushIntervalMillis)
         {

@@ -20,7 +20,7 @@ public class FluencyTest
         hashMap.put("age", 42);
         hashMap.put("email", "komamitsu@gmail.com");
         long start = System.currentTimeMillis();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             fluency.emit("foodb.bartbl", hashMap);
         }
         fluency.close();

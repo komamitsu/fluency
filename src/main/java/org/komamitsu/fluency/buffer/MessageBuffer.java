@@ -1,6 +1,5 @@
 package org.komamitsu.fluency.buffer;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -11,13 +10,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageBuffer
     extends Buffer
 {
     private final LinkedBlockingQueue<ByteBuffer> messages = new LinkedBlockingQueue<ByteBuffer>();
-    private final AtomicInteger totalSize = new AtomicInteger();
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -40,7 +37,7 @@ public class MessageBuffer
         outputStream.close();
 
         if (totalSize.get() + outputStream.size() > bufferConfig.getBufferSize()) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", totalSize=" + totalSize + ", byteBuffer=" + data);
+            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", totalSize=" + totalSize);
         }
 
         messages.add(ByteBuffer.wrap(outputStream.toByteArray()));
@@ -48,13 +45,15 @@ public class MessageBuffer
     }
 
     @Override
-    public void flush(Sender sender)
+    public synchronized void flush(Sender sender)
             throws IOException
     {
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
             sender.send(message);
         }
+        // TODO: More robust
+        totalSize.set(0);
     }
 
     @Override

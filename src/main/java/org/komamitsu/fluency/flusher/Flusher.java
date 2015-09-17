@@ -1,5 +1,7 @@
 package org.komamitsu.fluency.flusher;
 
+import org.komamitsu.fluency.buffer.Buffer;
+
 import java.io.Flushable;
 import java.io.IOException;
 
@@ -12,18 +14,18 @@ public abstract class Flusher
         this.flusherConfig = flusherConfig;
     }
 
-    protected abstract void flushInternal(Flushable flushable, boolean force)
+    protected abstract void flushInternal(Flushable flushable, Buffer buffer, boolean force)
             throws IOException;
 
-    public void onUpdate(Flushable flushable)
+    public void onUpdate(Flushable flushable, Buffer buffer)
             throws IOException
     {
-        flushInternal(flushable, false);
+        flushInternal(flushable, buffer, false);
     }
 
-    public void flush(Flushable flushable)
+    public void flush(Flushable flushable, Buffer buffer)
             throws IOException
     {
-        flushInternal(flushable, true);
+        flushInternal(flushable, buffer, true);
     }
 }

@@ -16,7 +16,7 @@ public class BufferConfig
 
     public static class Builder
     {
-        private int bufferSize = 8 * 1024 * 1024;
+        private int bufferSize = 16 * 1024 * 1024;
 
         public void setBufferSize(int bufferSize)
         {
@@ -27,5 +27,13 @@ public class BufferConfig
         {
             return new BufferConfig(bufferSize);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "BufferConfig{" +
+                "bufferSize=" + bufferSize +
+                '}';
     }
 }

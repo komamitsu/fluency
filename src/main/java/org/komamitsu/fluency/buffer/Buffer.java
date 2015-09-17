@@ -7,11 +7,13 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-abstract class Buffer
+public abstract class Buffer
     implements Closeable
 {
     protected final BufferConfig bufferConfig;
+    protected final AtomicInteger totalSize = new AtomicInteger();
 
     public static class BufferFullException extends IOException {
         public BufferFullException(String s)
@@ -35,4 +37,14 @@ abstract class Buffer
 
     public abstract void flush(Sender sender)
             throws IOException;
+
+    public int getTotalSize()
+    {
+        return totalSize.get();
+    }
+
+    public int getMaxSize()
+    {
+        return bufferConfig.getBufferSize();
+    }
 }
