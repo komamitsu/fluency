@@ -2,7 +2,6 @@ package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.BufferConfig;
-import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.FlusherConfig;
@@ -72,12 +71,19 @@ public class Fluency
     public static class Builder
     {
         private final Sender sender;
-        private Class<? extends Flusher> flusherClass = SyncFlusher.class;
+        private Class<? extends Buffer> bufferClass = PackedForwardBuffer.class;
         private BufferConfig bufferConfig = new BufferConfig.Builder().build();
+        private Class<? extends Flusher> flusherClass = SyncFlusher.class;
         private FlusherConfig flusherConfig = new FlusherConfig.Builder().build();
         public Builder(Sender sender)
         {
             this.sender = sender;
+        }
+
+        public Builder setBufferClass(Class<? extends Buffer> bufferClass)
+        {
+            this.bufferClass = bufferClass;
+            return this;
         }
 
         public Builder setFlusherClass(Class<? extends Flusher> flusherClass)
@@ -100,13 +106,14 @@ public class Fluency
 
         public Fluency build()
         {
-            // TODO: Make the class of `buffer` configurable
-            Buffer buffer = new PackedForwardBuffer(bufferConfig);
             Exception exception = null;
-            Constructor<? extends Flusher> constructor = null;
             try {
-                constructor = flusherClass.getConstructor(FlusherConfig.class);
-                Flusher flusher = constructor.newInstance(flusherConfig);
+                Constructor<? extends Buffer> bufferConstructor = bufferClass.getConstructor(BufferConfig.class);
+                Buffer buffer = bufferConstructor.newInstance(bufferConfig);
+
+                Constructor<? extends Flusher> flusherConstructor = flusherClass.getConstructor(FlusherConfig.class);
+                Flusher flusher = flusherConstructor.newInstance(flusherConfig);
+
                 return new Fluency(sender, buffer, flusher);
             }
             catch (NoSuchMethodException e) {
@@ -121,7 +128,7 @@ public class Fluency
             catch (IllegalAccessException e) {
                 exception = e;
             }
-            throw new IllegalStateException("Failed to build an instance. flusherClass=" + flusherClass, exception);
+            throw new IllegalStateException("Failed to build an instance. bufferClass=" + bufferClass + ", flusherClass=" + flusherClass, exception);
         }
     }
 }
