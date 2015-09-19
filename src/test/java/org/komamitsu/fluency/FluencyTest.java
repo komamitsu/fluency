@@ -76,10 +76,11 @@ public class FluencyTest
             final CountDownLatch latch = new CountDownLatch(concurrency);
             ExecutorService es = Executors.newCachedThreadPool();
             for (int i = 0; i < concurrency; i++) {
-                String tag = String.format("foodb%d.bartbl%d", i, i);
+                // String tag = String.format("foodb%d.bartbl%d", i, i);
+                String tag = "foodb.bartbl";
                 es.execute(new EmitTask(fluency, tag, hashMap, 1000000, latch));
             }
-            latch.await(60, TimeUnit.SECONDS);
+            latch.await(30, TimeUnit.SECONDS);
             if (latch.getCount() != 0) {
                 assertTrue(false);
             }

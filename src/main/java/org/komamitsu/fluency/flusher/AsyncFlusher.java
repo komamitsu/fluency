@@ -70,7 +70,6 @@ public class AsyncFlusher
             }
             catch (InterruptedException e1) {
                 LOG.warn("2nd awaitTermination was interrupted", e);
-                e1.printStackTrace();
             }
         }
     }

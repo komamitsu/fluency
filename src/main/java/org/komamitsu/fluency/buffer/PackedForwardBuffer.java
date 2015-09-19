@@ -137,7 +137,6 @@ public class PackedForwardBuffer
     public void flushInternal(Sender sender)
             throws IOException
     {
-        // TODO: Consider the memory size of `flushableChunks` as well as `appendedChunks`
         // TODO: Consider the flow control during appending events
         TaggableBuffer chunk = null;
         while ((chunk = flushableChunks.poll()) != null) {
@@ -152,9 +151,11 @@ public class PackedForwardBuffer
             messagePacker.packString(tag);
             messagePacker.packRawStringHeader(byteBuffer.position());
             messagePacker.flush();
-            sender.send(ByteBuffer.wrap(header.toByteArray()));
-            byteBuffer.flip();
-            sender.send(byteBuffer);
+            synchronized (sender) {
+                sender.send(ByteBuffer.wrap(header.toByteArray()));
+                byteBuffer.flip();
+                sender.send(byteBuffer);
+            }
         }
     }
 
