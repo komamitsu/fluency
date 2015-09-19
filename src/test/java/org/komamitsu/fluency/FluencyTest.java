@@ -11,9 +11,12 @@ import org.komamitsu.fluency.sender.TCPSender;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -55,7 +58,7 @@ public class FluencyTest
 
     @Test
     public void test()
-            throws IOException, InterruptedException
+            throws Exception
     {
         // Fluency fluency = Fluency.defaultFluency("127.0.0.1", 24224);
         Buffer buffer = new PackedForwardBuffer();
@@ -72,8 +75,7 @@ public class FluencyTest
         final CountDownLatch latch = new CountDownLatch(concurrency);
         ExecutorService es = Executors.newCachedThreadPool();
         for (int i = 0; i < concurrency; i++) {
-            // String tag = String.format("foodb%d.bartbl%d", i, i);
-            String tag = "foodb.bartbl";
+            String tag = String.format("foodb%d.bartbl%d", i, i);
             es.execute(new EmitTask(fluency, tag, hashMap, 1000000, latch));
         }
         latch.await(30, TimeUnit.SECONDS);

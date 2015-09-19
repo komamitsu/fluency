@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -110,8 +111,11 @@ public class PackedForwardBuffer
     {
         long expiredThreshold = System.currentTimeMillis() - bufferConfig.getChunkRetentionTimeMillis();
         for (Map.Entry<String, ExpirableBuffer> entry : appendedChunks.entrySet()) {
-            if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
-                moveChunk(entry.getKey(), entry.getValue());
+            // it can be null because moveChunk() can set null
+            if (entry.getValue() != null) {
+                if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
+                    moveChunk(entry.getKey(), entry.getValue());
+                }
             }
         }
     }
