@@ -12,11 +12,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PackedForwardBuffer
-    extends Buffer
+    extends Buffer<PackedForwardBuffer.Config>
 {
     private static final int BUFFER_INITIAL_SIZE = 512 * 1024;
     private static final float BUFFER_EXPAND_RATIO = 1.5f;
@@ -26,10 +24,10 @@ public class PackedForwardBuffer
 
     public PackedForwardBuffer()
     {
-        this(new BufferConfig.Builder().build());
+        this(new Config());
     }
 
-    public PackedForwardBuffer(BufferConfig bufferConfig)
+    public PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
     {
         super(bufferConfig);
     }
@@ -109,5 +107,22 @@ public class PackedForwardBuffer
             throws IOException
     {
         messagesInTags.clear();
+    }
+
+    public static class Config extends Buffer.Config
+    {
+        private int chunkSize;
+
+        @Override
+        public int getChunkSize()
+        {
+            return chunkSize;
+        }
+
+        @Override
+        public void setChunkSize(int chunkSize)
+        {
+            this.chunkSize = chunkSize;
+        }
     }
 }

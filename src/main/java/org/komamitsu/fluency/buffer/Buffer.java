@@ -5,17 +5,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.Flushable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class Buffer
+public abstract class Buffer<T extends Buffer.Config>
     implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
-    protected final BufferConfig bufferConfig;
+    protected final T bufferConfig;
     protected final AtomicInteger totalSize = new AtomicInteger();
 
     public static class BufferFullException extends IOException {
@@ -25,12 +23,7 @@ public abstract class Buffer
         }
     }
 
-    public Buffer()
-    {
-        this(new BufferConfig.Builder().build());
-    }
-
-    public Buffer(BufferConfig bufferConfig)
+    public Buffer(T bufferConfig)
     {
         this.bufferConfig = bufferConfig;
     }
@@ -60,5 +53,31 @@ public abstract class Buffer
     public float getBufferUsage()
     {
         return (float)getTotalSize() / getMaxSize();
+    }
+
+    public abstract static class Config
+    {
+        private int bufferSize = 16 * 1024 * 1024;
+        private int chunkSize = 512 * 1024;
+
+        public int getBufferSize()
+        {
+            return bufferSize;
+        }
+
+        public void setBufferSize(int bufferSize)
+        {
+            this.bufferSize = bufferSize;
+        }
+
+        public int getChunkSize()
+        {
+            return chunkSize;
+        }
+
+        public void setChunkSize(int chunkSize)
+        {
+            this.chunkSize = chunkSize;
+        }
     }
 }

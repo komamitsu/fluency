@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class MessageBuffer
-    extends Buffer
+    extends Buffer<MessageBuffer.Config>
 {
     private final LinkedBlockingQueue<ByteBuffer> messages = new LinkedBlockingQueue<ByteBuffer>();
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
@@ -20,10 +20,10 @@ public class MessageBuffer
 
     public MessageBuffer()
     {
-        this(new BufferConfig.Builder().build());
+        this(new Config());
     }
 
-    public MessageBuffer(BufferConfig bufferConfig)
+    public MessageBuffer(MessageBuffer.Config bufferConfig)
     {
         super(bufferConfig);
     }
@@ -61,5 +61,9 @@ public class MessageBuffer
             throws IOException
     {
         messages.clear();
+    }
+
+    public static class Config extends Buffer.Config
+    {
     }
 }
