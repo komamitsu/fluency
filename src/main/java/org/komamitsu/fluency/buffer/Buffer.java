@@ -47,4 +47,9 @@ public abstract class Buffer
     {
         return bufferConfig.getBufferSize();
     }
+
+    public float getBufferUsage()
+    {
+        return (float)getTotalSize() / getMaxSize();
+    }
 }

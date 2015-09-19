@@ -1,8 +1,8 @@
 package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.sender.Sender;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -11,20 +11,20 @@ public class SyncFlusher
 {
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
 
-    public SyncFlusher(FlusherConfig flusherConfig)
+    public SyncFlusher(Buffer buffer, Sender sender, FlusherConfig flusherConfig)
     {
-        super(flusherConfig);
+        super(buffer, sender, flusherConfig);
     }
 
     @Override
-    protected void flushInternal(Flushable flushable, Buffer buffer, boolean force)
+    protected void flushInternal(boolean force)
             throws IOException
     {
         long now = System.currentTimeMillis();
         if (force ||
                 now > lastFlushTimeMillis.get() + flusherConfig.getFlushIntervalMillis() ||
-                buffer.getTotalSize() / buffer.getMaxSize() > flusherConfig.getBufferOccupancyThreshold()) {
-            flushable.flush();
+                buffer.getBufferUsage() > flusherConfig.getBufferOccupancyThreshold()) {
+            buffer.flush(sender);
             lastFlushTimeMillis.set(now);
         }
     }

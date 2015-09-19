@@ -44,7 +44,7 @@ public class Fluency
             throws IOException
     {
         buffer.append(tag, timestamp, data);
-        flusher.onUpdate(this, buffer);
+        flusher.onUpdate();
     }
 
     public void emit(String tag, Map<String, Object> data)
@@ -64,7 +64,7 @@ public class Fluency
     public void close()
             throws IOException
     {
-        flusher.flush(this, buffer);
+        flusher.flush();
         sender.close();
     }
 
@@ -111,8 +111,8 @@ public class Fluency
                 Constructor<? extends Buffer> bufferConstructor = bufferClass.getConstructor(BufferConfig.class);
                 Buffer buffer = bufferConstructor.newInstance(bufferConfig);
 
-                Constructor<? extends Flusher> flusherConstructor = flusherClass.getConstructor(FlusherConfig.class);
-                Flusher flusher = flusherConstructor.newInstance(flusherConfig);
+                Constructor<? extends Flusher> flusherConstructor = flusherClass.getConstructor(Buffer.class, Sender.class, FlusherConfig.class);
+                Flusher flusher = flusherConstructor.newInstance(buffer, sender, flusherConfig);
 
                 return new Fluency(sender, buffer, flusher);
             }
