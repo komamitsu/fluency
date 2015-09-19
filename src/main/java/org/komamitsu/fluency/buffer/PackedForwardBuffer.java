@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,9 +24,21 @@ public class PackedForwardBuffer
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
     private final Map<String, ExpirableBuffer> appendedChunks = new HashMap<String, ExpirableBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableChunks = new LinkedBlockingQueue<TaggableBuffer>();
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-    private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     private final AtomicInteger emitCounter = new AtomicInteger();
+    private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
+        @Override
+        protected ObjectMapper initialValue()
+        {
+            return new ObjectMapper(new MessagePackFactory());
+        }
+    };
+    private final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
+        @Override
+        protected ByteArrayOutputStream initialValue()
+        {
+            return new ByteArrayOutputStream();
+        }
+    };
 
     public PackedForwardBuffer()
     {
@@ -79,22 +90,26 @@ public class PackedForwardBuffer
     }
 
     @Override
-    public synchronized void append(String tag, long timestamp, Map<String, Object> data)
+    public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
+        ObjectMapper objectMapper = objectMapperHolder.get();
+        ByteArrayOutputStream outputStream = outputStreamHolder.get();
         outputStream.reset();
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
         outputStream.close();
 
-        ExpirableBuffer buffer = prepareBuffer(tag, outputStream.size());
-        buffer.getByteBuffer().put(outputStream.toByteArray());
+        synchronized (appendedChunks) {
+            ExpirableBuffer buffer = prepareBuffer(tag, outputStream.size());
+            buffer.getByteBuffer().put(outputStream.toByteArray());
 
-        buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
+            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
 
-        moveChunkIfNeeded(tag, buffer);
-        // TODO: Configurable
-        if (emitCounter.incrementAndGet() % 1000 == 0) {
-            moveChunks(false);
+            moveChunkIfNeeded(tag, buffer);
+            // TODO: Configurable
+            if (emitCounter.incrementAndGet() % 1000 == 0) {
+                moveChunks(false);
+            }
         }
     }
 

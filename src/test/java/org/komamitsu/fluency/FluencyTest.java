@@ -58,8 +58,8 @@ public class FluencyTest
             throws Exception
     {
         // Fluency fluency = Fluency.defaultFluency("127.0.0.1", 24224);
-        // Buffer buffer = new PackedForwardBuffer(new PackedForwardBuffer.Config().setBufferSize(256 * 1024 * 1024));
-        Buffer buffer = new PackedForwardBuffer();
+        Buffer buffer = new PackedForwardBuffer(new PackedForwardBuffer.Config().setBufferSize(256 * 1024 * 1024));
+        // Buffer buffer = new PackedForwardBuffer();
         Sender sender = new TCPSender("127.0.0.1", 24224);
         // Flusher flusher = new AsyncFlusher(buffer, sender, new FlusherConfig().setFlushIntervalMillis(100));
         Flusher flusher = new AsyncFlusher(buffer, sender);
@@ -76,8 +76,8 @@ public class FluencyTest
             final CountDownLatch latch = new CountDownLatch(concurrency);
             ExecutorService es = Executors.newCachedThreadPool();
             for (int i = 0; i < concurrency; i++) {
-                // String tag = String.format("foodb%d.bartbl%d", i, i);
-                String tag = "foodb.bartbl";
+                String tag = String.format("foodb%d.bartbl%d", i, i);
+                // String tag = "foodb.bartbl";
                 es.execute(new EmitTask(fluency, tag, hashMap, 1000000, latch));
             }
             latch.await(30, TimeUnit.SECONDS);
