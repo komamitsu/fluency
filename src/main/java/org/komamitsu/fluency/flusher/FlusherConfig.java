@@ -2,43 +2,28 @@ package org.komamitsu.fluency.flusher;
 
 public class FlusherConfig
 {
-    private final int flushIntervalMillis;
-    private final float bufferOccupancyThreshold;
-
-    private FlusherConfig(int flushIntervalMillis, float bufferOccupancyThreshold)
-    {
-        this.flushIntervalMillis = flushIntervalMillis;
-        this.bufferOccupancyThreshold = bufferOccupancyThreshold;
-    }
+    private int flushIntervalMillis = 600;
+    private float bufferOccupancyThreshold = 0.6f;
 
     public int getFlushIntervalMillis()
     {
         return flushIntervalMillis;
     }
 
+    public FlusherConfig setFlushIntervalMillis(int flushIntervalMillis)
+    {
+        this.flushIntervalMillis = flushIntervalMillis;
+        return this;
+    }
+
     public float getBufferOccupancyThreshold()
     {
         return bufferOccupancyThreshold;
     }
-    
-    public static class Builder
+
+    public FlusherConfig setBufferOccupancyThreshold(float bufferOccupancyThreshold)
     {
-        private int flushIntervalMillis = 600;
-        private float bufferOccupancyThreshold = 0.6f;
-
-        public void setFlushIntervalMillis(int flushIntervalMillis)
-        {
-            this.flushIntervalMillis = flushIntervalMillis;
-        }
-
-        public void setBufferOccupancyThreshold(float bufferOccupancyThreshold)
-        {
-            this.bufferOccupancyThreshold = bufferOccupancyThreshold;
-        }
-        
-        public FlusherConfig build()
-        {
-            return new FlusherConfig(flushIntervalMillis, bufferOccupancyThreshold);
-        }
+        this.bufferOccupancyThreshold = bufferOccupancyThreshold;
+        return this;
     }
 }

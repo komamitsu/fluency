@@ -127,7 +127,6 @@ public class PackedForwardBuffer
             LOG.trace("moveChunk(): tag={}, buffer={}", tag, buffer);
             flushableChunks.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
             appendedChunks.put(tag, null);
-            totalSize.addAndGet(-buffer.getByteBuffer().capacity());
         }
         catch (InterruptedException e) {
             throw new IOException("Failed to move chunk due to interruption", e);
@@ -138,13 +137,15 @@ public class PackedForwardBuffer
     public void flushInternal(Sender sender)
             throws IOException
     {
-
+        // TODO: Consider the memory size of `flushableChunks` as well as `appendedChunks`
+        // TODO: Consider the flow control during appending events
         TaggableBuffer chunk = null;
         while ((chunk = flushableChunks.poll()) != null) {
+            totalSize.addAndGet(-chunk.getByteBuffer().capacity());
             // TODO: Reuse MessagePacker
             ByteArrayOutputStream header = new ByteArrayOutputStream();
             MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
-            LOG.trace("flushInternal(): chunk={}", chunk);
+            LOG.trace("flushInternal(): bufferUsage={}, chunk={}", getBufferUsage(), chunk);
             String tag = chunk.getTag();
             ByteBuffer byteBuffer = chunk.getByteBuffer();
             messagePacker.packArrayHeader(2);
@@ -226,7 +227,7 @@ public class PackedForwardBuffer
         }
     }
 
-    public static class Config extends Buffer.Config
+    public static class Config extends Buffer.Config<Config>
     {
         private int buffInitialSize = 512 * 1024;
         private float buffExpandRatio = 1.5f;
@@ -253,13 +254,11 @@ public class PackedForwardBuffer
             this.buffExpandRatio = buffExpandRatio;
         }
 
-        @Override
         public int getChunkSize()
         {
             return chunkSize;
         }
 
-        @Override
         public void setChunkSize(int chunkSize)
         {
             this.chunkSize = chunkSize;
@@ -273,6 +272,17 @@ public class PackedForwardBuffer
         public void setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
         {
             this.chunkRetentionTimeMillis = chunkRetentionTimeMillis;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "buffInitialSize=" + buffInitialSize +
+                    ", buffExpandRatio=" + buffExpandRatio +
+                    ", chunkSize=" + chunkSize +
+                    ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
+                    "} " + super.toString();
         }
     }
 }

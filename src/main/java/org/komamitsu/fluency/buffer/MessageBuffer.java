@@ -63,7 +63,7 @@ public class MessageBuffer
         messages.clear();
     }
 
-    public static class Config extends Buffer.Config
+    public static class Config extends Buffer.Config<Config>
     {
     }
 }

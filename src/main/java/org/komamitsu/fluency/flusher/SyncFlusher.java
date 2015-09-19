@@ -18,7 +18,7 @@ public class SyncFlusher
 
     public SyncFlusher(Buffer buffer, Sender sender)
     {
-        this(buffer, sender, new FlusherConfig.Builder().build());
+        this(buffer, sender, new FlusherConfig());
     }
 
     @Override

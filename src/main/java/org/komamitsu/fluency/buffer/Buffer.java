@@ -56,29 +56,27 @@ public abstract class Buffer<T extends Buffer.Config>
         return (float)getTotalSize() / getMaxSize();
     }
 
-    public abstract static class Config
+    public static abstract class Config<T extends Config>
     {
-        private int bufferSize = 16 * 1024 * 1024;
-        private int chunkSize = 512 * 1024;
+        protected int bufferSize = 16 * 1024 * 1024;
 
         public int getBufferSize()
         {
             return bufferSize;
         }
 
-        public void setBufferSize(int bufferSize)
+        public T setBufferSize(int bufferSize)
         {
             this.bufferSize = bufferSize;
+            return (T)this;
         }
 
-        public int getChunkSize()
+        @Override
+        public String toString()
         {
-            return chunkSize;
-        }
-
-        public void setChunkSize(int chunkSize)
-        {
-            this.chunkSize = chunkSize;
+            return "Config{" +
+                    "bufferSize=" + bufferSize +
+                    '}';
         }
     }
 }

@@ -42,7 +42,7 @@ public class AsyncFlusher
 
     public AsyncFlusher(Buffer buffer, Sender sender)
     {
-        this(buffer, sender, new FlusherConfig.Builder().build());
+        this(buffer, sender, new FlusherConfig());
     }
 
     @Override
