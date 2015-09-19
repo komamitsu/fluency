@@ -1,7 +1,9 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
+import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.RetryableSender;
@@ -87,7 +89,7 @@ public class Fluency
         public Fluency build()
         {
             Buffer buffer = this.buffer != null ? this.buffer : new PackedForwardBuffer();
-            Flusher flusher = this.flusher != null ? this.flusher : new SyncFlusher(buffer, sender);
+            Flusher flusher = this.flusher != null ? this.flusher : new AsyncFlusher(buffer, sender);
 
             return new Fluency(buffer, flusher);
         }

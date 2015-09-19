@@ -45,7 +45,7 @@ public class MessageBuffer
     }
 
     @Override
-    public synchronized void flush(Sender sender)
+    public synchronized void flushInternal(Sender sender)
             throws IOException
     {
         ByteBuffer message = null;

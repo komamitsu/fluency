@@ -1,6 +1,8 @@
 package org.komamitsu.fluency.buffer;
 
 import org.komamitsu.fluency.sender.Sender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.Flushable;
@@ -12,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class Buffer
     implements Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected final BufferConfig bufferConfig;
     protected final AtomicInteger totalSize = new AtomicInteger();
 
@@ -35,7 +38,13 @@ public abstract class Buffer
     public abstract void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException;
 
-    public abstract void flush(Sender sender)
+    public void flush(Sender sender)
+            throws IOException
+    {
+        flushInternal(sender);
+    }
+
+    public abstract void flushInternal(Sender sender)
             throws IOException;
 
     public int getTotalSize()

@@ -83,7 +83,7 @@ public class PackedForwardBuffer
     }
 
     @Override
-    public synchronized void flush(Sender sender)
+    public synchronized void flushInternal(Sender sender)
             throws IOException
     {
         ByteArrayOutputStream header = new ByteArrayOutputStream();

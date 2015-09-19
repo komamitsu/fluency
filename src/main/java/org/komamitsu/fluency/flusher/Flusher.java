@@ -23,6 +23,9 @@ public abstract class Flusher implements Flushable, Closeable
     protected abstract void flushInternal(boolean force)
             throws IOException;
 
+    protected abstract void closeInternal()
+            throws IOException;
+
     public void onUpdate()
             throws IOException
     {
@@ -40,7 +43,7 @@ public abstract class Flusher implements Flushable, Closeable
     public void close()
             throws IOException
     {
-        flush();
+        closeInternal();
         buffer.close();
     }
 }

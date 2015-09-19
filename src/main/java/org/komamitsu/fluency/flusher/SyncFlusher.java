@@ -33,4 +33,10 @@ public class SyncFlusher
             lastFlushTimeMillis.set(now);
         }
     }
+
+    @Override
+    protected void closeInternal()
+            throws IOException
+    {
+    }
 }
