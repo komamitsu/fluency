@@ -34,7 +34,7 @@ public class AsyncFlusher
             }
         };
 
-    public AsyncFlusher(final Buffer buffer, final Sender sender, final FlusherConfig flusherConfig)
+    public AsyncFlusher(final Buffer buffer, final Sender sender, final Config flusherConfig)
     {
         super(buffer, sender, flusherConfig);
         executorService.execute(task);
@@ -42,7 +42,7 @@ public class AsyncFlusher
 
     public AsyncFlusher(Buffer buffer, Sender sender)
     {
-        this(buffer, sender, new FlusherConfig());
+        this(buffer, sender, new Config());
     }
 
     @Override

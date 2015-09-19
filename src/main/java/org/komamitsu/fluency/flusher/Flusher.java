@@ -11,9 +11,9 @@ public abstract class Flusher implements Flushable, Closeable
 {
     protected final Buffer buffer;
     protected final Sender sender;
-    protected final FlusherConfig flusherConfig;
+    protected final Config flusherConfig;
 
-    public Flusher(Buffer buffer, Sender sender, FlusherConfig flusherConfig)
+    public Flusher(Buffer buffer, Sender sender, Config flusherConfig)
     {
         this.buffer = buffer;
         this.sender = sender;
@@ -45,5 +45,33 @@ public abstract class Flusher implements Flushable, Closeable
     {
         buffer.close();
         closeInternal();
+    }
+
+    public static class Config
+    {
+        private int flushIntervalMillis = 600;
+        private float bufferOccupancyThreshold = 0.6f;
+
+        public int getFlushIntervalMillis()
+        {
+            return flushIntervalMillis;
+        }
+
+        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        {
+            this.flushIntervalMillis = flushIntervalMillis;
+            return this;
+        }
+
+        public float getBufferOccupancyThreshold()
+        {
+            return bufferOccupancyThreshold;
+        }
+
+        public Config setBufferOccupancyThreshold(float bufferOccupancyThreshold)
+        {
+            this.bufferOccupancyThreshold = bufferOccupancyThreshold;
+            return this;
+        }
     }
 }

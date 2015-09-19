@@ -11,14 +11,14 @@ public class SyncFlusher
 {
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
 
-    public SyncFlusher(Buffer buffer, Sender sender, FlusherConfig flusherConfig)
+    public SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
     {
         super(buffer, sender, flusherConfig);
     }
 
     public SyncFlusher(Buffer buffer, Sender sender)
     {
-        this(buffer, sender, new FlusherConfig());
+        this(buffer, sender, new Config());
     }
 
     @Override
