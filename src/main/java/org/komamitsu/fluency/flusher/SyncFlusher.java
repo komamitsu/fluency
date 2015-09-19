@@ -16,6 +16,11 @@ public class SyncFlusher
         super(buffer, sender, flusherConfig);
     }
 
+    public SyncFlusher(Buffer buffer, Sender sender)
+    {
+        this(buffer, sender, new FlusherConfig.Builder().build());
+    }
+
     @Override
     protected void flushInternal(boolean force)
             throws IOException
