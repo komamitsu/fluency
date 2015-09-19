@@ -34,7 +34,9 @@ public class TCPSender
             throws IOException
     {
         if (channel.get() == null) {
-            channel.set(SocketChannel.open(new InetSocketAddress(host, port)));
+            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+            socketChannel.socket().setTcpNoDelay(true);
+            channel.set(socketChannel);
         }
         return channel.get();
     }

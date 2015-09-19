@@ -34,6 +34,7 @@ public abstract class Buffer<T extends Buffer.Config>
     public void flush(Sender sender)
             throws IOException
     {
+        LOG.trace("flush(): bufferUsage={}", getBufferUsage());
         flushInternal(sender);
     }
 

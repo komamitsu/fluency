@@ -43,7 +43,7 @@ public abstract class Flusher implements Flushable, Closeable
     public void close()
             throws IOException
     {
-        closeInternal();
         buffer.close();
+        closeInternal();
     }
 }

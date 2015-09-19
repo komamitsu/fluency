@@ -1,6 +1,11 @@
 package org.komamitsu.fluency;
 
 import org.junit.Test;
+import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.PackedForwardBuffer;
+import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.sender.TCPSender;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,7 +19,11 @@ public class FluencyTest
     public void test()
             throws IOException, InterruptedException
     {
-        Fluency fluency = Fluency.defaultFluency("127.0.0.1", 24224);
+        // Fluency fluency = Fluency.defaultFluency("127.0.0.1", 24224);
+        Buffer buffer = new PackedForwardBuffer();
+        Sender sender = new TCPSender("127.0.0.1", 24224);
+        Fluency fluency = new Fluency.Builder(sender).setBuffer(buffer).
+                setFlusher(new SyncFlusher(buffer, sender)).build();
         Map<String, Object> hashMap = new HashMap<String, Object>();
         hashMap.put("name", "komamitsu");
         hashMap.put("age", 42);

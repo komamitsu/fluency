@@ -38,5 +38,6 @@ public class SyncFlusher
     protected void closeInternal()
             throws IOException
     {
+        flushInternal(true);
     }
 }
