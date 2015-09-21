@@ -3,6 +3,8 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class MessageBuffer
     extends Buffer<MessageBuffer.Config>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageBuffer.class);
     private final LinkedBlockingQueue<ByteBuffer> messages = new LinkedBlockingQueue<ByteBuffer>();
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -50,10 +53,28 @@ public class MessageBuffer
     {
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
-            sender.send(message);
+            try {
+                totalSize.addAndGet(-message.capacity());
+                sender.send(message);
+            }
+            catch (Throwable e) {
+                try {
+                    messages.put(message);
+                    totalSize.addAndGet(message.capacity());
+                }
+                catch (InterruptedException e1) {
+                    LOG.error("Interrupted during restoring fetched message. It can be lost. message={}", message);
+                }
+                finally {
+                    if (e instanceof IOException) {
+                        throw (IOException)e;
+                    }
+                    else {
+                        throw new RuntimeException("Failed to send message to fluentd", e);
+                    }
+                }
+            }
         }
-        // TODO: More robust
-        totalSize.set(0);
     }
 
     @Override

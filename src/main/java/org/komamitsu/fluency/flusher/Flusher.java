@@ -20,6 +20,11 @@ public abstract class Flusher implements Flushable, Closeable
         this.flusherConfig = flusherConfig;
     }
 
+    public Buffer getBuffer()
+    {
+        return buffer;
+    }
+
     protected abstract void flushInternal(boolean force)
             throws IOException;
 

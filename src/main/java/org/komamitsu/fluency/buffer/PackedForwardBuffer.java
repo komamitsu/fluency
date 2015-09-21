@@ -155,21 +155,40 @@ public class PackedForwardBuffer
         // TODO: Consider the flow control during appending events
         TaggableBuffer chunk = null;
         while ((chunk = flushableChunks.poll()) != null) {
-            totalSize.addAndGet(-chunk.getByteBuffer().capacity());
-            // TODO: Reuse MessagePacker
-            ByteArrayOutputStream header = new ByteArrayOutputStream();
-            MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
-            LOG.trace("flushInternal(): bufferUsage={}, chunk={}", getBufferUsage(), chunk);
-            String tag = chunk.getTag();
-            ByteBuffer byteBuffer = chunk.getByteBuffer();
-            messagePacker.packArrayHeader(2);
-            messagePacker.packString(tag);
-            messagePacker.packRawStringHeader(byteBuffer.position());
-            messagePacker.flush();
-            synchronized (sender) {
-                sender.send(ByteBuffer.wrap(header.toByteArray()));
-                byteBuffer.flip();
-                sender.send(byteBuffer);
+            try {
+                totalSize.addAndGet(-chunk.getByteBuffer().capacity());
+                // TODO: Reuse MessagePacker
+                ByteArrayOutputStream header = new ByteArrayOutputStream();
+                MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
+                LOG.trace("flushInternal(): bufferUsage={}, chunk={}", getBufferUsage(), chunk);
+                String tag = chunk.getTag();
+                ByteBuffer byteBuffer = chunk.getByteBuffer();
+                messagePacker.packArrayHeader(2);
+                messagePacker.packString(tag);
+                messagePacker.packRawStringHeader(byteBuffer.position());
+                messagePacker.flush();
+                synchronized (sender) {
+                    sender.send(ByteBuffer.wrap(header.toByteArray()));
+                    byteBuffer.flip();
+                    sender.send(byteBuffer);
+                }
+            }
+            catch (Throwable e) {
+                try {
+                    flushableChunks.put(chunk);
+                    totalSize.addAndGet(chunk.getByteBuffer().capacity());
+                }
+                catch(InterruptedException e1){
+                    LOG.error("Interrupted during restoring fetched chunk. It can be lost. chunk={}", chunk);
+                }
+                finally{
+                    if (e instanceof IOException) {
+                        throw (IOException) e;
+                    }
+                    else {
+                        throw new RuntimeException("Failed to send chunk to fluentd", e);
+                    }
+                }
             }
         }
     }

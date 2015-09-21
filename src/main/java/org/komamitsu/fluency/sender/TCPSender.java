@@ -30,6 +30,24 @@ public class TCPSender
         this.host = host;
     }
 
+    public TCPSender(int port)
+            throws IOException
+    {
+        this("127.0.0.1", port);
+    }
+
+    public TCPSender(String host)
+            throws IOException
+    {
+        this(host, 24224);
+    }
+
+    public TCPSender()
+            throws IOException
+    {
+        this("127.0.0.1", 24224);
+    }
+
     private synchronized SocketChannel getOrOpenChannel()
             throws IOException
     {

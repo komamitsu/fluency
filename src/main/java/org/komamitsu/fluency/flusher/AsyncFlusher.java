@@ -64,13 +64,11 @@ public class AsyncFlusher
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
+            Thread.currentThread().interrupt();
+        }
+
+        if (!executorService.isTerminated()) {
             executorService.shutdownNow();
-            try {
-                executorService.awaitTermination(1, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e1) {
-                LOG.warn("2nd awaitTermination was interrupted", e);
-            }
         }
     }
 }

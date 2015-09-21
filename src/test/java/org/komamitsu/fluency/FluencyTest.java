@@ -2,13 +2,17 @@ package org.komamitsu.fluency;
 
 import org.junit.Test;
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -87,6 +91,30 @@ public class FluencyTest
             System.out.println(System.currentTimeMillis() - start);
         } finally {
             fluency.close();
+        }
+    }
+
+    @Test
+    public void testMultiFluentd()
+            throws InterruptedException, IOException
+    {
+        // MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender(24226)));
+        MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225)));
+        Buffer buffer = new MessageBuffer(new MessageBuffer.Config());
+        Flusher flusher = new SyncFlusher(buffer, multiSender);
+        Fluency fluency = new Fluency.Builder(multiSender).setBuffer(buffer).setFlusher(flusher).build();
+        for (int i = 0; i < 20; i++) {
+            final Map<String, Object> hashMap = new HashMap<String, Object>();
+            hashMap.put("name", "komamitsu");
+            hashMap.put("age", 42);
+            hashMap.put("email", "komamitsu@gmail.com");
+            try {
+                fluency.emit("foodb.bartbl", hashMap);
+                fluency.flush();
+            }
+            catch (IOException e) {
+            }
+            TimeUnit.SECONDS.sleep(1);
         }
     }
 }

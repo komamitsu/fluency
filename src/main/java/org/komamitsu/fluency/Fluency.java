@@ -74,6 +74,7 @@ public class Fluency
             this.sender = sender;
         }
 
+        // TODO: Prevent from inconsistent buffers between Fluency and Flusher
         public Builder setBuffer(Buffer buffer)
         {
             this.buffer = buffer;
