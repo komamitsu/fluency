@@ -48,7 +48,7 @@ public class TCPSender
         this("127.0.0.1", 24224);
     }
 
-    private synchronized SocketChannel getOrOpenChannel()
+    private SocketChannel getOrOpenChannel()
             throws IOException
     {
         if (channel.get() == null) {
@@ -59,10 +59,16 @@ public class TCPSender
         return channel.get();
     }
 
-    public void send(ByteBuffer data)
+    public synchronized void send(ByteBuffer data)
             throws IOException
     {
-        getOrOpenChannel().write(data);
+        try {
+            getOrOpenChannel().write(data);
+        }
+        catch (IOException e) {
+            channel.set(null);
+            throw e;
+        }
     }
 
     @Override

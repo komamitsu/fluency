@@ -11,32 +11,43 @@ public class TCPHeartbeater extends Heartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
 
-    protected TCPHeartbeater(final Config config)
+    private TCPHeartbeater(final Config config)
             throws IOException
     {
         super(config);
     }
 
     @Override
-    protected void ping()
+    protected void invoke()
+            throws IOException
     {
+        SocketChannel socketChannel = null;
         try {
-            SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()));
+            socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()));
             pong();
         }
-        catch (Throwable e) {
-            LOG.warn("Failed to connect to fluentd: config=" + config, e);
+        finally {
+            if (socketChannel != null) {
+                socketChannel.close();
+            }
         }
     }
 
-    public static class Factory
-            implements Heartbeater.Factory<TCPHeartbeater>
+    public static class Config extends Heartbeater.Config<Config>
     {
         @Override
-        public TCPHeartbeater create(Config config)
+        public TCPHeartbeater createInstance()
                 throws IOException
         {
-            return new TCPHeartbeater(config);
+            return new TCPHeartbeater(this);
+        }
+
+        @Override
+        public Config dupDefaultConfig()
+        {
+            return new Config();
         }
     }
+
 }
+

@@ -1,11 +1,9 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
@@ -67,30 +65,30 @@ public class Fluency
     {
         private final Sender sender;
         private Buffer buffer;
-        private Flusher flusher;
+        private Flusher.Config flusherConfig;
 
         public Builder(Sender sender)
         {
             this.sender = sender;
         }
 
-        // TODO: Prevent from inconsistent buffers between Fluency and Flusher
         public Builder setBuffer(Buffer buffer)
         {
             this.buffer = buffer;
             return this;
         }
 
-        public Builder setFlusher(Flusher flusher)
+        public Builder setFlusherConfig(Flusher.Config flusherConfig)
         {
-            this.flusher = flusher;
+            this.flusherConfig = flusherConfig;
             return this;
         }
 
         public Fluency build()
         {
             Buffer buffer = this.buffer != null ? this.buffer : new PackedForwardBuffer();
-            Flusher flusher = this.flusher != null ? this.flusher : new AsyncFlusher(buffer, sender);
+            Flusher.Config flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
+            Flusher flusher = flusherConfig.createInstance(buffer, sender);
 
             return new Fluency(buffer, flusher);
         }

@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,32 @@ public abstract class Heartbeater implements Closeable
         }, config.getIntervalMillis(), config.getIntervalMillis(), TimeUnit.MILLISECONDS);
     }
 
-    protected abstract void ping();
+    public String getHost()
+    {
+        return config.getHost();
+    }
+
+    public int getPort()
+    {
+        return config.getPort();
+    }
+
+    protected abstract void invoke()
+            throws IOException;
+
+    protected void ping()
+    {
+        try {
+            invoke();
+        }
+        catch (Throwable e) {
+            LOG.warn("ping(): failed, config=" + config, e);
+            Callback callback = this.callback.get();
+            if (callback != null) {
+                callback.onFailure(e);
+            }
+        }
+    }
 
     protected void pong()
     {
@@ -68,9 +92,11 @@ public abstract class Heartbeater implements Closeable
     public interface Callback
     {
         void onHeartbeat();
+
+        void onFailure(Throwable cause);
     }
 
-    public static class Config
+    public abstract static class Config<T extends Config>
     {
         private String host = "127.0.0.1";
         private int port = 24224;
@@ -81,10 +107,10 @@ public abstract class Heartbeater implements Closeable
             return host;
         }
 
-        public Config setHost(String host)
+        public T setHost(String host)
         {
             this.host = host;
-            return this;
+            return (T)this;
         }
 
         public int getPort()
@@ -92,10 +118,10 @@ public abstract class Heartbeater implements Closeable
             return port;
         }
 
-        public Config setPort(int port)
+        public T setPort(int port)
         {
             this.port = port;
-            return this;
+            return (T)this;
         }
 
         public int getIntervalMillis()
@@ -103,10 +129,10 @@ public abstract class Heartbeater implements Closeable
             return intervalMillis;
         }
 
-        public Config setIntervalMillis(int intervalMillis)
+        public T setIntervalMillis(int intervalMillis)
         {
             this.intervalMillis = intervalMillis;
-            return this;
+            return (T)this;
         }
 
         @Override
@@ -118,11 +144,11 @@ public abstract class Heartbeater implements Closeable
                     ", intervalMillis=" + intervalMillis +
                     '}';
         }
-    }
 
-    public interface Factory<T extends Heartbeater>
-    {
-        T create(Config config)
+        public abstract Heartbeater createInstance()
                 throws IOException;
+
+        // TODO: Make it simpler
+        public abstract T dupDefaultConfig();
     }
 }

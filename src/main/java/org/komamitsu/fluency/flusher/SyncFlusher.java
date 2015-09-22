@@ -11,14 +11,9 @@ public class SyncFlusher
 {
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
 
-    public SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
+    private SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
     {
         super(buffer, sender, flusherConfig);
-    }
-
-    public SyncFlusher(Buffer buffer, Sender sender)
-    {
-        this(buffer, sender, new Config());
     }
 
     @Override
@@ -39,5 +34,14 @@ public class SyncFlusher
             throws IOException
     {
         flushInternal(true);
+    }
+
+    public static class Config extends Flusher.Config
+    {
+        @Override
+        public Flusher createInstance(Buffer buffer, Sender sender)
+        {
+            return new SyncFlusher(buffer, sender, this);
+        }
     }
 }

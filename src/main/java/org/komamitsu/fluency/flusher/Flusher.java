@@ -52,7 +52,7 @@ public abstract class Flusher implements Flushable, Closeable
         closeInternal();
     }
 
-    public static class Config
+    public abstract static class Config
     {
         private int flushIntervalMillis = 600;
         private float bufferOccupancyThreshold = 0.6f;
@@ -78,5 +78,7 @@ public abstract class Flusher implements Flushable, Closeable
             this.bufferOccupancyThreshold = bufferOccupancyThreshold;
             return this;
         }
+
+        public abstract Flusher createInstance(Buffer buffer, Sender sender);
     }
 }

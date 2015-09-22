@@ -2,11 +2,11 @@ package org.komamitsu.fluency.sender.failuredetect;
 
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector;
 
-public class PhiAccrualFailureDetectStrategy extends FailureDetectStrategy<PhiAccrualFailureDetectStrategy.Config>
+public class PhiAccrualFailureDetectStrategy extends FailureDetectStrategy
 {
     private final PhiAccuralFailureDetector failureDetector;
 
-    public PhiAccrualFailureDetectStrategy(Config config)
+    private PhiAccrualFailureDetectStrategy(Config config)
     {
         super(config);
         failureDetector = new PhiAccuralFailureDetector.Builder().
@@ -52,6 +52,12 @@ public class PhiAccrualFailureDetectStrategy extends FailureDetectStrategy<PhiAc
         {
             this.arrivalWindowSize = arrivalWindowSize;
             return this;
+        }
+
+        @Override
+        public FailureDetectStrategy createInstance()
+        {
+            return new PhiAccrualFailureDetectStrategy(this);
         }
     }
 }

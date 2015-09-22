@@ -34,15 +34,10 @@ public class AsyncFlusher
             }
         };
 
-    public AsyncFlusher(final Buffer buffer, final Sender sender, final Config flusherConfig)
+    private AsyncFlusher(final Buffer buffer, final Sender sender, final Config flusherConfig)
     {
         super(buffer, sender, flusherConfig);
         executorService.execute(task);
-    }
-
-    public AsyncFlusher(Buffer buffer, Sender sender)
-    {
-        this(buffer, sender, new Config());
     }
 
     @Override
@@ -69,6 +64,15 @@ public class AsyncFlusher
 
         if (!executorService.isTerminated()) {
             executorService.shutdownNow();
+        }
+    }
+
+    public static class Config extends Flusher.Config
+    {
+        @Override
+        public Flusher createInstance(Buffer buffer, Sender sender)
+        {
+            return new AsyncFlusher(buffer, sender, this);
         }
     }
 }

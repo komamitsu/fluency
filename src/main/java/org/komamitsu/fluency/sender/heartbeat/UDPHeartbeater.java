@@ -16,7 +16,7 @@ public class UDPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
 
-    protected UDPHeartbeater(final Config config)
+    private UDPHeartbeater(final Config config)
             throws IOException
     {
         super(config);
@@ -24,29 +24,37 @@ public class UDPHeartbeater
     }
 
     @Override
-    protected void ping()
+    protected void invoke()
+            throws IOException
     {
+        DatagramChannel datagramChannel = null;
         try {
-            DatagramChannel datagramChannel = DatagramChannel.open();
+            datagramChannel = DatagramChannel.open();
             ByteBuffer byteBuffer = ByteBuffer.allocate(0);
             datagramChannel.send(byteBuffer, socketAddress);
             datagramChannel.receive(byteBuffer);
-            datagramChannel.close();
             pong();
         }
-        catch (Throwable e) {
-            LOG.warn("Failed to connect to fluentd: config=" + config, e);
+        finally {
+            if (datagramChannel != null) {
+                datagramChannel.close();
+            }
         }
     }
 
-    public static class Factory
-            implements Heartbeater.Factory<UDPHeartbeater>
+    public static class Config extends Heartbeater.Config<Config>
     {
         @Override
-        public UDPHeartbeater create(Config config)
+        public UDPHeartbeater createInstance()
                 throws IOException
         {
-            return new UDPHeartbeater(config);
+            return new UDPHeartbeater(this);
+        }
+
+        @Override
+        public Config dupDefaultConfig()
+        {
+            return new Config();
         }
     }
 }

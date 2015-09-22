@@ -13,28 +13,48 @@ import static org.junit.Assert.*;
 
 public class HeartbeaterTest
 {
-    private List<Tuple3<Long, String, Integer>> pongedRecords;
-    private Heartbeater.Config config;
+    private TestableHeartbeater.Config config;
 
-    private class TestableHeartbeater extends Heartbeater
+    private static class TestableHeartbeater extends Heartbeater
     {
+        private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<Tuple3<Long, String, Integer>>();
         public TestableHeartbeater(Config config)
         {
             super(config);
         }
 
+        public List<Tuple3<Long, String, Integer>> getPongedRecords()
+        {
+            return pongedRecords;
+        }
+
         @Override
-        protected void ping()
+        protected void invoke()
         {
             pongedRecords.add(new Tuple3<Long, String, Integer>(System.currentTimeMillis(), config.getHost(), config.getPort()));
+        }
+
+        private static class Config extends Heartbeater.Config<Config>
+        {
+            @Override
+            public Heartbeater createInstance()
+                    throws IOException
+            {
+                return new TestableHeartbeater(this);
+            }
+
+            @Override
+            public Config dupDefaultConfig()
+            {
+                return new Config();
+            }
         }
     }
 
     @Before
     public void setup()
     {
-        pongedRecords = new ArrayList<Tuple3<Long, String, Integer>>();
-        config = new Heartbeater.Config().setHost("dummy-hostname").setPort(123456).setIntervalMillis(300);
+        config = new TestableHeartbeater.Config().setHost("dummy-hostname").setPort(123456).setIntervalMillis(300);
     }
 
     @Test
@@ -47,12 +67,12 @@ public class HeartbeaterTest
             TimeUnit.SECONDS.sleep(1);
             heartbeater.close();
             TimeUnit.MILLISECONDS.sleep(500);
-            assertTrue(1 < pongedRecords.size() && pongedRecords.size() < 4);
-            Tuple3<Long, String, Integer> firstPong = pongedRecords.get(0);
-            Tuple3<Long, String, Integer> secondPong = pongedRecords.get(1);
+            assertTrue(1 < heartbeater.pongedRecords.size() && heartbeater.pongedRecords.size() < 4);
+            Tuple3<Long, String, Integer> firstPong = heartbeater.pongedRecords.get(0);
+            Tuple3<Long, String, Integer> secondPong = heartbeater.pongedRecords.get(1);
             long diff = secondPong.getFirst() - firstPong.getFirst();
             assertTrue(100 < diff && diff < 1000);
-            for (Tuple3<Long, String, Integer> pongedRecord : pongedRecords) {
+            for (Tuple3<Long, String, Integer> pongedRecord : heartbeater.pongedRecords) {
                 assertEquals("dummy-hostname", pongedRecord.getSecond());
                 assertEquals((Integer) 123456, pongedRecord.getThird());
             }

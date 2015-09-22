@@ -3,12 +3,7 @@ package org.komamitsu.fluency.sender.heartbeat;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 public class TCPHeartbeaterTest
 {
     @Test
-    public void testTCPHeartbeater()
+    public void testTCPHeartbeaterUp()
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -41,11 +36,12 @@ public class TCPHeartbeaterTest
             }
         });
 
-        Heartbeater.Config config = new Heartbeater.Config().setPort(serverSocketChannel.socket().getLocalPort()).setIntervalMillis(500);
+        TCPHeartbeater.Config config = new TCPHeartbeater.Config().setPort(serverSocketChannel.socket().getLocalPort()).setIntervalMillis(500);
         TCPHeartbeater heartbeater = null;
         try {
             final AtomicInteger pongCounter  = new AtomicInteger();
-            heartbeater = new TCPHeartbeater(config);
+            final AtomicInteger failureCounter  = new AtomicInteger();
+            heartbeater = config.createInstance();
             heartbeater.setCallback(new Heartbeater.Callback()
             {
                 @Override
@@ -54,10 +50,57 @@ public class TCPHeartbeaterTest
                     pongCounter.incrementAndGet();
                     latch.countDown();
                 }
+
+                @Override
+                public void onFailure(Throwable cause)
+                {
+                    failureCounter.incrementAndGet();
+                }
             });
             latch.await(5, TimeUnit.SECONDS);
             assertEquals(0, latch.getCount());
             assertTrue(0 < pongCounter.get() && pongCounter.get() < 3);
+            assertEquals(0, failureCounter.get());
+        }
+        finally {
+            if (heartbeater != null) {
+                heartbeater.close();
+            }
+        }
+    }
+
+    @Test
+    public void testTCPHeartbeaterDown()
+            throws IOException, InterruptedException
+    {
+        final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.socket().bind(null);
+        int localPort = serverSocketChannel.socket().getLocalPort();
+        serverSocketChannel.close();
+
+        TCPHeartbeater.Config config = new TCPHeartbeater.Config().setPort(localPort).setIntervalMillis(500);
+        TCPHeartbeater heartbeater = null;
+        try {
+            final AtomicInteger pongCounter  = new AtomicInteger();
+            final AtomicInteger failureCounter  = new AtomicInteger();
+            heartbeater = config.createInstance();
+            heartbeater.setCallback(new Heartbeater.Callback()
+            {
+                @Override
+                public void onHeartbeat()
+                {
+                    pongCounter.incrementAndGet();
+                }
+
+                @Override
+                public void onFailure(Throwable cause)
+                {
+                    failureCounter.incrementAndGet();
+                }
+            });
+            TimeUnit.SECONDS.sleep(1);
+            assertEquals(0, pongCounter.get());
+            assertTrue(failureCounter.get() > 0);
         }
         finally {
             if (heartbeater != null) {

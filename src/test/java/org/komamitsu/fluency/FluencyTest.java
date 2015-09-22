@@ -10,6 +10,9 @@ import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
+import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -66,9 +69,8 @@ public class FluencyTest
         // Buffer buffer = new PackedForwardBuffer();
         Sender sender = new TCPSender("127.0.0.1", 24224);
         // Flusher flusher = new AsyncFlusher(buffer, sender, new FlusherConfig().setFlushIntervalMillis(100));
-        Flusher flusher = new AsyncFlusher(buffer, sender);
         final Fluency fluency = new Fluency.Builder(sender).setBuffer(buffer).
-                setFlusher(new AsyncFlusher(buffer, sender)).build();
+                setFlusherConfig(new AsyncFlusher.Config()).build();
         try {
             final Map<String, Object> hashMap = new HashMap<String, Object>();
             hashMap.put("name", "komamitsu");
@@ -99,10 +101,9 @@ public class FluencyTest
             throws InterruptedException, IOException
     {
         // MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender(24226)));
-        MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225)));
+        MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender(24226)), new UDPHeartbeater.Config());
         Buffer buffer = new MessageBuffer(new MessageBuffer.Config());
-        Flusher flusher = new SyncFlusher(buffer, multiSender);
-        Fluency fluency = new Fluency.Builder(multiSender).setBuffer(buffer).setFlusher(flusher).build();
+        Fluency fluency = new Fluency.Builder(multiSender).setBuffer(buffer).setFlusherConfig(new SyncFlusher.Config()).build();
         for (int i = 0; i < 20; i++) {
             final Map<String, Object> hashMap = new HashMap<String, Object>();
             hashMap.put("name", "komamitsu");

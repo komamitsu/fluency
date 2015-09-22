@@ -1,10 +1,10 @@
 package org.komamitsu.fluency.sender.failuredetect;
 
-public abstract class FailureDetectStrategy<C extends FailureDetectStrategy.Config>
+public abstract class FailureDetectStrategy
 {
-    protected final C config;
+    protected final Config config;
 
-    protected FailureDetectStrategy(C config)
+    protected FailureDetectStrategy(Config config)
     {
         this.config = config;
     }
@@ -13,7 +13,8 @@ public abstract class FailureDetectStrategy<C extends FailureDetectStrategy.Conf
 
     public abstract boolean isAvailable();
 
-    public static class Config
+    public abstract static class Config
     {
+        public abstract FailureDetectStrategy createInstance();
     }
 }
