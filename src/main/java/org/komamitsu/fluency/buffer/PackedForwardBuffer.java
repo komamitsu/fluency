@@ -264,8 +264,8 @@ public class PackedForwardBuffer
     public static class Config extends Buffer.Config<Config>
     {
         private int buffInitialSize = 512 * 1024;
-        private float buffExpandRatio = 1.5f;
-        private int chunkSize = 1024 * 1024;
+        private float buffExpandRatio = 2.0f;
+        private int chunkSize = 4 * 1024 * 1024;
         private int chunkRetentionTimeMillis = 2 * 1000;
 
         public int getBuffInitialSize()

@@ -1,4 +1,4 @@
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.retry;
 
 public class ExponentialBackOffRetryStrategy
     extends RetryStrategy

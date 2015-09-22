@@ -1,5 +1,8 @@
 package org.komamitsu.fluency.sender;
 
+import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.sender.retry.RetryInterval;
+import org.komamitsu.fluency.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

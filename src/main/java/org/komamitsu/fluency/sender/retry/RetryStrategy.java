@@ -1,6 +1,6 @@
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.retry;
 
-abstract class RetryStrategy
+public abstract class RetryStrategy
 {
     abstract long getOriginalNextIntervalMillis(RetryInterval retryInterval, int retryCount);
 

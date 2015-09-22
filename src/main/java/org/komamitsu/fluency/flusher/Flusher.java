@@ -2,6 +2,8 @@ package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.sender.Sender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.Flushable;
@@ -9,6 +11,7 @@ import java.io.IOException;
 
 public abstract class Flusher implements Flushable, Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
     protected final Buffer buffer;
     protected final Sender sender;
     protected final Config flusherConfig;
@@ -48,8 +51,19 @@ public abstract class Flusher implements Flushable, Closeable
     public void close()
             throws IOException
     {
-        buffer.close();
         closeInternal();
+    }
+
+    protected void closeBuffer()
+    {
+        LOG.trace("closeBuffer(): closing buffer");
+        try {
+            buffer.close();
+        }
+        catch (IOException e) {
+            LOG.warn("Interrupted during closing buffer");
+        }
+        LOG.trace("closeBuffer(): closed buffer");
     }
 
     public abstract static class Config

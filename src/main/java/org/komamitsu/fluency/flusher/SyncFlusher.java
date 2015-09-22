@@ -34,6 +34,7 @@ public class SyncFlusher
             throws IOException
     {
         flushInternal(true);
+        closeBuffer();
     }
 
     public static class Config extends Flusher.Config

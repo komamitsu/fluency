@@ -5,14 +5,13 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
-import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,6 +26,8 @@ import static org.junit.Assert.*;
 
 public class FluencyTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
+
     private static class EmitTask implements Runnable
     {
         private final Fluency fluency;

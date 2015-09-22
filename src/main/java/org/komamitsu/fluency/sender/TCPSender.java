@@ -72,7 +72,7 @@ public class TCPSender
     }
 
     @Override
-    public void close()
+    public synchronized void close()
             throws IOException
     {
         SocketChannel socketChannel;

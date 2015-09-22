@@ -31,6 +31,8 @@ public class AsyncFlusher
                         LOG.error("Failed to flush", e);
                     }
                 }
+
+                closeBuffer();
             }
         };
 
@@ -55,7 +57,7 @@ public class AsyncFlusher
     {
         executorService.shutdown();
         try {
-            executorService.awaitTermination(5, TimeUnit.SECONDS);
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
