@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: "findbugs"
 
 sourceCompatibility = 1.6
 version = '0.0.1'
@@ -14,4 +15,15 @@ dependencies {
   compile 'org.slf4j:slf4j-api:1.7.8'
   compile 'org.msgpack:jackson-dataformat-msgpack:0.7.0-M6'
   compile 'org.komamitsu:phi-accural-failure-detector:0.0.4-SNAPSHOT'
+}
+
+findbugs {
+  effort = 'max'
+}
+
+tasks.withType(FindBugs) {
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
 }

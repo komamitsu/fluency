@@ -181,13 +181,12 @@ public class PackedForwardBuffer
                 catch(InterruptedException e1){
                     LOG.error("Interrupted during restoring fetched chunk. It can be lost. chunk={}", chunk);
                 }
-                finally{
-                    if (e instanceof IOException) {
-                        throw (IOException) e;
-                    }
-                    else {
-                        throw new RuntimeException("Failed to send chunk to fluentd", e);
-                    }
+
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                }
+                else {
+                    throw new RuntimeException("Failed to send chunk to fluentd", e);
                 }
             }
         }

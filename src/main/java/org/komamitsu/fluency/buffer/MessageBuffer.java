@@ -65,13 +65,12 @@ public class MessageBuffer
                 catch (InterruptedException e1) {
                     LOG.error("Interrupted during restoring fetched message. It can be lost. message={}", message);
                 }
-                finally {
-                    if (e instanceof IOException) {
-                        throw (IOException)e;
-                    }
-                    else {
-                        throw new RuntimeException("Failed to send message to fluentd", e);
-                    }
+
+                if (e instanceof IOException) {
+                    throw (IOException)e;
+                }
+                else {
+                    throw new RuntimeException("Failed to send message to fluentd", e);
                 }
             }
         }

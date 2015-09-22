@@ -25,7 +25,7 @@ public class RetryableSender
         baseSender.close();
     }
 
-    public class RetryOverException
+    public static class RetryOverException
             extends IOException
     {
         public RetryOverException(String s, Throwable throwable)
