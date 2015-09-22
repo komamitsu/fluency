@@ -7,7 +7,7 @@
 
     <logger name="com.tasknotes.slf4j" level="INFO"/>
 
-    <root level="TRACE">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
