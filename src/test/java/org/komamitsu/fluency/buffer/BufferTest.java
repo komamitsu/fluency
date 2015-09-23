@@ -6,7 +6,6 @@ import org.komamitsu.fluency.sender.Sender;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -24,40 +23,6 @@ public class BufferTest
         @Override
         public void close()
                 throws IOException
-        {
-        }
-    }
-
-    private static class TestableBuffer
-            extends Buffer<TestableBuffer.Config>
-    {
-        public TestableBuffer(Config bufferConfig)
-        {
-            super(bufferConfig);
-        }
-
-        @Override
-        public void append(String tag, long timestamp, Map data)
-                throws IOException
-        {
-            totalSize.addAndGet(100);
-        }
-
-        @Override
-        public void flushInternal(Sender sender)
-                throws IOException
-        {
-            totalSize.set(0);
-        }
-
-        @Override
-        protected void closeInternal(Sender sender)
-                throws IOException
-        {
-        }
-
-        static class Config
-                extends Buffer.Config<Config>
         {
         }
     }

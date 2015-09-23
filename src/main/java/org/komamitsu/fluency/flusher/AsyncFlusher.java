@@ -6,14 +6,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class AsyncFlusher
         extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
+    private final BlockingQueue<Boolean> waitQueue = new LinkedBlockingQueue<Boolean>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Runnable task = new Runnable() {
             @Override
@@ -21,8 +24,9 @@ public class AsyncFlusher
             {
                 while (!executorService.isShutdown()) {
                     try {
-                        TimeUnit.MILLISECONDS.sleep(flusherConfig.getFlushIntervalMillis());
+                        waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         buffer.flush(sender);
+                        waitQueue.clear();
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -47,7 +51,12 @@ public class AsyncFlusher
             throws IOException
     {
         if (force) {
-            executorService.execute(task);
+            try {
+                waitQueue.put(true);
+            }
+            catch (InterruptedException e) {
+                LOG.warn("Failed to wake up the flushing thread", e);
+            }
         }
     }
 
