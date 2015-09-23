@@ -51,7 +51,7 @@ public class BufferTest
         }
 
         @Override
-        public void close()
+        protected void closeInternal(Sender sender)
                 throws IOException
         {
         }

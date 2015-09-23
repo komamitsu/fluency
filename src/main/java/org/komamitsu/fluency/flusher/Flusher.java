@@ -58,7 +58,7 @@ public abstract class Flusher implements Flushable, Closeable
     {
         LOG.trace("closeBuffer(): closing buffer");
         try {
-            buffer.close();
+            buffer.close(sender);
         }
         catch (IOException e) {
             LOG.warn("Interrupted during closing buffer");

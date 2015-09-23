@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Buffer<T extends Buffer.Config>
-    implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected final T bufferConfig;
@@ -39,6 +38,15 @@ public abstract class Buffer<T extends Buffer.Config>
     }
 
     public abstract void flushInternal(Sender sender)
+            throws IOException;
+
+    public void close(Sender sender)
+            throws IOException
+    {
+        closeInternal(sender);
+    }
+
+    protected abstract void closeInternal(Sender sender)
             throws IOException;
 
     public int getTotalSize()

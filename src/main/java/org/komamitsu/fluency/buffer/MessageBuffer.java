@@ -77,7 +77,7 @@ public class MessageBuffer
     }
 
     @Override
-    public void close()
+    public void closeInternal(Sender sender)
             throws IOException
     {
         messages.clear();

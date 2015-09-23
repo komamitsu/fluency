@@ -193,11 +193,12 @@ public class PackedForwardBuffer
     }
 
     @Override
-    public synchronized void close()
+    public synchronized void closeInternal(Sender sender)
             throws IOException
     {
         moveChunks(true);
         appendedChunks.clear();
+        flush(sender);
     }
 
     private static class ExpirableBuffer
