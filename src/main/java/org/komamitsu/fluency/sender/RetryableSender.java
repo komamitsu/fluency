@@ -1,7 +1,6 @@
 package org.komamitsu.fluency.sender;
 
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.sender.retry.RetryInterval;
 import org.komamitsu.fluency.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +13,7 @@ public class RetryableSender
         implements Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
-    private static final RetryInterval DEFAULT_RETRY_INTERVAL = new RetryInterval.Builder().build();
-    private static final RetryStrategy DEFAULT_RETRY_STRATEGY = new ExponentialBackOffRetryStrategy();
 
-    private final RetryInterval retryInterval;
     private final RetryStrategy retryStrategy;
     private final Sender baseSender;
 
@@ -37,37 +33,26 @@ public class RetryableSender
         }
     }
 
-    public RetryableSender(Sender baseSender, RetryInterval retryInterval, RetryStrategy retryStrategy)
+    public RetryableSender(Sender baseSender, RetryStrategy retryStrategy)
     {
         // TODO: null check
         this.baseSender = baseSender;
-        this.retryInterval = retryInterval;
         this.retryStrategy = retryStrategy;
-    }
-
-    public RetryableSender(Sender baseSender, RetryStrategy retryStrategy)
-    {
-        this(baseSender, DEFAULT_RETRY_INTERVAL, retryStrategy);
-    }
-
-    public RetryableSender(Sender baseSender, RetryInterval retryInterval)
-    {
-        this(baseSender, retryInterval, DEFAULT_RETRY_STRATEGY);
     }
 
     public RetryableSender(Sender baseSender)
     {
-        this(baseSender, DEFAULT_RETRY_INTERVAL, DEFAULT_RETRY_STRATEGY);
+        this(baseSender, new ExponentialBackOffRetryStrategy(new ExponentialBackOffRetryStrategy.Config()));
     }
 
     @Override
     public void send(ByteBuffer data)
-            throws RetryOverException
+            throws IOException
     {
         IOException firstException = null;
 
         int retry = 0;
-        while (!retryInterval.isRetriedOver(retry)) {
+        while (!retryStrategy.isRetriedOver(retry)) {
             try {
                 baseSender.send(data);
                 return;
@@ -78,7 +63,7 @@ public class RetryableSender
             }
 
             try {
-                TimeUnit.MILLISECONDS.sleep(retryStrategy.getNextIntervalMillis(retryInterval, retry));
+                TimeUnit.MILLISECONDS.sleep(retryStrategy.getNextIntervalMillis(retry));
             }
             catch (InterruptedException e) {
                 LOG.debug("Interrupted while waiting", e);
