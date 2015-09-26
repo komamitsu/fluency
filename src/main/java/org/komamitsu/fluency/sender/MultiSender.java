@@ -56,10 +56,16 @@ public class MultiSender
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
             TCPSender sender = senderAndFailureDetector.getFirst();
             FailureDetector failureDetector = senderAndFailureDetector.getSecond();
-            LOG.trace("send(): host={}, port={}, isAvailable={}", sender.getHost(), sender.getPort(), failureDetector.isAvailable());
+            LOG.trace("send(): sender.host={}, sender.port={}, hb.host={}, hb.port={}, isAvailable={}", sender.getHost(), sender.getPort(), failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
             if (failureDetector.isAvailable()) {
-                sender.send(data);
-                return;
+                try {
+                    sender.send(data);
+                    return;
+                }
+                catch (IOException e) {
+                    // TODO: Store lastFailureTimestamp and don't use the server for several seconds
+                    LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
+                }
             }
         }
         throw new AllNodesUnavailableException("All nodes are unavailable");
