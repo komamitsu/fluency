@@ -24,7 +24,7 @@ public class AsyncFlusher
             {
                 while (!executorService.isShutdown()) {
                     try {
-                        waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        Boolean ignorable = waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         buffer.flush(sender);
                         waitQueue.clear();
                     }
