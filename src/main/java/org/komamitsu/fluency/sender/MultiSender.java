@@ -56,7 +56,7 @@ public class MultiSender
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
             TCPSender sender = senderAndFailureDetector.getFirst();
             FailureDetector failureDetector = senderAndFailureDetector.getSecond();
-            LOG.trace("send(): sender.host={}, sender.port={}, hb.host={}, hb.port={}, isAvailable={}", sender.getHost(), sender.getPort(), failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
+            LOG.trace("send(): hb.host={}, hb.port={}, isAvailable={}", failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
             if (failureDetector.isAvailable()) {
                 try {
                     sender.send(data);

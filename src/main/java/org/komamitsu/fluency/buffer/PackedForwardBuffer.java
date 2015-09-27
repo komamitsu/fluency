@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PackedForwardBuffer
     extends Buffer<PackedForwardBuffer.Config>
@@ -25,6 +26,7 @@ public class PackedForwardBuffer
     private final Map<String, ExpirableBuffer> appendedChunks = new HashMap<String, ExpirableBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableChunks = new LinkedBlockingQueue<TaggableBuffer>();
     private final AtomicInteger emitCounter = new AtomicInteger();
+    private final AtomicReference<Long> lastAppendedChunksChecked = new AtomicReference<Long>();
     private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -83,7 +85,7 @@ public class PackedForwardBuffer
             chunk.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(chunk.getByteBuffer());
         }
-        LOG.trace("prepareBuffer(): allocate a new buffer. buffer={}", newBuffer);
+        LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
 
         appendedChunks.put(tag, newBuffer);
         return newBuffer;
@@ -152,6 +154,16 @@ public class PackedForwardBuffer
     public void flushInternal(Sender sender)
             throws IOException
     {
+        long now = System.currentTimeMillis();
+        Long lastAppendedChunksChecked = this.lastAppendedChunksChecked.get();
+        if (lastAppendedChunksChecked == null) {
+            this.lastAppendedChunksChecked.set(now);
+        }
+        else if (lastAppendedChunksChecked < now - 500) {
+            moveChunks(false);
+            this.lastAppendedChunksChecked.set(now);
+        }
+
         // TODO: Consider the flow control during appending events
         TaggableBuffer chunk = null;
         while ((chunk = flushableChunks.poll()) != null) {
@@ -267,7 +279,7 @@ public class PackedForwardBuffer
         private int buffInitialSize = 512 * 1024;
         private float buffExpandRatio = 2.0f;
         private int chunkSize = 4 * 1024 * 1024;
-        private int chunkRetentionTimeMillis = 2 * 1000;
+        private int chunkRetentionTimeMillis = 500;
 
         public int getBuffInitialSize()
         {

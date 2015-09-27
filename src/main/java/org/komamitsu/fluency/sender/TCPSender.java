@@ -1,5 +1,8 @@
 package org.komamitsu.fluency.sender;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -9,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TCPSender
     implements Sender
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final String host;
     private final int port;
@@ -63,6 +67,7 @@ public class TCPSender
             throws IOException
     {
         try {
+            LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
             getOrOpenChannel().write(data);
         }
         catch (IOException e) {

@@ -28,6 +28,18 @@ public class Fluency
         return new Fluency.Builder(new RetryableSender(new TCPSender(host, port))).build();
     }
 
+    public static Fluency defaultFluency(int port)
+            throws IOException
+    {
+        return Fluency.defaultFluency("127.0.0.1", port);
+    }
+
+    public static Fluency defaultFluency()
+            throws IOException
+    {
+        return Fluency.defaultFluency("127.0.0.1", 24224);
+    }
+
     private Fluency(Buffer buffer, Flusher flusher)
     {
         this.buffer = buffer;

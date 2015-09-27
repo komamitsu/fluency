@@ -1,5 +1,6 @@
 package org.komamitsu.fluency.sender;
 
+import org.komamitsu.fluency.AbstractMockTCPServer;
 import org.komamitsu.fluency.util.Tuple;
 
 import java.io.IOException;

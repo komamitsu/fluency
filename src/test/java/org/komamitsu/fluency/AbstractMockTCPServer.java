@@ -1,4 +1,4 @@
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +107,7 @@ public abstract class AbstractMockTCPServer
             catch (IOException e) {
                 LOG.warn("ServerSocketChannel.close() interrupted", e);
             }
+            LOG.info("Finishing ServerTask...");
         }
 
         private static class AcceptTask
