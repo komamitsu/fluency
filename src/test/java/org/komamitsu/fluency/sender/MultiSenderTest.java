@@ -49,8 +49,8 @@ public class MultiSenderTest
         final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics();
         server1.start();
 
-        int concurency = 1;
-        final int reqNum = 100;
+        int concurency = 20;
+        final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
 
         final MultiSender sender = new MultiSender(Arrays.asList(new TCPSender(server0.getLocalPort()), new TCPSender(server1.getLocalPort())), new UDPHeartbeater.Config());
@@ -73,7 +73,6 @@ public class MultiSenderTest
                                 }
                             }
                             sender.send(ByteBuffer.wrap(bytes));
-                            // TimeUnit.MILLISECONDS.sleep(50);
                         }
                         latch.countDown();
                     }
@@ -84,7 +83,7 @@ public class MultiSenderTest
             });
         }
 
-        latch.await(100, TimeUnit.SECONDS);
+        latch.await(6, TimeUnit.SECONDS);
         assertEquals(0, latch.getCount());
         sender.close();
         TimeUnit.MILLISECONDS.sleep(500);
@@ -112,9 +111,10 @@ public class MultiSenderTest
             }
         }
         LOG.debug("recvCount={}", recvCount);
+        LOG.debug("recvLen={}", recvLen);
 
         assertEquals(2, connectCount);
-        assertEquals(concurency * reqNum * 10, recvLen);
-        assertEquals(1, closeCount);
+        assertTrue(((concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= (concurency * reqNum) * 10);
+        assertEquals(2, closeCount);
  }
 }

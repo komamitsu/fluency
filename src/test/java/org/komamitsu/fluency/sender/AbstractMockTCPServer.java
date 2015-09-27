@@ -89,9 +89,9 @@ public abstract class AbstractMockTCPServer
         {
             while (!serverExecutorService.isShutdown()) {
                 try {
-                    LOG.debug("ServerTask: accepting");
+                    LOG.debug("ServerTask: accepting... local.port={}", getLocalPort());
                     SocketChannel accept = serverSocketChannel.accept();
-                    LOG.debug("ServerTask: accepted");
+                    LOG.debug("ServerTask: accepted. local.port={}, remote.port={}", getLocalPort(), accept.socket().getPort());
                     serverExecutorService.execute(new AcceptTask(eventHandler, accept));
                 }
                 catch (ClosedByInterruptException e) {
@@ -124,7 +124,7 @@ public abstract class AbstractMockTCPServer
             @Override
             public void run()
             {
-                LOG.debug("AcceptTask: connected");
+                LOG.debug("AcceptTask: connected. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
                 eventHandler.onConnect(accept);
                 ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
                 while (accept.isOpen()) {
@@ -132,7 +132,7 @@ public abstract class AbstractMockTCPServer
                         byteBuffer.clear();
                         int len = accept.read(byteBuffer);
                         if (len < 0) {
-                            LOG.debug("AcceptTask: closed");
+                            LOG.debug("AcceptTask: closed. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
                             eventHandler.onClose(accept);
                             try {
                                 accept.close();
@@ -146,7 +146,7 @@ public abstract class AbstractMockTCPServer
                         }
                     }
                     catch (ClosedChannelException e) {
-                        LOG.debug("AcceptTask: channel is closed");
+                        LOG.debug("AcceptTask: channel is closed. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
                         eventHandler.onClose(accept);
                     }
                     catch (IOException e) {

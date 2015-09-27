@@ -63,8 +63,8 @@ public class MultiSender
                     return;
                 }
                 catch (IOException e) {
-                    // TODO: Store lastFailureTimestamp and don't use the server for several seconds
                     LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
+                    failureDetector.onFailure(e);
                 }
             }
         }
