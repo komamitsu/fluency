@@ -37,10 +37,10 @@ public class SyncFlusher
         closeBuffer();
     }
 
-    public static class Config extends Flusher.Config
+    public static class Config extends Flusher.Config<SyncFlusher>
     {
         @Override
-        public Flusher createInstance(Buffer buffer, Sender sender)
+        public SyncFlusher createInstance(Buffer buffer, Sender sender)
         {
             return new SyncFlusher(buffer, sender, this);
         }

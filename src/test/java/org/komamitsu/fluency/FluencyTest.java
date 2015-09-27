@@ -2,15 +2,11 @@ package org.komamitsu.fluency;
 
 import org.junit.Test;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.flusher.SyncFlusher;
-import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -18,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -41,10 +36,10 @@ public class FluencyTest
         MockFluentdServer fluentd = new MockFluentdServer();
         fluentd.start();
 
-        Buffer buffer = new PackedForwardBuffer(new PackedForwardBuffer.Config());
         Sender sender = new TCPSender(fluentd.getLocalPort());
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        final Fluency fluency = new Fluency.Builder(sender).setBuffer(buffer).setFlusherConfig(flusherConfig).build();
+        final Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
 
         final int maxNameLen = 200;
         final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);
@@ -266,8 +261,9 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        PackedForwardBuffer buffer = new PackedForwardBuffer(new PackedForwardBuffer.Config().setBufferSize(256 * 1024 * 1024));
-        Fluency fluency = new Fluency.Builder(sender).setBuffer(buffer).setFlusherConfig(new AsyncFlusher.Config().setFlushIntervalMillis(200)).build();
+        PackedForwardBuffer.Config bufferConfig =new PackedForwardBuffer.Config().setBufferSize(256 * 1024 * 1024);
+        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
+        Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         data.put("age", 42);

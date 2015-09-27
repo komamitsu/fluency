@@ -16,7 +16,7 @@ public class TestableBuffer
     private final AtomicInteger flushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
 
-    public TestableBuffer(Config bufferConfig)
+    private TestableBuffer(Config bufferConfig)
     {
         super(bufferConfig);
     }
@@ -60,7 +60,12 @@ public class TestableBuffer
     }
 
     public static class Config
-            extends Buffer.Config<Config>
+            extends Buffer.Config<TestableBuffer, Config>
     {
+        @Override
+        public TestableBuffer createInstance()
+        {
+            return new TestableBuffer(this);
+        }
     }
 }

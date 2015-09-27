@@ -16,7 +16,7 @@ public class AsyncFlusherTest
     public void testAsyncFlusher()
             throws IOException, InterruptedException
     {
-        TestableBuffer buffer = new TestableBuffer(new TestableBuffer.Config());
+        TestableBuffer buffer = new TestableBuffer.Config().createInstance();
         MockTCPSender sender = new MockTCPSender(24225);
         AsyncFlusher.Config config = new AsyncFlusher.Config();
         config.setFlushIntervalMillis(500);

@@ -42,12 +42,7 @@ public class PackedForwardBuffer
         }
     };
 
-    public PackedForwardBuffer()
-    {
-        this(new Config());
-    }
-
-    public PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
+    private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
     {
         super(bufferConfig);
     }
@@ -274,7 +269,7 @@ public class PackedForwardBuffer
         }
     }
 
-    public static class Config extends Buffer.Config<Config>
+    public static class Config extends Buffer.Config<PackedForwardBuffer, Config>
     {
         private int buffInitialSize = 512 * 1024;
         private float buffExpandRatio = 2.0f;
@@ -330,6 +325,12 @@ public class PackedForwardBuffer
                     ", chunkSize=" + chunkSize +
                     ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
                     "} " + super.toString();
+        }
+
+        @Override
+        public PackedForwardBuffer createInstance()
+        {
+            return new PackedForwardBuffer(this);
         }
     }
 }

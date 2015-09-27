@@ -66,7 +66,7 @@ public abstract class Flusher implements Flushable, Closeable
         LOG.trace("closeBuffer(): closed buffer");
     }
 
-    public abstract static class Config
+    public abstract static class Config<T extends Flusher>
     {
         private int flushIntervalMillis = 600;
         private float bufferOccupancyThreshold = 0.6f;
@@ -93,6 +93,6 @@ public abstract class Flusher implements Flushable, Closeable
             return this;
         }
 
-        public abstract Flusher createInstance(Buffer buffer, Sender sender);
+        public abstract T createInstance(Buffer buffer, Sender sender);
     }
 }

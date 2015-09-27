@@ -76,7 +76,7 @@ public class Fluency
     public static class Builder
     {
         private final Sender sender;
-        private Buffer buffer;
+        private Buffer.Config bufferConfig;
         private Flusher.Config flusherConfig;
 
         public Builder(Sender sender)
@@ -84,9 +84,9 @@ public class Fluency
             this.sender = sender;
         }
 
-        public Builder setBuffer(Buffer buffer)
+        public Builder setBufferConfig(Buffer.Config bufferConfig)
         {
-            this.buffer = buffer;
+            this.bufferConfig = bufferConfig;
             return this;
         }
 
@@ -98,7 +98,8 @@ public class Fluency
 
         public Fluency build()
         {
-            Buffer buffer = this.buffer != null ? this.buffer : new PackedForwardBuffer();
+            Buffer.Config bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
+            Buffer buffer = bufferConfig.createInstance();
             Flusher.Config flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
             Flusher flusher = flusherConfig.createInstance(buffer, sender);
 

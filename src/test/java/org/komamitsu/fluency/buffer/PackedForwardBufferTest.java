@@ -12,10 +12,10 @@ public class PackedForwardBufferTest
             throws IOException, InterruptedException
     {
         for (Integer loopCount : Arrays.asList(100, 1000, 10000)) {
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true, new PackedForwardBuffer(new PackedForwardBuffer.Config()));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true, new PackedForwardBuffer(new PackedForwardBuffer.Config()));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false, new PackedForwardBuffer(new PackedForwardBuffer.Config()));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false, new PackedForwardBuffer(new PackedForwardBuffer.Config()));
+            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true, new PackedForwardBuffer.Config().createInstance());
+            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true, new PackedForwardBuffer.Config().createInstance());
+            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false, new PackedForwardBuffer.Config().createInstance());
+            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false, new PackedForwardBuffer.Config().createInstance());
         }
     }
 }

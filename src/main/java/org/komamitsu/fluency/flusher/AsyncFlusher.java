@@ -78,10 +78,10 @@ public class AsyncFlusher
         }
     }
 
-    public static class Config extends Flusher.Config
+    public static class Config extends Flusher.Config<AsyncFlusher>
     {
         @Override
-        public Flusher createInstance(Buffer buffer, Sender sender)
+        public AsyncFlusher createInstance(Buffer buffer, Sender sender)
         {
             return new AsyncFlusher(buffer, sender, this);
         }

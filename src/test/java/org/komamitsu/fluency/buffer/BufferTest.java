@@ -31,7 +31,7 @@ public class BufferTest
     public void testBuffer()
             throws IOException
     {
-        TestableBuffer buffer = new TestableBuffer(new TestableBuffer.Config().setBufferSize(10000));
+        TestableBuffer buffer = new TestableBuffer.Config().setBufferSize(10000).createInstance();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         for (int i = 0; i < 10; i++) {

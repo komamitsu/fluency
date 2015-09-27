@@ -4,7 +4,6 @@ import org.komamitsu.fluency.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,7 +63,7 @@ public abstract class Buffer<T extends Buffer.Config>
         return (float)getTotalSize() / getMaxSize();
     }
 
-    public static abstract class Config<T extends Config>
+    public abstract static class Config<T extends Buffer, C extends Config>
     {
         protected int bufferSize = 16 * 1024 * 1024;
 
@@ -73,10 +72,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return bufferSize;
         }
 
-        public T setBufferSize(int bufferSize)
+        public C setBufferSize(int bufferSize)
         {
             this.bufferSize = bufferSize;
-            return (T)this;
+            return (C)this;
         }
 
         @Override
@@ -86,5 +85,7 @@ public abstract class Buffer<T extends Buffer.Config>
                     "bufferSize=" + bufferSize +
                     '}';
         }
+
+        public abstract T createInstance();
     }
 }

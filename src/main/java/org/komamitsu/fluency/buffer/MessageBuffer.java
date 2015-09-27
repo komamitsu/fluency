@@ -21,12 +21,7 @@ public class MessageBuffer
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-    public MessageBuffer()
-    {
-        this(new Config());
-    }
-
-    public MessageBuffer(MessageBuffer.Config bufferConfig)
+    private MessageBuffer(MessageBuffer.Config bufferConfig)
     {
         super(bufferConfig);
     }
@@ -83,7 +78,12 @@ public class MessageBuffer
         messages.clear();
     }
 
-    public static class Config extends Buffer.Config<Config>
+    public static class Config extends Buffer.Config<MessageBuffer, Config>
     {
+        @Override
+        public MessageBuffer createInstance()
+        {
+            return new MessageBuffer(this);
+        }
     }
 }
