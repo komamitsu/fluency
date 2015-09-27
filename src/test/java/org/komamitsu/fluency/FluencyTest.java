@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -275,5 +277,28 @@ public class FluencyTest
         }
         latch.await(60, TimeUnit.SECONDS);
         assertEquals(0, latch.getCount());
+        fluency.close();
+    }
+
+    // @Test
+    public void testWithRealMultipleFluentd()
+            throws IOException, InterruptedException
+    {
+        int concurrency = 4;
+        int reqNum = 1000000;
+        // Fluency fluency = Fluency.defaultFluency();
+        Fluency fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)));
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        data.put("name", "komamitsu");
+        data.put("age", 42);
+        data.put("comment", "hello, world");
+        CountDownLatch latch = new CountDownLatch(concurrency);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        for (int i = 0; i < concurrency; i++) {
+            executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
+        }
+        latch.await(60, TimeUnit.SECONDS);
+        assertEquals(0, latch.getCount());
+        fluency.close();
     }
 }

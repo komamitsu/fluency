@@ -4,6 +4,7 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Fluency
@@ -38,6 +42,16 @@ public class Fluency
             throws IOException
     {
         return Fluency.defaultFluency("127.0.0.1", 24224);
+    }
+
+    public static Fluency defaultFluency(List<InetSocketAddress> servers)
+            throws IOException
+    {
+        List<TCPSender> tcpSenders = new ArrayList<TCPSender>();
+        for (InetSocketAddress server : servers) {
+            tcpSenders.add(new TCPSender(server.getHostName(), server.getPort()));
+        }
+        return new Fluency.Builder(new RetryableSender(new MultiSender(tcpSenders))).build();
     }
 
     private Fluency(Buffer buffer, Flusher flusher)
