@@ -298,9 +298,10 @@ public class PackedForwardBuffer
             return buffInitialSize;
         }
 
-        public void setBuffInitialSize(int buffInitialSize)
+        public Config setBuffInitialSize(int buffInitialSize)
         {
             this.buffInitialSize = buffInitialSize;
+            return this;
         }
 
         public float getBuffExpandRatio()
@@ -308,9 +309,10 @@ public class PackedForwardBuffer
             return buffExpandRatio;
         }
 
-        public void setBuffExpandRatio(float buffExpandRatio)
+        public Config setBuffExpandRatio(float buffExpandRatio)
         {
             this.buffExpandRatio = buffExpandRatio;
+            return this;
         }
 
         public int getChunkSize()
@@ -318,9 +320,10 @@ public class PackedForwardBuffer
             return chunkSize;
         }
 
-        public void setChunkSize(int chunkSize)
+        public Config setChunkSize(int chunkSize)
         {
             this.chunkSize = chunkSize;
+            return this;
         }
 
         public int getChunkRetentionTimeMillis()
@@ -328,9 +331,10 @@ public class PackedForwardBuffer
             return chunkRetentionTimeMillis;
         }
 
-        public void setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
+        public Config setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
         {
             this.chunkRetentionTimeMillis = chunkRetentionTimeMillis;
+            return this;
         }
 
         @Override
