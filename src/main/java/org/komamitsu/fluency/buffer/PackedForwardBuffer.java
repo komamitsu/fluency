@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,10 +71,11 @@ public class PackedForwardBuffer
             newChunkSize *= bufferConfig.getBuffExpandRatio();
         }
 
-        totalSize.addAndGet(newChunkSize - origChunkSize);
-        if (totalSize.get() > bufferConfig.getBufferSize()) {
+        int delta = newChunkSize - origChunkSize;
+        if (totalSize.get() + delta > bufferConfig.getBufferSize()) {
             throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", totalSize=" + totalSize);
         }
+        totalSize.addAndGet(delta);
 
         ExpirableBuffer newBuffer = new ExpirableBuffer(ByteBuffer.allocate(newChunkSize));
         if (chunk != null) {
@@ -96,16 +98,32 @@ public class PackedForwardBuffer
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
         outputStream.close();
 
-        synchronized (appendedChunks) {
-            ExpirableBuffer buffer = prepareBuffer(tag, outputStream.size());
-            buffer.getByteBuffer().put(outputStream.toByteArray());
+        boolean succeeded = false;
+        while (!succeeded) {
+            try {
+                synchronized (appendedChunks) {
+                    ExpirableBuffer buffer = prepareBuffer(tag, outputStream.size());
+                    buffer.getByteBuffer().put(outputStream.toByteArray());
+                    succeeded = true;
 
-            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
+                    buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
 
-            moveChunkIfNeeded(tag, buffer);
-            // TODO: Configurable
-            if (emitCounter.incrementAndGet() % 1000 == 0) {
-                moveChunks(false);
+                    moveChunkIfNeeded(tag, buffer);
+                    // TODO: Configurable
+                    if (emitCounter.incrementAndGet() % 1000 == 0) {
+                        moveChunks(false);
+                    }
+                }
+            }
+            catch (BufferFullException e) {
+                LOG.warn("Buffer is full. Maybe you'd better increase the buffer size.", e);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                }
+                catch (InterruptedException e1) {
+                    LOG.warn("Interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }
@@ -159,7 +177,6 @@ public class PackedForwardBuffer
             this.lastAppendedChunksChecked.set(now);
         }
 
-        // TODO: Consider the flow control during appending events
         TaggableBuffer chunk = null;
         while ((chunk = flushableChunks.poll()) != null) {
             try {
