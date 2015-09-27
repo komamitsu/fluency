@@ -1,29 +1,97 @@
 apply plugin: 'java'
 apply plugin: "findbugs"
+apply plugin: 'maven'
+apply plugin: 'signing'
 
-sourceCompatibility = 1.6
+group = 'org.komamitsu'
+archivesBaseName = 'fluency'
 version = '0.0.1'
 
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
 repositories {
-  mavenCentral()
-  mavenLocal()
+    mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
-  testCompile 'junit:junit:4.11'
-  testCompile 'ch.qos.logback:logback-classic:1.1.2'
-  compile 'org.slf4j:slf4j-api:1.7.8'
-  compile 'org.msgpack:jackson-dataformat-msgpack:0.7.0-M6'
-  compile 'org.komamitsu:phi-accural-failure-detector:0.0.4-SNAPSHOT'
+    testCompile 'junit:junit:4.11'
+    testCompile 'ch.qos.logback:logback-classic:1.1.2'
+    compile 'org.slf4j:slf4j-api:1.7.8'
+    compile 'org.msgpack:jackson-dataformat-msgpack:0.7.0-M6'
+    compile 'org.komamitsu:phi-accural-failure-detector:0.0.4-SNAPSHOT'
 }
 
 findbugs {
-  effort = 'max'
+    effort = 'max'
 }
 
 tasks.withType(FindBugs) {
-  reports {
-    xml.enabled = false
-    html.enabled = true
-  }
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
 }
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'fluency'
+                description "A port of Akka's Phi Accrual Failure Detector"
+                packaging 'jar'
+                url 'https://github.com/komamitsu/fluency'
+                scm {
+                    connection 'scm:git:git://github.com/komamitsu/fluency.git'
+                    developerConnection 'scm:git:git@github.com:komamitsu/fluency.git'
+                    url 'https://github.com/komamitsu/fluency'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'komamitsu'
+                        name 'Mitsunori Komatsu'
+                        email 'komamitsu@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
