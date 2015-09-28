@@ -115,12 +115,12 @@ public class FluencyTest
                 });
             }
 
-            latch.await(3, TimeUnit.SECONDS);
+            latch.await(5, TimeUnit.SECONDS);
             assertEquals(0, latch.getCount());
             fluency.flush();
-            TimeUnit.MILLISECONDS.sleep(2000);
+            TimeUnit.MILLISECONDS.sleep(3000);
             fluentd.stop();
-            TimeUnit.MILLISECONDS.sleep(500);
+            TimeUnit.MILLISECONDS.sleep(1000);
 
             assertEquals(1, fluentd.connectCounter.get());
             assertEquals(1, fluentd.closeCounter.get());
