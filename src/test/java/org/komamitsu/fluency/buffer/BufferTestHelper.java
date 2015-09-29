@@ -112,7 +112,7 @@ public class BufferTestHelper
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(emitTask);
         }
-        latch.await(10, TimeUnit.SECONDS);
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
         buffer.flush(sender);
         buffer.close(sender);
         long end = System.currentTimeMillis();
@@ -127,8 +127,6 @@ public class BufferTestHelper
         if (!flushService.isTerminated()) {
             flushService.shutdownNow();
         }
-
-        assertEquals(0, latch.getCount());
 
         int totalLoopCount = concurrency * loopCount;
 

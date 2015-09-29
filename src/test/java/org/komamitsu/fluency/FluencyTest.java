@@ -89,6 +89,8 @@ public class FluencyTest
                                 case 3:
                                     tag3EventsCounter.incrementAndGet();
                                     break;
+                                default:
+                                    throw new RuntimeException("Never reach here");
                             }
 
                             int rand = random.nextInt(maxNameLen);
@@ -101,7 +103,7 @@ public class FluencyTest
                             ageEventsSum.addAndGet(age);
                             hashMap.put("age", age);
                             hashMap.put("comment", "hello, world");
-                            hashMap.put("rate", 3.14);
+                            hashMap.put("rate", 1.23);
                             try {
                                 fluency.emit(tag, hashMap);
                             }
@@ -115,8 +117,7 @@ public class FluencyTest
                 });
             }
 
-            latch.await(5, TimeUnit.SECONDS);
-            assertEquals(0, latch.getCount());
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
             fluency.flush();
             TimeUnit.MILLISECONDS.sleep(3000);
             fluentd.stop();
@@ -124,9 +125,9 @@ public class FluencyTest
 
             assertEquals(1, fluentd.connectCounter.get());
             assertEquals(1, fluentd.closeCounter.get());
-            assertEquals(concurrency * reqNum, fluentd.ageEventsCounter.get());
+            assertEquals((long)concurrency * reqNum, fluentd.ageEventsCounter.get());
             assertEquals(ageEventsSum.get(), fluentd.ageEventsSum.get());
-            assertEquals(concurrency * reqNum, fluentd.nameEventsCounter.get());
+            assertEquals((long)concurrency * reqNum, fluentd.nameEventsCounter.get());
             assertEquals(nameEventsLength.get(), fluentd.nameEventsLength.get());
             assertEquals(tag0EventsCounter.get(), fluentd.tag0EventsCounter.get());
             assertEquals(tag1EventsCounter.get(), fluentd.tag1EventsCounter.get());
@@ -200,7 +201,7 @@ public class FluencyTest
                         }
                         else if (key.equals("rate")) {
                             // Treating the value as String to avoid a failure of calling asFloatValue()...
-                            assertEquals("3.14", val.toString());
+                            assertEquals("1.23", val.toString());
                         }
                         else if (key.equals("name")) {
                             nameEventsCounter.incrementAndGet();
@@ -275,8 +276,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        latch.await(60, TimeUnit.SECONDS);
-        assertEquals(0, latch.getCount());
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
         fluency.close();
     }
 
@@ -297,8 +297,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        latch.await(60, TimeUnit.SECONDS);
-        assertEquals(0, latch.getCount());
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
         fluency.close();
     }
 }

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +38,7 @@ public class TCPSenderTest
                 public void run()
                 {
                     try {
-                        byte[] bytes = "0123456789".getBytes();
+                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
                         for (int j = 0; j < reqNum; j++) {
                             sender.send(ByteBuffer.wrap(bytes));
@@ -51,8 +52,7 @@ public class TCPSenderTest
             });
         }
 
-        latch.await(4, TimeUnit.SECONDS);
-        assertEquals(0, latch.getCount());
+        assertTrue(latch.await(4, TimeUnit.SECONDS));
         sender.close();
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -79,7 +79,7 @@ public class TCPSenderTest
         LOG.debug("recvCount={}", recvCount);
 
         assertEquals(1, connectCount);
-        assertEquals(concurency * reqNum * 10, recvLen);
+        assertEquals((long)concurency * reqNum * 10, recvLen);
         assertEquals(1, closeCount);
     }
 }

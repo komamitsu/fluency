@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -63,7 +64,7 @@ public class MultiSenderTest
                 public void run()
                 {
                     try {
-                        byte[] bytes = "0123456789".getBytes();
+                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
                         for (int j = 0; j < reqNum; j++) {
                             if (j == reqNum / 4) {
@@ -83,8 +84,7 @@ public class MultiSenderTest
             });
         }
 
-        latch.await(6, TimeUnit.SECONDS);
-        assertEquals(0, latch.getCount());
+        assertTrue(latch.await(6, TimeUnit.SECONDS));
         sender.close();
         TimeUnit.MILLISECONDS.sleep(500);
 
@@ -114,7 +114,7 @@ public class MultiSenderTest
         LOG.debug("recvLen={}", recvLen);
 
         assertEquals(2, connectCount);
-        assertTrue(((concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= (concurency * reqNum) * 10);
+        assertTrue(((long)(concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
         assertEquals(2, closeCount);
  }
 }
