@@ -70,7 +70,7 @@ uploadArchives {
 
             pom.project {
                 name 'fluency'
-                description "A port of Akka's Phi Accrual Failure Detector"
+                description "Yet another fluent logger"
                 packaging 'jar'
                 url 'https://github.com/komamitsu/fluency'
                 scm {
