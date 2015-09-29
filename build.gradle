@@ -5,7 +5,7 @@ apply plugin: 'signing'
 
 group = 'org.komamitsu'
 archivesBaseName = 'fluency'
-version = '0.0.2-SNAPSHOT'
+version = '0.0.2'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
