@@ -9,14 +9,15 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
-public abstract class Flusher implements Flushable, Closeable
+public abstract class Flusher<C extends Flusher.Config>
+        implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
     protected final Buffer buffer;
     protected final Sender sender;
-    protected final Config flusherConfig;
+    protected final C flusherConfig;
 
-    public Flusher(Buffer buffer, Sender sender, Config flusherConfig)
+    public Flusher(Buffer buffer, Sender sender, C flusherConfig)
     {
         this.buffer = buffer;
         this.sender = sender;
@@ -66,31 +67,19 @@ public abstract class Flusher implements Flushable, Closeable
         LOG.trace("closeBuffer(): closed buffer");
     }
 
-    public abstract static class Config<T extends Flusher>
+    public abstract static class Config<T extends Flusher, C extends Config>
     {
         private int flushIntervalMillis = 600;
-        private float bufferOccupancyThreshold = 0.6f;
 
         public int getFlushIntervalMillis()
         {
             return flushIntervalMillis;
         }
 
-        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        public C setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
-            return this;
-        }
-
-        public float getBufferOccupancyThreshold()
-        {
-            return bufferOccupancyThreshold;
-        }
-
-        public Config setBufferOccupancyThreshold(float bufferOccupancyThreshold)
-        {
-            this.bufferOccupancyThreshold = bufferOccupancyThreshold;
-            return this;
+            return (C)this;
         }
 
         public abstract T createInstance(Buffer buffer, Sender sender);

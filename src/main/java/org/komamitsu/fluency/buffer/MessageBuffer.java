@@ -34,12 +34,12 @@ public class MessageBuffer
         objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
         outputStream.close();
 
-        if (totalSize.get() + outputStream.size() > bufferConfig.getBufferSize()) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", totalSize=" + totalSize);
+        if (allocatedSize.get() + outputStream.size() > bufferConfig.getMaxBufferSize()) {
+            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
         }
 
         messages.add(ByteBuffer.wrap(outputStream.toByteArray()));
-        totalSize.getAndAdd(outputStream.size());
+        allocatedSize.getAndAdd(outputStream.size());
     }
 
     @Override
@@ -49,13 +49,13 @@ public class MessageBuffer
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
             try {
-                totalSize.addAndGet(-message.capacity());
+                allocatedSize.addAndGet(-message.capacity());
                 sender.send(message);
             }
             catch (Throwable e) {
                 try {
                     messages.put(message);
-                    totalSize.addAndGet(message.capacity());
+                    allocatedSize.addAndGet(message.capacity());
                 }
                 catch (InterruptedException e1) {
                     LOG.error("Interrupted during restoring fetched message. It can be lost. message={}", message);

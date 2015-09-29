@@ -263,7 +263,7 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setBufferSize(256 * 1024 * 1024);
+        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();

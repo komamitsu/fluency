@@ -13,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class AsyncFlusher
-        extends Flusher
+        extends Flusher<AsyncFlusher.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
     private final BlockingQueue<Boolean> waitQueue = new LinkedBlockingQueue<Boolean>();
@@ -78,7 +78,7 @@ public class AsyncFlusher
         }
     }
 
-    public static class Config extends Flusher.Config<AsyncFlusher>
+    public static class Config extends Flusher.Config<AsyncFlusher, Flusher.Config>
     {
         @Override
         public AsyncFlusher createInstance(Buffer buffer, Sender sender)

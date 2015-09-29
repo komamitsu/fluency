@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.komamitsu.fluency.Constants.*;
+
 public class Fluency
         implements Flushable, Closeable
 {
@@ -35,13 +37,13 @@ public class Fluency
     public static Fluency defaultFluency(int port)
             throws IOException
     {
-        return Fluency.defaultFluency("127.0.0.1", port);
+        return Fluency.defaultFluency(DEFAULT_HOST, port);
     }
 
     public static Fluency defaultFluency()
             throws IOException
     {
-        return Fluency.defaultFluency("127.0.0.1", 24224);
+        return Fluency.defaultFluency(DEFAULT_HOST, DEFAULT_PORT);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers)

@@ -24,10 +24,10 @@ public class PackedForwardBuffer
     extends Buffer<PackedForwardBuffer.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
-    private final Map<String, ExpirableBuffer> appendedChunks = new HashMap<String, ExpirableBuffer>();
-    private final LinkedBlockingQueue<TaggableBuffer> flushableChunks = new LinkedBlockingQueue<TaggableBuffer>();
+    private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
+    private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
     private final AtomicInteger emitCounter = new AtomicInteger();
-    private final AtomicReference<Long> lastAppendedChunksChecked = new AtomicReference<Long>();
+    private final AtomicReference<Long> lastRetentionBuffersChecked = new AtomicReference<Long>();
     private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -48,43 +48,43 @@ public class PackedForwardBuffer
         super(bufferConfig);
     }
 
-    private synchronized ExpirableBuffer prepareBuffer(String tag, int writeSize)
+    private synchronized RetentionBuffer prepareBuffer(String tag, int writeSize)
             throws BufferFullException
     {
-        ExpirableBuffer chunk = appendedChunks.get(tag);
-        if (chunk != null && chunk.getByteBuffer().remaining() > writeSize) {
-            return chunk;
+        RetentionBuffer retentionBuffer = retentionBuffers.get(tag);
+        if (retentionBuffer != null && retentionBuffer.getByteBuffer().remaining() > writeSize) {
+            return retentionBuffer;
         }
 
-        int origChunkSize;
-        int newChunkSize;
-        if (chunk == null) {
-            origChunkSize = 0;
-            newChunkSize = bufferConfig.getBuffInitialSize();
+        int origRetentionBufferSize;
+        int newRetentionBufferSize;
+        if (retentionBuffer == null) {
+            origRetentionBufferSize = 0;
+            newRetentionBufferSize = bufferConfig.getInitialBufferSize();
         }
         else{
-            origChunkSize = chunk.getByteBuffer().capacity();
-            newChunkSize = (int) (chunk.getByteBuffer().capacity() * bufferConfig.getBuffExpandRatio());
+            origRetentionBufferSize = retentionBuffer.getByteBuffer().capacity();
+            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * bufferConfig.getBufferExpandRatio());
         }
 
-        while (newChunkSize < writeSize) {
-            newChunkSize *= bufferConfig.getBuffExpandRatio();
+        while (newRetentionBufferSize < writeSize) {
+            newRetentionBufferSize *= bufferConfig.getBufferExpandRatio();
         }
 
-        int delta = newChunkSize - origChunkSize;
-        if (totalSize.get() + delta > bufferConfig.getBufferSize()) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", totalSize=" + totalSize);
+        int delta = newRetentionBufferSize - origRetentionBufferSize;
+        if (allocatedSize.get() + delta > bufferConfig.getMaxBufferSize()) {
+            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
         }
-        totalSize.addAndGet(delta);
+        allocatedSize.addAndGet(delta);
 
-        ExpirableBuffer newBuffer = new ExpirableBuffer(ByteBuffer.allocate(newChunkSize));
-        if (chunk != null) {
-            chunk.getByteBuffer().flip();
-            newBuffer.getByteBuffer().put(chunk.getByteBuffer());
+        RetentionBuffer newBuffer = new RetentionBuffer(ByteBuffer.allocate(newRetentionBufferSize));
+        if (retentionBuffer != null) {
+            retentionBuffer.getByteBuffer().flip();
+            newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
 
-        appendedChunks.put(tag, newBuffer);
+        retentionBuffers.put(tag, newBuffer);
         return newBuffer;
     }
 
@@ -101,17 +101,17 @@ public class PackedForwardBuffer
         boolean succeeded = false;
         while (!succeeded) {
             try {
-                synchronized (appendedChunks) {
-                    ExpirableBuffer buffer = prepareBuffer(tag, outputStream.size());
+                synchronized (retentionBuffers) {
+                    RetentionBuffer buffer = prepareBuffer(tag, outputStream.size());
                     buffer.getByteBuffer().put(outputStream.toByteArray());
                     succeeded = true;
 
                     buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
 
-                    moveChunkIfNeeded(tag, buffer);
+                    moveRetentionBufferIfNeeded(tag, buffer);
                     // TODO: Configurable
                     if (emitCounter.incrementAndGet() % 1000 == 0) {
-                        moveChunks(false);
+                        moveRetentionBuffersToFlushable(false);
                     }
                 }
             }
@@ -128,38 +128,38 @@ public class PackedForwardBuffer
         }
     }
 
-    private synchronized void moveChunkIfNeeded(String tag, ExpirableBuffer buffer)
+    private synchronized void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > bufferConfig.getChunkSize()) {
-            moveChunk(tag, buffer);
+        if (buffer.getByteBuffer().position() > bufferConfig.getBufferRetentionSize()) {
+            moveRetentionBufferToFlushable(tag, buffer);
         }
     }
 
-    private synchronized void moveChunks(boolean force)
+    private synchronized void moveRetentionBuffersToFlushable(boolean force)
             throws IOException
     {
-        long expiredThreshold = System.currentTimeMillis() - bufferConfig.getChunkRetentionTimeMillis();
-        for (Map.Entry<String, ExpirableBuffer> entry : appendedChunks.entrySet()) {
-            // it can be null because moveChunk() can set null
+        long expiredThreshold = System.currentTimeMillis() - bufferConfig.getBufferRetentionTimeMillis();
+        for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
+            // it can be null because moveRetentionBufferToFlushable() can set null
             if (entry.getValue() != null) {
                 if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
-                    moveChunk(entry.getKey(), entry.getValue());
+                    moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
                 }
             }
         }
     }
 
-    private synchronized void moveChunk(String tag, ExpirableBuffer buffer)
+    private synchronized void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
             throws IOException
     {
         try {
-            LOG.trace("moveChunk(): tag={}, buffer={}", tag, buffer);
-            flushableChunks.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
-            appendedChunks.put(tag, null);
+            LOG.trace("moveRetentionBufferToFlushable(): tag={}, buffer={}", tag, buffer);
+            flushableBuffers.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
+            retentionBuffers.put(tag, null);
         }
         catch (InterruptedException e) {
-            throw new IOException("Failed to move chunk due to interruption", e);
+            throw new IOException("Failed to move retention buffer due to interruption", e);
         }
     }
 
@@ -168,25 +168,25 @@ public class PackedForwardBuffer
             throws IOException
     {
         long now = System.currentTimeMillis();
-        Long lastAppendedChunksChecked = this.lastAppendedChunksChecked.get();
-        if (lastAppendedChunksChecked == null) {
-            this.lastAppendedChunksChecked.set(now);
+        Long lastAppendedRetentionBuffersChecked = this.lastRetentionBuffersChecked.get();
+        if (lastAppendedRetentionBuffersChecked == null) {
+            this.lastRetentionBuffersChecked.set(now);
         }
-        else if (lastAppendedChunksChecked < now - 500) {
-            moveChunks(false);
-            this.lastAppendedChunksChecked.set(now);
+        else if (lastAppendedRetentionBuffersChecked < now - 500) {
+            moveRetentionBuffersToFlushable(false);
+            this.lastRetentionBuffersChecked.set(now);
         }
 
-        TaggableBuffer chunk = null;
-        while ((chunk = flushableChunks.poll()) != null) {
+        TaggableBuffer flushableBuffer = null;
+        while ((flushableBuffer = flushableBuffers.poll()) != null) {
             try {
-                totalSize.addAndGet(-chunk.getByteBuffer().capacity());
+                allocatedSize.addAndGet(-flushableBuffer.getByteBuffer().capacity());
                 // TODO: Reuse MessagePacker
                 ByteArrayOutputStream header = new ByteArrayOutputStream();
                 MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
-                LOG.trace("flushInternal(): bufferUsage={}, chunk={}", getBufferUsage(), chunk);
-                String tag = chunk.getTag();
-                ByteBuffer byteBuffer = chunk.getByteBuffer();
+                LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
+                String tag = flushableBuffer.getTag();
+                ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
                 messagePacker.packArrayHeader(2);
                 messagePacker.packString(tag);
                 messagePacker.packRawStringHeader(byteBuffer.position());
@@ -199,18 +199,18 @@ public class PackedForwardBuffer
             }
             catch (Throwable e) {
                 try {
-                    flushableChunks.put(chunk);
-                    totalSize.addAndGet(chunk.getByteBuffer().capacity());
+                    flushableBuffers.put(flushableBuffer);
+                    allocatedSize.addAndGet(flushableBuffer.getByteBuffer().capacity());
                 }
                 catch(InterruptedException e1){
-                    LOG.error("Interrupted during restoring fetched chunk. It can be lost. chunk={}", chunk);
+                    LOG.error("Interrupted during restoring fetched flushableBuffer. It can be lost. flushableBuffer={}", flushableBuffer);
                 }
 
                 if (e instanceof IOException) {
                     throw (IOException) e;
                 }
                 else {
-                    throw new RuntimeException("Failed to send chunk to fluentd", e);
+                    throw new RuntimeException("Failed to send flushableBuffer to fluentd", e);
                 }
             }
         }
@@ -220,17 +220,17 @@ public class PackedForwardBuffer
     public synchronized void closeInternal(Sender sender)
             throws IOException
     {
-        moveChunks(true);
-        appendedChunks.clear();
+        moveRetentionBuffersToFlushable(true);
+        retentionBuffers.clear();
         flush(sender);
     }
 
-    private static class ExpirableBuffer
+    private static class RetentionBuffer
     {
         private final AtomicLong lastUpdatedTimeMillis = new AtomicLong();
         private final ByteBuffer byteBuffer;
 
-        public ExpirableBuffer(ByteBuffer byteBuffer)
+        public RetentionBuffer(ByteBuffer byteBuffer)
         {
             this.byteBuffer = byteBuffer;
         }
@@ -288,52 +288,52 @@ public class PackedForwardBuffer
 
     public static class Config extends Buffer.Config<PackedForwardBuffer, Config>
     {
-        private int buffInitialSize = 512 * 1024;
-        private float buffExpandRatio = 2.0f;
-        private int chunkSize = 4 * 1024 * 1024;
-        private int chunkRetentionTimeMillis = 500;
+        private int initialBufferSize = 512 * 1024;
+        private float bufferExpandRatio = 2.0f;
+        private int bufferRetentionSize = 4 * 1024 * 1024;
+        private int bufferRetentionTimeMillis = 500;
 
-        public int getBuffInitialSize()
+        public int getInitialBufferSize()
         {
-            return buffInitialSize;
+            return initialBufferSize;
         }
 
-        public Config setBuffInitialSize(int buffInitialSize)
+        public Config setInitialBufferSize(int initialBufferSize)
         {
-            this.buffInitialSize = buffInitialSize;
+            this.initialBufferSize = initialBufferSize;
             return this;
         }
 
-        public float getBuffExpandRatio()
+        public float getBufferExpandRatio()
         {
-            return buffExpandRatio;
+            return bufferExpandRatio;
         }
 
-        public Config setBuffExpandRatio(float buffExpandRatio)
+        public Config setBufferExpandRatio(float bufferExpandRatio)
         {
-            this.buffExpandRatio = buffExpandRatio;
+            this.bufferExpandRatio = bufferExpandRatio;
             return this;
         }
 
-        public int getChunkSize()
+        public int getBufferRetentionSize()
         {
-            return chunkSize;
+            return bufferRetentionSize;
         }
 
-        public Config setChunkSize(int chunkSize)
+        public Config setBufferRetentionSize(int bufferRetentionSize)
         {
-            this.chunkSize = chunkSize;
+            this.bufferRetentionSize = bufferRetentionSize;
             return this;
         }
 
-        public int getChunkRetentionTimeMillis()
+        public int getBufferRetentionTimeMillis()
         {
-            return chunkRetentionTimeMillis;
+            return bufferRetentionTimeMillis;
         }
 
-        public Config setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
+        public Config setBufferRetentionTimeMillis(int bufferRetentionTimeMillis)
         {
-            this.chunkRetentionTimeMillis = chunkRetentionTimeMillis;
+            this.bufferRetentionTimeMillis = bufferRetentionTimeMillis;
             return this;
         }
 
@@ -341,10 +341,10 @@ public class PackedForwardBuffer
         public String toString()
         {
             return "Config{" +
-                    "buffInitialSize=" + buffInitialSize +
-                    ", buffExpandRatio=" + buffExpandRatio +
-                    ", chunkSize=" + chunkSize +
-                    ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
+                    "initialBufferSize=" + initialBufferSize +
+                    ", bufferExpandRatio=" + bufferExpandRatio +
+                    ", bufferRetentionSize=" + bufferRetentionSize +
+                    ", bufferRetentionTimeMillis=" + bufferRetentionTimeMillis +
                     "} " + super.toString();
         }
 

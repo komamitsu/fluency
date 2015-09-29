@@ -1,5 +1,6 @@
 package org.komamitsu.fluency.sender;
 
+import org.komamitsu.fluency.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,19 +38,19 @@ public class TCPSender
     public TCPSender(int port)
             throws IOException
     {
-        this("127.0.0.1", port);
+        this(Constants.DEFAULT_HOST, port);
     }
 
     public TCPSender(String host)
             throws IOException
     {
-        this(host, 24224);
+        this(host, Constants.DEFAULT_PORT);
     }
 
     public TCPSender()
             throws IOException
     {
-        this("127.0.0.1", 24224);
+        this(Constants.DEFAULT_HOST, Constants.DEFAULT_PORT);
     }
 
     private SocketChannel getOrOpenChannel()

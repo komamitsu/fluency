@@ -96,7 +96,7 @@ public abstract class Heartbeater implements Closeable
         void onFailure(Throwable cause);
     }
 
-    public abstract static class Config<T extends Config>
+    public abstract static class Config<C extends Config>
     {
         private String host = "127.0.0.1";
         private int port = 24224;
@@ -107,10 +107,10 @@ public abstract class Heartbeater implements Closeable
             return host;
         }
 
-        public T setHost(String host)
+        public C setHost(String host)
         {
             this.host = host;
-            return (T)this;
+            return (C)this;
         }
 
         public int getPort()
@@ -118,10 +118,10 @@ public abstract class Heartbeater implements Closeable
             return port;
         }
 
-        public T setPort(int port)
+        public C setPort(int port)
         {
             this.port = port;
-            return (T)this;
+            return (C)this;
         }
 
         public int getIntervalMillis()
@@ -129,10 +129,10 @@ public abstract class Heartbeater implements Closeable
             return intervalMillis;
         }
 
-        public T setIntervalMillis(int intervalMillis)
+        public C setIntervalMillis(int intervalMillis)
         {
             this.intervalMillis = intervalMillis;
-            return (T)this;
+            return (C)this;
         }
 
         @Override
@@ -149,6 +149,6 @@ public abstract class Heartbeater implements Closeable
                 throws IOException;
 
         // TODO: Make it simpler
-        public abstract T dupDefaultConfig();
+        public abstract C dupDefaultConfig();
     }
 }

@@ -12,12 +12,25 @@ public class FailureDetector
     private final FailureDetectStrategy failureDetectStrategy;
     private final Heartbeater heartbeater;
     private final AtomicReference<Long> lastFailureTimestampMillis = new AtomicReference<Long>();
+    private final Config config;
 
-    private FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater)
+    private FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater, Config config)
     {
         this.failureDetectStrategy = failureDetectStrategy;
         this.heartbeater = heartbeater;
         this.heartbeater.setCallback(this);
+        this.config = config;
+    }
+
+    private FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater)
+    {
+        this(failureDetectStrategy, heartbeater, new Config());
+    }
+
+    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig, Config config)
+            throws IOException
+    {
+        this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance(), config);
     }
 
     public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig)
@@ -52,8 +65,7 @@ public class FailureDetector
     {
         Long failureTimestamp = lastFailureTimestampMillis.get();
         if (failureTimestamp != null) {
-            // TODO: Make this value be configurable
-            if (failureTimestamp > System.currentTimeMillis() - 3 * 1000) {
+            if (failureTimestamp > System.currentTimeMillis() - config.getFailureIntervalMillis()) {
                 return false;
             }
             else {
@@ -68,5 +80,20 @@ public class FailureDetector
             throws IOException
     {
         heartbeater.close();
+    }
+
+    public static class Config
+    {
+        private long failureIntervalMillis = 3 * 1000;
+
+        public long getFailureIntervalMillis()
+        {
+            return failureIntervalMillis;
+        }
+
+        public void setFailureIntervalMillis(long failureIntervalMillis)
+        {
+            this.failureIntervalMillis = failureIntervalMillis;
+        }
     }
 }

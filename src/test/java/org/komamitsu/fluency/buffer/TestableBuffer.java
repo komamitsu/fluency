@@ -26,7 +26,7 @@ public class TestableBuffer
             throws IOException
     {
         events.add(new Tuple3<String, Long, Map<String, Object>>(tag, timestamp, data));
-        totalSize.addAndGet(100);
+        allocatedSize.addAndGet(100);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class TestableBuffer
             throws IOException
     {
         flushCount.incrementAndGet();
-        totalSize.set(0);
+        allocatedSize.set(0);
     }
 
     @Override

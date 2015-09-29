@@ -21,7 +21,7 @@ public class ExponentialBackOffRetryStrategy
     public static class Config extends RetryStrategy.Config<Config>
     {
         private long baseIntervalMillis = 400;
-        private long maxIntervalMillis = 30;
+        private long maxIntervalMillis = 30 * 1000;
 
         public long getBaseIntervalMillis()
         {

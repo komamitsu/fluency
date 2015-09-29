@@ -12,7 +12,7 @@ public abstract class Buffer<T extends Buffer.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected final T bufferConfig;
-    protected final AtomicInteger totalSize = new AtomicInteger();
+    protected final AtomicInteger allocatedSize = new AtomicInteger();
 
     public static class BufferFullException extends IOException {
         public BufferFullException(String s)
@@ -48,33 +48,33 @@ public abstract class Buffer<T extends Buffer.Config>
     protected abstract void closeInternal(Sender sender)
             throws IOException;
 
-    public int getTotalSize()
+    public int getAllocatedSize()
     {
-        return totalSize.get();
+        return allocatedSize.get();
     }
 
     public int getMaxSize()
     {
-        return bufferConfig.getBufferSize();
+        return bufferConfig.getMaxBufferSize();
     }
 
     public float getBufferUsage()
     {
-        return (float)getTotalSize() / getMaxSize();
+        return (float) getAllocatedSize() / getMaxSize();
     }
 
     public abstract static class Config<T extends Buffer, C extends Config>
     {
-        protected int bufferSize = 16 * 1024 * 1024;
+        protected int maxBufferSize = 16 * 1024 * 1024;
 
-        public int getBufferSize()
+        public int getMaxBufferSize()
         {
-            return bufferSize;
+            return maxBufferSize;
         }
 
-        public C setBufferSize(int bufferSize)
+        public C setMaxBufferSize(int maxBufferSize)
         {
-            this.bufferSize = bufferSize;
+            this.maxBufferSize = maxBufferSize;
             return (C)this;
         }
 
@@ -82,7 +82,7 @@ public abstract class Buffer<T extends Buffer.Config>
         public String toString()
         {
             return "Config{" +
-                    "bufferSize=" + bufferSize +
+                    "maxBufferSize=" + maxBufferSize +
                     '}';
         }
 

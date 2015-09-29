@@ -127,7 +127,7 @@ public abstract class AbstractMockTCPServer
             {
                 LOG.debug("AcceptTask: connected. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
                 eventHandler.onConnect(accept);
-                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(512 * 1024);
                 while (accept.isOpen()) {
                     try {
                         byteBuffer.clear();

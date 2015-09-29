@@ -1,10 +1,10 @@
 package org.komamitsu.fluency.sender.retry;
 
-public abstract class RetryStrategy<T extends RetryStrategy.Config>
+public abstract class RetryStrategy<C extends RetryStrategy.Config>
 {
-    protected final T config;
+    protected final C config;
 
-    public RetryStrategy(T config)
+    public RetryStrategy(C config)
     {
         this.config = config;
     }
@@ -16,7 +16,7 @@ public abstract class RetryStrategy<T extends RetryStrategy.Config>
         return retryCount > config.getMaxRetryCount();
     }
 
-    public static abstract class Config<T extends RetryStrategy.Config>
+    public static abstract class Config<C extends RetryStrategy.Config>
     {
         private int maxRetryCount = 8;
 
@@ -25,10 +25,10 @@ public abstract class RetryStrategy<T extends RetryStrategy.Config>
             return maxRetryCount;
         }
 
-        public T setMaxRetryCount(int maxRetryCount)
+        public C setMaxRetryCount(int maxRetryCount)
         {
             this.maxRetryCount = maxRetryCount;
-            return (T)this;
+            return (C)this;
         }
     }
 }

@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SyncFlusher
-        extends Flusher
+        extends Flusher<SyncFlusher.Config>
 {
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
 
@@ -37,8 +37,21 @@ public class SyncFlusher
         closeBuffer();
     }
 
-    public static class Config extends Flusher.Config<SyncFlusher>
+    public static class Config extends Flusher.Config<SyncFlusher, Config>
     {
+        private float bufferOccupancyThreshold = 0.6f;
+
+        public float getBufferOccupancyThreshold()
+        {
+            return bufferOccupancyThreshold;
+        }
+
+        public Config setBufferOccupancyThreshold(float bufferOccupancyThreshold)
+        {
+            this.bufferOccupancyThreshold = bufferOccupancyThreshold;
+            return this;
+        }
+
         @Override
         public SyncFlusher createInstance(Buffer buffer, Sender sender)
         {

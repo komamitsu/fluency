@@ -16,7 +16,7 @@ public class ConstantRetryStrategy
 
     public static class Config extends RetryStrategy.Config<Config>
     {
-        private long retryIntervalMillis = 1000;
+        private long retryIntervalMillis = 2000;
 
         public long getRetryIntervalMillis()
         {
