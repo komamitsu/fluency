@@ -1,4 +1,0 @@
-dependencies:
-  pre:
-    - echo "ossrhUsername='Foo Bar'" > gradle.properties
-    - echo "ossrhPassword='hello, world'" >> gradle.properties
