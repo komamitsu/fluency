@@ -16,7 +16,7 @@ public abstract class RetryStrategy<C extends RetryStrategy.Config>
         return retryCount > config.getMaxRetryCount();
     }
 
-    public static abstract class Config<C extends RetryStrategy.Config>
+    public static abstract class Config<T extends RetryStrategy, C extends RetryStrategy.Config>
     {
         private int maxRetryCount = 8;
 
@@ -30,5 +30,7 @@ public abstract class RetryStrategy<C extends RetryStrategy.Config>
             this.maxRetryCount = maxRetryCount;
             return (C)this;
         }
+
+        public abstract T createInstance();
     }
 }

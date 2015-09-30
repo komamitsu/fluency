@@ -3,7 +3,7 @@ package org.komamitsu.fluency.sender.retry;
 public class ExponentialBackOffRetryStrategy
     extends RetryStrategy<ExponentialBackOffRetryStrategy.Config>
 {
-    public ExponentialBackOffRetryStrategy(Config config)
+    private ExponentialBackOffRetryStrategy(Config config)
     {
         super(config);
     }
@@ -18,7 +18,7 @@ public class ExponentialBackOffRetryStrategy
         return interval;
     }
 
-    public static class Config extends RetryStrategy.Config<Config>
+    public static class Config extends RetryStrategy.Config<ExponentialBackOffRetryStrategy, Config>
     {
         private long baseIntervalMillis = 400;
         private long maxIntervalMillis = 30 * 1000;
@@ -43,6 +43,12 @@ public class ExponentialBackOffRetryStrategy
         {
             this.maxIntervalMillis = maxIntervalMillis;
             return this;
+        }
+
+        @Override
+        public ExponentialBackOffRetryStrategy createInstance()
+        {
+            return new ExponentialBackOffRetryStrategy(this);
         }
     }
 }

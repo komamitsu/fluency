@@ -3,7 +3,7 @@ package org.komamitsu.fluency.sender.retry;
 public class ConstantRetryStrategy
     extends RetryStrategy<ConstantRetryStrategy.Config>
 {
-    public ConstantRetryStrategy(Config config)
+    private ConstantRetryStrategy(Config config)
     {
         super(config);
     }
@@ -14,7 +14,7 @@ public class ConstantRetryStrategy
         return config.getRetryIntervalMillis();
     }
 
-    public static class Config extends RetryStrategy.Config<Config>
+    public static class Config extends RetryStrategy.Config<ConstantRetryStrategy, Config>
     {
         private long retryIntervalMillis = 2000;
 
@@ -27,6 +27,12 @@ public class ConstantRetryStrategy
         {
             this.retryIntervalMillis = retryIntervalMillis;
             return this;
+        }
+
+        @Override
+        public ConstantRetryStrategy createInstance()
+        {
+            return new ConstantRetryStrategy(this);
         }
     }
 }

@@ -42,7 +42,7 @@ public class RetryableSender
 
     public RetryableSender(Sender baseSender)
     {
-        this(baseSender, new ExponentialBackOffRetryStrategy(new ExponentialBackOffRetryStrategy.Config()));
+        this(baseSender, new ExponentialBackOffRetryStrategy.Config().createInstance());
     }
 
     @Override

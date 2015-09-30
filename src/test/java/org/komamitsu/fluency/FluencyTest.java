@@ -32,6 +32,23 @@ public class FluencyTest
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
 
     @Test
+    public void testDefaultFluency()
+            throws IOException
+    {
+        Fluency fluency = null;
+        fluency = Fluency.defaultFluency();
+        fluency = Fluency.defaultFluency(12345);
+        fluency = Fluency.defaultFluency("333.333.333.333", 12345);
+        fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)));
+        Fluency.Config config = new Fluency.Config();
+        config.setFlushIntervalMillis(200).setMaxBufferSize(64 * 1024 * 1024).setSenderMaxRetryCount(99);
+        fluency = Fluency.defaultFluency(config);
+        fluency = Fluency.defaultFluency(12345, config);
+        fluency = Fluency.defaultFluency("333.333.333.333", 12345, config);
+        fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config);
+    }
+
+    @Test
     public void testFluency()
             throws Exception
     {
