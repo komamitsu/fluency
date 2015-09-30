@@ -293,7 +293,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(20, TimeUnit.SECONDS));
         fluency.close();
     }
 
@@ -314,7 +314,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(20, TimeUnit.SECONDS));
         fluency.close();
     }
 }
