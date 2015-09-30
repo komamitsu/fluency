@@ -27,7 +27,6 @@ public class PackedForwardBuffer
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
     private final AtomicInteger emitCounter = new AtomicInteger();
-    private final AtomicReference<Long> lastRetentionBuffersChecked = new AtomicReference<Long>();
     private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -167,15 +166,7 @@ public class PackedForwardBuffer
     public void flushInternal(Sender sender)
             throws IOException
     {
-        long now = System.currentTimeMillis();
-        Long lastAppendedRetentionBuffersChecked = this.lastRetentionBuffersChecked.get();
-        if (lastAppendedRetentionBuffersChecked == null) {
-            this.lastRetentionBuffersChecked.set(now);
-        }
-        else if (lastAppendedRetentionBuffersChecked < now - 500) {
-            moveRetentionBuffersToFlushable(false);
-            this.lastRetentionBuffersChecked.set(now);
-        }
+        moveRetentionBuffersToFlushable(false);
 
         TaggableBuffer flushableBuffer = null;
         while ((flushableBuffer = flushableBuffers.poll()) != null) {
