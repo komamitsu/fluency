@@ -66,6 +66,7 @@ public abstract class Buffer<T extends Buffer.Config>
     public abstract static class Config<T extends Buffer, C extends Config>
     {
         protected int maxBufferSize = 16 * 1024 * 1024;
+        protected boolean ackResponseMode = false;
 
         public int getMaxBufferSize()
         {
@@ -78,11 +79,23 @@ public abstract class Buffer<T extends Buffer.Config>
             return (C)this;
         }
 
+        public boolean isAckResponseMode()
+        {
+            return ackResponseMode;
+        }
+
+        public C setAckResponseMode(boolean ackResponseMode)
+        {
+            this.ackResponseMode = ackResponseMode;
+            return (C)this;
+        }
+
         @Override
         public String toString()
         {
             return "Config{" +
                     "maxBufferSize=" + maxBufferSize +
+                    ", ackResponseMode=" + ackResponseMode +
                     '}';
         }
 

@@ -6,6 +6,7 @@ import org.komamitsu.fluency.sender.Sender;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -16,6 +17,18 @@ public class BufferTest
     {
         @Override
         public void send(ByteBuffer data)
+                throws IOException
+        {
+        }
+
+        @Override
+        public void send(List<ByteBuffer> dataList)
+                throws IOException
+        {
+        }
+
+        @Override
+        public void sendWithAck(List<ByteBuffer> dataList, String uuid)
                 throws IOException
         {
         }

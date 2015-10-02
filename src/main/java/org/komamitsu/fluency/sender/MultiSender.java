@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MultiSender
@@ -50,8 +51,28 @@ public class MultiSender
     }
 
     @Override
-    public void send(ByteBuffer data)
+    public synchronized void send(ByteBuffer data)
             throws IOException
+    {
+        sendInternal(Arrays.asList(data), null);
+    }
+
+    @Override
+    public synchronized void send(List<ByteBuffer> dataList)
+            throws IOException
+    {
+        sendInternal(dataList, null);
+    }
+
+    @Override
+    public synchronized void sendWithAck(List<ByteBuffer> dataList, String uuid)
+            throws IOException
+    {
+        sendInternal(dataList, uuid);
+    }
+
+    private synchronized void sendInternal(List<ByteBuffer> dataList, String uuid)
+            throws AllNodesUnavailableException
     {
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
             TCPSender sender = senderAndFailureDetector.getFirst();
@@ -59,7 +80,12 @@ public class MultiSender
             LOG.trace("send(): hb.host={}, hb.port={}, isAvailable={}", failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
             if (failureDetector.isAvailable()) {
                 try {
-                    sender.send(data);
+                    if (uuid == null) {
+                        sender.send(dataList);
+                    }
+                    else {
+                        sender.sendWithAck(dataList, uuid);
+                    }
                     return;
                 }
                 catch (IOException e) {
