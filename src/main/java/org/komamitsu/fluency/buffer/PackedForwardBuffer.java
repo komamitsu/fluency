@@ -11,14 +11,15 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class PackedForwardBuffer
     extends Buffer<PackedForwardBuffer.Config>
@@ -178,14 +179,26 @@ public class PackedForwardBuffer
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
                 ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
-                messagePacker.packArrayHeader(2);
+                if (bufferConfig.isAckResponseMode()) {
+                    messagePacker.packArrayHeader(3);
+                }
+                else {
+                    messagePacker.packArrayHeader(2);
+                }
                 messagePacker.packString(tag);
                 messagePacker.packRawStringHeader(byteBuffer.position());
                 messagePacker.flush();
+
                 synchronized (sender) {
-                    sender.send(ByteBuffer.wrap(header.toByteArray()));
+                    ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
                     byteBuffer.flip();
-                    sender.send(byteBuffer);
+                    if (bufferConfig.isAckResponseMode()) {
+                        String uuid = UUID.randomUUID().toString();
+                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid);
+                    }
+                    else {
+                        sender.send(Arrays.asList(headerBuffer, byteBuffer));
+                    }
                 }
             }
             catch (Throwable e) {

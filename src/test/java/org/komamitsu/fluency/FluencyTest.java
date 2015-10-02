@@ -2,9 +2,11 @@ package org.komamitsu.fluency;
 
 import org.junit.Test;
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.msgpack.value.MapValue;
@@ -48,17 +50,92 @@ public class FluencyTest
         fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config);
     }
 
+    interface FluencyFactory
+    {
+        Fluency generate(int fluentdPort)
+                throws IOException;
+    }
+
     @Test
-    public void testFluency()
+    public void testFluencyUsingPackedForwardBufferAndAsyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    @Test
+    public void testFluencyUsingMessageAndAsyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config();
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    /*
+    FIXME
+
+    @Test
+    public void testFluencyUsingPackedForwardBufferAndSyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+    */
+
+    @Test
+    public void testFluencyUsingMessageAndSyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config();
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyBase(FluencyFactory fluencyFactory)
             throws Exception
     {
         MockFluentdServer fluentd = new MockFluentdServer();
         fluentd.start();
+        TimeUnit.MILLISECONDS.sleep(500);
 
-        Sender sender = new TCPSender(fluentd.getLocalPort());
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
-        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        final Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        final Fluency fluency = fluencyFactory.generate(fluentd.getLocalPort());
 
         final int maxNameLen = 200;
         final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);

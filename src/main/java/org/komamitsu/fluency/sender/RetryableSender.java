@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class RetryableSender
@@ -49,12 +51,37 @@ public class RetryableSender
     public void send(ByteBuffer data)
             throws IOException
     {
+        sendInternal(Arrays.asList(data), null);
+    }
+
+    @Override
+    public void send(List<ByteBuffer> dataList)
+            throws IOException
+    {
+        sendInternal(dataList, null);
+    }
+
+    @Override
+    public void sendWithAck(List<ByteBuffer> dataList, String uuid)
+            throws IOException
+    {
+        sendInternal(dataList, uuid);
+    }
+
+    private synchronized void sendInternal(List<ByteBuffer> dataList, String uuid)
+            throws IOException
+    {
         IOException firstException = null;
 
         int retry = 0;
         while (!retryStrategy.isRetriedOver(retry)) {
             try {
-                baseSender.send(data);
+                if (uuid == null) {
+                    baseSender.send(dataList);
+                }
+                else {
+                    baseSender.sendWithAck(dataList, uuid);
+                }
                 return;
             }
             catch (IOException e) {
