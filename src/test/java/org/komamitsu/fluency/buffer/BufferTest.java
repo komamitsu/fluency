@@ -58,7 +58,7 @@ public class BufferTest
         assertEquals(2000, buffer.getAllocatedSize());
         assertEquals(0.2, buffer.getBufferUsage(), 0.001);
 
-        buffer.flush(new StabSender());
+        buffer.flush(new StabSender(), false);
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
     }

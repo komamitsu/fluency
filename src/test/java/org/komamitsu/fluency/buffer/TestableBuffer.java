@@ -14,6 +14,7 @@ public class TestableBuffer
 {
     private final List<Tuple3<String, Long, Map<String, Object>>> events = new ArrayList<Tuple3<String, Long, Map<String, Object>>>();
     private final AtomicInteger flushCount = new AtomicInteger();
+    private final AtomicInteger forceFlushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
 
     private TestableBuffer(Config bufferConfig)
@@ -30,10 +31,15 @@ public class TestableBuffer
     }
 
     @Override
-    public void flushInternal(Sender sender)
+    public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
-        flushCount.incrementAndGet();
+        if (force) {
+            forceFlushCount.incrementAndGet();
+        }
+        else {
+            flushCount.incrementAndGet();
+        }
         allocatedSize.set(0);
     }
 
@@ -52,6 +58,11 @@ public class TestableBuffer
     public AtomicInteger getFlushCount()
     {
         return flushCount;
+    }
+
+    public AtomicInteger getForceFlushCount()
+    {
+        return forceFlushCount;
     }
 
     public AtomicInteger getCloseCount()

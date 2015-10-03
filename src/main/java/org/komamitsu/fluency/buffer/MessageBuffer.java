@@ -2,6 +2,8 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +39,13 @@ public class MessageBuffer
         if (allocatedSize.get() + outputStream.size() > bufferConfig.getMaxBufferSize()) {
             throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
         }
-
-        messages.add(ByteBuffer.wrap(outputStream.toByteArray()));
+        ByteBuffer byteBuffer = ByteBuffer.wrap(outputStream.toByteArray());
+        messages.add(byteBuffer);
         allocatedSize.getAndAdd(outputStream.size());
     }
 
     @Override
-    public synchronized void flushInternal(Sender sender)
+    public synchronized void flushInternal(Sender sender, boolean force)
             throws IOException
     {
         ByteBuffer message = null;

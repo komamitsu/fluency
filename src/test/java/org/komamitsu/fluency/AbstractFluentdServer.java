@@ -94,7 +94,13 @@ public abstract class AbstractFluentdServer
                             // Message
                             long timestamp = secondValue.asIntegerValue().asLong();
                             MapValue mapValue = rootValue.get(2).asMapValue();
-                            eventHandler.onReceive(tag, timestamp, mapValue);
+                            try {
+                                eventHandler.onReceive(tag, timestamp, mapValue);
+                            }
+                            catch (AssertionError e) {
+                                LOG.warn("AssertionError: tag={}, timestamp={}, mapValue={}", tag, timestamp, mapValue);
+                                throw e;
+                            }
                         }
                         else if (secondValue.isRawValue()) {
                             // PackedForward
