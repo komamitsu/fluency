@@ -90,9 +90,6 @@ public class FluencyTest
         });
     }
 
-    /*
-    FIXME
-
     @Test
     public void testFluencyUsingPackedForwardBufferAndSyncFlusher()
             throws Exception
@@ -109,7 +106,6 @@ public class FluencyTest
             }
         });
     }
-    */
 
     @Test
     public void testFluencyUsingMessageAndSyncFlusher()
@@ -211,7 +207,7 @@ public class FluencyTest
                 });
             }
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(30, TimeUnit.SECONDS));
             fluency.flush();
             TimeUnit.MILLISECONDS.sleep(3000);
             fluentd.stop();
@@ -231,6 +227,7 @@ public class FluencyTest
             System.out.println(System.currentTimeMillis() - start);
         } finally {
             fluency.close();
+            fluentd.stop();
         }
     }
 
@@ -358,7 +355,7 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -370,7 +367,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        assertTrue(latch.await(20, TimeUnit.SECONDS));
+        assertTrue(latch.await(60, TimeUnit.SECONDS));
         fluency.close();
     }
 

@@ -164,10 +164,10 @@ public class PackedForwardBuffer
     }
 
     @Override
-    public void flushInternal(Sender sender)
+    public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
-        moveRetentionBuffersToFlushable(false);
+        moveRetentionBuffersToFlushable(force);
 
         TaggableBuffer flushableBuffer = null;
         while ((flushableBuffer = flushableBuffers.poll()) != null) {
@@ -226,7 +226,7 @@ public class PackedForwardBuffer
     {
         moveRetentionBuffersToFlushable(true);
         retentionBuffers.clear();
-        flush(sender);
+        flush(sender, true);
     }
 
     private static class RetentionBuffer

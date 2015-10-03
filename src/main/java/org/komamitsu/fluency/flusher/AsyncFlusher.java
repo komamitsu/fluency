@@ -24,8 +24,8 @@ public class AsyncFlusher
             {
                 while (!executorService.isShutdown()) {
                     try {
-                        Boolean ignorable = waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
-                        buffer.flush(sender);
+                        Boolean force = waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        buffer.flush(sender, force != null && force);
                         waitQueue.clear();
                     }
                     catch (InterruptedException e) {
@@ -64,6 +64,7 @@ public class AsyncFlusher
     protected void closeInternal()
             throws IOException
     {
+        flushInternal(true);
         executorService.shutdown();
         try {
             executorService.awaitTermination(10, TimeUnit.SECONDS);

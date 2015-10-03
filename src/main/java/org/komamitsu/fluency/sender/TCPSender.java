@@ -62,6 +62,7 @@ public class TCPSender
         if (channel.get() == null) {
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
             socketChannel.socket().setTcpNoDelay(true);
+            socketChannel.socket().setSoTimeout(5000);
             channel.set(socketChannel);
         }
         return channel.get();

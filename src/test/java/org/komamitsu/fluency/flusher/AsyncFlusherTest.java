@@ -28,15 +28,19 @@ public class AsyncFlusherTest
 
         flusher.flush();
         TimeUnit.MILLISECONDS.sleep(50);
-        assertEquals(1, buffer.getFlushCount().get());
+        assertEquals(0, buffer.getFlushCount().get());
+        assertEquals(1, buffer.getForceFlushCount().get());
 
         TimeUnit.SECONDS.sleep(1);
-        int count = buffer.getFlushCount().get();
-        assertTrue(2 <= count && count <= 4);
+        int flushCount = buffer.getFlushCount().get();
+        assertTrue(1 <= flushCount && flushCount <= 3);
+        int forceFlushCount = buffer.getForceFlushCount().get();
+        assertEquals(1, forceFlushCount);
 
         assertEquals(0, buffer.getCloseCount().get());
         flusher.close();
         assertEquals(1, buffer.getCloseCount().get());
-        assertEquals(count + 1, buffer.getFlushCount().get());
+        assertEquals(flushCount, buffer.getFlushCount().get());
+        assertEquals(forceFlushCount + 1, buffer.getForceFlushCount().get());
     }
 }

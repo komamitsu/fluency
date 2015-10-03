@@ -29,14 +29,14 @@ public abstract class Buffer<T extends Buffer.Config>
     public abstract void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException;
 
-    public void flush(Sender sender)
+    public void flush(Sender sender, boolean force)
             throws IOException
     {
-        LOG.trace("flush(): bufferUsage={}", getBufferUsage());
-        flushInternal(sender);
+        LOG.trace("flush(): force={}, bufferUsage={}", force, getBufferUsage());
+        flushInternal(sender, force);
     }
 
-    public abstract void flushInternal(Sender sender)
+    public abstract void flushInternal(Sender sender, boolean force)
             throws IOException;
 
     public void close(Sender sender)

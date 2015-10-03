@@ -24,20 +24,24 @@ public class SyncFlusherTest
         flusher.flush();
         flusher.flush();
         flusher.flush();
-        assertEquals(3, buffer.getFlushCount().get());
+        assertEquals(0, buffer.getFlushCount().get());
+        assertEquals(3, buffer.getForceFlushCount().get());
 
         flusher.onUpdate();
         flusher.onUpdate();
         flusher.onUpdate();
-        assertEquals(3, buffer.getFlushCount().get());
+        assertEquals(0, buffer.getFlushCount().get());
+        assertEquals(3, buffer.getForceFlushCount().get());
 
         TimeUnit.SECONDS.sleep(1);
         flusher.onUpdate();
-        assertEquals(4, buffer.getFlushCount().get());
+        assertEquals(1, buffer.getFlushCount().get());
+        assertEquals(3, buffer.getForceFlushCount().get());
 
         assertEquals(0, buffer.getCloseCount().get());
         flusher.close();
         assertEquals(1, buffer.getCloseCount().get());
-        assertEquals(5, buffer.getFlushCount().get());
+        assertEquals(1, buffer.getFlushCount().get());
+        assertEquals(3 + 1, buffer.getForceFlushCount().get());
     }
 }
