@@ -19,7 +19,7 @@ public class TCPSender
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final String host;
     private final int port;
-    private final ByteBuffer optionBuffer = ByteBuffer.allocate(256);
+    private final byte[] optionBuffer = new byte[256];
 
     public String getHost()
     {
@@ -96,14 +96,15 @@ public class TCPSender
             throws IOException
     {
         send(dataList);
+        // FIXME: Make the uuid msgpack serialized
         byte[] bytesUuid = uuid.getBytes(Charset.forName("ASCII"));
         send(ByteBuffer.wrap(bytesUuid));
 
-        optionBuffer.reset();
+        ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
         // TODO: Set timeout
-        getOrOpenChannel().read(optionBuffer);
-        if (!ByteBuffer.wrap(bytesUuid).equals(optionBuffer)) {
-            ByteBuffer wrap = ByteBuffer.wrap(optionBuffer.array(), 0, optionBuffer.limit());
+        getOrOpenChannel().read(byteBuffer);
+        if (!ByteBuffer.wrap(bytesUuid).equals(byteBuffer)) {
+            ByteBuffer wrap = ByteBuffer.wrap(optionBuffer, 0, byteBuffer.limit());
             String gotUUID = new String(wrap.array());
             throw new UnmatchedAckException("Ack response was unmatched: expected=" + uuid + ", got=" + gotUUID);
         }
