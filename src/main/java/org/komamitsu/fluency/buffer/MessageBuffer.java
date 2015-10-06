@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -63,7 +64,7 @@ public class MessageBuffer
                 allocatedSize.addAndGet(-message.capacity());
                 if (bufferConfig.isAckResponseMode()) {
                     String uuid = UUID.randomUUID().toString();
-                    sender.sendWithAck(Arrays.asList(message), uuid);
+                    sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
                 }
                 else {
                     sender.send(message);

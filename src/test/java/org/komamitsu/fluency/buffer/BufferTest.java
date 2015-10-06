@@ -28,9 +28,10 @@ public class BufferTest
         }
 
         @Override
-        public void sendWithAck(List<ByteBuffer> dataList, String uuid)
+        public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
                 throws IOException
         {
+
         }
 
         @Override

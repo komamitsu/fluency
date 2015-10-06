@@ -62,13 +62,13 @@ public class RetryableSender
     }
 
     @Override
-    public void sendWithAck(List<ByteBuffer> dataList, String uuid)
+    public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
-        sendInternal(dataList, uuid);
+        sendInternal(dataList, ackToken);
     }
 
-    private synchronized void sendInternal(List<ByteBuffer> dataList, String uuid)
+    private synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
         IOException firstException = null;
@@ -76,11 +76,11 @@ public class RetryableSender
         int retry = 0;
         while (!retryStrategy.isRetriedOver(retry)) {
             try {
-                if (uuid == null) {
+                if (ackToken == null) {
                     baseSender.send(dataList);
                 }
                 else {
-                    baseSender.sendWithAck(dataList, uuid);
+                    baseSender.sendWithAck(dataList, ackToken);
                 }
                 return;
             }

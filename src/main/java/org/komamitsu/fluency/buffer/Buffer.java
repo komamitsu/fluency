@@ -5,12 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Buffer<T extends Buffer.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
+    protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
     protected final AtomicInteger allocatedSize = new AtomicInteger();
 
