@@ -10,6 +10,7 @@ import org.msgpack.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -98,7 +99,13 @@ public abstract class AbstractFluentdServer
                                 if (rootValue.size() == 4) {
                                     Value option = rootValue.get(3);
                                     assertEquals(ValueType.STRING, option.getValueType());
-                                    acceptSocketChannel.write(option.asStringValue().asByteBuffer());
+                                    byte[] bytes = option.asStringValue().asByteArray();
+                                    ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length + 2);
+                                    byteBuffer.put((byte) 0xC4);
+                                    byteBuffer.put((byte) bytes.length);
+                                    byteBuffer.put(bytes);
+                                    byteBuffer.flip();
+                                    acceptSocketChannel.write(byteBuffer);
                                 }
                             }
                             else if (secondValue.isRawValue()) {

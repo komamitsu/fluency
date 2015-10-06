@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -20,6 +20,7 @@ public class TCPSender
     private final String host;
     private final int port;
     private final byte[] optionBuffer = new byte[256];
+    private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
 
     public String getHost()
     {
@@ -92,21 +93,19 @@ public class TCPSender
     }
 
     @Override
-    public synchronized void sendWithAck(List<ByteBuffer> dataList, String uuid)
+    public synchronized void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
         send(dataList);
         // FIXME: Make the uuid msgpack serialized
-        byte[] bytesUuid = uuid.getBytes(Charset.forName("ASCII"));
-        send(ByteBuffer.wrap(bytesUuid));
+        send(ByteBuffer.wrap(ackTokenSerDe.pack(ackToken)));
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
         // TODO: Set timeout
         getOrOpenChannel().read(byteBuffer);
-        if (!ByteBuffer.wrap(bytesUuid).equals(byteBuffer)) {
-            ByteBuffer wrap = ByteBuffer.wrap(optionBuffer, 0, byteBuffer.limit());
-            String gotUUID = new String(wrap.array());
-            throw new UnmatchedAckException("Ack response was unmatched: expected=" + uuid + ", got=" + gotUUID);
+        byte[] unpackedToken = ackTokenSerDe.unpack(optionBuffer);
+        if (!Arrays.equals(ackToken, unpackedToken)) {
+            throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken) + ", got=" + new String(unpackedToken));
         }
     }
 

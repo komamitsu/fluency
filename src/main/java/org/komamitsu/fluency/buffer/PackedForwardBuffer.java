@@ -194,7 +194,7 @@ public class PackedForwardBuffer
                     byteBuffer.flip();
                     if (bufferConfig.isAckResponseMode()) {
                         String uuid = UUID.randomUUID().toString();
-                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid);
+                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
                     }
                     else {
                         sender.send(Arrays.asList(headerBuffer, byteBuffer));

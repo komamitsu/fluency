@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.sender;
 
 import java.io.Closeable;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -12,6 +13,6 @@ public interface Sender
 
     void send(List<ByteBuffer> dataList) throws IOException;
 
-    void sendWithAck(List<ByteBuffer> dataList, String uuid)
+    void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException;
 }

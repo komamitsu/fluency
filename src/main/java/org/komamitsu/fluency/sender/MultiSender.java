@@ -65,13 +65,13 @@ public class MultiSender
     }
 
     @Override
-    public synchronized void sendWithAck(List<ByteBuffer> dataList, String uuid)
+    public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
-        sendInternal(dataList, uuid);
+        sendInternal(dataList, ackToken);
     }
 
-    private synchronized void sendInternal(List<ByteBuffer> dataList, String uuid)
+    private synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws AllNodesUnavailableException
     {
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
@@ -80,11 +80,11 @@ public class MultiSender
             LOG.trace("send(): hb.host={}, hb.port={}, isAvailable={}", failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
             if (failureDetector.isAvailable()) {
                 try {
-                    if (uuid == null) {
+                    if (ackToken == null) {
                         sender.send(dataList);
                     }
                     else {
-                        sender.sendWithAck(dataList, uuid);
+                        sender.sendWithAck(dataList, ackToken);
                     }
                     return;
                 }
