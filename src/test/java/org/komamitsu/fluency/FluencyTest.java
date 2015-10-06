@@ -141,6 +141,23 @@ public class FluencyTest
         });
     }
 
+    @Test
+    public void testFluencyUsingMessageAndAsyncFlusherWithAckResponse()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
     public void testFluencyBase(FluencyFactory fluencyFactory)
             throws Exception
     {
