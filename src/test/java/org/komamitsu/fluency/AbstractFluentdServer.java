@@ -157,6 +157,7 @@ public abstract class AbstractFluentdServer
             data.get(bytes);
             try {
                 pipedOutputStream.write(bytes);
+                pipedOutputStream.flush();
             }
             catch (IOException e) {
                 throw new RuntimeException("Failed to call PipedOutputStream.write()");
