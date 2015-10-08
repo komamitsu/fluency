@@ -7,4 +7,5 @@ jdk:
   - oraclejdk8
 
 script:
+  - ./gradlew assemble -x signArchives -x uploadArchives
   - ./gradlew check
