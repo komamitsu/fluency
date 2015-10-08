@@ -6,7 +6,9 @@ jdk:
   - oraclejdk7
   - oraclejdk8
 
-script:
+before_script:
   - echo 'hello, world'
   - ./gradlew assemble -x signArchives -x uploadArchives
+
+script:
   - ./gradlew check
