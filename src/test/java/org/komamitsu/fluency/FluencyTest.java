@@ -220,8 +220,8 @@ public class FluencyTest
 
         try {
             final Random random = new Random();
-            int concurrency = 20;
-            final int reqNum = 4000;
+            int concurrency = 10;
+            final int reqNum = 6000;
             long start = System.currentTimeMillis();
             final CountDownLatch latch = new CountDownLatch(concurrency);
             ExecutorService es = Executors.newCachedThreadPool();
