@@ -7,5 +7,6 @@ jdk:
   - oraclejdk8
 
 script:
+  - echo 'hello, world'
   - ./gradlew assemble -x signArchives -x uploadArchives
   - ./gradlew check
