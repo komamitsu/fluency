@@ -283,9 +283,9 @@ public class FluencyTest
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
             fluency.flush();
-            TimeUnit.MILLISECONDS.sleep(3000);
+            TimeUnit.MILLISECONDS.sleep(5000);
             fluentd.stop();
-            TimeUnit.MILLISECONDS.sleep(1000);
+            TimeUnit.MILLISECONDS.sleep(3000);
 
             assertEquals(1, fluentd.connectCounter.get());
             assertEquals(1, fluentd.closeCounter.get());
