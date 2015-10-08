@@ -53,6 +53,19 @@ public abstract class AbstractFluentdServer
             this.eventHandler = eventHandler;
         }
 
+        private void ack(SocketChannel acceptSocketChannel, Value option)
+                throws IOException
+        {
+            assertEquals(ValueType.STRING, option.getValueType());
+            byte[] bytes = option.asStringValue().asByteArray();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length + 2);
+            byteBuffer.put((byte) 0xC4);
+            byteBuffer.put((byte) bytes.length);
+            byteBuffer.put(bytes);
+            byteBuffer.flip();
+            acceptSocketChannel.write(byteBuffer);
+        }
+
         @Override
         public void onConnect(final SocketChannel acceptSocketChannel)
         {
@@ -97,15 +110,7 @@ public abstract class AbstractFluentdServer
                                 MapValue mapValue = rootValue.get(2).asMapValue();
                                 eventHandler.onReceive(tag, timestamp, mapValue);
                                 if (rootValue.size() == 4) {
-                                    Value option = rootValue.get(3);
-                                    assertEquals(ValueType.STRING, option.getValueType());
-                                    byte[] bytes = option.asStringValue().asByteArray();
-                                    ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length + 2);
-                                    byteBuffer.put((byte) 0xC4);
-                                    byteBuffer.put((byte) bytes.length);
-                                    byteBuffer.put(bytes);
-                                    byteBuffer.flip();
-                                    acceptSocketChannel.write(byteBuffer);
+                                    ack(acceptSocketChannel, rootValue.get(3));
                                 }
                             }
                             else if (secondValue.isRawValue()) {
@@ -118,6 +123,9 @@ public abstract class AbstractFluentdServer
                                     long timestamp = arrayValue.get(0).asIntegerValue().asLong();
                                     MapValue mapValue = arrayValue.get(1).asMapValue();
                                     eventHandler.onReceive(tag, timestamp, mapValue);
+                                }
+                                if (rootValue.size() == 3) {
+                                    ack(acceptSocketChannel, rootValue.get(2));
                                 }
                             }
                             else {
