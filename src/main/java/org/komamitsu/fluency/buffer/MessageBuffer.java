@@ -2,6 +2,8 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +11,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class MessageBuffer
@@ -34,23 +38,37 @@ public class MessageBuffer
         objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
         outputStream.close();
 
-        if (allocatedSize.get() + outputStream.size() > bufferConfig.getMaxBufferSize()) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
+        byte[] packedBytes = outputStream.toByteArray();
+        if (bufferConfig.isAckResponseMode()) {
+            if (packedBytes[0] != (byte)0x93) {
+                throw new IllegalStateException("packedBytes[0] should be 0x93, but " + packedBytes[0]);
+            }
+            packedBytes[0] = (byte)0x94;
         }
 
-        messages.add(ByteBuffer.wrap(outputStream.toByteArray()));
-        allocatedSize.getAndAdd(outputStream.size());
+        if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
+            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
+        }
+        ByteBuffer byteBuffer = ByteBuffer.wrap(packedBytes);
+        messages.add(byteBuffer);
+        allocatedSize.getAndAdd(packedBytes.length);
     }
 
     @Override
-    public synchronized void flushInternal(Sender sender)
+    public synchronized void flushInternal(Sender sender, boolean force)
             throws IOException
     {
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
             try {
                 allocatedSize.addAndGet(-message.capacity());
-                sender.send(message);
+                if (bufferConfig.isAckResponseMode()) {
+                    String uuid = UUID.randomUUID().toString();
+                    sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
+                }
+                else {
+                    sender.send(message);
+                }
             }
             catch (Throwable e) {
                 try {

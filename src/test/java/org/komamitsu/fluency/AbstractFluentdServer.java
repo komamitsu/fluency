@@ -6,9 +6,11 @@ import org.msgpack.value.ImmutableArrayValue;
 import org.msgpack.value.ImmutableValue;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
+import org.msgpack.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -51,8 +53,21 @@ public abstract class AbstractFluentdServer
             this.eventHandler = eventHandler;
         }
 
+        private void ack(SocketChannel acceptSocketChannel, Value option)
+                throws IOException
+        {
+            assertEquals(ValueType.STRING, option.getValueType());
+            byte[] bytes = option.asStringValue().asByteArray();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length + 2);
+            byteBuffer.put((byte) 0xC4);
+            byteBuffer.put((byte) bytes.length);
+            byteBuffer.put(bytes);
+            byteBuffer.flip();
+            acceptSocketChannel.write(byteBuffer);
+        }
+
         @Override
-        public void onConnect(SocketChannel acceptSocketChannel)
+        public void onConnect(final SocketChannel acceptSocketChannel)
         {
             pipedOutputStream = new PipedOutputStream();
             try {
@@ -70,37 +85,38 @@ public abstract class AbstractFluentdServer
                 {
                     MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(pipedInputStream);
 
-                    while (!executorService.isTerminated()) {
-                        ImmutableValue value = null;
-                        try {
-                            if (!unpacker.hasNext()) {
+                    try {
+                        while (!executorService.isTerminated()) {
+                            ImmutableValue value = null;
+                            try {
+                                if (!unpacker.hasNext()) {
+                                    break;
+                                }
+                                value = unpacker.unpackValue();
+                            }
+                            catch (InterruptedIOException e) {
+                                // Expected
                                 break;
                             }
-                            value = unpacker.unpackValue();
-                        }
-                        catch (InterruptedIOException e) {
-                            // Expected
-                            break;
-                        }
-                        catch (IOException e) {
-                            throw new IllegalStateException("Failed to unpack values", e);
-                        }
-                        ImmutableArrayValue rootValue = value.asArrayValue();
+                            assertEquals(ValueType.ARRAY, value.getValueType());
+                            ImmutableArrayValue rootValue = value.asArrayValue();
 
-                        String tag = rootValue.get(0).toString();
-                        Value secondValue = rootValue.get(1);
+                            String tag = rootValue.get(0).toString();
+                            Value secondValue = rootValue.get(1);
 
-                        if (secondValue.isIntegerValue()) {
-                            // Message
-                            long timestamp = secondValue.asIntegerValue().asLong();
-                            MapValue mapValue = rootValue.get(2).asMapValue();
-                            eventHandler.onReceive(tag, timestamp, mapValue);
-                        }
-                        else if (secondValue.isRawValue()) {
-                            // PackedForward
-                            byte[] bytes = secondValue.asRawValue().asByteArray();
-                            MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
-                            try {
+                            if (secondValue.isIntegerValue()) {
+                                // Message
+                                long timestamp = secondValue.asIntegerValue().asLong();
+                                MapValue mapValue = rootValue.get(2).asMapValue();
+                                eventHandler.onReceive(tag, timestamp, mapValue);
+                                if (rootValue.size() == 4) {
+                                    ack(acceptSocketChannel, rootValue.get(3));
+                                }
+                            }
+                            else if (secondValue.isRawValue()) {
+                                // PackedForward
+                                byte[] bytes = secondValue.asRawValue().asByteArray();
+                                MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
                                 while (eventsUnpacker.hasNext()) {
                                     ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
                                     assertEquals(2, arrayValue.size());
@@ -108,21 +124,31 @@ public abstract class AbstractFluentdServer
                                     MapValue mapValue = arrayValue.get(1).asMapValue();
                                     eventHandler.onReceive(tag, timestamp, mapValue);
                                 }
+                                if (rootValue.size() == 3) {
+                                    ack(acceptSocketChannel, rootValue.get(2));
+                                }
                             }
-                            catch (IOException e) {
-                                throw new IllegalStateException("Failed to unpack: unpacker=" + eventsUnpacker, e);
+                            else {
+                                throw new IllegalStateException("Unexpected second value: " + secondValue);
                             }
                         }
-                        else {
-                            throw new IllegalStateException("Unexpected second value: " + secondValue);
-                        }
-                    }
 
-                    try {
-                        unpacker.close();
+                        try {
+                            unpacker.close();
+                        }
+                        catch (IOException e) {
+                            LOG.warn("Failed to close unpacker quietly={}", unpacker);
+                        }
                     }
-                    catch (IOException e) {
-                        LOG.warn("Failed to close unpacker quietly={}", unpacker);
+                    catch (Throwable e) {
+                        LOG.error("Fluentd server failed", e);
+                        try {
+                            acceptSocketChannel.close();
+                        }
+                        catch (IOException e1) {
+                            LOG.warn("Failed to close accept socket quietly", e1);
+                        }
+                        executorService.shutdownNow();
                     }
                 }
             });
@@ -139,6 +165,7 @@ public abstract class AbstractFluentdServer
             data.get(bytes);
             try {
                 pipedOutputStream.write(bytes);
+                pipedOutputStream.flush();
             }
             catch (IOException e) {
                 throw new RuntimeException("Failed to call PipedOutputStream.write()");

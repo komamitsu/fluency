@@ -71,7 +71,7 @@ public class BufferTestHelper
 
                         if (syncFlush) {
                             if (i % 20 == 0) {
-                                buffer.flush(sender);
+                                buffer.flush(sender, false);
                             }
                         }
                     }
@@ -93,7 +93,7 @@ public class BufferTestHelper
                     while (!flushService.isShutdown()) {
                         try {
                             TimeUnit.MILLISECONDS.sleep(100L);
-                            buffer.flush(sender);
+                            buffer.flush(sender, false);
                         }
                         catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
@@ -113,7 +113,7 @@ public class BufferTestHelper
             executorService.execute(emitTask);
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
-        buffer.flush(sender);
+        buffer.flush(sender, false);
         buffer.close(sender);
         long end = System.currentTimeMillis();
 

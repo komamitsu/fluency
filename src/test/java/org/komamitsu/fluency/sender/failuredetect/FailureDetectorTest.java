@@ -66,11 +66,11 @@ public class FailureDetectorTest
             failureDetector = new FailureDetector(failureDetectorConfig, heartbeaterConfig);
 
             assertTrue(failureDetector.isAvailable());
-            TimeUnit.SECONDS.sleep(2L);
+            TimeUnit.SECONDS.sleep(4L);
             assertTrue(failureDetector.isAvailable());
 
             executorService.shutdownNow();
-            TimeUnit.SECONDS.sleep(4L);
+            TimeUnit.SECONDS.sleep(10L);
             assertFalse(failureDetector.isAvailable());
         }
         finally {

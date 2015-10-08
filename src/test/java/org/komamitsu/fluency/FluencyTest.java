@@ -2,9 +2,11 @@ package org.komamitsu.fluency;
 
 import org.junit.Test;
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.msgpack.value.MapValue;
@@ -48,17 +50,162 @@ public class FluencyTest
         fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config);
     }
 
+    interface FluencyFactory
+    {
+        Fluency generate(int fluentdPort)
+                throws IOException;
+    }
+
     @Test
-    public void testFluency()
+    public void testFluencyEachCombination()
+            throws Exception
+    {
+        testFluencyUsingPackedForwardBufferAndAsyncFlusher();
+        testFluencyUsingMessageAndAsyncFlusher();
+        testFluencyUsingPackedForwardBufferAndSyncFlusher();
+        testFluencyUsingMessageAndSyncFlusher();
+        testFluencyUsingMessageAndSyncFlusherWithAckResponse();
+        testFluencyUsingMessageAndAsyncFlusherWithAckResponse();
+        testFluencyUsingPackedForwardAndSyncFlusherWithAckResponse();
+        testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponse();
+    }
+
+    public void testFluencyUsingPackedForwardBufferAndAsyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingMessageAndAsyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config();
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingPackedForwardBufferAndSyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingMessageAndSyncFlusher()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config();
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingMessageAndSyncFlusherWithAckResponse()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingMessageAndAsyncFlusherWithAckResponse()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingPackedForwardAndSyncFlusherWithAckResponse()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponse()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    public void testFluencyBase(FluencyFactory fluencyFactory)
             throws Exception
     {
         MockFluentdServer fluentd = new MockFluentdServer();
         fluentd.start();
+        TimeUnit.MILLISECONDS.sleep(500);
 
-        Sender sender = new TCPSender(fluentd.getLocalPort());
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
-        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        final Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        final Fluency fluency = fluencyFactory.generate(fluentd.getLocalPort());
 
         final int maxNameLen = 200;
         final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);
@@ -79,8 +226,8 @@ public class FluencyTest
 
         try {
             final Random random = new Random();
-            int concurrency = 20;
-            final int reqNum = 4000;
+            int concurrency = 10;
+            final int reqNum = 6000;
             long start = System.currentTimeMillis();
             final CountDownLatch latch = new CountDownLatch(concurrency);
             ExecutorService es = Executors.newCachedThreadPool();
@@ -134,11 +281,11 @@ public class FluencyTest
                 });
             }
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(30, TimeUnit.SECONDS));
             fluency.flush();
-            TimeUnit.MILLISECONDS.sleep(3000);
+            TimeUnit.MILLISECONDS.sleep(6000);
             fluentd.stop();
-            TimeUnit.MILLISECONDS.sleep(1000);
+            TimeUnit.MILLISECONDS.sleep(8000);
 
             assertEquals(1, fluentd.connectCounter.get());
             assertEquals(1, fluentd.closeCounter.get());
@@ -154,6 +301,7 @@ public class FluencyTest
             System.out.println(System.currentTimeMillis() - start);
         } finally {
             fluency.close();
+            fluentd.stop();
         }
     }
 
@@ -281,7 +429,7 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -293,7 +441,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        assertTrue(latch.await(20, TimeUnit.SECONDS));
+        assertTrue(latch.await(60, TimeUnit.SECONDS));
         fluency.close();
     }
 

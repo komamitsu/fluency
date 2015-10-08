@@ -24,7 +24,7 @@ public class SyncFlusher
         if (force ||
                 now > lastFlushTimeMillis.get() + flusherConfig.getFlushIntervalMillis() ||
                 buffer.getBufferUsage() > flusherConfig.getBufferOccupancyThreshold()) {
-            buffer.flush(sender);
+            buffer.flush(sender, force);
             lastFlushTimeMillis.set(now);
         }
     }

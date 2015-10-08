@@ -9,4 +9,4 @@ install:
   - ./gradlew assemble -x signArchives -x uploadArchives
 
 script:
-  - ./gradlew check
+  - ./gradlew check --stacktrace
