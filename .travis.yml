@@ -6,7 +6,7 @@ jdk:
   - oraclejdk7
   - oraclejdk8
 
-before_script:
+install:
   - echo 'hello, world'
   - ./gradlew assemble -x signArchives -x uploadArchives
 
