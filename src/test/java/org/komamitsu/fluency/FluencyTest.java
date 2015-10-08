@@ -57,6 +57,19 @@ public class FluencyTest
     }
 
     @Test
+    public void testFluencyEachCombination()
+            throws Exception
+    {
+        testFluencyUsingPackedForwardBufferAndAsyncFlusher();
+        testFluencyUsingMessageAndAsyncFlusher();
+        testFluencyUsingPackedForwardBufferAndSyncFlusher();
+        testFluencyUsingMessageAndSyncFlusher();
+        testFluencyUsingMessageAndSyncFlusherWithAckResponse();
+        testFluencyUsingMessageAndAsyncFlusherWithAckResponse();
+        testFluencyUsingPackedForwardAndSyncFlusherWithAckResponse();
+        testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponse();
+    }
+
     public void testFluencyUsingPackedForwardBufferAndAsyncFlusher()
             throws Exception
     {
@@ -73,7 +86,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingMessageAndAsyncFlusher()
             throws Exception
     {
@@ -90,7 +102,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingPackedForwardBufferAndSyncFlusher()
             throws Exception
     {
@@ -107,7 +118,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingMessageAndSyncFlusher()
             throws Exception
     {
@@ -124,7 +134,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingMessageAndSyncFlusherWithAckResponse()
             throws Exception
     {
@@ -141,7 +150,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingMessageAndAsyncFlusherWithAckResponse()
             throws Exception
     {
@@ -158,7 +166,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingPackedForwardAndSyncFlusherWithAckResponse()
             throws Exception
     {
@@ -175,7 +182,6 @@ public class FluencyTest
         });
     }
 
-    @Test
     public void testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponse()
             throws Exception
     {
