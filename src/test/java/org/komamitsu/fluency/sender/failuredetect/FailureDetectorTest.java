@@ -70,7 +70,7 @@ public class FailureDetectorTest
             assertTrue(failureDetector.isAvailable());
 
             executorService.shutdownNow();
-            TimeUnit.SECONDS.sleep(8L);
+            TimeUnit.SECONDS.sleep(10L);
             assertFalse(failureDetector.isAvailable());
         }
         finally {
