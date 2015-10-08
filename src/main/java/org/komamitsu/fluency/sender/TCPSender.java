@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,6 +17,7 @@ public class TCPSender
     implements Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
+    private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final String host;
     private final int port;
@@ -97,7 +99,6 @@ public class TCPSender
             throws IOException
     {
         send(dataList);
-        // FIXME: Make the uuid msgpack serialized
         send(ByteBuffer.wrap(ackTokenSerDe.pack(ackToken)));
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
@@ -105,7 +106,7 @@ public class TCPSender
         getOrOpenChannel().read(byteBuffer);
         byte[] unpackedToken = ackTokenSerDe.unpack(optionBuffer);
         if (!Arrays.equals(ackToken, unpackedToken)) {
-            throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken) + ", got=" + new String(unpackedToken));
+            throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken, CHARSET_FOR_ERRORLOG) + ", got=" + new String(unpackedToken, CHARSET_FOR_ERRORLOG));
         }
     }
 
