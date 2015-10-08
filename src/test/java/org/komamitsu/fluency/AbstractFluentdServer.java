@@ -140,7 +140,7 @@ public abstract class AbstractFluentdServer
                             LOG.warn("Failed to close unpacker quietly={}", unpacker);
                         }
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         LOG.error("Fluentd server failed", e);
                         try {
                             acceptSocketChannel.close();
