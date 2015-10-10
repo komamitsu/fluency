@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: "findbugs"
+apply plugin: 'jacoco'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
