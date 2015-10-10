@@ -1,5 +1,5 @@
 # Fluency
-[<img src="https://travis-ci.org/komamitsu/fluency.svg"/>](https://travis-ci.org/komamitsu/fluency)
+[<img src="https://travis-ci.org/komamitsu/fluency.svg?branch=master"/>](https://travis-ci.org/komamitsu/fluency) [![Coverage Status](https://coveralls.io/repos/komamitsu/fluency/badge.svg?branch=master&service=github)](https://coveralls.io/github/komamitsu/fluency?branch=master)
 
 Yet another fluentd logger.
 
