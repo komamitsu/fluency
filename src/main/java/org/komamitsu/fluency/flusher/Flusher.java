@@ -52,7 +52,12 @@ public abstract class Flusher<C extends Flusher.Config>
     public void close()
             throws IOException
     {
-        closeInternal();
+        try {
+            closeInternal();
+        }
+        finally {
+            sender.close();
+        }
     }
 
     protected void closeBuffer()
