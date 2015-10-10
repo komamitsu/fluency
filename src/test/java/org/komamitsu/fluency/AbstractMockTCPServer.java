@@ -11,6 +11,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractMockTCPServer
@@ -94,8 +95,11 @@ public abstract class AbstractMockTCPServer
                     LOG.debug("ServerTask: accepted. local.port={}, remote.port={}", getLocalPort(), accept.socket().getPort());
                     serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, accept));
                 }
+                catch (RejectedExecutionException e) {
+                    LOG.debug("ServerSocketChannel.accept() failed", e);
+                }
                 catch (ClosedByInterruptException e) {
-                    // Expected
+                    LOG.debug("ServerSocketChannel.accept() failed", e);
                 }
                 catch (IOException e) {
                     LOG.warn("ServerSocketChannel.accept() failed", e);
