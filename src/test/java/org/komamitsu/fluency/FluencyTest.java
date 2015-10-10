@@ -260,6 +260,74 @@ public class FluencyTest
         });
     }
 
+    @Test
+    public void testFluencyUsingMessageAndSyncFlusherWithAckResponseWithSmallBuffer()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    @Test
+    public void testFluencyUsingMessageAndAsyncFlusherWithAckResponseWithSmallBuffer()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    @Test
+    public void testFluencyUsingPackedForwardAndSyncFlusherWithAckResponseWithSmallBuffer()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
+    @Test
+    public void testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponseWithSmallBuffer()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(int fluentdPort)
+                    throws IOException
+            {
+                Sender sender = new TCPSender(fluentdPort);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        });
+    }
+
     public void testFluencyBase(FluencyFactory fluencyFactory)
             throws Exception
     {

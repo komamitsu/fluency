@@ -51,29 +51,14 @@ public class MessageBuffer
             packedBytes[0] = (byte)0x94;
         }
 
-        while (true) {
-            try {
-                // TODO: Refactoring
-                synchronized (allocatedSize) {
-                    if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
-                        throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
-                    }
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(packedBytes);
-                    messages.add(byteBuffer);
-                    allocatedSize.getAndAdd(packedBytes.length);
-                }
-                break;
+        // TODO: Refactoring
+        synchronized (allocatedSize) {
+            if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
+                throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
             }
-            catch (BufferFullException e) {
-                LOG.warn("Buffer is full. Maybe you'd better increase the buffer size.", e);
-                try {
-                    TimeUnit.MILLISECONDS.sleep(500);
-                }
-                catch (InterruptedException e1) {
-                    LOG.warn("Interrupted", e);
-                    Thread.currentThread().interrupt();
-                }
-            }
+            ByteBuffer byteBuffer = ByteBuffer.wrap(packedBytes);
+            messages.add(byteBuffer);
+            allocatedSize.getAndAdd(packedBytes.length);
         }
     }
 

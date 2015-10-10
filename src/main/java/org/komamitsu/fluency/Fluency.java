@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.komamitsu.fluency.Constants.*;
 
@@ -113,8 +114,25 @@ public class Fluency
     public void emit(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        buffer.append(tag, timestamp, data);
-        flusher.onUpdate();
+        while (true) {
+            try {
+                buffer.append(tag, timestamp, data);
+                flusher.onUpdate();
+                break;
+            }
+            catch (Buffer.BufferFullException e) {
+                LOG.warn("emit() failed due to buffer full", e);
+                // TODO: Make it configurable
+                try {
+                    flusher.flush();
+                    TimeUnit.MILLISECONDS.sleep(400);
+                }
+                catch (InterruptedException e1) {
+                    LOG.warn("Interrupted during retrying", e1);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
     }
 
     public void emit(String tag, Map<String, Object> data)

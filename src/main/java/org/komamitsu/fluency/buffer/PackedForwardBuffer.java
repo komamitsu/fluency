@@ -98,32 +98,16 @@ public class PackedForwardBuffer
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
         outputStream.close();
 
-        boolean succeeded = false;
-        while (!succeeded) {
-            try {
-                synchronized (retentionBuffers) {
-                    RetentionBuffer buffer = prepareBuffer(tag, outputStream.size());
-                    buffer.getByteBuffer().put(outputStream.toByteArray());
-                    succeeded = true;
+        synchronized (retentionBuffers) {
+            RetentionBuffer buffer = prepareBuffer(tag, outputStream.size());
+            buffer.getByteBuffer().put(outputStream.toByteArray());
 
-                    buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
+            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
 
-                    moveRetentionBufferIfNeeded(tag, buffer);
-                    // TODO: Configurable
-                    if (emitCounter.incrementAndGet() % 1000 == 0) {
-                        moveRetentionBuffersToFlushable(false);
-                    }
-                }
-            }
-            catch (BufferFullException e) {
-                LOG.warn("Buffer is full. Maybe you'd better increase the buffer size.", e);
-                try {
-                    TimeUnit.MILLISECONDS.sleep(500);
-                }
-                catch (InterruptedException e1) {
-                    LOG.warn("Interrupted", e);
-                    Thread.currentThread().interrupt();
-                }
+            moveRetentionBufferIfNeeded(tag, buffer);
+            // TODO: Configurable
+            if (emitCounter.incrementAndGet() % 1000 == 0) {
+                moveRetentionBuffersToFlushable(false);
             }
         }
     }
