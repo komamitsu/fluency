@@ -10,3 +10,6 @@ install:
 
 script:
   - ./gradlew check --stacktrace --info
+
+after_success:
+  - ./gradlew jacocoTestReport coveralls
