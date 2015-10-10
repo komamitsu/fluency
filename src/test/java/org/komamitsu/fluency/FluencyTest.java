@@ -277,7 +277,12 @@ public class FluencyTest
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
             fluency.flush();
-            TimeUnit.MILLISECONDS.sleep(8000);
+            for (int i = 0; i < 10; i++) {
+                if (fluentd.ageEventsCounter.get() == (long)concurrency * reqNum) {
+                    break;
+                }
+                TimeUnit.MILLISECONDS.sleep(500);
+            }
             fluentd.stop();
             TimeUnit.MILLISECONDS.sleep(1000);
 
