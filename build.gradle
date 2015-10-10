@@ -3,6 +3,8 @@ apply plugin: "findbugs"
 apply plugin: 'jacoco'
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'com.github.kt3k.coveralls'
+
 
 group = 'org.komamitsu'
 archivesBaseName = 'fluency'
@@ -99,3 +101,19 @@ uploadArchives {
     }
 }
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
+}
