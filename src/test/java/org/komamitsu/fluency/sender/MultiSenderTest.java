@@ -27,18 +27,26 @@ public class MultiSenderTest
     public void testConstructor()
             throws IOException
     {
-        MultiSender multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender("0.0.0.0", 24226)));
-        assertEquals(2, multiSender.sendersAndFailureDetectors.size());
+        MultiSender multiSender = null;
+        try {
+            multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender("0.0.0.0", 24226)));
+            assertEquals(2, multiSender.sendersAndFailureDetectors.size());
 
-        assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getFirst().getHost());
-        assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getFirst().getPort());
-        assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getHost());
-        assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getPort());
+            assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getFirst().getHost());
+            assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getFirst().getPort());
+            assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getHost());
+            assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getPort());
 
-        assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getFirst().getHost());
-        assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getFirst().getPort());
-        assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getHost());
-        assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getPort());
+            assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getFirst().getHost());
+            assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getFirst().getPort());
+            assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getHost());
+            assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getPort());
+        }
+        finally {
+            if (multiSender != null) {
+                multiSender.close();
+            }
+        }
     }
 
     @Test
@@ -77,8 +85,8 @@ public class MultiSenderTest
                         }
                         latch.countDown();
                     }
-                    catch (IOException e) {
-                        e.printStackTrace();
+                    catch (Exception e) {
+                        LOG.error("Failed to send", e);
                     }
                 }
             });
@@ -86,9 +94,9 @@ public class MultiSenderTest
 
         assertTrue(latch.await(6, TimeUnit.SECONDS));
         sender.close();
-        TimeUnit.MILLISECONDS.sleep(500);
-
+        TimeUnit.MILLISECONDS.sleep(1000);
         server1.stop();
+        TimeUnit.MILLISECONDS.sleep(1000);
 
         int connectCount = 0;
         int closeCount = 0;
@@ -116,5 +124,5 @@ public class MultiSenderTest
         assertEquals(2, connectCount);
         assertTrue(((long)(concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
         assertEquals(2, closeCount);
- }
+    }
 }

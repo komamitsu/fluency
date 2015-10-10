@@ -52,6 +52,12 @@ public class FailureDetectorTest
                         }
                     }
                 }
+                try {
+                    serverSocketChannel.close();
+                }
+                catch (IOException e) {
+                    LOG.warn("Failed to close serverSocketChannel", e);
+                }
             }
         };
 
@@ -66,11 +72,16 @@ public class FailureDetectorTest
             failureDetector = new FailureDetector(failureDetectorConfig, heartbeaterConfig);
 
             assertTrue(failureDetector.isAvailable());
-            TimeUnit.SECONDS.sleep(4L);
+            TimeUnit.SECONDS.sleep(4);
             assertTrue(failureDetector.isAvailable());
 
             executorService.shutdownNow();
-            TimeUnit.SECONDS.sleep(10L);
+            for (int i = 0; i < 20; i++) {
+                if (!failureDetector.isAvailable()) {
+                    break;
+                }
+                TimeUnit.MILLISECONDS.sleep(500);
+            }
             assertFalse(failureDetector.isAvailable());
         }
         finally {

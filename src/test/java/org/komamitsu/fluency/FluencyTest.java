@@ -38,16 +38,16 @@ public class FluencyTest
             throws IOException
     {
         Fluency fluency = null;
-        fluency = Fluency.defaultFluency();
-        fluency = Fluency.defaultFluency(12345);
-        fluency = Fluency.defaultFluency("333.333.333.333", 12345);
-        fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)));
+        Fluency.defaultFluency().close();
+        Fluency.defaultFluency(12345).close();
+        Fluency.defaultFluency("333.333.333.333", 12345).close();
+        Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210))).close();
         Fluency.Config config = new Fluency.Config();
         config.setFlushIntervalMillis(200).setMaxBufferSize(64 * 1024 * 1024).setSenderMaxRetryCount(99);
-        fluency = Fluency.defaultFluency(config);
-        fluency = Fluency.defaultFluency(12345, config);
-        fluency = Fluency.defaultFluency("333.333.333.333", 12345, config);
-        fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config);
+        Fluency.defaultFluency(config).close();
+        Fluency.defaultFluency(12345, config).close();
+        Fluency.defaultFluency("333.333.333.333", 12345, config).close();
+        Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config).close();
     }
 
     interface FluencyFactory
@@ -275,9 +275,15 @@ public class FluencyTest
                 });
             }
 
-            assertTrue(latch.await(30, TimeUnit.SECONDS));
+            for (int i = 0; i < 60; i++) {
+                if (latch.await(1, TimeUnit.SECONDS)) {
+                    break;
+                }
+            }
+            assertEquals(0, latch.getCount());
+
             fluency.flush();
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 20; i++) {
                 if (fluentd.ageEventsCounter.get() == (long)concurrency * reqNum) {
                     break;
                 }
