@@ -25,6 +25,7 @@ public class MessageBuffer
     private final LinkedBlockingQueue<ByteBuffer> messages = new LinkedBlockingQueue<ByteBuffer>();
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    private final Object bufferLock = new Object();
 
     private MessageBuffer(MessageBuffer.Config bufferConfig)
     {
@@ -52,7 +53,7 @@ public class MessageBuffer
         }
 
         // TODO: Refactoring
-        synchronized (allocatedSize) {
+        synchronized (bufferLock) {
             if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
                 throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
             }
@@ -70,7 +71,7 @@ public class MessageBuffer
         while ((message = messages.poll()) != null) {
             try {
                 // TODO: Refactoring
-                synchronized (allocatedSize) {
+                synchronized (bufferLock) {
                     allocatedSize.addAndGet(-message.capacity());
                     if (bufferConfig.isAckResponseMode()) {
                         String uuid = UUID.randomUUID().toString();
