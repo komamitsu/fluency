@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class MessageBuffer
     extends Buffer<MessageBuffer.Config>
@@ -31,14 +32,18 @@ public class MessageBuffer
     }
 
     @Override
-    public synchronized void append(String tag, long timestamp, Map<String, Object> data)
+    public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        outputStream.reset();
-        objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
-        outputStream.close();
+        // TODO: Use ThreadLocal
+        byte[] packedBytes = null;
+        synchronized (outputStream) {
+            outputStream.reset();
+            objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
+            outputStream.close();
+            packedBytes = outputStream.toByteArray();
+        }
 
-        byte[] packedBytes = outputStream.toByteArray();
         if (bufferConfig.isAckResponseMode()) {
             if (packedBytes[0] != (byte)0x93) {
                 throw new IllegalStateException("packedBytes[0] should be 0x93, but " + packedBytes[0]);
@@ -46,28 +51,49 @@ public class MessageBuffer
             packedBytes[0] = (byte)0x94;
         }
 
-        if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
+        while (true) {
+            try {
+                // TODO: Refactoring
+                synchronized (allocatedSize) {
+                    if (allocatedSize.get() + packedBytes.length > bufferConfig.getMaxBufferSize()) {
+                        throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", allocatedSize=" + allocatedSize);
+                    }
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(packedBytes);
+                    messages.add(byteBuffer);
+                    allocatedSize.getAndAdd(packedBytes.length);
+                }
+                break;
+            }
+            catch (BufferFullException e) {
+                LOG.warn("Buffer is full. Maybe you'd better increase the buffer size.", e);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                }
+                catch (InterruptedException e1) {
+                    LOG.warn("Interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
-        ByteBuffer byteBuffer = ByteBuffer.wrap(packedBytes);
-        messages.add(byteBuffer);
-        allocatedSize.getAndAdd(packedBytes.length);
     }
 
     @Override
-    public synchronized void flushInternal(Sender sender, boolean force)
+    public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
             try {
-                allocatedSize.addAndGet(-message.capacity());
-                if (bufferConfig.isAckResponseMode()) {
-                    String uuid = UUID.randomUUID().toString();
-                    sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
-                }
-                else {
-                    sender.send(message);
+                // TODO: Refactoring
+                synchronized (allocatedSize) {
+                    allocatedSize.addAndGet(-message.capacity());
+                    if (bufferConfig.isAckResponseMode()) {
+                        String uuid = UUID.randomUUID().toString();
+                        sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
+                    }
+                    else {
+                        sender.send(message);
+                    }
                 }
             }
             catch (Throwable e) {
