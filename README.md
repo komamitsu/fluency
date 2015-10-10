@@ -1,4 +1,6 @@
 # Fluency
+[<img src="https://travis-ci.org/komamitsu/fluency.svg"/>](https://travis-ci.org/komamitsu/fluency)
+
 Yet another fluentd logger.
 
 ## Features
