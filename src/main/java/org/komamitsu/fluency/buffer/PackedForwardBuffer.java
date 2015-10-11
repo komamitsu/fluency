@@ -105,7 +105,7 @@ public class PackedForwardBuffer
         }
     }
 
-    private synchronized void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
+    private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
         if (buffer.getByteBuffer().position() > bufferConfig.getBufferRetentionSize()) {
@@ -113,21 +113,24 @@ public class PackedForwardBuffer
         }
     }
 
-    private synchronized void moveRetentionBuffersToFlushable(boolean force)
+    private void moveRetentionBuffersToFlushable(boolean force)
             throws IOException
     {
         long expiredThreshold = System.currentTimeMillis() - bufferConfig.getBufferRetentionTimeMillis();
-        for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
-            // it can be null because moveRetentionBufferToFlushable() can set null
-            if (entry.getValue() != null) {
-                if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
-                    moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
+
+        synchronized (retentionBuffers) {
+            for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
+                // it can be null because moveRetentionBufferToFlushable() can set null
+                if (entry.getValue() != null) {
+                    if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
+                        moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
+                    }
                 }
             }
         }
     }
 
-    private synchronized void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
+    private void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
             throws IOException
     {
         try {
