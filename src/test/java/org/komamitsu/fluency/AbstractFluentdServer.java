@@ -20,19 +20,20 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractFluentdServer
         extends AbstractMockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFluentdServer.class);
+    private static final Charset CHARSET = Charset.forName("UTF-8");
     private FluentdEventHandler fluentdEventHandler;
 
     public interface EventHandler
@@ -59,9 +60,26 @@ public abstract class AbstractFluentdServer
         private void ack(SocketChannel acceptSocketChannel, Value option)
                 throws IOException
         {
-            assertEquals(ValueType.STRING, option.getValueType());
-            byte[] bytes = option.asStringValue().asByteArray();
-            ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length + 2);
+            assertEquals(ValueType.MAP, option.getValueType());
+            byte[] bytes = null;
+            for (Map.Entry<Value, Value> entry : option.asMapValue().entrySet()) {
+                if (entry.getKey().asStringValue().asString().equals("chunk")) {
+                    assertEquals(ValueType.BINARY, entry.getValue().getValueType());
+                    bytes = entry.getValue().asBinaryValue().asByteArray();
+                    break;
+                }
+            }
+            assertNotNull(bytes);
+            ByteBuffer byteBuffer = ByteBuffer.allocate(
+                    1 /* map header */ +
+                    1 /* key header */ +
+                    3 /* key body */ +
+                    2 /* value header(including len) */ +
+                    bytes.length);
+
+            byteBuffer.put((byte) 0x81); /* map header */
+            byteBuffer.put((byte) 0xA3); /* key header */
+            byteBuffer.put("ack".getBytes(CHARSET));    /* key body */
             byteBuffer.put((byte) 0xC4);
             byteBuffer.put((byte) bytes.length);
             byteBuffer.put(bytes);

@@ -43,6 +43,9 @@ public class Fluency
         if (config != null && config.getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
         }
+        if (config != null) {
+            bufferConfig.setAckResponseMode(config.ackResponseMode);
+        }
 
         Flusher.Config flusherConfig = new AsyncFlusher.Config();
         if (config != null && config.getFlushIntervalMillis() != null) {
@@ -197,6 +200,8 @@ public class Fluency
 
         private Integer senderMaxRetryCount;
 
+        private boolean ackResponseMode;
+
         public Integer getMaxBufferSize()
         {
             return maxBufferSize;
@@ -227,6 +232,17 @@ public class Fluency
         public Config setSenderMaxRetryCount(Integer senderMaxRetryCount)
         {
             this.senderMaxRetryCount = senderMaxRetryCount;
+            return this;
+        }
+
+        public boolean isAckResponseMode()
+        {
+            return ackResponseMode;
+        }
+
+        public Config setAckResponseMode(boolean ackResponseMode)
+        {
+            this.ackResponseMode = ackResponseMode;
             return this;
         }
     }

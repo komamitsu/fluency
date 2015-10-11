@@ -33,7 +33,9 @@ public class MessagePackAckTokenSerDe
             outputStream.reset();
             MessageBufferOutput bufferOutput = new OutputStreamBufferOutput(outputStream);
             packer.reset(bufferOutput);
-            packer.packRawStringHeader(token.length);
+            packer.packMapHeader(1);
+            packer.packString("chunk");
+            packer.packBinaryHeader(token.length);
             packer.writePayload(token);
             packer.flush();
             return outputStream.toByteArray();
@@ -47,8 +49,15 @@ public class MessagePackAckTokenSerDe
         synchronized (unpacker) {
             MessageBufferInput bufferInput = new ArrayBufferInput(packedToken);
             unpacker.reset(bufferInput);
-            byte[] unpackedToken = new byte[unpacker.unpackRawStringHeader()];
-            unpacker.readPayload(unpackedToken);
+            int mapLen = unpacker.unpackMapHeader();
+            byte[] unpackedToken = null;
+            for (int i = 0; i < mapLen; i++) {
+                if (unpacker.unpackString().equals("ack")) {
+                    unpackedToken = new byte[unpacker.unpackBinaryHeader()];
+                    unpacker.readPayload(unpackedToken);
+                    break;
+                }
+            }
             return unpackedToken;
         }
     }

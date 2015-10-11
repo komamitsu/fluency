@@ -725,7 +725,7 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(256 * 1024 * 1024);
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(32 * 1024 * 1024);
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -747,8 +747,16 @@ public class FluencyTest
     {
         int concurrency = 4;
         int reqNum = 1000000;
-        // Fluency fluency = Fluency.defaultFluency();
-        Fluency fluency = Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)));
+        /*
+        MultiSender sender = new MultiSender(Arrays.asList(new TCPSender(24224), new TCPSender(24225)));
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(128 * 1024 * 1024).setAckResponseMode(true);
+        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
+        Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        */
+        Fluency fluency = Fluency.defaultFluency(
+                Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)),
+                new Fluency.Config().setAckResponseMode(true));
+
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         data.put("age", 42);
@@ -758,7 +766,7 @@ public class FluencyTest
         for (int i = 0; i < concurrency; i++) {
             executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
         }
-        assertTrue(latch.await(20, TimeUnit.SECONDS));
+        assertTrue(latch.await(60, TimeUnit.SECONDS));
         fluency.close();
     }
 }

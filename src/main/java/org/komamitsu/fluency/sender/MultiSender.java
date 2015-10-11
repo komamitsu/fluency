@@ -74,6 +74,10 @@ public class MultiSender
     private synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws AllNodesUnavailableException
     {
+        List<Integer> positions = new ArrayList<Integer>(dataList.size());
+        for (ByteBuffer data : dataList) {
+            positions.add(data.position());
+        }
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
             TCPSender sender = senderAndFailureDetector.getFirst();
             FailureDetector failureDetector = senderAndFailureDetector.getSecond();
@@ -90,6 +94,9 @@ public class MultiSender
                 }
                 catch (IOException e) {
                     LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
+                    for (int i = 0; i < dataList.size(); i++) {
+                        dataList.get(i).position(positions.get(i));
+                    }
                     failureDetector.onFailure(e);
                 }
             }
