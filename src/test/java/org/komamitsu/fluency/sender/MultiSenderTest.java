@@ -57,6 +57,7 @@ public class MultiSenderTest
         server0.start();
         final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics();
         server1.start();
+        TimeUnit.MILLISECONDS.sleep(1000);
 
         int concurency = 20;
         final int reqNum = 5000;
@@ -92,7 +93,13 @@ public class MultiSenderTest
             });
         }
 
-        assertTrue(latch.await(6, TimeUnit.SECONDS));
+        for (int i = 0; i < 60; i++) {
+            if (latch.await(1, TimeUnit.SECONDS)) {
+                break;
+            }
+        }
+        assertEquals(0, latch.getCount());
+
         sender.close();
         TimeUnit.MILLISECONDS.sleep(1000);
         server1.stop();
