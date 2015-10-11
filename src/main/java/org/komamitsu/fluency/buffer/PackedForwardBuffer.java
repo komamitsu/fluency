@@ -27,20 +27,6 @@ public class PackedForwardBuffer
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
-    private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
-        @Override
-        protected ObjectMapper initialValue()
-        {
-            return new ObjectMapper(new MessagePackFactory());
-        }
-    };
-    private final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
-        @Override
-        protected ByteArrayOutputStream initialValue()
-        {
-            return new ByteArrayOutputStream();
-        }
-    };
 
     private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
     {

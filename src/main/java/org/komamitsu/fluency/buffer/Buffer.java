@@ -1,9 +1,12 @@
 package org.komamitsu.fluency.buffer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -15,6 +18,20 @@ public abstract class Buffer<T extends Buffer.Config>
     protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
     protected final AtomicInteger allocatedSize = new AtomicInteger();
+    protected final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
+        @Override
+        protected ObjectMapper initialValue()
+        {
+            return new ObjectMapper(new MessagePackFactory());
+        }
+    };
+    protected final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
+        @Override
+        protected ByteArrayOutputStream initialValue()
+        {
+            return new ByteArrayOutputStream();
+        }
+    };
 
     public static class BufferFullException extends IOException {
         public BufferFullException(String s)

@@ -36,14 +36,13 @@ public class MessageBuffer
     public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        // TODO: Use ThreadLocal
         byte[] packedBytes = null;
-        synchronized (outputStream) {
-            outputStream.reset();
-            objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
-            outputStream.close();
-            packedBytes = outputStream.toByteArray();
-        }
+        ObjectMapper objectMapper = objectMapperHolder.get();
+        ByteArrayOutputStream outputStream = outputStreamHolder.get();
+        outputStream.reset();
+        objectMapper.writeValue(outputStream, Arrays.asList(tag, timestamp, data));
+        outputStream.close();
+        packedBytes = outputStream.toByteArray();
 
         if (bufferConfig.isAckResponseMode()) {
             if (packedBytes[0] != (byte)0x93) {
