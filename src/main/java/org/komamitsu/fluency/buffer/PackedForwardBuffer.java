@@ -27,7 +27,6 @@ public class PackedForwardBuffer
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
-    private final AtomicInteger emitCounter = new AtomicInteger();
     private final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -101,14 +100,8 @@ public class PackedForwardBuffer
         synchronized (retentionBuffers) {
             RetentionBuffer buffer = prepareBuffer(tag, outputStream.size());
             buffer.getByteBuffer().put(outputStream.toByteArray());
-
             buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
-
             moveRetentionBufferIfNeeded(tag, buffer);
-            // TODO: Configurable
-            if (emitCounter.incrementAndGet() % 1000 == 0) {
-                moveRetentionBuffersToFlushable(false);
-            }
         }
     }
 
