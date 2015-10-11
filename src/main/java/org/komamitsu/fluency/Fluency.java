@@ -121,7 +121,7 @@ public class Fluency
                 break;
             }
             catch (Buffer.BufferFullException e) {
-                LOG.warn("emit() failed due to buffer full", e);
+                LOG.warn("emit() failed due to buffer full. retrying...");
                 // TODO: Make it configurable
                 try {
                     flusher.flush();

@@ -10,6 +10,8 @@ import org.msgpack.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.IIOException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +20,8 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +49,7 @@ public abstract class AbstractFluentdServer
     {
         private final EventHandler eventHandler;
         private final ExecutorService executorService = Executors.newCachedThreadPool();
-        private PipedInputStream pipedInputStream;
-        private PipedOutputStream pipedOutputStream;
+        private final Map<SocketChannel, FluentdAcceptTask> fluentdTasks = new ConcurrentHashMap<SocketChannel, FluentdAcceptTask>();
 
         private FluentdEventHandler(EventHandler eventHandler)
         {
@@ -66,109 +69,137 @@ public abstract class AbstractFluentdServer
             acceptSocketChannel.write(byteBuffer);
         }
 
+        private class FluentdAcceptTask implements Runnable
+        {
+            private final SocketChannel acceptSocketChannel;
+            private final PipedInputStream pipedInputStream;
+            private final PipedOutputStream pipedOutputStream;
+
+            private FluentdAcceptTask(SocketChannel acceptSocketChannel)
+                    throws IOException
+            {
+                this.acceptSocketChannel = acceptSocketChannel;
+                this.pipedOutputStream = new PipedOutputStream();
+                this.pipedInputStream = new PipedInputStream(pipedOutputStream);
+            }
+
+            public PipedInputStream getPipedInputStream()
+            {
+                return pipedInputStream;
+            }
+
+            public PipedOutputStream getPipedOutputStream()
+            {
+                return pipedOutputStream;
+            }
+
+            @Override
+            public void run()
+            {
+                MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(pipedInputStream);
+
+                try {
+                    while (!executorService.isTerminated()) {
+                        ImmutableValue value = null;
+                        try {
+                            if (!unpacker.hasNext()) {
+                                break;
+                            }
+                            value = unpacker.unpackValue();
+                            LOG.trace("value={}, local.port={}, remote.port={}", value, acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort());
+                        }
+                        catch (IOException e) {
+                            LOG.debug("Fluentd accept task received IOException");
+                            break;
+                        }
+                        assertEquals(ValueType.ARRAY, value.getValueType());
+                        ImmutableArrayValue rootValue = value.asArrayValue();
+
+                        String tag = rootValue.get(0).toString();
+                        Value secondValue = rootValue.get(1);
+
+                        if (secondValue.isIntegerValue()) {
+                            // Message
+                            long timestamp = secondValue.asIntegerValue().asLong();
+                            MapValue mapValue = rootValue.get(2).asMapValue();
+                            eventHandler.onReceive(tag, timestamp, mapValue);
+                            if (rootValue.size() == 4) {
+                                ack(acceptSocketChannel, rootValue.get(3));
+                            }
+                        }
+                        else if (secondValue.isRawValue()) {
+                            // PackedForward
+                            byte[] bytes = secondValue.asRawValue().asByteArray();
+                            MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
+                            while (eventsUnpacker.hasNext()) {
+                                ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
+                                assertEquals(2, arrayValue.size());
+                                long timestamp = arrayValue.get(0).asIntegerValue().asLong();
+                                MapValue mapValue = arrayValue.get(1).asMapValue();
+                                eventHandler.onReceive(tag, timestamp, mapValue);
+                            }
+                            if (rootValue.size() == 3) {
+                                ack(acceptSocketChannel, rootValue.get(2));
+                            }
+                        }
+                        else {
+                            throw new IllegalStateException("Unexpected second value: " + secondValue);
+                        }
+                    }
+
+                    try {
+                        LOG.debug("Closing unpacker: this={}, local.port={}, remote.port={}", this, acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort());
+                        unpacker.close();
+                    }
+                    catch (IOException e) {
+                        LOG.warn("Failed to close unpacker quietly: this={}, unpacker={}", this, unpacker);
+                    }
+                }
+                catch (Throwable e) {
+                    LOG.error("Fluentd server failed: this=" + this + ", local.port=" + acceptSocketChannel.socket().getLocalPort() + ", remote.port=" + acceptSocketChannel.socket().getPort(), e);
+                    try {
+                        acceptSocketChannel.close();
+                    }
+                    catch (IOException e1) {
+                        LOG.warn("Failed to close accept socket quietly", e1);
+                    }
+                }
+            }
+        }
+
         @Override
         public void onConnect(final SocketChannel acceptSocketChannel)
         {
-            pipedOutputStream = new PipedOutputStream();
+            eventHandler.onConnect(acceptSocketChannel);
             try {
-                pipedInputStream = new PipedInputStream(pipedOutputStream);
+                FluentdAcceptTask fluentdAcceptTask = new FluentdAcceptTask(acceptSocketChannel);
+                fluentdTasks.put(acceptSocketChannel, fluentdAcceptTask);
+                executorService.execute(fluentdAcceptTask);
             }
             catch (IOException e) {
-                throw new IllegalStateException("Failed to create PipedInputStream");
+                fluentdTasks.remove(acceptSocketChannel);
+                throw new IllegalStateException("Failed to create FluentdAcceptTask", e);
             }
-
-            eventHandler.onConnect(acceptSocketChannel);
-            executorService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(pipedInputStream);
-
-                    try {
-                        while (!executorService.isTerminated()) {
-                            ImmutableValue value = null;
-                            try {
-                                if (!unpacker.hasNext()) {
-                                    break;
-                                }
-                                value = unpacker.unpackValue();
-                            }
-                            catch (InterruptedIOException e) {
-                                // Expected
-                                break;
-                            }
-                            assertEquals(ValueType.ARRAY, value.getValueType());
-                            ImmutableArrayValue rootValue = value.asArrayValue();
-
-                            String tag = rootValue.get(0).toString();
-                            Value secondValue = rootValue.get(1);
-
-                            if (secondValue.isIntegerValue()) {
-                                // Message
-                                long timestamp = secondValue.asIntegerValue().asLong();
-                                MapValue mapValue = rootValue.get(2).asMapValue();
-                                eventHandler.onReceive(tag, timestamp, mapValue);
-                                if (rootValue.size() == 4) {
-                                    ack(acceptSocketChannel, rootValue.get(3));
-                                }
-                            }
-                            else if (secondValue.isRawValue()) {
-                                // PackedForward
-                                byte[] bytes = secondValue.asRawValue().asByteArray();
-                                MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
-                                while (eventsUnpacker.hasNext()) {
-                                    ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
-                                    assertEquals(2, arrayValue.size());
-                                    long timestamp = arrayValue.get(0).asIntegerValue().asLong();
-                                    MapValue mapValue = arrayValue.get(1).asMapValue();
-                                    eventHandler.onReceive(tag, timestamp, mapValue);
-                                }
-                                if (rootValue.size() == 3) {
-                                    ack(acceptSocketChannel, rootValue.get(2));
-                                }
-                            }
-                            else {
-                                throw new IllegalStateException("Unexpected second value: " + secondValue);
-                            }
-                        }
-
-                        try {
-                            unpacker.close();
-                        }
-                        catch (IOException e) {
-                            LOG.warn("Failed to close unpacker quietly={}", unpacker);
-                        }
-                    }
-                    catch (Throwable e) {
-                        LOG.error("Fluentd server failed", e);
-                        try {
-                            acceptSocketChannel.close();
-                        }
-                        catch (IOException e1) {
-                            LOG.warn("Failed to close accept socket quietly", e1);
-                        }
-                        executorService.shutdownNow();
-                    }
-                }
-            });
         }
 
         @Override
         public void onReceive(SocketChannel acceptSocketChannel, ByteBuffer data)
         {
-            if (pipedOutputStream == null) {
-                throw new IllegalStateException("pipedOutputStream is null");
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.get(acceptSocketChannel);
+            if (fluentdAcceptTask == null) {
+                throw new IllegalStateException("fluentAccept is null: this=" + this);
             }
             data.flip();
             byte[] bytes = new byte[data.limit()];
             data.get(bytes);
+
+            LOG.trace("onReceived: local.port={}, remote.port={}, dataLen={}", acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort(), bytes.length);
             try {
-                pipedOutputStream.write(bytes);
-                pipedOutputStream.flush();
+                fluentdAcceptTask.getPipedOutputStream().write(bytes);
+                fluentdAcceptTask.getPipedOutputStream().flush();
             }
             catch (IOException e) {
-                throw new RuntimeException("Failed to call PipedOutputStream.write()");
+                throw new RuntimeException("Failed to call PipedOutputStream.write(): this=" + this);
             }
         }
 
@@ -176,15 +207,18 @@ public abstract class AbstractFluentdServer
         public void onClose(SocketChannel acceptSocketChannel)
         {
             eventHandler.onClose(acceptSocketChannel);
-            executorService.shutdown();
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocketChannel);
             try {
-                executorService.awaitTermination(3, TimeUnit.SECONDS);
+                fluentdAcceptTask.getPipedInputStream().close();
             }
-            catch (InterruptedException e) {
-                LOG.warn("onClose() was interrupted", e);
+            catch (IOException e) {
+                LOG.warn("Failed to close PipedInputStream");
             }
-            if (!executorService.isTerminated()) {
-                executorService.shutdownNow();
+            try {
+                fluentdAcceptTask.getPipedOutputStream().close();
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to close PipedOutputStream");
             }
         }
     }

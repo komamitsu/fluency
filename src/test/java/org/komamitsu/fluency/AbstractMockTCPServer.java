@@ -59,7 +59,7 @@ public abstract class AbstractMockTCPServer
             executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException e) {
-            LOG.warn("ExecutorService.shutdown() was interrupted", e);
+            LOG.warn("ExecutorService.shutdown() was interrupted: this=" + this, e);
         }
         executorService.shutdownNow();
     }
@@ -90,28 +90,28 @@ public abstract class AbstractMockTCPServer
         {
             while (!serverExecutorService.isShutdown()) {
                 try {
-                    LOG.debug("ServerTask: accepting... local.port={}", getLocalPort());
+                    LOG.debug("ServerTask: accepting... this={}, local.port={}", this, getLocalPort());
                     SocketChannel accept = serverSocketChannel.accept();
-                    LOG.debug("ServerTask: accepted. local.port={}, remote.port={}", getLocalPort(), accept.socket().getPort());
+                    LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), accept.socket().getPort());
                     serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, accept));
                 }
                 catch (RejectedExecutionException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed", e);
+                    LOG.debug("ServerSocketChannel.accept() failed: this=" + this);
                 }
                 catch (ClosedByInterruptException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed", e);
+                    LOG.debug("ServerSocketChannel.accept() failed: this=" + this);
                 }
                 catch (IOException e) {
-                    LOG.warn("ServerSocketChannel.accept() failed", e);
+                    LOG.warn("ServerSocketChannel.accept() failed: this=" + this);
                 }
             }
             try {
                 serverSocketChannel.close();
             }
             catch (IOException e) {
-                LOG.warn("ServerSocketChannel.close() interrupted", e);
+                LOG.warn("ServerSocketChannel.close() interrupted");
             }
-            LOG.info("Finishing ServerTask...");
+            LOG.info("Finishing ServerTask...: this={}", this);
         }
 
         private static class AcceptTask
@@ -131,7 +131,7 @@ public abstract class AbstractMockTCPServer
             @Override
             public void run()
             {
-                LOG.debug("AcceptTask: connected. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
+                LOG.debug("AcceptTask: connected. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
                 try {
                     eventHandler.onConnect(accept);
                     ByteBuffer byteBuffer = ByteBuffer.allocateDirect(512 * 1024);
@@ -140,13 +140,13 @@ public abstract class AbstractMockTCPServer
                             byteBuffer.clear();
                             int len = accept.read(byteBuffer);
                             if (len < 0) {
-                                LOG.debug("AcceptTask: closed. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
+                                LOG.debug("AcceptTask: closed. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
                                 eventHandler.onClose(accept);
                                 try {
                                     accept.close();
                                 }
                                 catch (IOException e) {
-                                    LOG.warn("AcceptTask: close() failed", e);
+                                    LOG.warn("AcceptTask: close() failed: this=" + this, e);
                                 }
                             }
                             else {
@@ -154,22 +154,23 @@ public abstract class AbstractMockTCPServer
                             }
                         }
                         catch (ClosedChannelException e) {
-                            LOG.debug("AcceptTask: channel is closed. local={}, remote={}", accept.socket().getLocalPort(), accept.socket().getPort());
+                            LOG.debug("AcceptTask: channel is closed. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
+
                             eventHandler.onClose(accept);
                         }
                         catch (IOException e) {
-                            LOG.warn("AcceptTask: recv() failed", e);
+                            LOG.warn("AcceptTask: recv() failed: this=" + this, e);
                         }
                     }
                 }
                 finally {
                     try {
+                        LOG.debug("AcceptTask: Finished. Closing... this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
                         accept.close();
                     }
                     catch (IOException e) {
                         LOG.warn("AcceptTask: close() failed", e);
                     }
-                    parentExecutorService.shutdownNow();
                 }
             }
         }

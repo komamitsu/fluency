@@ -7,6 +7,7 @@ import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.msgpack.value.MapValue;
@@ -17,14 +18,17 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -52,7 +56,7 @@ public class FluencyTest
 
     interface FluencyFactory
     {
-        Fluency generate(int fluentdPort)
+        Fluency generate(List<Integer> localPort)
                 throws IOException;
     }
 
@@ -62,9 +66,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -79,9 +84,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config();
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -96,9 +102,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -113,9 +120,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config();
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -130,9 +138,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -147,9 +156,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -164,9 +174,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -181,9 +192,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -198,9 +210,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -215,9 +228,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -232,9 +246,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -249,9 +264,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -266,9 +282,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -283,9 +300,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -295,14 +313,53 @@ public class FluencyTest
     }
 
     @Test
+    public void testFluencyUsingMessageAndAsyncFlusherWithAckResponseWithMultiSender()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(List<Integer> localPorts)
+                    throws IOException
+            {
+                int fluentdPort = localPorts.get(0);
+                int secondaryFluentdPort = localPorts.get(1);
+                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        }, true);
+    }
+
+    @Test
+    public void testFluencyUsingMessageAndSyncFlusherWithAckResponseWithMultiSender()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(List<Integer> localPorts)
+                    throws IOException
+            {
+                int fluentdPort = localPorts.get(0);
+                int secondaryFluentdPort = localPorts.get(1);
+                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        }, true);
+    }
+
+    @Test
     public void testFluencyUsingPackedForwardAndSyncFlusherWithAckResponseWithSmallBuffer()
             throws Exception
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
@@ -317,9 +374,10 @@ public class FluencyTest
     {
         testFluencyBase(new FluencyFactory() {
             @Override
-            public Fluency generate(int fluentdPort)
+            public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
+                int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -328,14 +386,66 @@ public class FluencyTest
         });
     }
 
-    public void testFluencyBase(FluencyFactory fluencyFactory)
+    @Test
+    public void testFluencyUsingPackedForwardAndAsyncFlusherWithAckResponseWithMultiSender()
             throws Exception
     {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(List<Integer> localPorts)
+                    throws IOException
+            {
+                int fluentdPort = localPorts.get(0);
+                int secondaryFluentdPort = localPorts.get(1);
+                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        }, true);
+    }
+
+    @Test
+    public void testFluencyUsingPackedForwardAndSyncFlusherWithAckResponseWithMultiSender()
+            throws Exception
+    {
+        testFluencyBase(new FluencyFactory() {
+            @Override
+            public Fluency generate(List<Integer> localPorts)
+                    throws IOException
+            {
+                int fluentdPort = localPorts.get(0);
+                int secondaryFluentdPort = localPorts.get(1);
+                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
+                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            }
+        }, true);
+    }
+
+    private void testFluencyBase(FluencyFactory fluencyFactory)
+            throws Exception
+    {
+        testFluencyBase(fluencyFactory, false);
+    }
+
+    private void testFluencyBase(FluencyFactory fluencyFactory, final boolean testFailover)
+            throws Exception
+    {
+        ArrayList<Integer> localPorts = new ArrayList<Integer>();
+
         MockFluentdServer fluentd = new MockFluentdServer();
         fluentd.start();
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(200);
+        localPorts.add(fluentd.getLocalPort());
 
-        final Fluency fluency = fluencyFactory.generate(fluentd.getLocalPort());
+        final MockFluentdServer secondaryFluentd = new MockFluentdServer(fluentd);
+        secondaryFluentd.start();
+        TimeUnit.MILLISECONDS.sleep(200);
+        localPorts.add(secondaryFluentd.getLocalPort());
+
+        final Fluency fluency = fluencyFactory.generate(localPorts);
 
         final int maxNameLen = 200;
         final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);
@@ -360,6 +470,7 @@ public class FluencyTest
             final int reqNum = 6000;
             long start = System.currentTimeMillis();
             final CountDownLatch latch = new CountDownLatch(concurrency);
+            final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
             ExecutorService es = Executors.newCachedThreadPool();
             for (int i = 0; i < concurrency; i++) {
                 es.execute(new Runnable()
@@ -368,6 +479,19 @@ public class FluencyTest
                     public void run()
                     {
                         for (int i = 0; i < reqNum; i++) {
+                            if (testFailover) {
+                                if (i == reqNum / 4) {
+                                    if (shouldFailOver.getAndSet(false)) {
+                                        LOG.info("Failing over...");
+                                        try {
+                                            secondaryFluentd.stop();
+                                        }
+                                        catch (IOException e) {
+                                            LOG.warn("Failed to stop secondary fluentd", e);
+                                        }
+                                    }
+                                }
+                            }
                             int tagNum = i % 4;
                             final String tag = String.format("foodb%d.bartbl%d", tagNum, tagNum);
                             switch (tagNum) {
@@ -426,10 +550,14 @@ public class FluencyTest
                 TimeUnit.MILLISECONDS.sleep(500);
             }
             fluentd.stop();
+            secondaryFluentd.stop();
             TimeUnit.MILLISECONDS.sleep(1000);
 
-            assertEquals(1, fluentd.connectCounter.get());
-            assertEquals(1, fluentd.closeCounter.get());
+            if (!testFailover) {
+                // Ignore these counters when testing failover
+                assertEquals(1, fluentd.connectCounter.get());
+                assertEquals(1, fluentd.closeCounter.get());
+            }
             assertEquals((long)concurrency * reqNum, fluentd.ageEventsCounter.get());
             assertEquals(ageEventsSum.get(), fluentd.ageEventsSum.get());
             assertEquals((long)concurrency * reqNum, fluentd.nameEventsCounter.get());
@@ -443,26 +571,53 @@ public class FluencyTest
         } finally {
             fluency.close();
             fluentd.stop();
+            secondaryFluentd.stop();
         }
     }
 
     private static class MockFluentdServer extends AbstractFluentdServer
     {
-        private AtomicLong connectCounter = new AtomicLong();
-        private AtomicLong ageEventsCounter = new AtomicLong();
-        private AtomicLong ageEventsSum = new AtomicLong();
-        private AtomicLong nameEventsCounter = new AtomicLong();
-        private AtomicLong nameEventsLength = new AtomicLong();
-        private AtomicLong tag0EventsCounter = new AtomicLong();
-        private AtomicLong tag1EventsCounter = new AtomicLong();
-        private AtomicLong tag2EventsCounter = new AtomicLong();
-        private AtomicLong tag3EventsCounter = new AtomicLong();
-        private AtomicLong closeCounter = new AtomicLong();
+        private final AtomicLong connectCounter;
+        private final AtomicLong ageEventsCounter;
+        private final AtomicLong ageEventsSum;
+        private final AtomicLong nameEventsCounter;
+        private final AtomicLong nameEventsLength;
+        private final AtomicLong tag0EventsCounter;
+        private final AtomicLong tag1EventsCounter;
+        private final AtomicLong tag2EventsCounter;
+        private final AtomicLong tag3EventsCounter;
+        private final AtomicLong closeCounter;
         private final long startTimestamp;
 
         public MockFluentdServer()
                 throws IOException
         {
+            connectCounter = new AtomicLong();
+            ageEventsCounter = new AtomicLong();
+            ageEventsSum = new AtomicLong();
+            nameEventsCounter = new AtomicLong();
+            nameEventsLength = new AtomicLong();
+            tag0EventsCounter = new AtomicLong();
+            tag1EventsCounter = new AtomicLong();
+            tag2EventsCounter = new AtomicLong();
+            tag3EventsCounter = new AtomicLong();
+            closeCounter = new AtomicLong();
+            startTimestamp = System.currentTimeMillis() / 1000;
+        }
+
+        public MockFluentdServer(MockFluentdServer base)
+                throws IOException
+        {
+            connectCounter = base.connectCounter;
+            ageEventsCounter = base.ageEventsCounter;
+            ageEventsSum = base.ageEventsSum;
+            nameEventsCounter = base.nameEventsCounter;
+            nameEventsLength = base.nameEventsLength;
+            tag0EventsCounter = base.tag0EventsCounter;
+            tag1EventsCounter = base.tag1EventsCounter;
+            tag2EventsCounter = base.tag2EventsCounter;
+            tag3EventsCounter = base.tag3EventsCounter;
+            closeCounter = base.closeCounter;
             startTimestamp = System.currentTimeMillis() / 1000;
         }
 

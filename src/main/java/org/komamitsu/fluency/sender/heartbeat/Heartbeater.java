@@ -51,7 +51,7 @@ public abstract class Heartbeater implements Closeable
             invoke();
         }
         catch (Throwable e) {
-            LOG.warn("ping(): failed, config=" + config, e);
+            LOG.warn("ping(): failed, config=" + config);
             Callback callback = this.callback.get();
             if (callback != null) {
                 callback.onFailure(e);
