@@ -62,7 +62,7 @@ public class PackedForwardBuffer
         }
         allocatedSize.addAndGet(delta);
 
-        RetentionBuffer newBuffer = new RetentionBuffer(ByteBuffer.allocate(newRetentionBufferSize));
+        RetentionBuffer newBuffer = new RetentionBuffer(ByteBuffer.allocateDirect(newRetentionBufferSize));
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
