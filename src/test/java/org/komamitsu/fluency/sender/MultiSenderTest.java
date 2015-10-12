@@ -78,6 +78,7 @@ public class MultiSenderTest
                         for (int j = 0; j < reqNum; j++) {
                             if (j == reqNum / 2) {
                                 if (shouldFailOver.getAndSet(false)) {
+                                    TimeUnit.MILLISECONDS.sleep(100);
                                     LOG.info("Failing over...");
                                     server0.stop();
                                 }
