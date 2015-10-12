@@ -137,50 +137,32 @@ public class PackedForwardBuffer
 
         TaggableBuffer flushableBuffer = null;
         while ((flushableBuffer = flushableBuffers.poll()) != null) {
-            try {
-                allocatedSize.addAndGet(-flushableBuffer.getByteBuffer().capacity());
-                // TODO: Reuse MessagePacker
-                ByteArrayOutputStream header = new ByteArrayOutputStream();
-                MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
-                LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
-                String tag = flushableBuffer.getTag();
-                ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
-                if (bufferConfig.isAckResponseMode()) {
-                    messagePacker.packArrayHeader(3);
-                }
-                else {
-                    messagePacker.packArrayHeader(2);
-                }
-                messagePacker.packString(tag);
-                messagePacker.packRawStringHeader(byteBuffer.position());
-                messagePacker.flush();
-
-                synchronized (sender) {
-                    ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-                    byteBuffer.flip();
-                    if (bufferConfig.isAckResponseMode()) {
-                        String uuid = UUID.randomUUID().toString();
-                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
-                    }
-                    else {
-                        sender.send(Arrays.asList(headerBuffer, byteBuffer));
-                    }
-                }
+            allocatedSize.addAndGet(-flushableBuffer.getByteBuffer().capacity());
+            // TODO: Reuse MessagePacker
+            ByteArrayOutputStream header = new ByteArrayOutputStream();
+            MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
+            LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
+            String tag = flushableBuffer.getTag();
+            ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
+            if (bufferConfig.isAckResponseMode()) {
+                messagePacker.packArrayHeader(3);
             }
-            catch (Throwable e) {
-                try {
-                    flushableBuffers.put(flushableBuffer);
-                    allocatedSize.addAndGet(flushableBuffer.getByteBuffer().capacity());
-                }
-                catch(InterruptedException e1){
-                    LOG.error("Interrupted during restoring fetched flushableBuffer. It can be lost. flushableBuffer={}", flushableBuffer);
-                }
+            else {
+                messagePacker.packArrayHeader(2);
+            }
+            messagePacker.packString(tag);
+            messagePacker.packRawStringHeader(byteBuffer.position());
+            messagePacker.flush();
 
-                if (e instanceof IOException) {
-                    throw (IOException) e;
+            synchronized (sender) {
+                ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
+                byteBuffer.flip();
+                if (bufferConfig.isAckResponseMode()) {
+                    String uuid = UUID.randomUUID().toString();
+                    sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
                 }
                 else {
-                    throw new RuntimeException("Failed to send flushableBuffer to fluentd", e);
+                    sender.send(Arrays.asList(headerBuffer, byteBuffer));
                 }
             }
         }

@@ -68,33 +68,15 @@ public class MessageBuffer
     {
         ByteBuffer message = null;
         while ((message = messages.poll()) != null) {
-            try {
-                // TODO: Refactoring
-                synchronized (bufferLock) {
-                    allocatedSize.addAndGet(-message.capacity());
-                    if (bufferConfig.isAckResponseMode()) {
-                        String uuid = UUID.randomUUID().toString();
-                        sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
-                    }
-                    else {
-                        sender.send(message);
-                    }
-                }
-            }
-            catch (Throwable e) {
-                try {
-                    messages.put(message);
-                    allocatedSize.addAndGet(message.capacity());
-                }
-                catch (InterruptedException e1) {
-                    LOG.error("Interrupted during restoring fetched message. It can be lost. message={}", message);
-                }
-
-                if (e instanceof IOException) {
-                    throw (IOException)e;
+            // TODO: Refactoring
+            synchronized (bufferLock) {
+                allocatedSize.addAndGet(-message.capacity());
+                if (bufferConfig.isAckResponseMode()) {
+                    String uuid = UUID.randomUUID().toString();
+                    sender.sendWithAck(Arrays.asList(message), uuid.getBytes(CHARSET));
                 }
                 else {
-                    throw new RuntimeException("Failed to send message to fluentd", e);
+                    sender.send(message);
                 }
             }
         }
