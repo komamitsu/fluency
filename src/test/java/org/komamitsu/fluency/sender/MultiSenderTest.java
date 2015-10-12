@@ -57,7 +57,7 @@ public class MultiSenderTest
         server0.start();
         final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics();
         server1.start();
-        TimeUnit.MILLISECONDS.sleep(1000);
+        TimeUnit.MILLISECONDS.sleep(500);
 
         int concurency = 20;
         final int reqNum = 5000;
@@ -76,7 +76,7 @@ public class MultiSenderTest
                         byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
                         for (int j = 0; j < reqNum; j++) {
-                            if (j == reqNum / 4) {
+                            if (j == reqNum / 2) {
                                 if (shouldFailOver.getAndSet(false)) {
                                     LOG.info("Failing over...");
                                     server0.stop();
