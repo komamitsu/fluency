@@ -8,6 +8,8 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.ImmutableValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -24,6 +26,7 @@ import static org.junit.Assert.*;
 
 public class BufferTestHelper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(BufferTestHelper.class);
     private final String longStr;
     private HashMap<String, Integer> tagCounts;
     private String minName;

@@ -84,7 +84,7 @@ public abstract class Buffer<T extends Buffer.Config>
 
     public abstract static class Config<T extends Buffer, C extends Config>
     {
-        protected int maxBufferSize = 16 * 1024 * 1024;
+        protected int maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
 
         public int getMaxBufferSize()
