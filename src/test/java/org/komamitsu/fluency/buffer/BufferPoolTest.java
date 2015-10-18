@@ -53,7 +53,12 @@ public class BufferPoolTest
         long totalBufferSize = getActualTotalBufferSize(bufferPool);
         assertEquals(224 * 1024, totalBufferSize);
 
-        bufferPool.releaseBuffers();
+        bufferPool.releaseBuffers(0.5f);
+        assertEquals(96 * 1024, bufferPool.getAllocatedSize());
+        totalBufferSize = getActualTotalBufferSize(bufferPool);
+        assertEquals(96 * 1024, totalBufferSize);
+
+        bufferPool.releaseBuffers(0);
         assertEquals(0, bufferPool.getAllocatedSize());
         totalBufferSize = getActualTotalBufferSize(bufferPool);
         assertEquals(0, totalBufferSize);

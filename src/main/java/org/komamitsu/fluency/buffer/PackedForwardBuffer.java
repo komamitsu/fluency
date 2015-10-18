@@ -172,7 +172,7 @@ public class PackedForwardBuffer
         moveRetentionBuffersToFlushable(true);
         retentionBuffers.clear();
         flush(sender, true);
-        bufferPool.releaseBuffers();
+        bufferPool.releaseBuffers(0);
     }
 
     @Override

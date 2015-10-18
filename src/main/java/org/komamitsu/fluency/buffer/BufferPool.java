@@ -3,8 +3,13 @@ package org.komamitsu.fluency.buffer;
 import org.msgpack.core.annotations.VisibleForTesting;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,6 +17,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class BufferPool
 {
+    private static final Comparator<Integer> INT_REV_COMPARATOR = new Comparator<Integer>() {
+        @Override
+        public int compare(Integer o1, Integer o2)
+        {
+            return o2 - o1;
+        }
+    };
+
     @VisibleForTesting
     final Map<Integer, LinkedBlockingQueue<ByteBuffer>> bufferPool = new HashMap<Integer, LinkedBlockingQueue<ByteBuffer>>();
     private final AtomicLong allocatedSize = new AtomicLong();
@@ -58,7 +71,7 @@ public class BufferPool
         while (true) {
             long currentAllocatedSize = allocatedSize.get();
             if (currentAllocatedSize + normalizedBufferSize > maxBufferSize) {
-                releaseBuffers();
+                releaseBuffers(0.5f);
                 return null;    // `null` means the buffer is full.
             }
             if (currentAllocatedSize == allocatedSize.getAndAdd(normalizedBufferSize)) {
@@ -85,15 +98,26 @@ public class BufferPool
         return allocatedSize.get();
     }
 
-    public void releaseBuffers()
+    public void releaseBuffers(float releaseRatio)
     {
-        // TODO: Stop releasing all the buffers when having released buffers to some extent
-        synchronized (bufferPool) {
-            for (Map.Entry<Integer, LinkedBlockingQueue<ByteBuffer>> entry : bufferPool.entrySet()) {
+        List<Integer> sortedSizes = Arrays.asList(bufferPool.keySet().toArray(new Integer[bufferPool.keySet().size()]));
+        Collections.sort(sortedSizes, INT_REV_COMPARATOR);
+
+        while (true) {
+            boolean released = false;
+            for (Integer size : sortedSizes) {
+                LinkedBlockingQueue<ByteBuffer> buffers = bufferPool.get(size);
                 ByteBuffer buffer;
-                while ((buffer = entry.getValue().poll()) != null) {
-                    allocatedSize.addAndGet(-buffer.capacity());
+                if ((buffer = buffers.poll()) != null) {
+                    released = true;
+                    long currentAllocatedSize = allocatedSize.addAndGet(-buffer.capacity());
+                    if (currentAllocatedSize <= maxBufferSize * releaseRatio) {
+                        return;
+                    }
                 }
+            }
+            if (!released) {
+                return;
             }
         }
     }
