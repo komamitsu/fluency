@@ -31,7 +31,7 @@ public class PackedForwardBuffer
         bufferPool = new BufferPool(bufferConfig.getInitialBufferSize(), bufferConfig.getMaxBufferSize());
     }
 
-    private synchronized RetentionBuffer prepareBuffer(String tag, int writeSize)
+    private RetentionBuffer prepareBuffer(String tag, int writeSize)
             throws BufferFullException
     {
         RetentionBuffer retentionBuffer = retentionBuffers.get(tag);
