@@ -718,7 +718,7 @@ public class FluencyTest
         }
     }
 
-    @Test
+    // @Test
     public void testWithRealFluentd()
             throws IOException, InterruptedException
     {
