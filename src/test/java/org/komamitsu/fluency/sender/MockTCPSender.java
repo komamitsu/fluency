@@ -24,6 +24,13 @@ public class MockTCPSender extends TCPSender
     }
 
     @Override
+    public synchronized void send(List<ByteBuffer> dataList)
+            throws IOException
+    {
+        events.addAll(dataList);
+    }
+
+    @Override
     public synchronized void send(ByteBuffer data)
             throws IOException
     {
