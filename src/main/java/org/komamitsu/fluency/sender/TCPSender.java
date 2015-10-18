@@ -89,8 +89,13 @@ public class TCPSender
     public synchronized void send(List<ByteBuffer> dataList)
             throws IOException
     {
-        for (ByteBuffer data : dataList) {
-            send(data);
+        try {
+            LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
+            getOrOpenChannel().write((ByteBuffer[]) dataList.toArray());
+        }
+        catch (IOException e) {
+            channel.set(null);
+            throw e;
         }
     }
 
