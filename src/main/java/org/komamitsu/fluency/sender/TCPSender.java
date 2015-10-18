@@ -91,7 +91,7 @@ public class TCPSender
     {
         try {
             LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
-            getOrOpenChannel().write((ByteBuffer[]) dataList.toArray());
+            getOrOpenChannel().write(dataList.toArray(new ByteBuffer[dataList.size()]));
         }
         catch (IOException e) {
             channel.set(null);
