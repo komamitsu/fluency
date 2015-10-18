@@ -87,6 +87,7 @@ public class BufferPool
 
     public void releaseBuffers()
     {
+        // TODO: Stop releasing all the buffers when having released buffers to some extent
         synchronized (bufferPool) {
             for (Map.Entry<Integer, LinkedBlockingQueue<ByteBuffer>> entry : bufferPool.entrySet()) {
                 ByteBuffer buffer;
