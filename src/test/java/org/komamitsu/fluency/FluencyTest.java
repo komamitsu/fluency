@@ -36,6 +36,7 @@ import static org.junit.Assert.*;
 public class FluencyTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
+    private static final int SMALL_BUF_SIZE = 4 * 1024 * 1024;
 
     @Test
     public void testDefaultFluency()
@@ -215,7 +216,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -233,7 +234,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -251,7 +252,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -269,7 +270,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -287,7 +288,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -305,7 +306,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -361,7 +362,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -379,7 +380,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 Sender sender = new TCPSender(fluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(2 * 1024 * 1024);
+                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
@@ -717,7 +718,7 @@ public class FluencyTest
         }
     }
 
-    // @Test
+    @Test
     public void testWithRealFluentd()
             throws IOException, InterruptedException
     {
@@ -725,7 +726,7 @@ public class FluencyTest
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
         TCPSender sender = new TCPSender();
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(32 * 1024 * 1024);
+        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
         HashMap<String, Object> data = new HashMap<String, Object>();

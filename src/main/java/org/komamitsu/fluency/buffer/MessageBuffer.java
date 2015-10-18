@@ -2,8 +2,6 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,17 +9,17 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageBuffer
     extends Buffer<MessageBuffer.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageBuffer.class);
+    private final AtomicInteger allocatedSize = new AtomicInteger();
     private final LinkedBlockingQueue<ByteBuffer> messages = new LinkedBlockingQueue<ByteBuffer>();
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -87,6 +85,12 @@ public class MessageBuffer
             throws IOException
     {
         messages.clear();
+    }
+
+    @Override
+    public long getAllocatedSize()
+    {
+        return allocatedSize.get();
     }
 
     public static class Config extends Buffer.Config<MessageBuffer, Config>

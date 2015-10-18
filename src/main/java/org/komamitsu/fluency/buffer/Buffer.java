@@ -17,7 +17,6 @@ public abstract class Buffer<T extends Buffer.Config>
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
-    protected final AtomicInteger allocatedSize = new AtomicInteger();
     protected final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -67,10 +66,7 @@ public abstract class Buffer<T extends Buffer.Config>
     protected abstract void closeInternal(Sender sender)
             throws IOException;
 
-    public int getAllocatedSize()
-    {
-        return allocatedSize.get();
-    }
+    public abstract long getAllocatedSize();
 
     public int getMaxSize()
     {
@@ -84,7 +80,7 @@ public abstract class Buffer<T extends Buffer.Config>
 
     public abstract static class Config<T extends Buffer, C extends Config>
     {
-        protected int maxBufferSize = 16 * 1024 * 1024;
+        protected int maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
 
         public int getMaxBufferSize()
