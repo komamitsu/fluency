@@ -4,22 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PackedForwardBuffer
@@ -178,6 +173,12 @@ public class PackedForwardBuffer
         retentionBuffers.clear();
         flush(sender, true);
         bufferPool.releaseBuffers();
+    }
+
+    @Override
+    public long getAllocatedSize()
+    {
+        return bufferPool.getAllocatedSize();
     }
 
     private static class RetentionBuffer

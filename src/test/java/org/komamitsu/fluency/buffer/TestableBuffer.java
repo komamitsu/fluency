@@ -16,6 +16,7 @@ public class TestableBuffer
     private final AtomicInteger flushCount = new AtomicInteger();
     private final AtomicInteger forceFlushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
+    private final AtomicInteger allocatedSize = new AtomicInteger();
 
     private TestableBuffer(Config bufferConfig)
     {
@@ -48,6 +49,12 @@ public class TestableBuffer
             throws IOException
     {
         closeCount.incrementAndGet();
+    }
+
+    @Override
+    public long getAllocatedSize()
+    {
+        return allocatedSize.get();
     }
 
     public List<Tuple3<String, Long, Map<String, Object>>> getEvents()
