@@ -9,7 +9,7 @@ Yet another fluentd logger.
 * Asynchronous / synchronous flush to Fluentd
 * TCP / UDP heartbeat with Fluentd
 * `Message` / `PackedForward` formats are available
-* Failover with multiple Fluentds ()
+* Failover with multiple Fluentds
 * Enable /disable ack response mode
 
 ## Install
@@ -17,7 +17,7 @@ Yet another fluentd logger.
 ### Gradle
 
     dependencies {
-        compile 'org.komamitsu:fluency:0.0.5'
+        compile 'org.komamitsu:fluency:0.0.6'
     }
 
 ### Maven
@@ -25,7 +25,7 @@ Yet another fluentd logger.
     <dependency>
         <groupId>org.komamitsu</groupId>
         <artifactId>fluency</artifactId>
-        <version>0.0.5</version>
+        <version>0.0.6</version>
     </dependency>
  
  
