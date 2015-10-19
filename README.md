@@ -9,7 +9,7 @@ Yet another fluentd logger.
 * Asynchronous / synchronous flush to Fluentd
 * TCP / UDP heartbeat with Fluentd
 * `Message` / `PackedForward` formats are available
-* Failover with multiple Fluentds ()
+* Failover with multiple Fluentds
 * Enable /disable ack response mode
 
 ## Install
