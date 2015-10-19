@@ -59,6 +59,7 @@ public class PackedForwardBuffer
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
+            bufferPool.returnBuffer(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
 
