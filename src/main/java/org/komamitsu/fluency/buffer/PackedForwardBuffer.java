@@ -1,9 +1,10 @@
 package org.komamitsu.fluency.buffer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
+import org.msgpack.core.buffer.*;
+import org.msgpack.core.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,6 +34,7 @@ public class PackedForwardBuffer
         bufferPool = new BufferPool(bufferConfig.getInitialBufferSize(), bufferConfig.getMaxBufferSize());
     }
 
+    /*
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
             throws BufferFullException
     {
@@ -66,11 +70,44 @@ public class PackedForwardBuffer
         retentionBuffers.put(tag, newBuffer);
         return newBuffer;
     }
+    */
 
     @Override
-    public void append(String tag, long timestamp, Map<String, Object> data)
+    public synchronized void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
+        RetentionBuffer retentionBuffer = retentionBuffers.get(tag);
+        if (retentionBuffer == null) {
+            retentionBuffer = new RetentionBuffer();
+            retentionBuffers.put(tag, retentionBuffer);
+        }
+        MessagePacker messagePacker = new MessagePacker(retentionBuffer.bufferOutput);
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            messagePacker.packString(entry.getKey());
+            Object value = entry.getValue();
+            if (value instanceof String) {
+                messagePacker.packString((String) value);
+            }
+            else if (value instanceof Integer) {
+                messagePacker.packInt((Integer) value);
+            }
+            else if (value instanceof Long) {
+                messagePacker.packLong((Long) value);
+            }
+            else if (value instanceof Float) {
+                messagePacker.packFloat((Float) value);
+            }
+            else if (value instanceof Double) {
+                messagePacker.packDouble((Double) value);
+            }
+            else {
+                throw new RuntimeException("Not supported yet: " + value.getClass());
+            }
+        }
+        retentionBuffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
+        moveRetentionBufferIfNeeded(tag, retentionBuffer);
+
+        /*
         ObjectMapper objectMapper = objectMapperHolder.get();
         ByteArrayOutputStream outputStream = outputStreamHolder.get();
         outputStream.reset();
@@ -83,12 +120,13 @@ public class PackedForwardBuffer
             buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
             moveRetentionBufferIfNeeded(tag, buffer);
         }
+        */
     }
 
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > bufferConfig.getBufferRetentionSize()) {
+        if (buffer.getBufferOutput().getTotalWrittenBytes() > bufferConfig.getBufferRetentionSize()) {
             moveRetentionBufferToFlushable(tag, buffer);
         }
     }
@@ -115,7 +153,7 @@ public class PackedForwardBuffer
     {
         try {
             LOG.trace("moveRetentionBufferToFlushable(): tag={}, buffer={}", tag, buffer);
-            flushableBuffers.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
+            flushableBuffers.put(new TaggableBuffer(tag, buffer.getBufferOutput().getTotalWrittenBytes(), buffer.getBufferOutput().getMessageBuffers()));
             retentionBuffers.put(tag, null);
         }
         catch (InterruptedException e) {
@@ -137,7 +175,6 @@ public class PackedForwardBuffer
                 MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
-                ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
                 if (bufferConfig.isAckResponseMode()) {
                     messagePacker.packArrayHeader(3);
                 }
@@ -145,23 +182,28 @@ public class PackedForwardBuffer
                     messagePacker.packArrayHeader(2);
                 }
                 messagePacker.packString(tag);
-                messagePacker.packRawStringHeader(byteBuffer.position());
+                messagePacker.packRawStringHeader(flushableBuffer.getBufferLength());
                 messagePacker.flush();
 
                 synchronized (sender) {
                     ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-                    byteBuffer.flip();
+                    List<ByteBuffer> byteBuffers = new LinkedList<ByteBuffer>();
+                    byteBuffers.add(headerBuffer);
+                    for (MessageBuffer messageBuffer : flushableBuffer.getMessageBuffers()) {
+                        byteBuffers.add(messageBuffer.getReference());
+                    }
+
                     if (bufferConfig.isAckResponseMode()) {
                         String uuid = UUID.randomUUID().toString();
-                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
+                        sender.sendWithAck(byteBuffers, uuid.getBytes(CHARSET));
                     }
                     else {
-                        sender.send(Arrays.asList(headerBuffer, byteBuffer));
+                        sender.send(byteBuffers);
                     }
                 }
             }
             finally {
-                bufferPool.returnBuffer(flushableBuffer.getByteBuffer());
+//                bufferPool.returnBuffer(flushableBuffer.getByteBuffer());
             }
         }
     }
@@ -185,29 +227,24 @@ public class PackedForwardBuffer
     private static class RetentionBuffer
     {
         private final AtomicLong lastUpdatedTimeMillis = new AtomicLong();
-        private final ByteBuffer byteBuffer;
-
-        public RetentionBuffer(ByteBuffer byteBuffer)
-        {
-            this.byteBuffer = byteBuffer;
-        }
+        private final DirectByteBufferOutput bufferOutput = new DirectByteBufferOutput();
 
         public AtomicLong getLastUpdatedTimeMillis()
         {
             return lastUpdatedTimeMillis;
         }
 
-        public ByteBuffer getByteBuffer()
+        public DirectByteBufferOutput getBufferOutput()
         {
-            return byteBuffer;
+            return bufferOutput;
         }
 
         @Override
         public String toString()
         {
-            return "ExpirableBuffer{" +
+            return "RetentionBuffer{" +
                     "lastUpdatedTimeMillis=" + lastUpdatedTimeMillis +
-                    ", byteBuffer=" + byteBuffer +
+                    ", bufferOutput=" + bufferOutput +
                     '}';
         }
     }
@@ -215,12 +252,14 @@ public class PackedForwardBuffer
     private static class TaggableBuffer
     {
         private final String tag;
-        private final ByteBuffer byteBuffer;
+        private final int bufferLength;
+        private final List<MessageBuffer> messageBuffers;
 
-        public TaggableBuffer(String tag, ByteBuffer byteBuffer)
+        public TaggableBuffer(String tag, int bufferLength, List<MessageBuffer> messageBuffers)
         {
             this.tag = tag;
-            this.byteBuffer = byteBuffer;
+            this.bufferLength = bufferLength;
+            this.messageBuffers = messageBuffers;
         }
 
         public String getTag()
@@ -228,9 +267,14 @@ public class PackedForwardBuffer
             return tag;
         }
 
-        public ByteBuffer getByteBuffer()
+        public int getBufferLength()
         {
-            return byteBuffer;
+            return bufferLength;
+        }
+
+        public List<MessageBuffer> getMessageBuffers()
+        {
+            return messageBuffers;
         }
 
         @Override
@@ -238,7 +282,8 @@ public class PackedForwardBuffer
         {
             return "TaggableBuffer{" +
                     "tag='" + tag + '\'' +
-                    ", byteBuffer=" + byteBuffer +
+                    ", bufferLength=" + bufferLength +
+                    ", messageBuffers=" + messageBuffers +
                     '}';
         }
     }
