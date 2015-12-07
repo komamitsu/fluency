@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -524,7 +525,25 @@ public class FluencyTest
                             hashMap.put("comment", "hello, world");
                             hashMap.put("rate", 1.23);
                             try {
-                                fluency.emit(tag, hashMap);
+                                BufferFullException exception = null;
+                                for (int retry = 0; retry < 10; retry++) {
+                                    try {
+                                        fluency.emit(tag, hashMap);
+                                        exception = null;
+                                        break;
+                                    }
+                                    catch (BufferFullException e) {
+                                        exception = e;
+                                        try {
+                                            TimeUnit.SECONDS.sleep(1);
+                                        }
+                                        catch (InterruptedException e1) {
+                                        }
+                                    }
+                                }
+                                if (exception != null) {
+                                    throw exception;
+                                }
                             }
                             catch (IOException e) {
                                 e.printStackTrace();
@@ -714,6 +733,65 @@ public class FluencyTest
                     throw new RuntimeException("Failed", e);
                 }
             }
+            latch.countDown();
+        }
+    }
+
+    @Test
+    public void testBufferFullException()
+            throws IOException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        Sender stuckSender = new Sender()
+        {
+            @Override
+            public void close()
+                    throws IOException
+            {
+            }
+
+            @Override
+            public void send(ByteBuffer data)
+                    throws IOException
+            {
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    LOG.warn("Interrupted in send()", e);
+                }
+            }
+
+            @Override
+            public void send(List<ByteBuffer> dataList)
+                    throws IOException
+            {
+            }
+
+            @Override
+            public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
+                    throws IOException
+            {
+            }
+        };
+
+        try {
+            Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setInitialBufferSize(64).setMaxBufferSize(256);
+            Fluency fluency = new Fluency.Builder(stuckSender).setBufferConfig(bufferConfig).build();
+            Map<String, Object> event = new HashMap<String, Object>();
+            event.put("name", "xxxx");
+            for (int i = 0; i < 7; i++) {
+                fluency.emit("tag", event);
+            }
+            try {
+                fluency.emit("tag", event);
+                assertTrue(false);
+            }
+            catch (BufferFullException e) {
+                assertTrue(true);
+            }
+        }
+        finally {
             latch.countDown();
         }
     }
