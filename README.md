@@ -17,7 +17,7 @@ Yet another fluentd logger.
 ### Gradle
 
     dependencies {
-        compile 'org.komamitsu:fluency:0.0.6'
+        compile 'org.komamitsu:fluency:0.0.7'
     }
 
 ### Maven
@@ -25,7 +25,7 @@ Yet another fluentd logger.
     <dependency>
         <groupId>org.komamitsu</groupId>
         <artifactId>fluency</artifactId>
-        <version>0.0.6</version>
+        <version>0.0.7</version>
     </dependency>
  
  
