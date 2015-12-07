@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;

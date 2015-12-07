@@ -32,13 +32,6 @@ public abstract class Buffer<T extends Buffer.Config>
         }
     };
 
-    public static class BufferFullException extends IOException {
-        public BufferFullException(String s)
-        {
-            super(s);
-        }
-    }
-
     public Buffer(T bufferConfig)
     {
         this.bufferConfig = bufferConfig;
