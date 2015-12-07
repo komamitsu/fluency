@@ -1,3 +1,9 @@
+## 0.0.7 (2015-12-07)
+
+Bugfixes:
+
+- Not block when calling Fluency#emit and buffer is full
+
 ## 0.0.6 (2015-10-19)
 
 Bugfixes:
