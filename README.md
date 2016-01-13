@@ -51,7 +51,7 @@ Yet another fluentd logger.
     Fluency fluency = Fluency.defaultFluency(Arrays.asList(
     					new InetSocketAddress(24224), new InetSocketAddress(24225)));
 
-#### Specify max buffer size
+#### Enable ACK response mode
 
  	// Single Fluentd(localhost:24224)
  	//   - Asynchronous flush
