@@ -1,46 +1,15 @@
 package org.komamitsu.fluency.buffer;
 
 import org.junit.Test;
-import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.StubSender;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class BufferTest
 {
-    private static class StabSender
-            implements Sender
-    {
-        @Override
-        public void send(ByteBuffer data)
-                throws IOException
-        {
-        }
-
-        @Override
-        public void send(List<ByteBuffer> dataList)
-                throws IOException
-        {
-        }
-
-        @Override
-        public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
-                throws IOException
-        {
-
-        }
-
-        @Override
-        public void close()
-                throws IOException
-        {
-        }
-    }
-
     @Test
     public void testBuffer()
             throws IOException
@@ -59,7 +28,7 @@ public class BufferTest
         assertEquals(2000, buffer.getAllocatedSize());
         assertEquals(0.2, buffer.getBufferUsage(), 0.001);
 
-        buffer.flush(new StabSender(), false);
+        buffer.flush(new StubSender(), false);
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
     }

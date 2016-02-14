@@ -1,7 +1,6 @@
 package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
@@ -29,7 +28,8 @@ public class MultiSenderTest
     {
         MultiSender multiSender = null;
         try {
-            multiSender = new MultiSender(Arrays.asList(new TCPSender(24225), new TCPSender("0.0.0.0", 24226)));
+            multiSender = new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(24225), new TCPSender.Config().setHost("0.0.0.0").setPort(24226))).createInstance();
+
             assertEquals(2, multiSender.sendersAndFailureDetectors.size());
 
             assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getFirst().getHost());
@@ -63,7 +63,9 @@ public class MultiSenderTest
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
 
-        final MultiSender sender = new MultiSender(Arrays.asList(new TCPSender(server0.getLocalPort()), new TCPSender(server1.getLocalPort())), new UDPHeartbeater.Config());
+        final MultiSender sender = new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(server0.getLocalPort()), new TCPSender.Config().setPort(server1.getLocalPort()))).
+                setHeartbeaterConfig(new UDPHeartbeater.Config()).
+                createInstance();
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {

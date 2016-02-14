@@ -10,12 +10,7 @@ import org.msgpack.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.IIOException;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
@@ -30,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractFluentdServer
-        extends AbstractMockTCPServer
+        extends MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFluentdServer.class);
     private static final Charset CHARSET = Charset.forName("UTF-8");
@@ -46,7 +41,7 @@ public abstract class AbstractFluentdServer
     }
 
     private static class FluentdEventHandler
-            implements AbstractMockTCPServer.EventHandler
+            implements MockTCPServer.EventHandler
     {
         private final EventHandler eventHandler;
         private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -248,7 +243,7 @@ public abstract class AbstractFluentdServer
     }
 
     @Override
-    protected synchronized AbstractMockTCPServer.EventHandler getEventHandler()
+    protected synchronized MockTCPServer.EventHandler getEventHandler()
     {
         if (this.fluentdEventHandler == null) {
             this.fluentdEventHandler = new FluentdEventHandler(getFluentdEventHandler());

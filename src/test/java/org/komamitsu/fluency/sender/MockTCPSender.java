@@ -14,13 +14,13 @@ public class MockTCPSender extends TCPSender
     public MockTCPSender(String host, int port)
             throws IOException
     {
-        super(host, port);
+        super(new TCPSender.Config().setHost(host).setPort(port));
     }
 
     public MockTCPSender(int port)
             throws IOException
     {
-        super(port);
+        super(new TCPSender.Config().setPort(port));
     }
 
     @Override

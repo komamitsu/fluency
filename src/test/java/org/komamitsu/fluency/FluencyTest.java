@@ -62,6 +62,17 @@ public class FluencyTest
                 throws IOException;
     }
 
+    private Sender getSingleTCPSender(int port)
+    {
+        return new TCPSender.Config().setPort(port).createInstance();
+    }
+
+    private Sender getDoubleTCPSender(int firstPort, int secondPort)
+    {
+        return new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(firstPort), new TCPSender.Config().setPort(secondPort))).
+                createInstance();
+    }
+
     @Test
     public void testFluencyUsingPackedForwardBufferAndAsyncFlusher()
             throws Exception
@@ -72,7 +83,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -90,7 +101,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config();
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -108,7 +119,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -126,7 +137,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config();
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -144,7 +155,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -162,7 +173,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -180,7 +191,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -198,7 +209,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -216,7 +227,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -234,7 +245,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -252,7 +263,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -270,7 +281,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -288,7 +299,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -306,7 +317,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -325,7 +336,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -344,7 +355,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
                 Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -362,7 +373,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -380,7 +391,7 @@ public class FluencyTest
                     throws IOException
             {
                 int fluentdPort = localPorts.get(0);
-                Sender sender = new TCPSender(fluentdPort);
+                Sender sender = getSingleTCPSender(fluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true).setMaxBufferSize(SMALL_BUF_SIZE);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -399,7 +410,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -418,7 +429,7 @@ public class FluencyTest
             {
                 int fluentdPort = localPorts.get(0);
                 int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = new MultiSender(Arrays.asList(new TCPSender(fluentdPort), new TCPSender(secondaryFluentdPort)));
+                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
                 Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -737,43 +748,34 @@ public class FluencyTest
         }
     }
 
+    private static class StuckSender extends StubSender
+    {
+        private final CountDownLatch latch;
+
+        public StuckSender(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Override
+        public void send(ByteBuffer data)
+                throws IOException
+        {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                FluencyTest.LOG.warn("Interrupted in send()", e);
+            }
+        }
+    }
+
     @Test
     public void testBufferFullException()
             throws IOException
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        Sender stuckSender = new Sender()
-        {
-            @Override
-            public void close()
-                    throws IOException
-            {
-            }
-
-            @Override
-            public void send(ByteBuffer data)
-                    throws IOException
-            {
-                try {
-                    latch.await();
-                }
-                catch (InterruptedException e) {
-                    LOG.warn("Interrupted in send()", e);
-                }
-            }
-
-            @Override
-            public void send(List<ByteBuffer> dataList)
-                    throws IOException
-            {
-            }
-
-            @Override
-            public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
-                    throws IOException
-            {
-            }
-        };
+        Sender stuckSender = new StuckSender(latch);
 
         try {
             Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setInitialBufferSize(64).setMaxBufferSize(256);
@@ -803,7 +805,7 @@ public class FluencyTest
         int concurrency = 4;
         int reqNum = 1000000;
         // Fluency fluency = Fluency.defaultFluency();
-        TCPSender sender = new TCPSender();
+        TCPSender sender = new TCPSender.Config().createInstance();
         Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
         Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
         Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();

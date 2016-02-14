@@ -14,9 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public abstract class AbstractMockTCPServer
+public class MockTCPServer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractMockTCPServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
     private final ExecutorService executorService;
     private ServerTask serverTask;
 
@@ -29,13 +29,31 @@ public abstract class AbstractMockTCPServer
         void onClose(SocketChannel acceptSocketChannel);
     }
 
-    public AbstractMockTCPServer()
+    public MockTCPServer()
             throws IOException
     {
         this.executorService = Executors.newCachedThreadPool();
     }
 
-    protected abstract EventHandler getEventHandler();
+    protected EventHandler getEventHandler()
+    {
+        return new EventHandler() {
+            @Override
+            public void onConnect(SocketChannel acceptSocketChannel)
+            {
+            }
+
+            @Override
+            public void onReceive(SocketChannel acceptSocketChannel, ByteBuffer data)
+            {
+            }
+
+            @Override
+            public void onClose(SocketChannel acceptSocketChannel)
+            {
+            }
+        };
+    }
 
     public synchronized void start()
             throws IOException

@@ -17,67 +17,34 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MultiSender
-        implements Sender
+        extends Sender<MultiSender.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     @VisibleForTesting
     final List<Tuple<TCPSender, FailureDetector>> sendersAndFailureDetectors = new ArrayList<Tuple<TCPSender, FailureDetector>>();
 
-    public MultiSender(List<TCPSender> senders, FailureDetectStrategy.Config failureDetectStrategyConfig, Heartbeater.Config heartbeaterConfig)
-            throws IOException
+    public MultiSender(Config config)
     {
-        for (TCPSender sender : senders) {
+        super(config);
+        for (TCPSender.Config senderConfig : config.getSenderConfigs()) {
             // TODO: This is something ugly....
-            Heartbeater.Config config = heartbeaterConfig.dupDefaultConfig();
-            config.setHost(sender.getHost());
-            config.setPort(sender.getPort());
-            config.setIntervalMillis(heartbeaterConfig.getIntervalMillis());
-
-            FailureDetector failureDetector = new FailureDetector(failureDetectStrategyConfig, config);
-            sendersAndFailureDetectors.add(new Tuple<TCPSender, FailureDetector>(sender, failureDetector));
+            Heartbeater.Config hbConfig = config.getHeartbeaterConfig().dupDefaultConfig().setHost(senderConfig.getHost()).setPort(senderConfig.getPort());
+            FailureDetector failureDetector = null;
+            try {
+                failureDetector = new FailureDetector(config.getFailureDetectStrategyConfig(), hbConfig);
+            }
+            catch (IOException e) {
+                LOG.error(String.format("Failed to initialize. config=%s", config), e);
+                throw new RuntimeException(e);
+            }
+            sendersAndFailureDetectors.add(new Tuple<TCPSender, FailureDetector>(senderConfig.createInstance(), failureDetector));
         }
     }
 
-    public MultiSender(List<TCPSender> senders, Heartbeater.Config heartbeaterConfig)
-            throws IOException
-    {
-        this(senders, new PhiAccrualFailureDetectStrategy.Config(), heartbeaterConfig);
-    }
-
-    public MultiSender(List<TCPSender> senders)
-            throws IOException
-    {
-        this(senders, new PhiAccrualFailureDetectStrategy.Config(), new TCPHeartbeater.Config());
-    }
-
     @Override
-    public synchronized void send(ByteBuffer data)
-            throws IOException
-    {
-        sendInternal(Arrays.asList(data), null);
-    }
-
-    @Override
-    public synchronized void send(List<ByteBuffer> dataList)
-            throws IOException
-    {
-        sendInternal(dataList, null);
-    }
-
-    @Override
-    public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
-            throws IOException
-    {
-        sendInternal(dataList, ackToken);
-    }
-
-    private synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws AllNodesUnavailableException
     {
-        List<Integer> positions = new ArrayList<Integer>(dataList.size());
-        for (ByteBuffer data : dataList) {
-            positions.add(data.position());
-        }
         for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
             TCPSender sender = senderAndFailureDetector.getFirst();
             FailureDetector failureDetector = senderAndFailureDetector.getSecond();
@@ -94,9 +61,6 @@ public class MultiSender
                 }
                 catch (IOException e) {
                     LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
-                    for (int i = 0; i < dataList.size(); i++) {
-                        dataList.get(i).position(positions.get(i));
-                    }
                     failureDetector.onFailure(e);
                 }
             }
@@ -142,6 +106,61 @@ public class MultiSender
         public AllNodesUnavailableException(String s)
         {
             super(s);
+        }
+    }
+
+    public static class Config extends Sender.Config<MultiSender, Config>
+    {
+        private final List<TCPSender.Config> senderConfigs;
+        private FailureDetectStrategy.Config failureDetectStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
+        private Heartbeater.Config heartbeaterConfig = new TCPHeartbeater.Config();
+
+        public Config(List<TCPSender.Config> senderConfigs)
+        {
+            this.senderConfigs = senderConfigs;
+        }
+
+        public List<TCPSender.Config> getSenderConfigs()
+        {
+            return senderConfigs;
+        }
+
+        public FailureDetectStrategy.Config getFailureDetectStrategyConfig()
+        {
+            return failureDetectStrategyConfig;
+        }
+
+        public Config setFailureDetectStrategyConfig(FailureDetectStrategy.Config failureDetectStrategyConfig)
+        {
+            this.failureDetectStrategyConfig = failureDetectStrategyConfig;
+            return this;
+        }
+
+        public Heartbeater.Config getHeartbeaterConfig()
+        {
+            return heartbeaterConfig;
+        }
+
+        public Config setHeartbeaterConfig(Heartbeater.Config heartbeaterConfig)
+        {
+            this.heartbeaterConfig = heartbeaterConfig;
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "senderConfigs=" + senderConfigs +
+                    ", failureDetectStrategyConfig=" + failureDetectStrategyConfig +
+                    ", heartbeaterConfig=" + heartbeaterConfig +
+                    "} " + super.toString();
+        }
+
+        @Override
+        public MultiSender createInstance()
+        {
+            return new MultiSender(this);
         }
     }
 }
