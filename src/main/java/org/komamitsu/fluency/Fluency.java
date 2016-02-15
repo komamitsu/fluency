@@ -20,9 +20,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.komamitsu.fluency.Constants.*;
 
 public class Fluency
         implements Flushable, Closeable
@@ -34,10 +31,10 @@ public class Fluency
     public static Fluency defaultFluency(String host, int port, Config config)
             throws IOException
     {
-        return buildDefaultFluency(new TCPSender(host, port), config);
+        return buildDefaultFluency(new TCPSender.Config().setHost(host).setPort(port), config);
     }
 
-    private static Fluency buildDefaultFluency(Sender sender, Config config)
+    private static Fluency buildDefaultFluency(Sender.Config senderConfig, Config config)
     {
         Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
         if (config != null && config.getMaxBufferSize() != null) {
@@ -56,32 +53,32 @@ public class Fluency
         if (config != null && config.getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
         }
-        RetryStrategy retryStrategy = retryStrategyConfig.createInstance();
 
-        return new Fluency.Builder(new RetryableSender(sender, retryStrategy)).
-                setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        RetryableSender retryableSender = new RetryableSender.Config(senderConfig).setRetryStrategyConfig(retryStrategyConfig).createInstance();
+
+        return new Fluency.Builder(retryableSender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
     }
 
     public static Fluency defaultFluency(int port, Config config)
             throws IOException
     {
-        return defaultFluency(DEFAULT_HOST, port, config);
+        return buildDefaultFluency(new TCPSender.Config().setPort(port), config);
     }
 
     public static Fluency defaultFluency(Config config)
             throws IOException
     {
-        return defaultFluency(DEFAULT_HOST, DEFAULT_PORT, config);
+        return buildDefaultFluency(new TCPSender.Config(), config);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
             throws IOException
     {
-        List<TCPSender> tcpSenders = new ArrayList<TCPSender>();
+        List<TCPSender.Config> tcpSenderConfigs = new ArrayList<TCPSender.Config>();
         for (InetSocketAddress server : servers) {
-            tcpSenders.add(new TCPSender(server.getHostName(), server.getPort()));
+            tcpSenderConfigs.add(new TCPSender.Config().setHost(server.getHostName()).setPort(server.getPort()));
         }
-        return buildDefaultFluency(new MultiSender(tcpSenders), config);
+        return buildDefaultFluency(new MultiSender.Config(tcpSenderConfigs), config);
     }
 
     public static Fluency defaultFluency(String host, int port)
@@ -99,7 +96,7 @@ public class Fluency
     public static Fluency defaultFluency()
             throws IOException
     {
-        return defaultFluency(DEFAULT_HOST, DEFAULT_PORT);
+        return buildDefaultFluency(new TCPSender.Config(), null);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers)

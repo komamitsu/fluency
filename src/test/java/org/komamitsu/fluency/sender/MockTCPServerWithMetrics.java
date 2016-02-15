@@ -1,6 +1,6 @@
 package org.komamitsu.fluency.sender;
 
-import org.komamitsu.fluency.AbstractMockTCPServer;
+import org.komamitsu.fluency.MockTCPServer;
 import org.komamitsu.fluency.util.Tuple;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class MockTCPServerWithMetrics extends AbstractMockTCPServer
+public class MockTCPServerWithMetrics extends MockTCPServer
 {
     private final List<Tuple<Type, Integer>> events = new CopyOnWriteArrayList<Tuple<Type, Integer>>();
     private final EventHandler eventHandler = new EventHandler() {

@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class RetryableSender
-        implements Sender
+        extends Sender<RetryableSender.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
-
-    private final RetryStrategy retryStrategy;
     private final Sender baseSender;
+    private RetryStrategy retryStrategy;
 
     @Override
     public void close()
@@ -35,40 +34,15 @@ public class RetryableSender
         }
     }
 
-    public RetryableSender(Sender baseSender, RetryStrategy retryStrategy)
+    public RetryableSender(Config config)
     {
-        // TODO: null check
-        this.baseSender = baseSender;
-        this.retryStrategy = retryStrategy;
-    }
-
-    public RetryableSender(Sender baseSender)
-    {
-        this(baseSender, new ExponentialBackOffRetryStrategy.Config().createInstance());
+        super(config);
+        baseSender = config.getBaseSenderConfig().createInstance();
+        retryStrategy = config.getRetryStrategyConfig().createInstance();
     }
 
     @Override
-    public void send(ByteBuffer data)
-            throws IOException
-    {
-        sendInternal(Arrays.asList(data), null);
-    }
-
-    @Override
-    public void send(List<ByteBuffer> dataList)
-            throws IOException
-    {
-        sendInternal(dataList, null);
-    }
-
-    @Override
-    public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
-            throws IOException
-    {
-        sendInternal(dataList, ackToken);
-    }
-
-    private synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
         IOException firstException = null;
@@ -102,4 +76,37 @@ public class RetryableSender
         throw new RetryOverException("Sending data was retried over", firstException);
     }
 
+    public static class Config extends Sender.Config<RetryableSender, Config>
+    {
+        private RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+
+        public Config(Sender.Config baseSenderConfig)
+        {
+            this.baseSenderConfig = baseSenderConfig;
+        }
+
+        private final Sender.Config baseSenderConfig;
+
+        public Sender.Config getBaseSenderConfig()
+        {
+            return baseSenderConfig;
+        }
+
+        public RetryStrategy.Config getRetryStrategyConfig()
+        {
+            return retryStrategyConfig;
+        }
+
+        public Config setRetryStrategyConfig(RetryStrategy.Config retryStrategyConfig)
+        {
+            this.retryStrategyConfig = retryStrategyConfig;
+            return this;
+        }
+
+        @Override
+        public RetryableSender createInstance()
+        {
+            return new RetryableSender(this);
+        }
+    }
 }
