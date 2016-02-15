@@ -9,7 +9,7 @@ install:
   - ./gradlew assemble -x signArchives -x uploadArchives
 
 script:
-  - ./gradlew check --stacktrace --info
+  - ./gradlew check --debug --stacktrace --info
 
 after_success:
   - ./gradlew jacocoTestReport coveralls
