@@ -1,3 +1,13 @@
+## 0.0.8 (2016-02-15)
+
+Bugfixes:
+
+- Fix bug that event transfer to Fluentd occasionally gets stuck with ACK response mode enabled when the Fluentd restarts
+
+Refactoring:
+
+- Make XXXXSender be created from its Config instance like other classes (e.g. Buffer class)
+
 ## 0.0.7 (2015-12-07)
 
 Bugfixes:
