@@ -1,5 +1,6 @@
 package org.komamitsu.fluency.sender;
 
+import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.ArrayBufferInput;
@@ -19,10 +20,10 @@ public class MessagePackAckTokenSerDe
 
     public MessagePackAckTokenSerDe() {
         MessageBufferOutput bufferOutput = new OutputStreamBufferOutput(new ByteArrayOutputStream(0));
-        this.packer = new MessagePacker(bufferOutput);
+        this.packer = MessagePack.newDefaultPacker(bufferOutput);
 
         MessageBufferInput bufferInput = new ArrayBufferInput(new byte[0]);
-        this.unpacker = new MessageUnpacker(bufferInput);
+        this.unpacker = MessagePack.newDefaultUnpacker(bufferInput);
     }
 
     @Override
