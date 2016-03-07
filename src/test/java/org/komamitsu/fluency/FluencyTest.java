@@ -49,7 +49,7 @@ public class FluencyTest
         Fluency.defaultFluency("333.333.333.333", 12345).close();
         Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210))).close();
         Fluency.Config config = new Fluency.Config();
-        config.setFlushIntervalMillis(200).setMaxBufferSize(64 * 1024 * 1024).setSenderMaxRetryCount(99);
+        config.setFlushIntervalMillis(200).setMaxBufferSize(Long.MAX_VALUE).setSenderMaxRetryCount(99);
         Fluency.defaultFluency(config).close();
         Fluency.defaultFluency(12345, config).close();
         Fluency.defaultFluency("333.333.333.333", 12345, config).close();
