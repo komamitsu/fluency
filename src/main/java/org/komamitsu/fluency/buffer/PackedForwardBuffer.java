@@ -7,9 +7,12 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +28,23 @@ public class PackedForwardBuffer
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
+    private static final Unsafe unsafe;
+    static {
+        Unsafe unsafeInstance = null;
+        Field f = null;
+        try {
+            f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafeInstance = (Unsafe) f.get(null);
+        }
+        catch (NoSuchFieldException e) {
+            LOG.warn("Failed to get 'theUnsafe'", e);
+        }
+        catch (IllegalAccessException e) {
+            LOG.warn("Failed to get 'theUnsafe'", e);
+        }
+        unsafe = unsafeInstance;
+    }
 
     private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
     {
@@ -59,13 +79,28 @@ public class PackedForwardBuffer
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
-            newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
+            copyBuffer(retentionBuffer.getByteBuffer(), newBuffer.getByteBuffer());
             bufferPool.returnBuffer(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
 
         retentionBuffers.put(tag, newBuffer);
         return newBuffer;
+    }
+
+    private void copyBuffer(ByteBuffer src, ByteBuffer dst)
+    {
+        if (unsafe == null) {
+            dst.put(src);
+        }
+        else {
+            long srcAddress = ((DirectBuffer) src).address() + src.position();
+            long dstAddress = ((DirectBuffer) dst).address() + dst.position();
+            int len = Math.min(src.remaining(), dst.remaining());
+            unsafe.copyMemory(srcAddress, dstAddress, len);
+            src.position(src.position() + len);
+            dst.position(dst.position() + len);
+        }
     }
 
     @Override
