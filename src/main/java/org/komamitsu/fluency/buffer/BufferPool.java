@@ -16,9 +16,9 @@ public class BufferPool
     final Map<Integer, LinkedBlockingQueue<ByteBuffer>> bufferPool = new HashMap<Integer, LinkedBlockingQueue<ByteBuffer>>();
     private final AtomicLong allocatedSize = new AtomicLong();
     private final int initialBufferSize;
-    private final int maxBufferSize;
+    private final long maxBufferSize;
 
-    public BufferPool(int initialBufferSize, int maxBufferSize)
+    public BufferPool(int initialBufferSize, long maxBufferSize)
     {
         this.initialBufferSize = initialBufferSize;
         this.maxBufferSize = maxBufferSize;

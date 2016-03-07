@@ -181,7 +181,7 @@ public class Fluency
 
     public static class Config
     {
-        private Integer maxBufferSize;
+        private Long maxBufferSize;
 
         private Integer flushIntervalMillis;
 
@@ -189,12 +189,12 @@ public class Fluency
 
         private boolean ackResponseMode;
 
-        public Integer getMaxBufferSize()
+        public Long getMaxBufferSize()
         {
             return maxBufferSize;
         }
 
-        public Config setMaxBufferSize(Integer maxBufferSize)
+        public Config setMaxBufferSize(Long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
             return this;
