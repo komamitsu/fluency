@@ -67,7 +67,7 @@ public class AsyncFlusher
         flushInternal(true);
         executorService.shutdown();
         try {
-            executorService.awaitTermination(10, TimeUnit.SECONDS);
+            executorService.awaitTermination(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
