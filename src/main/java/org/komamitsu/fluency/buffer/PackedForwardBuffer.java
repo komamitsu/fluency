@@ -11,8 +11,15 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,9 +28,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PackedForwardBuffer
     extends Buffer<PackedForwardBuffer.Config>
 {
+    public static final String FORMAT_TYPE = "packed_forward";
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
+    private final LinkedList<TaggableBuffer> backupBuffers = new LinkedList<TaggableBuffer>();
     private final BufferPool bufferPool;
 
     private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
@@ -56,6 +65,7 @@ public class PackedForwardBuffer
         if (acquiredBuffer == null) {
             throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", bufferPool=" + bufferPool);
         }
+
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
@@ -68,6 +78,55 @@ public class PackedForwardBuffer
         return newBuffer;
     }
 
+    private void loadDataToRetentionBuffers(String tag, ByteBuffer src)
+            throws IOException
+    {
+        synchronized (retentionBuffers) {
+            RetentionBuffer buffer = prepareBuffer(tag, src.remaining());
+            buffer.getByteBuffer().put(src);
+            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
+            moveRetentionBufferIfNeeded(tag, buffer);
+        }
+    }
+
+    @Override
+    protected void loadBufferFromFile(List<String> params, FileChannel channel)
+    {
+        if (params.size() != 1) {
+            throw new IllegalArgumentException("The number of params should be 1: params=" + params);
+        }
+        String tag = params.get(0);
+
+        try {
+            MappedByteBuffer src = channel.map(FileChannel.MapMode.PRIVATE, 0, channel.size());
+            loadDataToRetentionBuffers(tag, src);
+        }
+        catch (Exception e) {
+            LOG.error("Failed to load data to flushableBuffers: params={}, channel={}", params, channel);
+        }
+    }
+
+    private void saveBuffer(TaggableBuffer buffer)
+    {
+        saveBuffer(Collections.singletonList(buffer.getTag()), buffer.getByteBuffer());
+    }
+
+    @Override
+    protected void saveAllBuffersToFile()
+            throws IOException
+    {
+        // TODO : Lock Buffer safely
+        moveRetentionBuffersToFlushable(true);  // Just in case
+
+        TaggableBuffer flushableBuffer;
+        while ((flushableBuffer = flushableBuffers.poll()) != null) {
+            saveBuffer(flushableBuffer);
+        }
+        while ((flushableBuffer = backupBuffers.poll()) != null) {
+            saveBuffer(flushableBuffer);
+        }
+    }
+
     @Override
     public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
@@ -78,12 +137,7 @@ public class PackedForwardBuffer
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
         outputStream.close();
 
-        synchronized (retentionBuffers) {
-            RetentionBuffer buffer = prepareBuffer(tag, outputStream.size());
-            buffer.getByteBuffer().put(outputStream.toByteArray());
-            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
-            moveRetentionBufferIfNeeded(tag, buffer);
-        }
+        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
     }
 
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
@@ -116,6 +170,7 @@ public class PackedForwardBuffer
     {
         try {
             LOG.trace("moveRetentionBufferToFlushable(): tag={}, buffer={}", tag, buffer);
+            buffer.getByteBuffer().flip();
             flushableBuffers.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
             retentionBuffers.put(tag, null);
         }
@@ -125,13 +180,20 @@ public class PackedForwardBuffer
     }
 
     @Override
+    public String bufferFormatType()
+    {
+        return FORMAT_TYPE;
+    }
+
+    @Override
     public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
         moveRetentionBuffersToFlushable(force);
 
-        TaggableBuffer flushableBuffer = null;
+        TaggableBuffer flushableBuffer;
         while ((flushableBuffer = flushableBuffers.poll()) != null) {
+            boolean keepBuffer = false;
             try {
                 // TODO: Reuse MessagePacker
                 ByteArrayOutputStream header = new ByteArrayOutputStream();
@@ -146,34 +208,48 @@ public class PackedForwardBuffer
                     messagePacker.packArrayHeader(2);
                 }
                 messagePacker.packString(tag);
-                messagePacker.packRawStringHeader(byteBuffer.position());
+                messagePacker.packRawStringHeader(byteBuffer.limit());
                 messagePacker.flush();
 
-                synchronized (sender) {
-                    ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-                    byteBuffer.flip();
-                    if (bufferConfig.isAckResponseMode()) {
-                        String uuid = UUID.randomUUID().toString();
-                        sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
+                try {
+                    synchronized (sender) {
+                        ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
+                        if (bufferConfig.isAckResponseMode()) {
+                            String uuid = UUID.randomUUID().toString();
+                            sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
+                        }
+                        else {
+                            sender.send(Arrays.asList(headerBuffer, byteBuffer));
+                        }
                     }
-                    else {
-                        sender.send(Arrays.asList(headerBuffer, byteBuffer));
-                    }
+                }
+                catch (IOException e) {
+                    LOG.warn("Failed to send data. The data is going to be saved into the buffer again: data={}", flushableBuffer);
+                    keepBuffer = true;
+                    throw e;
                 }
             }
             finally {
-                bufferPool.returnBuffer(flushableBuffer.getByteBuffer());
+                if (keepBuffer) {
+                    try {
+                        flushableBuffers.put(flushableBuffer);
+                    }
+                    catch (InterruptedException e1) {
+                        LOG.warn("Failed to save the data into the buffer. Trying to save it in extra bufer: chunk={}", flushableBuffer);
+                        backupBuffers.add(flushableBuffer);
+                    }
+                }
+                else {
+                    bufferPool.returnBuffer(flushableBuffer.getByteBuffer());
+                }
             }
         }
     }
 
     @Override
-    public synchronized void closeInternal(Sender sender)
-            throws IOException
+    protected synchronized void closeInternal()
     {
-        moveRetentionBuffersToFlushable(true);
         retentionBuffers.clear();
-        flush(sender, true);
         bufferPool.releaseBuffers();
     }
 
@@ -206,7 +282,7 @@ public class PackedForwardBuffer
         @Override
         public String toString()
         {
-            return "ExpirableBuffer{" +
+            return "RetentionBuffer{" +
                     "lastUpdatedTimeMillis=" + lastUpdatedTimeMillis +
                     ", byteBuffer=" + byteBuffer +
                     '}';
@@ -307,7 +383,7 @@ public class PackedForwardBuffer
         }
 
         @Override
-        public PackedForwardBuffer createInstance()
+        protected PackedForwardBuffer createInstanceInternal()
         {
             return new PackedForwardBuffer(this);
         }

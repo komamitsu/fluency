@@ -116,8 +116,8 @@ public class BufferTestHelper
             executorService.execute(emitTask);
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
-        buffer.flush(sender, false);
-        buffer.close(sender);
+        buffer.flush(sender, true);
+        buffer.close();
         long end = System.currentTimeMillis();
 
         executorService.shutdown();

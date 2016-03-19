@@ -7,10 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Buffer<T extends Buffer.Config>
 {
@@ -31,14 +35,51 @@ public abstract class Buffer<T extends Buffer.Config>
             return new ByteArrayOutputStream();
         }
     };
+    protected final FileBackup fileBackup;
 
     public Buffer(T bufferConfig)
     {
         this.bufferConfig = bufferConfig;
+        if (bufferConfig.getFileBackupDir() != null) {
+            fileBackup = new FileBackup(new File(bufferConfig.getFileBackupDir()), this, bufferConfig.getFileBackupPrefix());
+        }
+        else {
+            fileBackup = null;
+        }
+    }
+
+    public void init()
+    {
+        if (fileBackup != null) {
+            for (FileBackup.SavedBuffer savedBuffer : fileBackup.getSavedFiles()) {
+                savedBuffer.open(new FileBackup.SavedBuffer.Callback() {
+                    @Override
+                    public void process(List<String> params, FileChannel channel)
+                    {
+                        LOG.info("Loading buffer: params={}, buffer={}", params, channel);
+                        loadBufferFromFile(params, channel);
+                    }
+                });
+            }
+        }
     }
 
     public abstract void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException;
+
+    protected abstract void loadBufferFromFile(List<String> params, FileChannel channel);
+
+    protected abstract void saveAllBuffersToFile()
+            throws IOException;
+
+    protected void saveBuffer(List<String> params, ByteBuffer buffer)
+    {
+        if (fileBackup == null) {
+            return;
+        }
+        LOG.info("Saving buffer: params={}, buffer={}", params, buffer);
+        fileBackup.saveBuffer(params, buffer);
+    }
 
     public void flush(Sender sender, boolean force)
             throws IOException
@@ -47,17 +88,25 @@ public abstract class Buffer<T extends Buffer.Config>
         flushInternal(sender, force);
     }
 
-    public abstract void flushInternal(Sender sender, boolean force)
+    protected abstract void flushInternal(Sender sender, boolean force)
             throws IOException;
 
-    public void close(Sender sender)
-            throws IOException
+    public abstract String bufferFormatType();
+
+    public void close()
     {
-        closeInternal(sender);
+        try {
+            LOG.info("Saving all buffers");
+            saveAllBuffersToFile();
+        }
+        catch (Exception e) {
+            LOG.warn("Failed to save all buffers", e);
+        }
+        LOG.info("Closing buffers");
+        closeInternal();
     }
 
-    protected abstract void closeInternal(Sender sender)
-            throws IOException;
+    protected abstract void closeInternal();
 
     public abstract long getAllocatedSize();
 
@@ -71,10 +120,21 @@ public abstract class Buffer<T extends Buffer.Config>
         return (float) getAllocatedSize() / getMaxSize();
     }
 
+    public void clearBackupFiles()
+    {
+        if (fileBackup != null) {
+            for (FileBackup.SavedBuffer buffer : fileBackup.getSavedFiles()) {
+                buffer.remove();
+            }
+        }
+    }
+
     public abstract static class Config<T extends Buffer, C extends Config>
     {
         protected long maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
+        protected String fileBackupDir;
+        protected String fileBackupPrefix;  // Mainly for testing
 
         public long getMaxBufferSize()
         {
@@ -98,15 +158,46 @@ public abstract class Buffer<T extends Buffer.Config>
             return (C)this;
         }
 
+        public String getFileBackupDir()
+        {
+            return fileBackupDir;
+        }
+
+        public C setFileBackupDir(String fileBackupDir)
+        {
+            this.fileBackupDir = fileBackupDir;
+            return (C) this;
+        }
+
+        public String getFileBackupPrefix()
+        {
+            return fileBackupPrefix;
+        }
+
+        public C setFileBackupPrefix(String fileBackupPrefix)
+        {
+            this.fileBackupPrefix = fileBackupPrefix;
+            return (C) this;
+        }
+
         @Override
         public String toString()
         {
             return "Config{" +
                     "maxBufferSize=" + maxBufferSize +
                     ", ackResponseMode=" + ackResponseMode +
+                    ", fileBackupDir='" + fileBackupDir + '\'' +
+                    ", fileBackupPrefix='" + fileBackupPrefix +
                     '}';
         }
 
-        public abstract T createInstance();
+        protected abstract T createInstanceInternal();
+
+        public T createInstance()
+        {
+            T instance = createInstanceInternal();
+            instance.init();
+            return instance;
+        }
     }
 }

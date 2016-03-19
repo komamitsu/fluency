@@ -145,6 +145,11 @@ public class Fluency
         flusher.close();
     }
 
+    public void clearBackupFiles()
+    {
+        buffer.clearBackupFiles();
+    }
+
     public static class Builder
     {
         private final Sender sender;

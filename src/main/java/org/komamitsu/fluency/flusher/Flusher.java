@@ -63,18 +63,14 @@ public abstract class Flusher<C extends Flusher.Config>
     protected void closeBuffer()
     {
         LOG.trace("closeBuffer(): closing buffer");
-        try {
-            buffer.close(sender);
-        }
-        catch (IOException e) {
-            LOG.warn("Interrupted during closing buffer");
-        }
-        LOG.trace("closeBuffer(): closed buffer");
+        buffer.close();
     }
 
     public abstract static class Config<T extends Flusher, C extends Config>
     {
         private int flushIntervalMillis = 600;
+
+        private int waitAfterClose = 10;
 
         public int getFlushIntervalMillis()
         {
@@ -85,6 +81,17 @@ public abstract class Flusher<C extends Flusher.Config>
         {
             this.flushIntervalMillis = flushIntervalMillis;
             return (C)this;
+        }
+
+        public int getWaitAfterClose()
+        {
+            return waitAfterClose;
+        }
+
+        public C setWaitAfterClose(int waitAfterClose)
+        {
+            this.waitAfterClose = waitAfterClose;
+            return (C) this;
         }
 
         public abstract T createInstance(Buffer buffer, Sender sender);

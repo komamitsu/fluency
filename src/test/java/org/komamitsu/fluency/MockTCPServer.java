@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private ServerTask serverTask;
 
     public interface EventHandler
@@ -32,7 +32,6 @@ public class MockTCPServer
     public MockTCPServer()
             throws IOException
     {
-        this.executorService = Executors.newCachedThreadPool();
     }
 
     protected EventHandler getEventHandler()
@@ -58,6 +57,10 @@ public class MockTCPServer
     public synchronized void start()
             throws IOException
     {
+        if (executorService == null) {
+            this.executorService = Executors.newCachedThreadPool();
+        }
+
         if (serverTask == null) {
             serverTask = new ServerTask(executorService, getEventHandler());
             executorService.execute(serverTask);
@@ -69,9 +72,13 @@ public class MockTCPServer
         return serverTask.getLocalPort();
     }
 
-    public void stop()
+    public synchronized void stop()
             throws IOException
     {
+        if (executorService == null) {
+            return;
+        }
+
         executorService.shutdown();
         try {
             executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
@@ -80,6 +87,9 @@ public class MockTCPServer
             LOG.warn("ExecutorService.shutdown() was interrupted: this=" + this, e);
         }
         executorService.shutdownNow();
+
+        executorService = null;
+        serverTask = null;
     }
 
     private static class ServerTask implements Runnable
