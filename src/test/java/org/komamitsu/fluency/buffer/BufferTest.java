@@ -2,6 +2,7 @@ package org.komamitsu.fluency.buffer;
 
 import org.junit.Test;
 import org.komamitsu.fluency.StubSender;
+import org.komamitsu.fluency.util.Tuple;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +39,7 @@ public class BufferTest
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
     }
+
     @Test
     public void testFileBackup()
     {
@@ -68,24 +70,27 @@ public class BufferTest
         buffer.close();
         assertEquals(2, buffer.getLoadedBuffers().size());
 
-        int index = 0;
-        assertEquals(paramOfSecondBuf, buffer.getLoadedBuffers().get(index).getFirst());
-        ByteBuffer expected = buffer.getLoadedBuffers().get(index).getSecond();
-        bufOfSecondBuf.flip();
-        ByteBuffer actual = bufOfSecondBuf;
-        assertEquals(expected.remaining(), actual.remaining());
-        for (int i = 0; i < bufOfSecondBuf.remaining(); i++) {
-            assertEquals(expected.get(i), actual.get(i));
-        }
-
-        index += 1;
-        assertEquals(paramOfFirstBuf, buffer.getLoadedBuffers().get(index).getFirst());
-        expected = buffer.getLoadedBuffers().get(index).getSecond();
         bufOfFirstBuf.flip();
-        actual = bufOfFirstBuf;
-        assertEquals(expected.remaining(), actual.remaining());
-        for (int i = 0; i < bufOfSecondBuf.remaining(); i++) {
-            assertEquals(expected.get(i), actual.get(i));
+        bufOfSecondBuf.flip();
+        for (Tuple<List<String>, ByteBuffer> loadedBuffer : buffer.getLoadedBuffers()) {
+            ByteBuffer expected = null;
+            ByteBuffer actual = null;
+            if (loadedBuffer.getFirst().equals(paramOfFirstBuf)) {
+                expected = loadedBuffer.getSecond();
+                actual = bufOfFirstBuf;
+            }
+            else if (loadedBuffer.getFirst().equals(paramOfSecondBuf)) {
+                expected = loadedBuffer.getSecond();
+                actual = bufOfSecondBuf;
+            }
+            else {
+                assertTrue(false);
+            }
+
+            assertEquals(expected.remaining(), actual.remaining());
+            for (int i = 0; i < expected.remaining(); i++) {
+                assertEquals(expected.get(i), actual.get(i));
+            }
         }
     }
 }
