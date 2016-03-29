@@ -138,14 +138,6 @@ public class TCPSender
         }
     }
 
-    @Override
-    public String toString()
-    {
-        return "TCPSender{" +
-                "config=" + config +
-                '}';
-    }
-
     public static class UnmatchedAckException
             extends IOException
     {

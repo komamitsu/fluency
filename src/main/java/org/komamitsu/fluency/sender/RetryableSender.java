@@ -76,6 +76,15 @@ public class RetryableSender
         throw new RetryOverException("Sending data was retried over", firstException);
     }
 
+    @Override
+    public String toString()
+    {
+        return "RetryableSender{" +
+                "baseSender=" + baseSender +
+                ", retryStrategy=" + retryStrategy +
+                "} " + super.toString();
+    }
+
     public static class Config extends Sender.Config<RetryableSender, Config>
     {
         private RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();

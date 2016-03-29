@@ -60,6 +60,14 @@ public abstract class Sender<C extends Sender.Config>
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "Sender{" +
+                "config=" + config +
+                '}';
+    }
+
     abstract protected void sendInternal(List<ByteBuffer> dataList, byte[] ackToken) throws IOException;
 
     public abstract static class Config<T extends Sender, C extends Config>
