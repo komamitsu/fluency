@@ -138,6 +138,14 @@ public class TCPSender
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "TCPSender{" +
+                "config=" + config +
+                '}';
+    }
+
     public static class UnmatchedAckException
             extends IOException
     {
@@ -202,6 +210,17 @@ public class TCPSender
         public TCPSender createInstance()
         {
             return new TCPSender(this);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "host='" + host + '\'' +
+                    ", port=" + port +
+                    ", connectionTimeoutMilli=" + connectionTimeoutMilli +
+                    ", readTimeoutMilli=" + readTimeoutMilli +
+                    '}';
         }
     }
 }
