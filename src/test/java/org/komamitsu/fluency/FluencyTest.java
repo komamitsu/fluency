@@ -886,7 +886,12 @@ public class FluencyTest
                 }
                 catch (IOException e) {
                     e.printStackTrace();
-                    throw new RuntimeException("Failed", e);
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    }
+                    catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
             latch.countDown();
