@@ -41,6 +41,6 @@ public class AsyncFlusherTest
         flusher.close();
         assertEquals(1, buffer.getCloseCount().get());
         assertEquals(flushCount, buffer.getFlushCount().get());
-        assertEquals(forceFlushCount + 1, buffer.getForceFlushCount().get());
+        assertEquals(forceFlushCount + 2, buffer.getForceFlushCount().get());
     }
 }
