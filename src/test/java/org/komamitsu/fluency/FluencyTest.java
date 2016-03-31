@@ -52,7 +52,13 @@ public class FluencyTest
             new Options(false, true, false, true, false),   // File backup + Ack response
             new Options(false, false, true, false, false),  // Close instead of flush
             new Options(false, false, false, true, false),  // Ack response
-            new Options(false, false, false, false, true)   // Small buffer
+            new Options(false, false, false, false, true),  // Small buffer
+            new Options(true, false, false, false, true),   // Failover + Small buffer
+            new Options(false, false, true, false, true),   // Close instead of flush + Small buffer
+            new Options(false, false, false, true, true),   // Ack response + Small buffer
+            new Options(true, false, true, false, false),   // Failover + Close instead of flush
+            new Options(false, true, true, true, false),    // File backup + Ack response + Close instead of flush
+            new Options(false, false, true, true, false)    // Ack response + Close instead of flush
     };
 
     public static class Options
@@ -258,124 +264,6 @@ public class FluencyTest
         }, options);
     }
 
-    /*
-    @Theory
-    public void testFluencyUsingMessageAndAsyncFlusherWithMultiSender(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                int fluentdPort = localPorts.get(0);
-                int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndAsyncFlusherWithMultiSender");
-                }
-                Flusher.Config flusherConfig = new AsyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingMessageAndSyncFlusherWithMultiSender(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                int fluentdPort = localPorts.get(0);
-                int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                Buffer.Config bufferConfig = new MessageBuffer.Config().setAckResponseMode(true);
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndSyncFlusherWithMultiSender");
-                }
-                Flusher.Config flusherConfig = new SyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingPackedForwardAndAsyncFlusherWithMultiSender(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                int fluentdPort = localPorts.get(0);
-                int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardAndAsyncFlusherWithMultiSender");
-                }
-                Flusher.Config flusherConfig = new AsyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingPackedForwardAndSyncFlusherWithMultiSender(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                int fluentdPort = localPorts.get(0);
-                int secondaryFluentdPort = localPorts.get(1);
-                Sender sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setAckResponseMode(true);
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardAndSyncFlusherWithMultiSender");
-                }
-                Flusher.Config flusherConfig = new SyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-    */
-
     private void testFluencyBase(final FluencyFactory fluencyFactory, final Options options)
             throws Exception
     {
@@ -557,8 +445,6 @@ public class FluencyTest
                             }
                             catch (IOException e) {
                                 LOG.warn("IOException occurred", e);
-                                // throw new RuntimeException("Failed", e);
-                                // TODO: We can ignore it?
                             }
                         }
                         latch.countDown();
@@ -589,8 +475,11 @@ public class FluencyTest
             secondaryFluentd.stop();
             TimeUnit.MILLISECONDS.sleep(1000);
 
-            // Ignore these counters when testing failover
-            if (!options.failover) {
+            if (options.failover) {
+                assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 5);
+                assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 5);
+            }
+            else {
                 assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 2);
                 assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 2);
             }
@@ -688,7 +577,6 @@ public class FluencyTest
                     else {
                         throw new IllegalArgumentException("Unexpected tag: tag=" + tag);
                     }
-
                     assertTrue(startTimestamp <= timestampMillis && timestampMillis < startTimestamp + 60 * 1000);
 
                     assertEquals(4, data.size());
