@@ -476,8 +476,8 @@ public class FluencyTest
             TimeUnit.MILLISECONDS.sleep(1000);
 
             if (options.failover) {
-                assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 5);
-                assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 5);
+                assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 10);
+                assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 10);
             }
             else {
                 assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 2);
