@@ -423,14 +423,14 @@ public class FluencyTest
                             hashMap.put("comment", "hello, world");
                             hashMap.put("rate", 1.23);
                             try {
-                                BufferFullException exception = null;
+                                Exception exception = null;
                                 for (int retry = 0; retry < 10; retry++) {
                                     try {
                                         fluency.get().emit(tag, hashMap);
                                         exception = null;
                                         break;
                                     }
-                                    catch (BufferFullException e) {
+                                    catch (Exception e) {
                                         exception = e;
                                         try {
                                             TimeUnit.SECONDS.sleep(1);
@@ -443,8 +443,8 @@ public class FluencyTest
                                     throw exception;
                                 }
                             }
-                            catch (IOException e) {
-                                LOG.warn("IOException occurred", e);
+                            catch (Exception e) {
+                                LOG.warn("Exception occurred", e);
                             }
                         }
                         latch.countDown();
@@ -587,8 +587,7 @@ public class FluencyTest
                             assertEquals("hello, world", val.toString());
                         }
                         else if (key.equals("rate")) {
-                            // Treating the value as String to avoid a failure of calling asFloatValue()...
-                            assertEquals("1.23", val.toString());
+                            assertEquals(1.23, val.asFloatValue().toFloat(), 0.000001);
                         }
                         else if (key.equals("name")) {
                             nameEventsCounter.incrementAndGet();
