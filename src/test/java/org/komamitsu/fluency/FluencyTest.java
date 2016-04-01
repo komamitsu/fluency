@@ -363,6 +363,11 @@ public class FluencyTest
                     public void run()
                     {
                         for (int i = 0; i < reqNum; i++) {
+                            if (Thread.currentThread().isInterrupted()) {
+                                LOG.info("Interrupted...");
+                                break;
+                            }
+
                             if (options.failover) {
                                 if (i == reqNum / 2) {
                                     if (shouldFailOver.getAndSet(false)) {
