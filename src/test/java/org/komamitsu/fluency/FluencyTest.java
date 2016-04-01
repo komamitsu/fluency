@@ -89,6 +89,44 @@ public class FluencyTest
                     ", smallBuffer=" + smallBuffer +
                     '}';
         }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            Options options = (Options) o;
+
+            if (failover != options.failover) {
+                return false;
+            }
+            if (fileBackup != options.fileBackup) {
+                return false;
+            }
+            if (closeInsteadOfFlush != options.closeInsteadOfFlush) {
+                return false;
+            }
+            if (ackResponse != options.ackResponse) {
+                return false;
+            }
+            return smallBuffer == options.smallBuffer;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (failover ? 1 : 0);
+            result = 31 * result + (fileBackup ? 1 : 0);
+            result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
+            result = 31 * result + (ackResponse ? 1 : 0);
+            result = 31 * result + (smallBuffer ? 1 : 0);
+            return result;
+        }
     }
 
     @Test
@@ -151,7 +189,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndAsyncFlusher");
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndAsyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -186,7 +224,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndAsyncFlusher");
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndAsyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -221,7 +259,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndSyncFlusher");
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndSyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -256,7 +294,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndSyncFlusher");
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndSyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
