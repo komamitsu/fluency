@@ -6,8 +6,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.FileBackup;
-import org.komamitsu.fluency.buffer.MessageBuffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
@@ -163,7 +161,7 @@ public class FluencyTest
     }
 
     @Theory
-    public void testFluencyUsingPackedForwardBufferAndAsyncFlusher(final Options options)
+    public void testFluencyUsingAsyncFlusher(final Options options)
             throws Exception
     {
         testFluencyBase(new FluencyFactory()
@@ -189,7 +187,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndAsyncFlusher" + options.hashCode());
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingAsyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -198,42 +196,7 @@ public class FluencyTest
     }
 
     @Theory
-    public void testFluencyUsingMessageAndAsyncFlusher(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                Sender sender;
-                int fluentdPort = localPorts.get(0);
-                if (options.failover) {
-                    int secondaryFluentdPort = localPorts.get(1);
-                    sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                }
-                else {
-                    sender = getSingleTCPSender(fluentdPort);
-                }
-                Buffer.Config bufferConfig = new MessageBuffer.Config();
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndAsyncFlusher" + options.hashCode());
-                }
-                Flusher.Config flusherConfig = new AsyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingPackedForwardBufferAndSyncFlusher(final Options options)
+    public void testFluencyUsingSyncFlusher(final Options options)
             throws Exception
     {
         testFluencyBase(new FluencyFactory()
@@ -259,42 +222,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingPackedForwardBufferAndSyncFlusher" + options.hashCode());
-                }
-                Flusher.Config flusherConfig = new SyncFlusher.Config();
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingMessageAndSyncFlusher(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                Sender sender;
-                int fluentdPort = localPorts.get(0);
-                if (options.failover) {
-                    int secondaryFluentdPort = localPorts.get(1);
-                    sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                }
-                else {
-                    sender = getSingleTCPSender(fluentdPort);
-                }
-                Buffer.Config bufferConfig = new MessageBuffer.Config();
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingMessageAndSyncFlusher" + options.hashCode());
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingSyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
