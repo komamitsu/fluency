@@ -36,6 +36,12 @@ public class AsyncFlusher
                     }
                 }
 
+                try {
+                    buffer.flush(sender, true);
+                }
+                catch (IOException e) {
+                    LOG.error("Failed to flush", e);
+                }
                 closeBuffer();
             }
         };
