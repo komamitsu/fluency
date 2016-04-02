@@ -131,32 +131,18 @@ public abstract class AbstractFluentdServer
                         String tag = rootValue.get(0).toString();
                         Value secondValue = rootValue.get(1);
 
-                        if (secondValue.isIntegerValue()) {
-                            // Message
-                            long timestamp = secondValue.asIntegerValue().asLong();
-                            MapValue mapValue = rootValue.get(2).asMapValue();
+                        // PackedForward
+                        byte[] bytes = secondValue.asRawValue().asByteArray();
+                        MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
+                        while (eventsUnpacker.hasNext()) {
+                            ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
+                            assertEquals(2, arrayValue.size());
+                            long timestamp = arrayValue.get(0).asIntegerValue().asLong();
+                            MapValue mapValue = arrayValue.get(1).asMapValue();
                             eventHandler.onReceive(tag, timestamp, mapValue);
-                            if (rootValue.size() == 4) {
-                                ack(acceptSocketChannel, rootValue.get(3));
-                            }
                         }
-                        else if (secondValue.isRawValue()) {
-                            // PackedForward
-                            byte[] bytes = secondValue.asRawValue().asByteArray();
-                            MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
-                            while (eventsUnpacker.hasNext()) {
-                                ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
-                                assertEquals(2, arrayValue.size());
-                                long timestamp = arrayValue.get(0).asIntegerValue().asLong();
-                                MapValue mapValue = arrayValue.get(1).asMapValue();
-                                eventHandler.onReceive(tag, timestamp, mapValue);
-                            }
-                            if (rootValue.size() == 3) {
-                                ack(acceptSocketChannel, rootValue.get(2));
-                            }
-                        }
-                        else {
-                            throw new IllegalStateException("Unexpected second value: " + secondValue);
+                        if (rootValue.size() == 3) {
+                            ack(acceptSocketChannel, rootValue.get(2));
                         }
                     }
 
