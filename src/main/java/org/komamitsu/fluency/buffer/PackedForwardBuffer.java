@@ -235,7 +235,7 @@ public class PackedForwardBuffer
                         flushableBuffers.put(flushableBuffer);
                     }
                     catch (InterruptedException e1) {
-                        LOG.warn("Failed to save the data into the buffer. Trying to save it in extra bufer: chunk={}", flushableBuffer);
+                        LOG.warn("Failed to save the data into the buffer. Trying to save it in extra buffer: chunk={}", flushableBuffer);
                         backupBuffers.add(flushableBuffer);
                     }
                 }
