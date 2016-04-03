@@ -7,9 +7,11 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
+import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
@@ -28,10 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -143,6 +149,31 @@ public class FluencyTest
         Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config).close();
     }
 
+    @Test
+    public void testIsTerminated()
+            throws IOException, InterruptedException
+    {
+        Sender sender = new MockTCPSender(24224);
+        Buffer.Config bufferConfig = new TestableBuffer.Config();
+        {
+            Flusher.Config flusherConfig = new AsyncFlusher.Config();
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            assertFalse(fluency.isTerminated());
+            fluency.close();
+            TimeUnit.SECONDS.sleep(1);
+            assertTrue(fluency.isTerminated());
+        }
+
+        {
+            Flusher.Config flusherConfig = new SyncFlusher.Config();
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            assertFalse(fluency.isTerminated());
+            fluency.close();
+            TimeUnit.SECONDS.sleep(1);
+            assertTrue(fluency.isTerminated());
+        }
+    }
+
     interface FluencyFactory
     {
         Fluency generate(List<Integer> localPort)
@@ -187,7 +218,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingAsyncFlusher" + options.hashCode());
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -222,7 +253,7 @@ public class FluencyTest
                     bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
                 }
                 if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix(getClass().getSimpleName() + "testFluencyUsingSyncFlusher" + options.hashCode());
+                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingSyncFlusher" + options.hashCode());
                 }
                 Flusher.Config flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -581,25 +612,23 @@ public class FluencyTest
     }
 
     private static class EmitTask
-            implements Runnable
+            implements Callable<Void>
     {
         private final Fluency fluency;
         private final String tag;
-        private Map<String, Object> data;
+        private final Map<String, Object> data;
         private final int count;
-        private final CountDownLatch latch;
 
-        private EmitTask(Fluency fluency, String tag, Map<String, Object> data, int count, CountDownLatch latch)
+        private EmitTask(Fluency fluency, String tag, Map<String, Object> data, int count)
         {
             this.fluency = fluency;
             this.tag = tag;
             this.data = data;
             this.count = count;
-            this.latch = latch;
         }
 
         @Override
-        public void run()
+        public Void call()
         {
             for (int i = 0; i < count; i++) {
                 try {
@@ -615,7 +644,7 @@ public class FluencyTest
                     }
                 }
             }
-            latch.countDown();
+            return null;
         }
     }
 
@@ -672,31 +701,34 @@ public class FluencyTest
 
     // @Test
     public void testWithRealFluentd()
-            throws IOException, InterruptedException
+            throws Exception
     {
         int concurrency = 4;
         int reqNum = 1000000;
-        // Fluency fluency = Fluency.defaultFluency();
-        TCPSender sender = new TCPSender.Config().createInstance();
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
-        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        Fluency fluency = Fluency.defaultFluency();
+
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         data.put("age", 42);
         data.put("comment", "hello, world");
-        CountDownLatch latch = new CountDownLatch(concurrency);
         ExecutorService executorService = Executors.newCachedThreadPool();
-        for (int i = 0; i < concurrency; i++) {
-            executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        try {
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(60, TimeUnit.SECONDS);
+            }
         }
-        assertTrue(latch.await(60, TimeUnit.SECONDS));
-        fluency.close();
+        finally {
+            fluency.close();
+        }
     }
 
     // @Test
     public void testWithRealMultipleFluentd()
-            throws IOException, InterruptedException
+            throws IOException, InterruptedException, TimeoutException, ExecutionException
     {
         int concurrency = 4;
         int reqNum = 1000000;
@@ -714,12 +746,55 @@ public class FluencyTest
         data.put("name", "komamitsu");
         data.put("age", 42);
         data.put("comment", "hello, world");
-        CountDownLatch latch = new CountDownLatch(concurrency);
         ExecutorService executorService = Executors.newCachedThreadPool();
-        for (int i = 0; i < concurrency; i++) {
-            executorService.execute(new EmitTask(fluency, "foodb.bartbl", data, reqNum, latch));
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        try {
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(60, TimeUnit.SECONDS);
+            }
         }
-        assertTrue(latch.await(60, TimeUnit.SECONDS));
-        fluency.close();
+        finally {
+            fluency.close();
+        }
+    }
+
+    // @Test
+    public void testWithRealFluentdWithFileBackup()
+            throws ExecutionException, TimeoutException, IOException, InterruptedException
+    {
+        int concurrency = 4;
+        int reqNum = 1000000;
+
+        Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setSenderMaxRetryCount(5).setFileBackupDir(System.getProperty("java.io.tmpdir")));
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        data.put("name", "komamitsu");
+        data.put("age", 42);
+        data.put("comment", "hello, world");
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        try {
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(60, TimeUnit.SECONDS);
+            }
+        }
+        finally {
+            fluency.close();
+        }
+
+        for (int i = 0; i < 20; i++) {
+            if (fluency.isTerminated()) {
+                LOG.info("Fluency is terminated successfully");
+                return;
+            }
+            TimeUnit.SECONDS.sleep(5);
+        }
+        LOG.warn("Fluency isn't terminated yet");
     }
 }
