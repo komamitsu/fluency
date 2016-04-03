@@ -41,7 +41,10 @@ public class Fluency
             bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
         }
         if (config != null) {
-            bufferConfig.setAckResponseMode(config.ackResponseMode);
+            bufferConfig.setAckResponseMode(config.isAckResponseMode());
+        }
+        if (config != null && config.getFileBackupDir() != null) {
+            bufferConfig.setFileBackupDir(config.getFileBackupDir());
         }
 
         Flusher.Config flusherConfig = new AsyncFlusher.Config();
@@ -194,6 +197,8 @@ public class Fluency
 
         private boolean ackResponseMode;
 
+        private String fileBackupDir;
+
         public Long getMaxBufferSize()
         {
             return maxBufferSize;
@@ -235,6 +240,17 @@ public class Fluency
         public Config setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
+            return this;
+        }
+
+        public String getFileBackupDir()
+        {
+            return fileBackupDir;
+        }
+
+        public Config setFileBackupDir(String fileBackupDir)
+        {
+            this.fileBackupDir = fileBackupDir;
             return this;
         }
     }
