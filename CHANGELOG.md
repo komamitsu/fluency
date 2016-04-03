@@ -1,3 +1,10 @@
+## 0.0.9 (2016-04-04)
+
+Features:
+
+- Add file backup mode that takes backups of unsent memory buffer as file when Fluency is closing and then resends the backup files when restarting
+- Add new API `Fluency#isTerminated` to check if the flusher is finished already
+
 ## 0.0.8 (2016-02-15)
 
 Bugfixes:
