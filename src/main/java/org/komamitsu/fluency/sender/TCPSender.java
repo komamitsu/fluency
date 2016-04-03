@@ -107,6 +107,7 @@ public class TCPSender
                 future.get(config.getReadTimeoutMilli(), TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new IOException("InterruptedException occurred", e);
             }
             catch (ExecutionException e) {
