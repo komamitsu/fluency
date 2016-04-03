@@ -3,18 +3,23 @@ package org.komamitsu.fluency.buffer;
 import org.junit.Test;
 import org.komamitsu.fluency.StubSender;
 import org.komamitsu.fluency.util.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
 public class BufferTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(BufferTest.class);
     private static final Charset UTF8 = Charset.forName("UTF-8");
 
     @Test
@@ -91,6 +96,69 @@ public class BufferTest
             for (int i = 0; i < expected.remaining(); i++) {
                 assertEquals(expected.get(i), actual.get(i));
             }
+        }
+    }
+
+    @Test
+    public void testFileBackupThatIsNotDirectory()
+            throws IOException
+    {
+        File backupDirFile = File.createTempFile("testFileBackupWithInvalidDir", ".tmp");
+        backupDirFile.deleteOnExit();
+        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDirFile.getAbsolutePath());
+
+        try {
+            config.createInstance();
+            assertTrue(false);
+        }
+        catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testFileBackupThatIsWritable()
+            throws IOException
+    {
+        File backupDir = new File(System.getProperties().getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        if (backupDir.mkdir()) {
+            LOG.info("Created directory: {}", backupDir);
+        }
+        if (!backupDir.setWritable(false)) {
+            throw new RuntimeException("Failed to revoke writable permission");
+        }
+        backupDir.deleteOnExit();
+        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
+
+        try {
+            config.createInstance();
+            assertTrue(false);
+        }
+        catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testFileBackupThatIsReadable()
+            throws IOException
+    {
+        File backupDir = new File(System.getProperties().getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        if (backupDir.mkdir()) {
+            LOG.info("Created directory: {}", backupDir);
+        }
+        if (!backupDir.setReadable(false)) {
+            throw new RuntimeException("Failed to revoke readable permission");
+        }
+        backupDir.deleteOnExit();
+        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
+
+        try {
+            config.createInstance();
+            assertTrue(false);
+        }
+        catch (IllegalArgumentException e) {
+            assertTrue(true);
         }
     }
 }

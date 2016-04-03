@@ -105,6 +105,12 @@ public class FileBackup
 
     public FileBackup(File backupDir, Buffer userBuffer, String prefix)
     {
+        if (backupDir.mkdir()) {
+            LOG.info("Created backupDir: dir={}", backupDir);
+        }
+        if (!backupDir.isDirectory() || !backupDir.canRead() || !backupDir.canWrite()) {
+            throw new IllegalArgumentException("backupDir[" + backupDir + "] needs to be a readable & writable directory");
+        }
         this.backupDir = backupDir;
         this.userBuffer = userBuffer;
         this.prefix = prefix;
@@ -148,9 +154,6 @@ public class FileBackup
 
     public void saveBuffer(List<String> params, ByteBuffer buffer)
     {
-        if (backupDir.mkdir()) {
-            LOG.info("Created backupDir: dir={}", backupDir);
-        }
         List<String> copiedParams = new ArrayList<String>(params);
         copiedParams.add(String.valueOf(System.nanoTime()));
 
