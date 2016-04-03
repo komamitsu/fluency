@@ -8,7 +8,7 @@ Yet another fluentd logger.
 * Better performance ([3 times faster than fluent-logger-java](https://gist.github.com/komamitsu/781a8b519afdc553f50c))
 * Asynchronous / synchronous flush to Fluentd
 * TCP / UDP heartbeat with Fluentd
-* `Message` / `PackedForward` formats are available
+* `PackedForward` format
 * Failover with multiple Fluentds
 * Enable /disable ack response mode
 
@@ -59,6 +59,17 @@ Yet another fluentd logger.
  	//   - With ack response
     Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setAckResponseMode(true));
 
+#### Enable file backup mode
+
+In this mode, Fluency takes backup of unsent memory buffers as files and resend them when restarting
+
+ 	// Single Fluentd(localhost:24224)
+ 	//   - Asynchronous flush
+ 	//   - PackedForward format
+ 	//   - Backup directory is the temporary directory
+    Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
+
+
 #### Other configurations
 
     // Multiple Fluentd(localhost:24224, localhost:24225)
@@ -100,3 +111,14 @@ Yet another fluentd logger.
 ### Release resources
 
     fluency.close();
+
+### Check if Fluency is terminated
+
+    fluency.close();
+    for (int i = 0; i < MAX_CHECK_TERMINATE; i++) {
+        if (fluency.isTerminated()) {
+        	break;
+        }
+        TimeUnit.SECONDS.sleep(CHECK_TERMINATE_INTERVAL);
+    }
+
