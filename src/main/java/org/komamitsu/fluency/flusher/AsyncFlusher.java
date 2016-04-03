@@ -85,6 +85,12 @@ public class AsyncFlusher
         }
     }
 
+    @Override
+    public boolean isTerminated()
+    {
+        return executorService.isTerminated();
+    }
+
     public static class Config extends Flusher.Config<AsyncFlusher, Flusher.Config>
     {
         @Override

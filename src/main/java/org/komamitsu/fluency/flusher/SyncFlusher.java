@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SyncFlusher
@@ -20,6 +21,7 @@ public class SyncFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(SyncFlusher.class);
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
+    private final AtomicBoolean isTerminated = new AtomicBoolean();
 
     private SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
     {
@@ -67,6 +69,13 @@ public class SyncFlusher
             LOG.warn("flushInternal() timed out", e);
         }
         closeBuffer();
+        isTerminated.set(true);
+    }
+
+    @Override
+    public boolean isTerminated()
+    {
+        return isTerminated.get();
     }
 
     public static class Config extends Flusher.Config<SyncFlusher, Config>

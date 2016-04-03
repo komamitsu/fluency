@@ -153,6 +153,11 @@ public class Fluency
         buffer.clearBackupFiles();
     }
 
+    public boolean isTerminated()
+    {
+        return flusher.isTerminated();
+    }
+
     public static class Builder
     {
         private final Sender sender;

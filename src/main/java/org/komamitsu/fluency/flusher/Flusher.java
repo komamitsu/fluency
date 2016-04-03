@@ -60,6 +60,8 @@ public abstract class Flusher<C extends Flusher.Config>
         }
     }
 
+    public abstract boolean isTerminated();
+
     protected void closeBuffer()
     {
         LOG.trace("closeBuffer(): closing buffer");
