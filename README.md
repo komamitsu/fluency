@@ -61,14 +61,13 @@ Yet another fluentd logger.
 
 #### Enable file backup mode
 
-In this mode, Fluency takes backup of unsent memory buffers as files and resend them when restarting
+In this mode, Fluency takes backup of unsent memory buffers as files when closing and then resends them when restarting
 
  	// Single Fluentd(localhost:24224)
  	//   - Asynchronous flush
  	//   - PackedForward format
  	//   - Backup directory is the temporary directory
     Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
-
 
 #### Other configurations
 
