@@ -18,7 +18,7 @@ public abstract class RetryStrategy<C extends RetryStrategy.Config>
 
     public static abstract class Config<T extends RetryStrategy, C extends RetryStrategy.Config>
     {
-        private int maxRetryCount = 8;
+        private int maxRetryCount = 7;
 
         public int getMaxRetryCount()
         {
