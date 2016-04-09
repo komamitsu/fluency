@@ -12,7 +12,6 @@ public class MockTCPSender extends TCPSender
 {
     private final List<ByteBuffer> events = new ArrayList<ByteBuffer>();
     private final AtomicInteger closeCount = new AtomicInteger();
-    private Integer sendWaitMilli;
 
     public MockTCPSender(String host, int port)
             throws IOException
@@ -30,14 +29,6 @@ public class MockTCPSender extends TCPSender
     public synchronized void send(List<ByteBuffer> dataList)
             throws IOException
     {
-        if (sendWaitMilli != null) {
-            try {
-                TimeUnit.MILLISECONDS.sleep(sendWaitMilli);
-            }
-            catch (InterruptedException e) {
-                throw new RuntimeException("Unexpected interrupt");
-            }
-        }
         events.addAll(dataList);
     }
 
@@ -45,7 +36,7 @@ public class MockTCPSender extends TCPSender
     public synchronized void send(ByteBuffer data)
             throws IOException
     {
-        send(Arrays.asList(data));
+        events.add(data);
     }
 
     @Override
@@ -53,11 +44,6 @@ public class MockTCPSender extends TCPSender
             throws IOException
     {
         closeCount.incrementAndGet();
-    }
-
-    public void setSendWaitMilli(Integer sendWaitMilli)
-    {
-        this.sendWaitMilli = sendWaitMilli;
     }
 
     public List<ByteBuffer> getEvents()

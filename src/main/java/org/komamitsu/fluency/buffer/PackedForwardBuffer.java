@@ -271,11 +271,9 @@ public class PackedForwardBuffer
                 }
             }
         }
-        synchronized (flushableBuffers) {
-            for (TaggableBuffer buffer : flushableBuffers) {
-                if (buffer.getByteBuffer() != null) {
-                    size += buffer.getByteBuffer().remaining();
-                }
+        for (TaggableBuffer buffer : flushableBuffers) {
+            if (buffer.getByteBuffer() != null) {
+                size += buffer.getByteBuffer().remaining();
             }
         }
         return size;
