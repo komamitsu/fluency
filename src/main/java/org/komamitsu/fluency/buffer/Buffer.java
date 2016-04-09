@@ -120,6 +120,8 @@ public abstract class Buffer<T extends Buffer.Config>
         return (float) getAllocatedSize() / getMaxSize();
     }
 
+    public abstract long getBufferedDataSize();
+
     public void clearBackupFiles()
     {
         if (fileBackup != null) {

@@ -153,6 +153,16 @@ public class Fluency
         buffer.clearBackupFiles();
     }
 
+    public long getAllocatedBufferSize()
+    {
+        return buffer.getAllocatedSize();
+    }
+
+    public long getBufferedDataSize()
+    {
+        return buffer.getBufferedDataSize();
+    }
+
     public boolean isTerminated()
     {
         return flusher.isTerminated();

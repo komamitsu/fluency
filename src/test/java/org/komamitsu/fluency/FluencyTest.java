@@ -42,6 +42,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
 
 @RunWith(Theories.class)
@@ -52,6 +55,7 @@ public class FluencyTest
     private static final String TMPDIR = System.getProperty("java.io.tmpdir");
     @DataPoints
     public static final Options[] OPTIONS = {
+            new Options(false, false, false, false, false), // Normal
             new Options(true, false, false, false, false),  // Failover
             new Options(false, true, false, true, false),   // File backup + Ack response
             new Options(false, false, true, false, false),  // Close instead of flush
@@ -172,6 +176,23 @@ public class FluencyTest
             TimeUnit.SECONDS.sleep(1);
             assertTrue(fluency.isTerminated());
         }
+    }
+
+    @Test
+    public void testGetAllocatedBufferSize()
+            throws IOException
+    {
+        Fluency fluency = new Fluency.Builder(new MockTCPSender(24224)).
+                setBufferConfig(new TestableBuffer.Config()).
+                setFlusherConfig(new AsyncFlusher.Config()).
+                build();
+        assertThat(fluency.getAllocatedBufferSize(), is(0L));
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("comment", "hello world");
+        for (int i = 0; i < 10000; i++) {
+            fluency.emit("foodb.bartbl", map);
+        }
+        assertThat(fluency.getAllocatedBufferSize(), is(TestableBuffer.ALLOC_SIZE * 10000L));
     }
 
     interface FluencyFactory
@@ -468,22 +489,28 @@ public class FluencyTest
                 fluency.get().flush();
             }
             for (int i = 0; i < 20; i++) {
-                if (fluentd.ageEventsCounter.get() == (long) concurrency * reqNum) {
+                TimeUnit.MILLISECONDS.sleep(500);
+                LOG.debug("BufferedDataSize is {}", fluency.get().getBufferedDataSize());
+                if (fluency.get().getBufferedDataSize() == 0) {
                     break;
                 }
-                TimeUnit.MILLISECONDS.sleep(500);
             }
+
             fluentd.stop();
             secondaryFluentd.stop();
             TimeUnit.MILLISECONDS.sleep(1000);
 
             if (options.failover) {
-                assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 10);
-                assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 10);
+                assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));
+                assertThat(fluentd.connectCounter.get(), is(lessThanOrEqualTo(10L)));
+                assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
+                assertThat(fluentd.closeCounter.get(), is(lessThanOrEqualTo(10L)));
             }
             else {
-                assertTrue(fluentd.connectCounter.get() >= 1 && fluentd.connectCounter.get() <= 2);
-                assertTrue(fluentd.closeCounter.get() >= 1 && fluentd.closeCounter.get() <= 2);
+                assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));
+                assertThat(fluentd.connectCounter.get(), is(lessThanOrEqualTo(2L)));
+                assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
+                assertThat(fluentd.closeCounter.get(), is(lessThanOrEqualTo(2L)));
             }
             assertEquals((long) concurrency * reqNum, fluentd.ageEventsCounter.get());
             assertEquals(ageEventsSum.get(), fluentd.ageEventsSum.get());
@@ -783,17 +810,25 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
+            for (int i = 0; i < 10; i++) {
+                LOG.debug("BufferedDataSize is {}", fluency.getBufferedDataSize());
+                if (fluency.getBufferedDataSize() == 0) {
+                    break;
+                }
+                TimeUnit.SECONDS.sleep(1);
+            }
         }
         finally {
             fluency.close();
         }
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 60; i++) {
             if (fluency.isTerminated()) {
                 LOG.info("Fluency is terminated successfully");
                 return;
             }
-            TimeUnit.SECONDS.sleep(5);
+            LOG.debug("Fluency is still running");
+            TimeUnit.SECONDS.sleep(1);
         }
         LOG.warn("Fluency isn't terminated yet");
     }

@@ -19,10 +19,13 @@ public class TestableBuffer
         extends Buffer<TestableBuffer.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestableBuffer.class);
+    public static final int RECORD_DATA_SIZE = 100;
+    public static final int ALLOC_SIZE = 128;
     private final List<Tuple3<String, Long, Map<String, Object>>> events = new ArrayList<Tuple3<String, Long, Map<String, Object>>>();
     private final AtomicInteger flushCount = new AtomicInteger();
     private final AtomicInteger forceFlushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
+    private final AtomicInteger bufferedDataSize = new AtomicInteger();
     private final AtomicInteger allocatedSize = new AtomicInteger();
     private final List<Tuple<List<String>, ByteBuffer>> savableBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
     private final List<Tuple<List<String>, ByteBuffer>> loadedBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
@@ -63,7 +66,8 @@ public class TestableBuffer
             throws IOException
     {
         events.add(new Tuple3<String, Long, Map<String, Object>>(tag, timestamp, data));
-        allocatedSize.addAndGet(100);
+        allocatedSize.addAndGet(ALLOC_SIZE);
+        bufferedDataSize.addAndGet(RECORD_DATA_SIZE);
     }
 
     @Override
@@ -77,6 +81,7 @@ public class TestableBuffer
             flushCount.incrementAndGet();
         }
         allocatedSize.set(0);
+        bufferedDataSize.set(0);
     }
 
     @Override
@@ -95,6 +100,12 @@ public class TestableBuffer
     public long getAllocatedSize()
     {
         return allocatedSize.get();
+    }
+
+    @Override
+    public long getBufferedDataSize()
+    {
+        return bufferedDataSize.get();
     }
 
     public List<Tuple3<String, Long, Map<String, Object>>> getEvents()

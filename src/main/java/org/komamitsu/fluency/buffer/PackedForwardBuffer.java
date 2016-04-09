@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -257,6 +258,27 @@ public class PackedForwardBuffer
     public long getAllocatedSize()
     {
         return bufferPool.getAllocatedSize();
+    }
+
+    @Override
+    public long getBufferedDataSize()
+    {
+        long size = 0;
+        synchronized (retentionBuffers) {
+            for (Map.Entry<String, RetentionBuffer> buffer : retentionBuffers.entrySet()) {
+                if (buffer.getValue() != null && buffer.getValue().getByteBuffer() != null) {
+                    size += buffer.getValue().getByteBuffer().position();
+                }
+            }
+        }
+        synchronized (flushableBuffers) {
+            for (TaggableBuffer buffer : flushableBuffers) {
+                if (buffer.getByteBuffer() != null) {
+                    size += buffer.getByteBuffer().remaining();
+                }
+            }
+        }
+        return size;
     }
 
     private static class RetentionBuffer
