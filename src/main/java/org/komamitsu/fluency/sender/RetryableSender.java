@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetryableSender
         extends Sender<RetryableSender.Config>
@@ -17,12 +18,14 @@ public class RetryableSender
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;
     private RetryStrategy retryStrategy;
+    private final AtomicBoolean isClosed = new AtomicBoolean();
 
     @Override
     public void close()
             throws IOException
     {
         baseSender.close();
+        isClosed.set(true);
     }
 
     public static class RetryOverException
@@ -49,6 +52,11 @@ public class RetryableSender
 
         int retry = 0;
         while (!retryStrategy.isRetriedOver(retry)) {
+            if (isClosed.get()) {
+                LOG.warn("This sender is already closed");
+                return;
+            }
+
             try {
                 if (ackToken == null) {
                     baseSender.send(dataList);
