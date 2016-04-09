@@ -53,8 +53,7 @@ public class RetryableSender
         int retry = 0;
         while (!retryStrategy.isRetriedOver(retry)) {
             if (isClosed.get()) {
-                LOG.warn("This sender is already closed");
-                return;
+                throw new RetryOverException("This sender is already closed", firstException);
             }
 
             try {
