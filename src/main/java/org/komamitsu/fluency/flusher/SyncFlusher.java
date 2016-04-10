@@ -57,7 +57,7 @@ public class SyncFlusher
             }
         });
         try {
-            future.get(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
+            future.get(flusherConfig.getWaitBeforeInterruptOnClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("Interrupted", e);

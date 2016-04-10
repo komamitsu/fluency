@@ -408,7 +408,7 @@ public class FluencyTest
 
                                     fluencyCloseWaitLatch.countDown();
                                     try {
-                                        assertTrue(fluencyCloseWaitLatch.await(20, TimeUnit.SECONDS));
+                                        assertTrue(fluencyCloseWaitLatch.await(60, TimeUnit.SECONDS));
                                     }
                                     catch (InterruptedException e) {
                                         LOG.warn("Interrupted", e);
@@ -475,7 +475,7 @@ public class FluencyTest
                 });
             }
 
-            for (int i = 0; i < 60; i++) {
+            for (int i = 0; i < 120; i++) {
                 if (latch.await(1, TimeUnit.SECONDS)) {
                     break;
                 }
