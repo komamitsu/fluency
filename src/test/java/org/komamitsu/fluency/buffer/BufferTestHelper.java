@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 public class BufferTestHelper
@@ -53,6 +55,10 @@ public class BufferTestHelper
     public void baseTestMessageBuffer(final int loopCount, final boolean packedFwd, final boolean multiTags, final boolean syncFlush, final Buffer buffer)
             throws IOException, InterruptedException
     {
+        assertThat(buffer.getBufferUsage(), is(0f));
+        assertThat(buffer.getAllocatedSize(), is(0L));
+        assertThat(buffer.getBufferedDataSize(), is(0L));
+
         final int concurrency = 4;
         final CountDownLatch latch = new CountDownLatch(concurrency);
 
@@ -116,6 +122,10 @@ public class BufferTestHelper
             executorService.execute(emitTask);
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertThat(buffer.getBufferUsage(), is(greaterThan(0f)));
+        assertThat(buffer.getAllocatedSize(), is(greaterThan(0L)));
+        assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
+
         buffer.flush(sender, true);
         buffer.close();
         long end = System.currentTimeMillis();
@@ -130,6 +140,9 @@ public class BufferTestHelper
         if (!flushService.isTerminated()) {
             flushService.shutdownNow();
         }
+        assertThat(buffer.getBufferUsage(), is(0f));
+        assertThat(buffer.getAllocatedSize(), is(0L));
+        assertThat(buffer.getBufferedDataSize(), is(0L));
 
         int totalLoopCount = concurrency * loopCount;
 
