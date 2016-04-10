@@ -16,17 +16,18 @@ public class AsyncFlusher
         extends Flusher<AsyncFlusher.Config>
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
-    private final BlockingQueue<Boolean> waitQueue = new LinkedBlockingQueue<Boolean>();
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Runnable task = new Runnable() {
             @Override
             public void run()
             {
+                Event event = null;
                 while (!executorService.isShutdown()) {
                     try {
-                        Boolean force = waitQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
-                        buffer.flush(sender, force != null && force);
-                        waitQueue.clear();
+                        event = eventQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        boolean force = event != null;
+                        buffer.flush(sender, force);
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -34,10 +35,16 @@ public class AsyncFlusher
                     catch (IOException e) {
                         LOG.error("Failed to flush", e);
                     }
+
+                    if (event == Event.CLOSE) {
+                        break;
+                    }
                 }
 
                 try {
-                    buffer.flush(sender, true);
+                    if (event != Event.CLOSE) {
+                        buffer.flush(sender, true);
+                    }
                 }
                 catch (IOException e) {
                     LOG.error("Failed to flush", e);
@@ -45,6 +52,11 @@ public class AsyncFlusher
                 closeBuffer();
             }
         };
+
+    private enum Event
+    {
+        FORCE_FLUSH, CLOSE;
+    }
 
     private AsyncFlusher(final Buffer buffer, final Sender sender, final Config flusherConfig)
     {
@@ -58,10 +70,10 @@ public class AsyncFlusher
     {
         if (force) {
             try {
-                waitQueue.put(true);
+                eventQueue.put(Event.FORCE_FLUSH);
             }
             catch (InterruptedException e) {
-                LOG.warn("Failed to wake up the flushing thread", e);
+                LOG.warn("Failed to force flushing buffer", e);
             }
         }
     }
@@ -70,7 +82,12 @@ public class AsyncFlusher
     protected void closeInternal()
             throws IOException
     {
-        flushInternal(true);
+        try {
+            eventQueue.put(Event.CLOSE);
+        }
+        catch (InterruptedException e) {
+            LOG.warn("Failed to close buffer", e);
+        }
         executorService.shutdown();
         try {
             executorService.awaitTermination(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
