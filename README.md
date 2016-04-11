@@ -17,7 +17,7 @@ Yet another fluentd logger.
 ### Gradle
 
     dependencies {
-        compile 'org.komamitsu:fluency:0.0.9'
+        compile 'org.komamitsu:fluency:0.0.10'
     }
 
 ### Maven
@@ -25,7 +25,7 @@ Yet another fluentd logger.
     <dependency>
         <groupId>org.komamitsu</groupId>
         <artifactId>fluency</artifactId>
-        <version>0.0.9</version>
+        <version>0.0.10</version>
     </dependency>
  
  
@@ -121,3 +121,10 @@ In this mode, Fluency takes backup of unsent memory buffers as files when closin
         TimeUnit.SECONDS.sleep(CHECK_TERMINATE_INTERVAL);
     }
 
+### Know how much Fluency is allocating memory
+
+	LOG.debug("Memory size allocated by Fluency is {}", fluency.getAllocatedBufferSize());
+
+### Know how much Fluench is buffering unsent data in memory
+
+	LOG.debug("Unsent data size buffered by Fluency in memory is {}", fluency.getBufferedDataSize());

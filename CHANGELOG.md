@@ -1,3 +1,11 @@
+## 0.0.10 (2016-04-11)
+
+Features:
+
+- Add new API `Fluency#getAllocatedBufferSize` to know how much Fluency is allocating memory
+- Add new API `Fluency#getBufferedDataSize` to know how much Fluency is buffering unsent data in memory
+- Stop retry in RetryableSender after it is closed
+
 ## 0.0.9 (2016-04-04)
 
 Features:
