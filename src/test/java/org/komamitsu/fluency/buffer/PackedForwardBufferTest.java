@@ -66,4 +66,35 @@ public class PackedForwardBufferTest
         buffer.flush(sender, true);
         assertThat(buffer.getBufferedDataSize(), is(0L));
     }
+
+    @Test
+    public void testAppendIfItDoesNotThrowBufferOverflow()
+            throws IOException
+    {
+        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setInitialBufferSize(64 * 1024).createInstance();
+
+        StringBuilder buf = new StringBuilder();
+
+        for (int i = 0; i < 1024 * 60; i++) {
+            buf.append('x');
+        }
+        String str60kb = buf.toString();
+
+        for (int i = 0; i < 1024 * 40; i++) {
+            buf.append('x');
+        }
+        String str100kb = buf.toString();
+
+        {
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("k", str60kb);
+            buffer.append("tag0", new Date().getTime(), map);
+        }
+
+        {
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("k", str100kb);
+            buffer.append("tag0", new Date().getTime(), map);
+        }
+    }
 }

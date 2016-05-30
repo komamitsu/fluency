@@ -50,15 +50,17 @@ public class PackedForwardBuffer
             return retentionBuffer;
         }
 
+        int existingDataSize = 0;
         int newRetentionBufferSize;
         if (retentionBuffer == null) {
             newRetentionBufferSize = bufferConfig.getInitialBufferSize();
         }
         else{
+            existingDataSize = retentionBuffer.getByteBuffer().position();
             newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * bufferConfig.getBufferExpandRatio());
         }
 
-        while (newRetentionBufferSize < writeSize) {
+        while (newRetentionBufferSize < (writeSize + existingDataSize)) {
             newRetentionBufferSize *= bufferConfig.getBufferExpandRatio();
         }
 
