@@ -33,7 +33,7 @@ Yet another fluentd logger.
 
 ### Create Fluency instance
 
-#### For single Fluend
+#### For single Fluentd
  
  	// Single Fluentd(localhost:24224)
  	//   - Asynchronous flush
