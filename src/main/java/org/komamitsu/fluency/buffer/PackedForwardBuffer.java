@@ -195,12 +195,11 @@ public class PackedForwardBuffer
         moveRetentionBuffersToFlushable(force);
 
         TaggableBuffer flushableBuffer;
+        ByteArrayOutputStream header = new ByteArrayOutputStream();
+        MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
         while ((flushableBuffer = flushableBuffers.poll()) != null) {
             boolean keepBuffer = false;
             try {
-                // TODO: Reuse MessagePacker
-                ByteArrayOutputStream header = new ByteArrayOutputStream();
-                MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
                 ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
@@ -233,6 +232,7 @@ public class PackedForwardBuffer
                 }
             }
             finally {
+                header.reset();
                 if (keepBuffer) {
                     try {
                         flushableBuffers.put(flushableBuffer);
