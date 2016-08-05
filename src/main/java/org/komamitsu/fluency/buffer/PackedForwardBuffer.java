@@ -214,14 +214,17 @@ public class PackedForwardBuffer
                 messagePacker.flush();
 
                 try {
-                    synchronized (sender) {
-                        ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-                        if (bufferConfig.isAckResponseMode()) {
-                            String uuid = UUID.randomUUID().toString();
-                            sender.sendWithAck(Arrays.asList(headerBuffer, byteBuffer), uuid.getBytes(CHARSET));
+                    ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
+                    List<ByteBuffer> dataList = Arrays.asList(headerBuffer, byteBuffer);
+                    if (bufferConfig.isAckResponseMode()) {
+                        String uuid = UUID.randomUUID().toString();
+                        byte[] uuidBytes = uuid.getBytes(CHARSET);
+                        synchronized (sender) {
+                            sender.sendWithAck(dataList, uuidBytes);
                         }
-                        else {
-                            sender.send(Arrays.asList(headerBuffer, byteBuffer));
+                    } else {
+                        synchronized (sender) {
+                            sender.send(dataList);
                         }
                     }
                 }
