@@ -22,7 +22,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,7 +35,7 @@ public class PackedForwardBuffer
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
-    private final LinkedList<TaggableBuffer> backupBuffers = new LinkedList<TaggableBuffer>();
+    private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
 
     private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
@@ -118,7 +120,6 @@ public class PackedForwardBuffer
     protected void saveAllBuffersToFile()
             throws IOException
     {
-        // TODO : Lock Buffer safely
         moveRetentionBuffersToFlushable(true);  // Just in case
 
         TaggableBuffer flushableBuffer;
