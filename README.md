@@ -16,115 +16,141 @@ Yet another fluentd logger.
 
 ### Gradle
 
-    dependencies {
-        compile 'org.komamitsu:fluency:0.0.11'
-    }
+```groovy
+dependencies {
+    compile 'org.komamitsu:fluency:0.0.12'
+}
+```
 
 ### Maven
 
-    <dependency>
-        <groupId>org.komamitsu</groupId>
-        <artifactId>fluency</artifactId>
-        <version>0.0.11</version>
-    </dependency>
- 
+```xml
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency</artifactId>
+    <version>0.0.12</version>
+</dependency>
+```
  
 ## Usage
 
 ### Create Fluency instance
 
 #### For single Fluentd
- 
- 	// Single Fluentd(localhost:24224)
- 	//   - Asynchronous flush
- 	//   - PackedForward format
- 	//   - Without ack response
-    Fluency fluency = Fluency.defaultFluency();
+
+```java
+// Single Fluentd(localhost:24224)
+//   - Asynchronous flush
+//   - PackedForward format
+//   - Without ack response
+Fluency fluency = Fluency.defaultFluency();
+```
 
 #### For multiple Fluentd with failover
-    
-    // Multiple Fluentd(localhost:24224, localhost:24225)
-    //   - TCP heartbeat
- 	//   - Asynchronous flush
- 	//   - PackedForward format
- 	//   - Without ack response
-    Fluency fluency = Fluency.defaultFluency(Arrays.asList(
-    					new InetSocketAddress(24224), new InetSocketAddress(24225)));
+
+```java    
+// Multiple Fluentd(localhost:24224, localhost:24225)
+//   - TCP heartbeat
+//   - Asynchronous flush
+//   - PackedForward format
+//   - Without ack response
+Fluency fluency = Fluency.defaultFluency(
+			Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)));
+```
 
 #### Enable ACK response mode
 
- 	// Single Fluentd(localhost:24224)
- 	//   - Asynchronous flush
- 	//   - PackedForward format
- 	//   - With ack response
-    Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setAckResponseMode(true));
+```java
+// Single Fluentd(localhost:24224)
+//   - Asynchronous flush
+//   - PackedForward format
+//   - With ack response
+Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setAckResponseMode(true));
+```
 
 #### Enable file backup mode
 
 In this mode, Fluency takes backup of unsent memory buffers as files when closing and then resends them when restarting
 
- 	// Single Fluentd(localhost:24224)
- 	//   - Asynchronous flush
- 	//   - PackedForward format
- 	//   - Backup directory is the temporary directory
-    Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
+```java
+// Single Fluentd(localhost:24224)
+//   - Asynchronous flush
+//   - PackedForward format
+//   - Backup directory is the temporary directory
+Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
+```
 
 #### Other configurations
 
-    // Multiple Fluentd(localhost:24224, localhost:24225)
-    //   - TCP heartbeat
- 	//   - Asynchronous flush
- 	//   - PackedForward format
- 	//   - Without ack response
- 	//   - Max buffer size = 32MB (default: 16MB)
- 	//   - Flush interval = 200ms (default: 600ms)
- 	//   - Max retry of sending events = 12 (default: 8)
-    Fluency fluency = Fluency.defaultFluency(Arrays.asList(
-    					new InetSocketAddress(24224), new InetSocketAddress(24225)),
-    					new Fluency.Config().
-    						setMaxBufferSize(32 * 1024 * 1024).
-    						setFlushIntervalMillis(200).
-    						setSenderMaxRetryCount(12));
+```java
+// Multiple Fluentd(localhost:24224, localhost:24225)
+//   - TCP heartbeat
+//   - Asynchronous flush
+//   - PackedForward format
+//   - Without ack response
+//   - Max buffer size = 32MB (default: 16MB)
+//   - Flush interval = 200ms (default: 600ms)
+//   - Max retry of sending events = 12 (default: 8)
+Fluency fluency = Fluency.defaultFluency(
+			Arrays.asList(
+	    			new InetSocketAddress(24224), new InetSocketAddress(24225)),
+	    			new Fluency.Config().
+	    				setMaxBufferSize(32 * 1024 * 1024).
+	    				setFlushIntervalMillis(200).
+	    				setSenderMaxRetryCount(12));
+```
 
 #### Advanced configuration
 
-	Sender sender = new MultiSender(
-			                Arrays.asList(new TCPSender(24224), new TCPSender(24225)), 
-			                new PhiAccrualFailureDetectStrategy.Config().setPhiThreshold(80),
-		    	            new UDPHeartbeater.Config().setIntervalMillis(500));
-	Buffer.Config bufferConfig = new MessageBuffer.Config();
-	Flusher.Config flusherConfig = new SyncFlusher.Config().setBufferOccupancyThreshold(0.5f);
-	Fluency fluency = new Fluency.Builder(sender).
-							setBufferConfig(bufferConfig).
-     						setFlusherConfig(flusherConfig).build();
-        
+```java
+Sender sender = new MultiSender(
+			Arrays.asList(new TCPSender(24224), new TCPSender(24225)), 
+				new PhiAccrualFailureDetectStrategy.Config().setPhiThreshold(80),
+				new UDPHeartbeater.Config().setIntervalMillis(500));
+Buffer.Config bufferConfig = new MessageBuffer.Config();
+Flusher.Config flusherConfig = new SyncFlusher.Config().setBufferOccupancyThreshold(0.5f);
+Fluency fluency = new Fluency.Builder(sender).
+					setBufferConfig(bufferConfig).
+     					setFlusherConfig(flusherConfig).build();
+```
+ 
 ### Emit event
 
-    String tag = "foo_db.bar_tbl";
-    Map<String, Object> event = new HashMap<String, Object>();
-    event.put("name", "komamitsu");
-    event.put("age", 42);
-    event.put("rate", 3.14);
-    fluency.emit(tag, event);
+```java
+	String tag = "foo_db.bar_tbl";
+	Map<String, Object> event = new HashMap<String, Object>();
+	event.put("name", "komamitsu");
+	event.put("age", 42);
+	event.put("rate", 3.14);
+	fluency.emit(tag, event);
+```
 
 ### Release resources
 
-    fluency.close();
+```java
+	fluency.close();
+```
 
 ### Check if Fluency is terminated
 
-    fluency.close();
-    for (int i = 0; i < MAX_CHECK_TERMINATE; i++) {
-        if (fluency.isTerminated()) {
-        	break;
-        }
-        TimeUnit.SECONDS.sleep(CHECK_TERMINATE_INTERVAL);
-    }
+```java
+fluency.close();
+for (int i = 0; i < MAX_CHECK_TERMINATE; i++) {
+	if (fluency.isTerminated()) {
+		break;
+	}
+	TimeUnit.SECONDS.sleep(CHECK_TERMINATE_INTERVAL);
+}
+```
 
 ### Know how much Fluency is allocating memory
 
+```java
 	LOG.debug("Memory size allocated by Fluency is {}", fluency.getAllocatedBufferSize());
+```
 
 ### Know how much Fluench is buffering unsent data in memory
 
+```java
 	LOG.debug("Unsent data size buffered by Fluency in memory is {}", fluency.getBufferedDataSize());
+```
