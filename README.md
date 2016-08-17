@@ -111,24 +111,24 @@ Buffer.Config bufferConfig = new MessageBuffer.Config();
 Flusher.Config flusherConfig = new SyncFlusher.Config().setBufferOccupancyThreshold(0.5f);
 Fluency fluency = new Fluency.Builder(sender).
 					setBufferConfig(bufferConfig).
-     					setFlusherConfig(flusherConfig).build();
+					setFlusherConfig(flusherConfig).build();
 ```
  
 ### Emit event
 
 ```java
-	String tag = "foo_db.bar_tbl";
-	Map<String, Object> event = new HashMap<String, Object>();
-	event.put("name", "komamitsu");
-	event.put("age", 42);
-	event.put("rate", 3.14);
-	fluency.emit(tag, event);
+String tag = "foo_db.bar_tbl";
+Map<String, Object> event = new HashMap<String, Object>();
+event.put("name", "komamitsu");
+event.put("age", 42);
+event.put("rate", 3.14);
+fluency.emit(tag, event);
 ```
 
 ### Release resources
 
 ```java
-	fluency.close();
+fluency.close();
 ```
 
 ### Check if Fluency is terminated
@@ -146,11 +146,11 @@ for (int i = 0; i < MAX_CHECK_TERMINATE; i++) {
 ### Know how much Fluency is allocating memory
 
 ```java
-	LOG.debug("Memory size allocated by Fluency is {}", fluency.getAllocatedBufferSize());
+LOG.debug("Memory size allocated by Fluency is {}", fluency.getAllocatedBufferSize());
 ```
 
 ### Know how much Fluench is buffering unsent data in memory
 
 ```java
-	LOG.debug("Unsent data size buffered by Fluency in memory is {}", fluency.getBufferedDataSize());
+LOG.debug("Unsent data size buffered by Fluency in memory is {}", fluency.getBufferedDataSize());
 ```
