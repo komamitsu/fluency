@@ -1,5 +1,6 @@
 package org.komamitsu.fluency;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
@@ -724,6 +725,29 @@ public class FluencyTest
         finally {
             latch.countDown();
         }
+    }
+
+    @Test
+    public void testBufferWithJacksonModule()
+            throws IOException
+    {
+        Buffer.Config bufferConfig = new PackedForwardBuffer
+                .Config()
+                .setInitialBufferSize(64)
+                .setMaxBufferSize(256)
+                .setJacksonModules(Arrays.asList(
+                        // TODO: Implement more
+                        new SimpleModule() {}
+                ));
+        Fluency fluency = new Fluency.Builder(new TCPSender.Config()
+                .createInstance())
+                .setBufferConfig(bufferConfig)
+                .build();
+
+        Map<String, Object> event = new HashMap<String, Object>();
+        event.put("name", "xxxx");
+        fluency.emit("tag", event);
+        // TODO: Assertion
     }
 
     // @Test
