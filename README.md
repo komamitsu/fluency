@@ -88,7 +88,7 @@ Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(S
 //   - Asynchronous flush
 //   - PackedForward format
 //   - Without ack response
-//   - Max buffer size = 32MB (default: 16MB)
+//   - Max total buffer size = 32MB (default: 16MB)
 //   - Flush interval = 200ms (default: 600ms)
 //   - Max retry of sending events = 12 (default: 8)
 Fluency fluency = Fluency.defaultFluency(
@@ -100,18 +100,21 @@ Fluency fluency = Fluency.defaultFluency(
 	    				setSenderMaxRetryCount(12));
 ```
 
-#### Advanced configuration
+#### Advanced buffer configuration
 
 ```java
-Sender sender = new MultiSender(
-			Arrays.asList(new TCPSender(24224), new TCPSender(24225)), 
-				new PhiAccrualFailureDetectStrategy.Config().setPhiThreshold(80),
-				new UDPHeartbeater.Config().setIntervalMillis(500));
-Buffer.Config bufferConfig = new MessageBuffer.Config();
-Flusher.Config flusherConfig = new SyncFlusher.Config().setBufferOccupancyThreshold(0.5f);
-Fluency fluency = new Fluency.Builder(sender).
-					setBufferConfig(bufferConfig).
-					setFlusherConfig(flusherConfig).build();
+//   - Initial chunk buffer size = 4MB (default: 1MB)
+//   - Threshold chunk buffer size to flush = 16MB (default: 4MB)
+//     Keep this value (BufferRetentionSize) between InitialBufferSize and MaxBufferSize
+//   - Max total buffer size = 256MB (default: 16MB)
+Sender sender = new TCPSender.Config().setHost("xxx.xxx.xxx.xxx").createInstance();
+
+PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config()
+        .setInitialBufferSize(4 * 1024 * 1024)
+        .setBufferRetentionSize(16 * 1024 * 1024)
+        .setMaxBufferSize(256 * 1024 * 1024);
+
+Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).build();
 ```
  
 ### Emit event
