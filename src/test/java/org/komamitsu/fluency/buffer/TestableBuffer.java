@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestableBuffer
-        extends Buffer<TestableBuffer.Config>
+        extends Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestableBuffer.class);
     public static final int RECORD_DATA_SIZE = 100;
@@ -33,6 +33,11 @@ public class TestableBuffer
     private TestableBuffer(Config bufferConfig)
     {
         super(bufferConfig);
+    }
+
+    @Override
+    protected TestableBuffer.Config getConfig() {
+        return (TestableBuffer.Config) bufferConfig;
     }
 
     public void setSavableBuffer(List<String> params, ByteBuffer buffer)
@@ -136,6 +141,11 @@ public class TestableBuffer
     public static class Config
             extends Buffer.Config<TestableBuffer, Config>
     {
+        @Override
+        protected TestableBuffer.Config self() {
+            return this;
+        }
+
         @Override
         protected TestableBuffer createInstanceInternal()
         {
