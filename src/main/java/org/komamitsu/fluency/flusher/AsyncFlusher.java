@@ -13,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class AsyncFlusher
-        extends Flusher<AsyncFlusher.Config>
+        extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
     private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
@@ -25,7 +25,7 @@ public class AsyncFlusher
                 Event event = null;
                 while (!executorService.isShutdown()) {
                     try {
-                        event = eventQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        event = eventQueue.poll(getConfig().getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         boolean force = event != null;
                         buffer.flush(sender, force);
                     }
@@ -65,6 +65,11 @@ public class AsyncFlusher
     }
 
     @Override
+    protected AsyncFlusher.Config getConfig() {
+        return (AsyncFlusher.Config) flusherConfig;
+    }
+
+    @Override
     protected void flushInternal(boolean force)
             throws IOException
     {
@@ -90,7 +95,7 @@ public class AsyncFlusher
         }
         executorService.shutdown();
         try {
-            executorService.awaitTermination(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
+            executorService.awaitTermination(getConfig().getWaitAfterClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
@@ -108,8 +113,13 @@ public class AsyncFlusher
         return executorService.isTerminated();
     }
 
-    public static class Config extends Flusher.Config<AsyncFlusher, Flusher.Config>
+    public static class Config extends Flusher.Config<AsyncFlusher, AsyncFlusher.Config>
     {
+        @Override
+        protected AsyncFlusher.Config self() {
+            return this;
+        }
+
         @Override
         public AsyncFlusher createInstance(Buffer buffer, Sender sender)
         {

@@ -17,15 +17,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SyncFlusher
-        extends Flusher<SyncFlusher.Config>
+        extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(SyncFlusher.class);
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
     private final AtomicBoolean isTerminated = new AtomicBoolean();
 
-    private SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
+    private SyncFlusher(Buffer buffer, Sender sender, SyncFlusher.Config flusherConfig)
     {
         super(buffer, sender, flusherConfig);
+    }
+
+    protected SyncFlusher.Config getConfig()
+    {
+        return (SyncFlusher.Config) flusherConfig;
     }
 
     @Override
@@ -34,8 +39,8 @@ public class SyncFlusher
     {
         long now = System.currentTimeMillis();
         if (force ||
-                now > lastFlushTimeMillis.get() + flusherConfig.getFlushIntervalMillis() ||
-                buffer.getBufferUsage() > flusherConfig.getBufferOccupancyThreshold()) {
+                now > lastFlushTimeMillis.get() + getConfig().getFlushIntervalMillis() ||
+                buffer.getBufferUsage() > getConfig().getBufferOccupancyThreshold()) {
             buffer.flush(sender, force);
             lastFlushTimeMillis.set(now);
         }
@@ -57,7 +62,7 @@ public class SyncFlusher
             }
         });
         try {
-            future.get(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
+            future.get(getConfig().getWaitAfterClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("Interrupted", e);
@@ -78,7 +83,7 @@ public class SyncFlusher
         return isTerminated.get();
     }
 
-    public static class Config extends Flusher.Config<SyncFlusher, Config>
+    public static class Config extends Flusher.Config<SyncFlusher, SyncFlusher.Config>
     {
         private float bufferOccupancyThreshold = 0.6f;
 
@@ -87,12 +92,16 @@ public class SyncFlusher
             return bufferOccupancyThreshold;
         }
 
-        public Config setBufferOccupancyThreshold(float bufferOccupancyThreshold)
+        public SyncFlusher.Config setBufferOccupancyThreshold(float bufferOccupancyThreshold)
         {
             this.bufferOccupancyThreshold = bufferOccupancyThreshold;
             return this;
         }
 
+        @Override
+        protected SyncFlusher.Config self() {
+            return this;
+        }
         @Override
         public SyncFlusher createInstance(Buffer buffer, Sender sender)
         {
