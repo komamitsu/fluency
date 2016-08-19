@@ -13,12 +13,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetryableSender
-        extends Sender<RetryableSender.Config>
+        extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;
     private RetryStrategy retryStrategy;
     private final AtomicBoolean isClosed = new AtomicBoolean();
+
+    @Override
+    protected RetryableSender.Config getConfig()
+    {
+        return (RetryableSender.Config) config;
+    }
 
     @Override
     public void close()
@@ -92,9 +98,15 @@ public class RetryableSender
                 "} " + super.toString();
     }
 
-    public static class Config extends Sender.Config<RetryableSender, Config>
+    public static class Config extends Sender.Config<RetryableSender, RetryableSender.Config>
     {
         private RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+
+        @Override
+        protected Config self()
+        {
+            return this;
+        }
 
         public Config(Sender.Config baseSenderConfig)
         {

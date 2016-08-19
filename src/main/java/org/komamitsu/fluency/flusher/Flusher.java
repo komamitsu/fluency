@@ -72,7 +72,7 @@ public abstract class Flusher
         buffer.close();
     }
 
-    public abstract static class Config<FlusherImpl extends Flusher, ConfigImpl extends Config>
+    public abstract static class Config<FlusherImpl extends Flusher, FlusherConfigImpl extends Flusher.Config<FlusherImpl, FlusherConfigImpl>>
     {
         private int flushIntervalMillis = 600;
 
@@ -83,7 +83,7 @@ public abstract class Flusher
             return flushIntervalMillis;
         }
 
-        public ConfigImpl setFlushIntervalMillis(int flushIntervalMillis)
+        public FlusherConfigImpl setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
             return self();
@@ -94,13 +94,13 @@ public abstract class Flusher
             return waitAfterClose;
         }
 
-        public ConfigImpl setWaitAfterClose(int waitAfterClose)
+        public FlusherConfigImpl setWaitAfterClose(int waitAfterClose)
         {
             this.waitAfterClose = waitAfterClose;
             return self();
         }
 
-        protected abstract ConfigImpl self();
+        protected abstract FlusherConfigImpl self();
         public abstract FlusherImpl createInstance(Buffer buffer, Sender sender);
     }
 }

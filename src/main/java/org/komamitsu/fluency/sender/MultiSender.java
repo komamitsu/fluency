@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MultiSender
-        extends Sender<MultiSender.Config>
+        extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     @VisibleForTesting
@@ -39,6 +39,12 @@ public class MultiSender
             }
             sendersAndFailureDetectors.add(new Tuple<TCPSender, FailureDetector>(senderConfig.createInstance(), failureDetector));
         }
+    }
+
+    @Override
+    protected MultiSender.Config getConfig()
+    {
+        return (MultiSender.Config) config;
     }
 
     @Override
@@ -109,7 +115,7 @@ public class MultiSender
         }
     }
 
-    public static class Config extends Sender.Config<MultiSender, Config>
+    public static class Config extends Sender.Config<MultiSender, MultiSender.Config>
     {
         private final List<TCPSender.Config> senderConfigs;
         private FailureDetectStrategy.Config failureDetectStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
@@ -118,6 +124,12 @@ public class MultiSender
         public Config(List<TCPSender.Config> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
+        }
+
+        @Override
+        protected Config self()
+        {
+            return this;
         }
 
         public List<TCPSender.Config> getSenderConfigs()

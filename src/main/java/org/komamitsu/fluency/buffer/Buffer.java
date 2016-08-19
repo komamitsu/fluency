@@ -135,21 +135,21 @@ public abstract class Buffer
         }
     }
 
-    public abstract static class Config<BufferImpl extends Buffer, ConfigImpl extends Config>
+    public abstract static class Config<BufferImpl extends Buffer, BufferConfigImpl extends Buffer.Config<BufferImpl, BufferConfigImpl>>
     {
         protected long maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
         protected String fileBackupDir;
         protected String fileBackupPrefix;  // Mainly for testing
 
-        protected abstract ConfigImpl self();
+        protected abstract BufferConfigImpl self();
 
         public long getMaxBufferSize()
         {
             return maxBufferSize;
         }
 
-        public ConfigImpl setMaxBufferSize(long maxBufferSize)
+        public BufferConfigImpl setMaxBufferSize(long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
             return self();
@@ -160,7 +160,7 @@ public abstract class Buffer
             return ackResponseMode;
         }
 
-        public ConfigImpl setAckResponseMode(boolean ackResponseMode)
+        public BufferConfigImpl setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
             return self();
@@ -171,7 +171,7 @@ public abstract class Buffer
             return fileBackupDir;
         }
 
-        public ConfigImpl setFileBackupDir(String fileBackupDir)
+        public BufferConfigImpl setFileBackupDir(String fileBackupDir)
         {
             this.fileBackupDir = fileBackupDir;
             return self();
@@ -182,7 +182,7 @@ public abstract class Buffer
             return fileBackupPrefix;
         }
 
-        public ConfigImpl setFileBackupPrefix(String fileBackupPrefix)
+        public BufferConfigImpl setFileBackupPrefix(String fileBackupPrefix)
         {
             this.fileBackupPrefix = fileBackupPrefix;
             return self();

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends Sender<TCPSender.Config>
+    extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
@@ -31,14 +31,20 @@ public class TCPSender
     private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+    @Override
+    protected TCPSender.Config getConfig()
+    {
+        return (TCPSender.Config) config;
+    }
+
     public String getHost()
     {
-        return config.getHost();
+        return getConfig().getHost();
     }
 
     public int getPort()
     {
-        return config.getPort();
+        return getConfig().getPort();
     }
 
     public TCPSender(Config config)
@@ -51,9 +57,9 @@ public class TCPSender
     {
         if (channel.get() == null) {
             SocketChannel socketChannel = SocketChannel.open();
-            socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
+            socketChannel.socket().connect(new InetSocketAddress(getConfig().getHost(), getConfig().getPort()), getConfig().getConnectionTimeoutMilli());
             socketChannel.socket().setTcpNoDelay(true);
-            socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
+            socketChannel.socket().setSoTimeout(getConfig().getReadTimeoutMilli());
 
             channel.set(socketChannel);
         }
@@ -104,7 +110,7 @@ public class TCPSender
             });
 
             try {
-                future.get(config.getReadTimeoutMilli(), TimeUnit.MILLISECONDS);
+                future.get(getConfig().getReadTimeoutMilli(), TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 throw new IOException("InterruptedException occurred", e);
@@ -147,12 +153,18 @@ public class TCPSender
         }
     }
 
-    public static class Config extends Sender.Config<TCPSender, Config>
+    public static class Config extends Sender.Config<TCPSender, TCPSender.Config>
     {
         private String host = "127.0.0.1";
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
+
+        @Override
+        protected Config self()
+        {
+            return this;
+        }
 
         public String getHost()
         {

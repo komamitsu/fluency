@@ -8,15 +8,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class Sender<C extends Sender.Config>
+public abstract class Sender
     implements Closeable
 {
-    protected final C config;
+    protected final Config config;
 
-    protected Sender(C config)
+    protected Sender(Config config)
     {
         this.config = config;
     }
+
+    abstract protected Config getConfig();
 
     public synchronized void send(ByteBuffer data)
             throws IOException
@@ -70,8 +72,9 @@ public abstract class Sender<C extends Sender.Config>
 
     abstract protected void sendInternal(List<ByteBuffer> dataList, byte[] ackToken) throws IOException;
 
-    public abstract static class Config<T extends Sender, C extends Config>
+    public abstract static class Config<SenderImpl extends Sender, SenderConfigImpl extends Config<SenderImpl, SenderConfigImpl>>
     {
-        public abstract T createInstance();
+        protected abstract SenderConfigImpl self();
+        public abstract SenderImpl createInstance();
     }
 }
