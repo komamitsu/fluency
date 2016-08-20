@@ -4,6 +4,7 @@ apply plugin: 'jacoco'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 
 group = 'org.komamitsu'
@@ -34,6 +35,11 @@ findbugs {
     effort = 'max'
 }
 
+shadowJar {
+    relocate 'com.fasterxml.jackson', 'org.komamitsu.thirdparty.jackson'
+    classifier = 'shadow'
+}
+
 tasks.withType(FindBugs) {
     reports {
         xml.enabled = false
@@ -52,7 +58,7 @@ task sourcesJar(type: Jar) {
 }
 
 artifacts {
-    archives javadocJar, sourcesJar
+    archives javadocJar, sourcesJar, shadowJar
 }
 
 signing {
@@ -105,10 +111,12 @@ uploadArchives {
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
     }
 }
 
