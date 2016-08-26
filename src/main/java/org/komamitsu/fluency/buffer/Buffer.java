@@ -11,16 +11,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Buffer<T extends Buffer.Config>
+public abstract class Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected static final Charset CHARSET = Charset.forName("ASCII");
-    protected final T bufferConfig;
+    protected final Config bufferConfig;
     protected final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
         @Override
         protected ObjectMapper initialValue()
@@ -37,7 +36,7 @@ public abstract class Buffer<T extends Buffer.Config>
     };
     protected final FileBackup fileBackup;
 
-    public Buffer(T bufferConfig)
+    public Buffer(Config bufferConfig)
     {
         this.bufferConfig = bufferConfig;
         if (bufferConfig.getFileBackupDir() != null) {
@@ -46,6 +45,11 @@ public abstract class Buffer<T extends Buffer.Config>
         else {
             fileBackup = null;
         }
+    }
+
+    protected Config getConfig()
+    {
+        return bufferConfig;
     }
 
     public void init()
@@ -131,22 +135,24 @@ public abstract class Buffer<T extends Buffer.Config>
         }
     }
 
-    public abstract static class Config<T extends Buffer, C extends Config>
+    public abstract static class Config<BufferImpl extends Buffer, BufferConfigImpl extends Buffer.Config<BufferImpl, BufferConfigImpl>>
     {
         protected long maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
         protected String fileBackupDir;
         protected String fileBackupPrefix;  // Mainly for testing
 
+        protected abstract BufferConfigImpl self();
+
         public long getMaxBufferSize()
         {
             return maxBufferSize;
         }
 
-        public C setMaxBufferSize(long maxBufferSize)
+        public BufferConfigImpl setMaxBufferSize(long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
-            return (C)this;
+            return self();
         }
 
         public boolean isAckResponseMode()
@@ -154,10 +160,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return ackResponseMode;
         }
 
-        public C setAckResponseMode(boolean ackResponseMode)
+        public BufferConfigImpl setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
-            return (C)this;
+            return self();
         }
 
         public String getFileBackupDir()
@@ -165,10 +171,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return fileBackupDir;
         }
 
-        public C setFileBackupDir(String fileBackupDir)
+        public BufferConfigImpl setFileBackupDir(String fileBackupDir)
         {
             this.fileBackupDir = fileBackupDir;
-            return (C) this;
+            return self();
         }
 
         public String getFileBackupPrefix()
@@ -176,10 +182,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return fileBackupPrefix;
         }
 
-        public C setFileBackupPrefix(String fileBackupPrefix)
+        public BufferConfigImpl setFileBackupPrefix(String fileBackupPrefix)
         {
             this.fileBackupPrefix = fileBackupPrefix;
-            return (C) this;
+            return self();
         }
 
         @Override
@@ -193,11 +199,11 @@ public abstract class Buffer<T extends Buffer.Config>
                     '}';
         }
 
-        protected abstract T createInstanceInternal();
+        protected abstract BufferImpl createInstanceInternal();
 
-        public T createInstance()
+        public BufferImpl createInstance()
         {
-            T instance = createInstanceInternal();
+            BufferImpl instance = createInstanceInternal();
             instance.init();
             return instance;
         }

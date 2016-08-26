@@ -29,7 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PackedForwardBuffer
-    extends Buffer<PackedForwardBuffer.Config>
+    extends Buffer
 {
     public static final String FORMAT_TYPE = "packed_forward";
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
@@ -44,6 +44,11 @@ public class PackedForwardBuffer
         bufferPool = new BufferPool(bufferConfig.getInitialBufferSize(), bufferConfig.getMaxBufferSize());
     }
 
+    protected PackedForwardBuffer.Config getConfig()
+    {
+        return (PackedForwardBuffer.Config) bufferConfig;
+    }
+
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
             throws BufferFullException
     {
@@ -55,20 +60,20 @@ public class PackedForwardBuffer
         int existingDataSize = 0;
         int newRetentionBufferSize;
         if (retentionBuffer == null) {
-            newRetentionBufferSize = bufferConfig.getInitialBufferSize();
+            newRetentionBufferSize = getConfig().getInitialBufferSize();
         }
         else{
             existingDataSize = retentionBuffer.getByteBuffer().position();
-            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * bufferConfig.getBufferExpandRatio());
+            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * getConfig().getBufferExpandRatio());
         }
 
         while (newRetentionBufferSize < (writeSize + existingDataSize)) {
-            newRetentionBufferSize *= bufferConfig.getBufferExpandRatio();
+            newRetentionBufferSize *= getConfig().getBufferExpandRatio();
         }
 
         ByteBuffer acquiredBuffer = bufferPool.acquireBuffer(newRetentionBufferSize);
         if (acquiredBuffer == null) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", bufferPool=" + bufferPool);
+            throw new BufferFullException("Buffer is full. bufferConfig=" + getConfig() + ", bufferPool=" + bufferPool);
         }
 
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
@@ -147,7 +152,7 @@ public class PackedForwardBuffer
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > bufferConfig.getBufferRetentionSize()) {
+        if (buffer.getByteBuffer().position() > getConfig().getBufferRetentionSize()) {
             moveRetentionBufferToFlushable(tag, buffer);
         }
     }
@@ -155,7 +160,7 @@ public class PackedForwardBuffer
     private void moveRetentionBuffersToFlushable(boolean force)
             throws IOException
     {
-        long expiredThreshold = System.currentTimeMillis() - bufferConfig.getBufferRetentionTimeMillis();
+        long expiredThreshold = System.currentTimeMillis() - getConfig().getBufferRetentionTimeMillis();
 
         synchronized (retentionBuffers) {
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
@@ -346,19 +351,24 @@ public class PackedForwardBuffer
         }
     }
 
-    public static class Config extends Buffer.Config<PackedForwardBuffer, Config>
+    public static class Config extends Buffer.Config<PackedForwardBuffer, PackedForwardBuffer.Config>
     {
         private int initialBufferSize = 1024 * 1024;
         private float bufferExpandRatio = 2.0f;
         private int bufferRetentionSize = 4 * 1024 * 1024;
         private int bufferRetentionTimeMillis = 400;
 
+        @Override
+        protected PackedForwardBuffer.Config self() {
+            return this;
+        }
+
         public int getInitialBufferSize()
         {
             return initialBufferSize;
         }
 
-        public Config setInitialBufferSize(int initialBufferSize)
+        public PackedForwardBuffer.Config setInitialBufferSize(int initialBufferSize)
         {
             this.initialBufferSize = initialBufferSize;
             return this;
@@ -369,7 +379,7 @@ public class PackedForwardBuffer
             return bufferExpandRatio;
         }
 
-        public Config setBufferExpandRatio(float bufferExpandRatio)
+        public PackedForwardBuffer.Config setBufferExpandRatio(float bufferExpandRatio)
         {
             this.bufferExpandRatio = bufferExpandRatio;
             return this;
@@ -380,7 +390,7 @@ public class PackedForwardBuffer
             return bufferRetentionSize;
         }
 
-        public Config setBufferRetentionSize(int bufferRetentionSize)
+        public PackedForwardBuffer.Config setBufferRetentionSize(int bufferRetentionSize)
         {
             this.bufferRetentionSize = bufferRetentionSize;
             return this;
@@ -391,7 +401,7 @@ public class PackedForwardBuffer
             return bufferRetentionTimeMillis;
         }
 
-        public Config setBufferRetentionTimeMillis(int bufferRetentionTimeMillis)
+        public PackedForwardBuffer.Config setBufferRetentionTimeMillis(int bufferRetentionTimeMillis)
         {
             this.bufferRetentionTimeMillis = bufferRetentionTimeMillis;
             return this;

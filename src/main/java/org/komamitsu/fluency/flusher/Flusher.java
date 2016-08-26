@@ -9,19 +9,23 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
-public abstract class Flusher<C extends Flusher.Config>
+public abstract class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
     protected final Buffer buffer;
     protected final Sender sender;
-    protected final C flusherConfig;
+    protected final Flusher.Config flusherConfig;
 
-    public Flusher(Buffer buffer, Sender sender, C flusherConfig)
+    public Flusher(Buffer buffer, Sender sender, Flusher.Config flusherConfig)
     {
         this.buffer = buffer;
         this.sender = sender;
         this.flusherConfig = flusherConfig;
+    }
+
+    protected Flusher.Config getConfig() {
+        return flusherConfig;
     }
 
     public Buffer getBuffer()
@@ -68,7 +72,7 @@ public abstract class Flusher<C extends Flusher.Config>
         buffer.close();
     }
 
-    public abstract static class Config<T extends Flusher, C extends Config>
+    public abstract static class Config<FlusherImpl extends Flusher, FlusherConfigImpl extends Flusher.Config<FlusherImpl, FlusherConfigImpl>>
     {
         private int flushIntervalMillis = 600;
 
@@ -79,10 +83,10 @@ public abstract class Flusher<C extends Flusher.Config>
             return flushIntervalMillis;
         }
 
-        public C setFlushIntervalMillis(int flushIntervalMillis)
+        public FlusherConfigImpl setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
-            return (C)this;
+            return self();
         }
 
         public int getWaitAfterClose()
@@ -90,12 +94,13 @@ public abstract class Flusher<C extends Flusher.Config>
             return waitAfterClose;
         }
 
-        public C setWaitAfterClose(int waitAfterClose)
+        public FlusherConfigImpl setWaitAfterClose(int waitAfterClose)
         {
             this.waitAfterClose = waitAfterClose;
-            return (C) this;
+            return self();
         }
 
-        public abstract T createInstance(Buffer buffer, Sender sender);
+        protected abstract FlusherConfigImpl self();
+        public abstract FlusherImpl createInstance(Buffer buffer, Sender sender);
     }
 }
