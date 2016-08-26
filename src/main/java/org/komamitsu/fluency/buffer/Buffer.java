@@ -23,13 +23,6 @@ public abstract class Buffer<T extends Buffer.Config>
     protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
     protected final ObjectMapper objectMapper;
-    protected final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
-        @Override
-        protected ByteArrayOutputStream initialValue()
-        {
-            return new ByteArrayOutputStream();
-        }
-    };
     protected final FileBackup fileBackup;
 
     public Buffer(final T bufferConfig)
