@@ -22,7 +22,7 @@ public abstract class Buffer<T extends Buffer.Config>
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
-    protected final ThreadLocal<ObjectMapper> objectMapperHolder;
+    protected final ObjectMapper objectMapper;
     protected final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
         @Override
         protected ByteArrayOutputStream initialValue()
@@ -42,18 +42,11 @@ public abstract class Buffer<T extends Buffer.Config>
             fileBackup = null;
         }
 
-        objectMapperHolder = new ThreadLocal<ObjectMapper>() {
-            @Override
-            protected ObjectMapper initialValue()
-            {
-                ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-                List<Module> jacksonModules = bufferConfig.getJacksonModules();
-                for (Module module : jacksonModules) {
-                    objectMapper.registerModule(module);
-                }
-                return objectMapper;
-            }
-        };
+        objectMapper = new ObjectMapper(new MessagePackFactory());
+        List<Module> jacksonModules = bufferConfig.getJacksonModules();
+        for (Module module : jacksonModules) {
+            objectMapper.registerModule(module);
+        }
     }
 
     public void init()
