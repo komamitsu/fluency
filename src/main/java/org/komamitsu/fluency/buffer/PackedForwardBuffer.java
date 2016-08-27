@@ -135,7 +135,6 @@ public class PackedForwardBuffer
     public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        ObjectMapper objectMapper = objectMapperHolder.get();
         ByteArrayOutputStream outputStream = outputStreamHolder.get();
         outputStream.reset();
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));

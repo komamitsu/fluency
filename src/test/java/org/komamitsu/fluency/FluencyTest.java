@@ -1,5 +1,9 @@
 package org.komamitsu.fluency;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
@@ -26,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
@@ -724,6 +729,58 @@ public class FluencyTest
         finally {
             latch.countDown();
         }
+    }
+
+    public static class Foo {
+        public String s;
+    }
+
+    public static class FooSerializer extends StdSerializer<Foo> {
+        public final AtomicBoolean serialized;
+
+        protected FooSerializer(AtomicBoolean serialized)
+        {
+            super(Foo.class);
+            this.serialized = serialized;
+        }
+
+        @Override
+        public void serialize(Foo value, JsonGenerator gen, SerializerProvider provider)
+                throws IOException
+        {
+            gen.writeStartObject();
+            gen.writeStringField("s", "Foo:" + value.s);
+            gen.writeEndObject();
+            serialized.set(true);
+        }
+    }
+
+    @Test
+    public void testBufferWithJacksonModule()
+            throws IOException
+    {
+        AtomicBoolean serialized = new AtomicBoolean();
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
+
+        Buffer.Config bufferConfig = new PackedForwardBuffer
+                .Config()
+                .setInitialBufferSize(64)
+                .setMaxBufferSize(256)
+                .setJacksonModules(Collections.singletonList(simpleModule));
+
+        Fluency fluency = new Fluency.Builder(new TCPSender.Config()
+                .createInstance())
+                .setBufferConfig(bufferConfig)
+                .build();
+
+        Map<String, Object> event = new HashMap<String, Object>();
+        Foo foo = new Foo();
+        foo.s = "Hello";
+        event.put("foo", foo);
+        fluency.emit("tag", event);
+
+        assertThat(serialized.get(), is(true));
     }
 
     // @Test

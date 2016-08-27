@@ -1,5 +1,6 @@
 package org.komamitsu.fluency.buffer;
 
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -11,8 +12,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,13 +22,7 @@ public abstract class Buffer<T extends Buffer.Config>
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected static final Charset CHARSET = Charset.forName("ASCII");
     protected final T bufferConfig;
-    protected final ThreadLocal<ObjectMapper> objectMapperHolder = new ThreadLocal<ObjectMapper>() {
-        @Override
-        protected ObjectMapper initialValue()
-        {
-            return new ObjectMapper(new MessagePackFactory());
-        }
-    };
+    protected final ObjectMapper objectMapper;
     protected final ThreadLocal<ByteArrayOutputStream> outputStreamHolder = new ThreadLocal<ByteArrayOutputStream>() {
         @Override
         protected ByteArrayOutputStream initialValue()
@@ -37,7 +32,7 @@ public abstract class Buffer<T extends Buffer.Config>
     };
     protected final FileBackup fileBackup;
 
-    public Buffer(T bufferConfig)
+    public Buffer(final T bufferConfig)
     {
         this.bufferConfig = bufferConfig;
         if (bufferConfig.getFileBackupDir() != null) {
@@ -45,6 +40,12 @@ public abstract class Buffer<T extends Buffer.Config>
         }
         else {
             fileBackup = null;
+        }
+
+        objectMapper = new ObjectMapper(new MessagePackFactory());
+        List<Module> jacksonModules = bufferConfig.getJacksonModules();
+        for (Module module : jacksonModules) {
+            objectMapper.registerModule(module);
         }
     }
 
@@ -137,6 +138,7 @@ public abstract class Buffer<T extends Buffer.Config>
         protected boolean ackResponseMode = false;
         protected String fileBackupDir;
         protected String fileBackupPrefix;  // Mainly for testing
+        protected List<? extends Module> jacksonModules = Collections.emptyList();
 
         public long getMaxBufferSize()
         {
@@ -179,6 +181,18 @@ public abstract class Buffer<T extends Buffer.Config>
         public C setFileBackupPrefix(String fileBackupPrefix)
         {
             this.fileBackupPrefix = fileBackupPrefix;
+            return (C) this;
+        }
+
+
+        public List<? extends Module> getJacksonModules()
+        {
+            return jacksonModules;
+        }
+
+        public C setJacksonModules(List<? extends Module> jacksonModules)
+        {
+            this.jacksonModules = jacksonModules;
             return (C) this;
         }
 
