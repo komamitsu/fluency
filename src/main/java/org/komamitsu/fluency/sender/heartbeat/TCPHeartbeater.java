@@ -41,12 +41,6 @@ public class TCPHeartbeater extends Heartbeater
         {
             return new TCPHeartbeater(this);
         }
-
-        @Override
-        public Config dupDefaultConfig()
-        {
-            return new Config();
-        }
     }
 
 }

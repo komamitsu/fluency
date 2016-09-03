@@ -1,7 +1,6 @@
 package org.komamitsu.fluency.sender;
 
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MultiSender
@@ -21,35 +19,30 @@ public class MultiSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     @VisibleForTesting
-    final List<Tuple<TCPSender, FailureDetector>> sendersAndFailureDetectors = new ArrayList<Tuple<TCPSender, FailureDetector>>();
+    final List<Sender> senders = new ArrayList<Sender>();
 
     public MultiSender(Config config)
     {
         super(config);
-        for (TCPSender.Config senderConfig : config.getSenderConfigs()) {
-            // TODO: This is something ugly....
-            Heartbeater.Config hbConfig = config.getHeartbeaterConfig().dupDefaultConfig().setHost(senderConfig.getHost()).setPort(senderConfig.getPort());
-            FailureDetector failureDetector = null;
-            try {
-                failureDetector = new FailureDetector(config.getFailureDetectStrategyConfig(), hbConfig);
-            }
-            catch (IOException e) {
-                LOG.error(String.format("Failed to initialize. config=%s", config), e);
-                throw new RuntimeException(e);
-            }
-            sendersAndFailureDetectors.add(new Tuple<TCPSender, FailureDetector>(senderConfig.createInstance(), failureDetector));
+        for (Sender.Config senderConfig : config.getSenderConfigs()) {
+            senders.add(senderConfig.createInstance());
         }
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        return true;
     }
 
     @Override
     protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws AllNodesUnavailableException
     {
-        for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
-            TCPSender sender = senderAndFailureDetector.getFirst();
-            FailureDetector failureDetector = senderAndFailureDetector.getSecond();
-            LOG.trace("send(): hb.host={}, hb.port={}, isAvailable={}", failureDetector.getHeartbeater().getHost(), failureDetector.getHeartbeater().getPort(), failureDetector.isAvailable());
-            if (failureDetector.isAvailable()) {
+        for (Sender sender : senders) {
+            boolean isAvailable = sender.isAvailable();
+            LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
+            if (isAvailable) {
                 try {
                     if (ackToken == null) {
                         sender.send(dataList);
@@ -61,7 +54,6 @@ public class MultiSender
                 }
                 catch (IOException e) {
                     LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
-                    failureDetector.onFailure(e);
                 }
             }
         }
@@ -73,25 +65,13 @@ public class MultiSender
             throws IOException
     {
         IOException firstException = null;
-        for (Tuple<TCPSender, FailureDetector> senderAndFailureDetector : sendersAndFailureDetectors) {
-            TCPSender sender = senderAndFailureDetector.getFirst();
-            FailureDetector failureDetector = senderAndFailureDetector.getSecond();
+        for (Sender sender : senders) {
             try {
                 sender.close();
             }
             catch (IOException e) {
                 if (firstException == null) {
                     firstException = e;
-                }
-            }
-            finally {
-                try {
-                    failureDetector.close();
-                }
-                catch (IOException e) {
-                    if (firstException == null) {
-                        firstException = e;
-                    }
                 }
             }
         }
@@ -111,40 +91,16 @@ public class MultiSender
 
     public static class Config extends Sender.Config<MultiSender, Config>
     {
-        private final List<TCPSender.Config> senderConfigs;
-        private FailureDetectStrategy.Config failureDetectStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
-        private Heartbeater.Config heartbeaterConfig = new TCPHeartbeater.Config();
+        private final List<Sender.Config> senderConfigs;
 
-        public Config(List<TCPSender.Config> senderConfigs)
+        public Config(List<Sender.Config> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
         }
 
-        public List<TCPSender.Config> getSenderConfigs()
+        public List<Sender.Config> getSenderConfigs()
         {
             return senderConfigs;
-        }
-
-        public FailureDetectStrategy.Config getFailureDetectStrategyConfig()
-        {
-            return failureDetectStrategyConfig;
-        }
-
-        public Config setFailureDetectStrategyConfig(FailureDetectStrategy.Config failureDetectStrategyConfig)
-        {
-            this.failureDetectStrategyConfig = failureDetectStrategyConfig;
-            return this;
-        }
-
-        public Heartbeater.Config getHeartbeaterConfig()
-        {
-            return heartbeaterConfig;
-        }
-
-        public Config setHeartbeaterConfig(Heartbeater.Config heartbeaterConfig)
-        {
-            this.heartbeaterConfig = heartbeaterConfig;
-            return this;
         }
 
         @Override
@@ -152,8 +108,6 @@ public class MultiSender
         {
             return "Config{" +
                     "senderConfigs=" + senderConfigs +
-                    ", failureDetectStrategyConfig=" + failureDetectStrategyConfig +
-                    ", heartbeaterConfig=" + heartbeaterConfig +
                     "} " + super.toString();
         }
 

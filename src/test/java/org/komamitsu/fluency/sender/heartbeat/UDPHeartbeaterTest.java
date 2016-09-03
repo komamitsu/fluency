@@ -60,6 +60,7 @@ public class UDPHeartbeaterTest
                     failureCounter.incrementAndGet();
                 }
             });
+            heartbeater.start();
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             assertTrue(0 < pongCounter.get() && pongCounter.get() < 3);
             assertEquals(0, failureCounter.get());
@@ -98,6 +99,7 @@ public class UDPHeartbeaterTest
                 {
                 }
             });
+            heartbeater.start();
             TimeUnit.SECONDS.sleep(1);
             assertEquals(0, pongCounter.get());
         }

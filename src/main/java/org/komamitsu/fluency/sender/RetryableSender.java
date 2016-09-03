@@ -45,6 +45,12 @@ public class RetryableSender
     }
 
     @Override
+    public boolean isAvailable()
+    {
+        return true;
+    }
+
+    @Override
     protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {

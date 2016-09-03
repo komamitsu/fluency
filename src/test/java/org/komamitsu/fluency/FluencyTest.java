@@ -19,6 +19,7 @@ import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
+import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -213,8 +214,15 @@ public class FluencyTest
 
     private Sender getDoubleTCPSender(int firstPort, int secondPort)
     {
-        return new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(firstPort), new TCPSender.Config().setPort(secondPort))).
-                createInstance();
+        return new MultiSender.Config(
+                Arrays.<Sender.Config>asList(
+                    new TCPSender.Config()
+                            .setPort(firstPort)
+                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
+                    new TCPSender.Config()
+                            .setPort(secondPort)
+                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
+                )).createInstance();
     }
 
     @Theory
@@ -700,6 +708,12 @@ public class FluencyTest
             catch (InterruptedException e) {
                 FluencyTest.LOG.warn("Interrupted in send()", e);
             }
+        }
+
+        @Override
+        public boolean isAvailable()
+        {
+            return true;
         }
     }
 
