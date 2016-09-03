@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
+import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
@@ -28,19 +29,35 @@ public class MultiSenderTest
     {
         MultiSender multiSender = null;
         try {
-            multiSender = new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(24225), new TCPSender.Config().setHost("0.0.0.0").setPort(24226))).createInstance();
+            multiSender = new MultiSender.Config(
+                    Arrays.<Sender.Config>asList(
+                            new TCPSender.Config()
+                                    .setPort(24225)
+                                    .setHeartbeaterConfig(
+                                            new TCPHeartbeater.Config().
+                                                    setPort(24225)),
+                            new TCPSender.Config()
+                                    .setHost("0.0.0.0")
+                                    .setPort(24226)
+                                    .setHeartbeaterConfig(
+                                            new TCPHeartbeater.Config()
+                                                    .setHost("0.0.0.0")
+                                                    .setPort(24226))
+                                    )).createInstance();
 
-            assertEquals(2, multiSender.sendersAndFailureDetectors.size());
+            assertEquals(2, multiSender.senders.size());
 
-            assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getFirst().getHost());
-            assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getFirst().getPort());
-            assertEquals("127.0.0.1", multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getHost());
-            assertEquals(24225, multiSender.sendersAndFailureDetectors.get(0).getSecond().getHeartbeater().getPort());
+            TCPSender tcpSender = (TCPSender) multiSender.senders.get(0);
+            assertEquals("127.0.0.1", tcpSender.getHost());
+            assertEquals(24225, tcpSender.getPort());
+            assertEquals("127.0.0.1", tcpSender.failureDetector.getHeartbeater().getHost());
+            assertEquals(24225, tcpSender.failureDetector.getHeartbeater().getPort());
 
-            assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getFirst().getHost());
-            assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getFirst().getPort());
-            assertEquals("0.0.0.0", multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getHost());
-            assertEquals(24226, multiSender.sendersAndFailureDetectors.get(1).getSecond().getHeartbeater().getPort());
+            tcpSender = (TCPSender) multiSender.senders.get(1);
+            assertEquals("0.0.0.0", tcpSender.getHost());
+            assertEquals(24226, tcpSender.getPort());
+            assertEquals("0.0.0.0", tcpSender.failureDetector.getHeartbeater().getHost());
+            assertEquals(24226, tcpSender.failureDetector.getHeartbeater().getPort());
         }
         finally {
             if (multiSender != null) {
@@ -63,9 +80,19 @@ public class MultiSenderTest
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
 
-        final MultiSender sender = new MultiSender.Config(Arrays.asList(new TCPSender.Config().setPort(server0.getLocalPort()), new TCPSender.Config().setPort(server1.getLocalPort()))).
-                setHeartbeaterConfig(new UDPHeartbeater.Config()).
-                createInstance();
+        final MultiSender sender = new MultiSender.Config(
+                Arrays.<Sender.Config>asList(
+                        new TCPSender.Config()
+                                .setPort(server0.getLocalPort())
+                                .setHeartbeaterConfig(
+                                        new UDPHeartbeater.Config()
+                                            .setPort(server0.getLocalPort())),
+                        new TCPSender.Config()
+                                .setPort(server1.getLocalPort())
+                                .setHeartbeaterConfig(
+                                        new UDPHeartbeater.Config()
+                                                .setPort(server1.getLocalPort()))
+                                )).createInstance();
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {

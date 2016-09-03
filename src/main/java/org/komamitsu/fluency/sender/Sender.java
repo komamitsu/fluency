@@ -60,6 +60,8 @@ public abstract class Sender<C extends Sender.Config>
         }
     }
 
+    public abstract boolean isAvailable();
+
     @Override
     public String toString()
     {

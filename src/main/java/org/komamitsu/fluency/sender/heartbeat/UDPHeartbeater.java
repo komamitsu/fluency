@@ -8,7 +8,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.nio.channels.SocketChannel;
 
 public class UDPHeartbeater
         extends Heartbeater
@@ -49,12 +48,6 @@ public class UDPHeartbeater
                 throws IOException
         {
             return new UDPHeartbeater(this);
-        }
-
-        @Override
-        public Config dupDefaultConfig()
-        {
-            return new Config();
         }
     }
 }
