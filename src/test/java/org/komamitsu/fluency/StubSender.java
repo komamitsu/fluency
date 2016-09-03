@@ -5,7 +5,6 @@ import org.komamitsu.fluency.sender.Sender;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 public class StubSender
         extends Sender<StubSender.Config>
@@ -13,6 +12,12 @@ public class StubSender
     public StubSender()
     {
         super(null);
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        return true;
     }
 
     @Override

@@ -1,5 +1,10 @@
 package org.komamitsu.fluency.sender;
 
+import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
+import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +35,8 @@ public class TCPSender
     private final byte[] optionBuffer = new byte[256];
     private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    @VisibleForTesting
+    final FailureDetector failureDetector;
 
     public String getHost()
     {
@@ -44,6 +51,25 @@ public class TCPSender
     public TCPSender(Config config)
     {
         super(config);
+        FailureDetector failureDetector = null;
+        if (config.getHeartbeaterConfig() != null) {
+            try {
+                failureDetector = new FailureDetector(
+                        config.getFailureDetectorStrategyConfig(),
+                        config.getHeartbeaterConfig(),
+                        config.getFailureDetectorConfig());
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to instantiate FailureDetector. Disabling it", e);
+            }
+        }
+        this.failureDetector = failureDetector;
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        return failureDetector.isAvailable();
     }
 
     private SocketChannel getOrOpenChannel()
@@ -73,6 +99,13 @@ public class TCPSender
         }
     }
 
+    private void propagateFailure(Throwable e)
+    {
+        if (failureDetector != null) {
+            failureDetector.onFailure(e);
+        }
+    }
+
     @Override
     protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
@@ -82,7 +115,13 @@ public class TCPSender
         if (ackToken != null) {
             buffers.add(ByteBuffer.wrap(ackTokenSerDe.pack(ackToken)));
         }
-        sendBuffers(buffers);
+        try {
+            sendBuffers(buffers);
+        }
+        catch (IOException e) {
+            propagateFailure(e);
+            throw e;
+        }
 
         if (ackToken == null) {
             return;
@@ -123,6 +162,7 @@ public class TCPSender
         }
         catch (IOException e) {
             close();
+            propagateFailure(e);
             throw e;
         }
     }
@@ -131,10 +171,17 @@ public class TCPSender
     public synchronized void close()
             throws IOException
     {
-        SocketChannel socketChannel;
-        if ((socketChannel = channel.getAndSet(null)) != null) {
-            socketChannel.close();
-            channel.set(null);
+        try {
+            SocketChannel socketChannel;
+            if ((socketChannel = channel.getAndSet(null)) != null) {
+                socketChannel.close();
+                channel.set(null);
+            }
+        }
+        finally {
+            if (failureDetector != null) {
+                failureDetector.close();
+            }
         }
     }
 
@@ -153,6 +200,9 @@ public class TCPSender
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
+        private Heartbeater.Config heartbeaterConfig;   // Disabled by default
+        private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
+        private FailureDetectStrategy.Config failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
 
         public String getHost()
         {
@@ -198,6 +248,39 @@ public class TCPSender
             return this;
         }
 
+        public Heartbeater.Config getHeartbeaterConfig()
+        {
+            return heartbeaterConfig;
+        }
+
+        public Config setHeartbeaterConfig(Heartbeater.Config heartbeaterConfig)
+        {
+            this.heartbeaterConfig = heartbeaterConfig;
+            return this;
+        }
+
+        public FailureDetector.Config getFailureDetectorConfig()
+        {
+            return failureDetectorConfig;
+        }
+
+        public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
+        {
+            this.failureDetectorConfig = failureDetectorConfig;
+            return this;
+        }
+
+        public FailureDetectStrategy.Config getFailureDetectorStrategyConfig()
+        {
+            return failureDetectorStrategyConfig;
+        }
+
+        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Config failureDetectorStrategyConfig)
+        {
+            this.failureDetectorStrategyConfig = failureDetectorStrategyConfig;
+            return this;
+        }
+
         @Override
         public TCPSender createInstance()
         {
@@ -212,7 +295,10 @@ public class TCPSender
                     ", port=" + port +
                     ", connectionTimeoutMilli=" + connectionTimeoutMilli +
                     ", readTimeoutMilli=" + readTimeoutMilli +
-                    '}';
+                    ", heartbeaterConfig=" + heartbeaterConfig +
+                    ", failureDetectorConfig=" + failureDetectorConfig +
+                    ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
+                    "} " + super.toString();
         }
     }
 }

@@ -22,6 +22,10 @@ public abstract class Heartbeater implements Closeable
     {
         this.config = config;
         executorService = Executors.newScheduledThreadPool(1);
+    }
+
+    public void start()
+    {
         executorService.scheduleAtFixedRate(new Runnable()
         {
             @Override
@@ -147,8 +151,5 @@ public abstract class Heartbeater implements Closeable
 
         public abstract Heartbeater createInstance()
                 throws IOException;
-
-        // TODO: Make it simpler
-        public abstract C dupDefaultConfig();
     }
 }
