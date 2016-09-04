@@ -134,6 +134,13 @@ fluency.emit(tag, event);
 fluency.close();
 ```
 
+### Wait until all buffer is flushed
+
+```java
+fluency.waitUntilFlushingAllBuffer(MAX_WAIT_BUF_FLUSH);
+fluency.close();
+```
+
 ### Check if Fluency is terminated
 
 ```java

@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class Fluency
         implements Flushable, Closeable
@@ -182,6 +183,21 @@ public class Fluency
     public boolean isTerminated()
     {
         return flusher.isTerminated();
+    }
+
+    public boolean waitUntilFlushingAllBuffer(int maxWaitSeconds)
+            throws InterruptedException
+    {
+        for (int i = 0; i < maxWaitSeconds; i++) {
+            long bufferedDataSize = getBufferedDataSize();
+            LOG.info("Waiting for flushing all buffer: {}", bufferedDataSize);
+            if (getBufferedDataSize() == 0) {
+                return true;
+            }
+            TimeUnit.SECONDS.sleep(1);
+        }
+        LOG.warn("Buffered data still remains: {}", getBufferedDataSize());
+        return false;
     }
 
     public static class Builder
