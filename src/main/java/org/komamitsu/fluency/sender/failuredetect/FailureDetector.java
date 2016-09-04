@@ -19,6 +19,7 @@ public class FailureDetector
         this.failureDetectStrategy = failureDetectStrategy;
         this.heartbeater = heartbeater;
         this.heartbeater.setCallback(this);
+        this.heartbeater.start();
         this.config = config;
     }
 

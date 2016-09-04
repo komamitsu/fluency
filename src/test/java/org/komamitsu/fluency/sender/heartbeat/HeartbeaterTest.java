@@ -42,12 +42,6 @@ public class HeartbeaterTest
             {
                 return new TestableHeartbeater(this);
             }
-
-            @Override
-            public Config dupDefaultConfig()
-            {
-                return new Config();
-            }
         }
     }
 
@@ -64,6 +58,7 @@ public class HeartbeaterTest
         TestableHeartbeater heartbeater = null;
         try {
             heartbeater = new TestableHeartbeater(config);
+            heartbeater.start();
             TimeUnit.SECONDS.sleep(1);
             heartbeater.close();
             TimeUnit.MILLISECONDS.sleep(500);

@@ -8,6 +8,9 @@ import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
+import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
@@ -57,9 +60,15 @@ public class Fluency
             retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
         }
 
-        RetryableSender retryableSender = new RetryableSender.Config(senderConfig).setRetryStrategyConfig(retryStrategyConfig).createInstance();
+        RetryableSender retryableSender =
+                new RetryableSender.Config(senderConfig)
+                        .setRetryStrategyConfig(retryStrategyConfig)
+                        .createInstance();
 
-        return new Fluency.Builder(retryableSender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+        return new Fluency.Builder(retryableSender)
+                .setBufferConfig(bufferConfig)
+                .setFlusherConfig(flusherConfig)
+                .build();
     }
 
     public static Fluency defaultFluency(int port, Config config)
@@ -77,9 +86,16 @@ public class Fluency
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
             throws IOException
     {
-        List<TCPSender.Config> tcpSenderConfigs = new ArrayList<TCPSender.Config>();
+        List<Sender.Config> tcpSenderConfigs = new ArrayList<Sender.Config>();
         for (InetSocketAddress server : servers) {
-            tcpSenderConfigs.add(new TCPSender.Config().setHost(server.getHostName()).setPort(server.getPort()));
+            tcpSenderConfigs.add(
+                    new TCPSender.Config()
+                            .setHost(server.getHostName())
+                            .setPort(server.getPort())
+                            .setHeartbeaterConfig(
+                                    new TCPHeartbeater.Config()
+                                            .setHost(server.getHostName())
+                                            .setPort(server.getPort())));
         }
         return buildDefaultFluency(new MultiSender.Config(tcpSenderConfigs), config);
     }
