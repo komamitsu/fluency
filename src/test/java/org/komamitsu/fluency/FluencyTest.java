@@ -818,6 +818,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
+            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
@@ -853,6 +854,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
+            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
@@ -881,13 +883,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            for (int i = 0; i < 10; i++) {
-                LOG.debug("BufferedDataSize is {}", fluency.getBufferedDataSize());
-                if (fluency.getBufferedDataSize() == 0) {
-                    break;
-                }
-                TimeUnit.SECONDS.sleep(1);
-            }
+            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
