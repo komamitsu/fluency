@@ -40,7 +40,7 @@ public class Fluency
 
     private static Fluency buildDefaultFluency(Sender.Config senderConfig, Config config)
     {
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
         if (config != null && config.getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
         }
@@ -203,7 +203,7 @@ public class Fluency
     public static class Builder
     {
         private final Sender sender;
-        private Buffer.Config bufferConfig;
+        private Buffer.Instantiator bufferConfig;
         private Flusher.Config flusherConfig;
 
         public Builder(Sender sender)
@@ -211,7 +211,7 @@ public class Fluency
             this.sender = sender;
         }
 
-        public Builder setBufferConfig(Buffer.Config bufferConfig)
+        public Builder setBufferConfig(Buffer.Instantiator bufferConfig)
         {
             this.bufferConfig = bufferConfig;
             return this;
@@ -225,7 +225,7 @@ public class Fluency
 
         public Fluency build()
         {
-            Buffer.Config bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
+            Buffer.Instantiator bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
             Buffer buffer = bufferConfig.createInstance();
             Flusher.Config flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
             Flusher flusher = flusherConfig.createInstance(buffer, sender);

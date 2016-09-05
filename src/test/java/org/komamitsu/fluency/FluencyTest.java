@@ -1,6 +1,7 @@
 package org.komamitsu.fluency;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -164,7 +165,7 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         Sender sender = new MockTCPSender(24224);
-        Buffer.Config bufferConfig = new TestableBuffer.Config();
+        TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
             Flusher.Config flusherConfig = new AsyncFlusher.Config();
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -244,7 +245,7 @@ public class FluencyTest
                 else {
                     sender = getSingleTCPSender(fluentdPort);
                 }
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 if (options.ackResponse) {
                     bufferConfig.setAckResponseMode(true);
                 }
@@ -279,7 +280,7 @@ public class FluencyTest
                 else {
                     sender = getSingleTCPSender(fluentdPort);
                 }
-                Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+                PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 if (options.ackResponse) {
                     bufferConfig.setAckResponseMode(true);
                 }
@@ -725,7 +726,7 @@ public class FluencyTest
         Sender stuckSender = new StuckSender(latch);
 
         try {
-            Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setInitialBufferSize(64).setMaxBufferSize(256);
+            PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setInitialBufferSize(64).setMaxBufferSize(256);
             Fluency fluency = new Fluency.Builder(stuckSender).setBufferConfig(bufferConfig).build();
             Map<String, Object> event = new HashMap<String, Object>();
             event.put("name", "xxxx");
@@ -777,11 +778,11 @@ public class FluencyTest
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
 
-        Buffer.Config bufferConfig = new PackedForwardBuffer
+        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer
                 .Config()
                 .setInitialBufferSize(64)
                 .setMaxBufferSize(256)
-                .setJacksonModules(Collections.singletonList(simpleModule));
+                .setJacksonModules(Collections.<Module>singletonList(simpleModule));
 
         Fluency fluency = new Fluency.Builder(new TCPSender.Config()
                 .createInstance())
