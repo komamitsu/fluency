@@ -96,8 +96,8 @@ public abstract class Flusher
         }
     }
 
-    public interface Instantiator<T extends Flusher>
+    public interface Instantiator
     {
-        T createInstance(Buffer buffer, Sender sender);
+        Flusher createInstance(Buffer buffer, Sender sender);
     }
 }

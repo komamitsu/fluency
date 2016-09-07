@@ -135,7 +135,7 @@ public class TestableBuffer
     }
 
     public static class Config
-        implements Buffer.Instantiator<TestableBuffer>
+        implements Buffer.Instantiator
     {
         private final Buffer.Config baseConfig = new Buffer.Config();
 

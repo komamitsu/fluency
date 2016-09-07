@@ -111,7 +111,7 @@ public class AsyncFlusher
     }
 
     public static class Config
-        implements Flusher.Instantiator<AsyncFlusher>
+        implements Flusher.Instantiator
     {
         private final Flusher.Config baseConfig = new Flusher.Config();
 

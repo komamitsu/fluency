@@ -81,7 +81,7 @@ public class SyncFlusher
     }
 
     public static class Config
-        implements Flusher.Instantiator<SyncFlusher>
+        implements Flusher.Instantiator
     {
         private final Flusher.Config baseConfig = new Flusher.Config();
 

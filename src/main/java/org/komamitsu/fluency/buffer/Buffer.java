@@ -200,8 +200,8 @@ public abstract class Buffer
         }
     }
 
-    public interface Instantiator<T extends Buffer>
+    public interface Instantiator
     {
-        T createInstance();
+        Buffer createInstance();
     }
 }

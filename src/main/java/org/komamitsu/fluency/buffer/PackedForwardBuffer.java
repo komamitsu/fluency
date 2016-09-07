@@ -344,7 +344,7 @@ public class PackedForwardBuffer
     }
 
     public static class Config
-        implements Buffer.Instantiator<PackedForwardBuffer>
+        implements Buffer.Instantiator
     {
         private Buffer.Config baseConfig = new Buffer.Config();
         private int initialBufferSize = 1024 * 1024;
