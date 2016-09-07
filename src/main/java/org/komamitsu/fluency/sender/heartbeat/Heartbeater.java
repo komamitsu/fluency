@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class Heartbeater implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
-    protected final Config config;
+    private final Config config;
     private final ScheduledExecutorService executorService;
     private final AtomicReference<Callback> callback = new AtomicReference<Callback>();
 
@@ -100,7 +100,7 @@ public abstract class Heartbeater implements Closeable
         void onFailure(Throwable cause);
     }
 
-    public abstract static class Config<C extends Config>
+    public static class Config
     {
         private String host = "127.0.0.1";
         private int port = 24224;
@@ -111,10 +111,10 @@ public abstract class Heartbeater implements Closeable
             return host;
         }
 
-        public C setHost(String host)
+        public Config setHost(String host)
         {
             this.host = host;
-            return (C)this;
+            return this;
         }
 
         public int getPort()
@@ -122,10 +122,10 @@ public abstract class Heartbeater implements Closeable
             return port;
         }
 
-        public C setPort(int port)
+        public Config setPort(int port)
         {
             this.port = port;
-            return (C)this;
+            return this;
         }
 
         public int getIntervalMillis()
@@ -133,10 +133,10 @@ public abstract class Heartbeater implements Closeable
             return intervalMillis;
         }
 
-        public C setIntervalMillis(int intervalMillis)
+        public Config setIntervalMillis(int intervalMillis)
         {
             this.intervalMillis = intervalMillis;
-            return (C)this;
+            return this;
         }
 
         @Override
@@ -148,8 +148,11 @@ public abstract class Heartbeater implements Closeable
                     ", intervalMillis=" + intervalMillis +
                     '}';
         }
+    }
 
-        public abstract Heartbeater createInstance()
+    public interface Instantiator
+    {
+        Heartbeater createInstance()
                 throws IOException;
     }
 }

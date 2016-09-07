@@ -195,7 +195,7 @@ public class TCPSender
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
-        private Heartbeater.Config heartbeaterConfig;   // Disabled by default
+        private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
         private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
         private FailureDetectStrategy.Config failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
 
@@ -243,12 +243,12 @@ public class TCPSender
             return this;
         }
 
-        public Heartbeater.Config getHeartbeaterConfig()
+        public Heartbeater.Instantiator getHeartbeaterConfig()
         {
             return heartbeaterConfig;
         }
 
-        public Config setHeartbeaterConfig(Heartbeater.Config heartbeaterConfig)
+        public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
         {
             this.heartbeaterConfig = heartbeaterConfig;
             return this;

@@ -28,13 +28,13 @@ public class FailureDetector
         this(failureDetectStrategy, heartbeater, new Config());
     }
 
-    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig, Config config)
+    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig, Config config)
             throws IOException
     {
         this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance(), config);
     }
 
-    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig)
+    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig)
             throws IOException
     {
         this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance());

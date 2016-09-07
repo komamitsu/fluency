@@ -10,11 +10,13 @@ import java.nio.channels.SocketChannel;
 public class TCPHeartbeater extends Heartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
+    private final Config config;
 
     private TCPHeartbeater(final Config config)
             throws IOException
     {
-        super(config);
+        super(config.getBaseConfig());
+        this.config = config;
     }
 
     @Override
@@ -33,8 +35,57 @@ public class TCPHeartbeater extends Heartbeater
         }
     }
 
-    public static class Config extends Heartbeater.Config<Config>
+    public static class Config
+        implements Instantiator
     {
+        private final Heartbeater.Config baseConfig = new Heartbeater.Config();
+
+        public Heartbeater.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public String getHost()
+        {
+            return baseConfig.getHost();
+        }
+
+        public int getPort()
+        {
+            return baseConfig.getPort();
+        }
+
+        public Config setIntervalMillis(int intervalMillis)
+        {
+            baseConfig.setIntervalMillis(intervalMillis);
+            return this;
+        }
+
+        public int getIntervalMillis()
+        {
+            return baseConfig.getIntervalMillis();
+        }
+
+        public Config setHost(String host)
+        {
+            baseConfig.setHost(host);
+            return this;
+        }
+
+        public Config setPort(int port)
+        {
+            baseConfig.setPort(port);
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    '}';
+        }
+
         @Override
         public TCPHeartbeater createInstance()
                 throws IOException
