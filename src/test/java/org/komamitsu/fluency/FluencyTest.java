@@ -167,7 +167,7 @@ public class FluencyTest
         Sender sender = new MockTCPSender(24224);
         TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
-            Flusher.Config flusherConfig = new AsyncFlusher.Config();
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             assertFalse(fluency.isTerminated());
             fluency.close();
@@ -176,7 +176,7 @@ public class FluencyTest
         }
 
         {
-            Flusher.Config flusherConfig = new SyncFlusher.Config();
+            Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             assertFalse(fluency.isTerminated());
             fluency.close();
@@ -255,7 +255,7 @@ public class FluencyTest
                 if (options.fileBackup) {
                     bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
                 }
-                Flusher.Config flusherConfig = new AsyncFlusher.Config();
+                Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
         }, options);
@@ -290,7 +290,7 @@ public class FluencyTest
                 if (options.fileBackup) {
                     bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingSyncFlusher" + options.hashCode());
                 }
-                Flusher.Config flusherConfig = new SyncFlusher.Config();
+                Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
         }, options);

@@ -9,19 +9,19 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
-public abstract class Flusher<C extends Flusher.Config>
+public abstract class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
     protected final Buffer buffer;
     protected final Sender sender;
-    protected final C flusherConfig;
+    private final Config config;
 
-    public Flusher(Buffer buffer, Sender sender, C flusherConfig)
+    public Flusher(Buffer buffer, Sender sender, Config config)
     {
         this.buffer = buffer;
         this.sender = sender;
-        this.flusherConfig = flusherConfig;
+        this.config = config;
     }
 
     public Buffer getBuffer()
@@ -68,10 +68,9 @@ public abstract class Flusher<C extends Flusher.Config>
         buffer.close();
     }
 
-    public abstract static class Config<T extends Flusher, C extends Config>
+    public static class Config
     {
         private int flushIntervalMillis = 600;
-
         private int waitAfterClose = 10;
 
         public int getFlushIntervalMillis()
@@ -79,10 +78,10 @@ public abstract class Flusher<C extends Flusher.Config>
             return flushIntervalMillis;
         }
 
-        public C setFlushIntervalMillis(int flushIntervalMillis)
+        public Config setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
-            return (C)this;
+            return this;
         }
 
         public int getWaitAfterClose()
@@ -90,12 +89,15 @@ public abstract class Flusher<C extends Flusher.Config>
             return waitAfterClose;
         }
 
-        public C setWaitAfterClose(int waitAfterClose)
+        public Config setWaitAfterClose(int waitAfterClose)
         {
             this.waitAfterClose = waitAfterClose;
-            return (C) this;
+            return this;
         }
+    }
 
-        public abstract T createInstance(Buffer buffer, Sender sender);
+    public interface Instantiator<T extends Flusher>
+    {
+        T createInstance(Buffer buffer, Sender sender);
     }
 }

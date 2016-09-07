@@ -51,7 +51,7 @@ public class Fluency
             bufferConfig.setFileBackupDir(config.getFileBackupDir());
         }
 
-        Flusher.Config flusherConfig = new AsyncFlusher.Config();
+        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
         if (config != null && config.getFlushIntervalMillis() != null) {
             flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
         }
@@ -204,7 +204,7 @@ public class Fluency
     {
         private final Sender sender;
         private Buffer.Instantiator bufferConfig;
-        private Flusher.Config flusherConfig;
+        private Flusher.Instantiator flusherConfig;
 
         public Builder(Sender sender)
         {
@@ -217,7 +217,7 @@ public class Fluency
             return this;
         }
 
-        public Builder setFlusherConfig(Flusher.Config flusherConfig)
+        public Builder setFlusherConfig(Flusher.Instantiator flusherConfig)
         {
             this.flusherConfig = flusherConfig;
             return this;
@@ -227,7 +227,7 @@ public class Fluency
         {
             Buffer.Instantiator bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
             Buffer buffer = bufferConfig.createInstance();
-            Flusher.Config flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
+            Flusher.Instantiator flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
             Flusher flusher = flusherConfig.createInstance(buffer, sender);
 
             return new Fluency(buffer, flusher);
