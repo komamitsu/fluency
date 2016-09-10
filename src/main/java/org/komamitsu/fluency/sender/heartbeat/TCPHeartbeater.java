@@ -7,7 +7,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-public class TCPHeartbeater extends Heartbeater
+public class TCPHeartbeater
+        extends Heartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
     private final Config config;

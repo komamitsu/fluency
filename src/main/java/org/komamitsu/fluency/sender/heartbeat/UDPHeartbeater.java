@@ -14,13 +14,11 @@ public class UDPHeartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
-    private final Config config;
 
     private UDPHeartbeater(final Config config)
             throws IOException
     {
         super(config.getBaseConfig());
-        this.config = config;
         socketAddress = new InetSocketAddress(config.getHost(), config.getPort());
     }
 

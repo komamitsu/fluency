@@ -11,7 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class Heartbeater implements Closeable
+public abstract class Heartbeater
+        implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
     private final Config config;
