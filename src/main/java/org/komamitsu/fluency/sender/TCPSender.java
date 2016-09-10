@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends Sender<TCPSender.Config>
+    extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
@@ -35,6 +35,7 @@ public class TCPSender
     private final byte[] optionBuffer = new byte[256];
     private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Config config;
     @VisibleForTesting
     final FailureDetector failureDetector;
 
@@ -48,9 +49,10 @@ public class TCPSender
         return config.getPort();
     }
 
-    public TCPSender(Config config)
+    protected TCPSender(Config config)
     {
-        super(config);
+        super(config.getBaseConfig());
+        this.config = config;
         FailureDetector failureDetector = null;
         if (config.getHeartbeaterConfig() != null) {
             try {
@@ -189,8 +191,23 @@ public class TCPSender
         }
     }
 
-    public static class Config extends Sender.Config<TCPSender, Config>
+    @Override
+    public String toString()
     {
+        return "TCPSender{" +
+                "channel=" + channel +
+                ", optionBuffer=" + Arrays.toString(optionBuffer) +
+                ", ackTokenSerDe=" + ackTokenSerDe +
+                ", executorService=" + executorService +
+                ", config=" + config +
+                ", failureDetector=" + failureDetector +
+                "} " + super.toString();
+    }
+
+    public static class Config
+            implements Instantiator
+    {
+        private final Sender.Config baseConfig = new Sender.Config();
         private String host = "127.0.0.1";
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
@@ -198,6 +215,11 @@ public class TCPSender
         private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
         private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
         private FailureDetectStrategy.Config failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
+
+        public Sender.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
 
         public String getHost()
         {
@@ -286,14 +308,15 @@ public class TCPSender
         public String toString()
         {
             return "Config{" +
-                    "host='" + host + '\'' +
+                    "baseConfig=" + baseConfig +
+                    ", host='" + host + '\'' +
                     ", port=" + port +
                     ", connectionTimeoutMilli=" + connectionTimeoutMilli +
                     ", readTimeoutMilli=" + readTimeoutMilli +
                     ", heartbeaterConfig=" + heartbeaterConfig +
                     ", failureDetectorConfig=" + failureDetectorConfig +
                     ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
-                    "} " + super.toString();
+                    '}';
         }
     }
 }

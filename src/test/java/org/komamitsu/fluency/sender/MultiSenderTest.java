@@ -30,7 +30,7 @@ public class MultiSenderTest
         MultiSender multiSender = null;
         try {
             multiSender = new MultiSender.Config(
-                    Arrays.<Sender.Config>asList(
+                    Arrays.<Sender.Instantiator>asList(
                             new TCPSender.Config()
                                     .setPort(24225)
                                     .setHeartbeaterConfig(
@@ -81,7 +81,7 @@ public class MultiSenderTest
         final CountDownLatch latch = new CountDownLatch(concurency);
 
         final MultiSender sender = new MultiSender.Config(
-                Arrays.<Sender.Config>asList(
+                Arrays.<Sender.Instantiator>asList(
                         new TCPSender.Config()
                                 .setPort(server0.getLocalPort())
                                 .setHeartbeaterConfig(

@@ -8,12 +8,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class Sender<C extends Sender.Config>
+public abstract class Sender
     implements Closeable
 {
-    protected final C config;
+    private final Config config;
 
-    protected Sender(C config)
+    protected Sender(Config config)
     {
         this.config = config;
     }
@@ -62,18 +62,14 @@ public abstract class Sender<C extends Sender.Config>
 
     public abstract boolean isAvailable();
 
-    @Override
-    public String toString()
-    {
-        return "Sender{" +
-                "config=" + config +
-                '}';
-    }
-
     abstract protected void sendInternal(List<ByteBuffer> dataList, byte[] ackToken) throws IOException;
 
-    public abstract static class Config<T extends Sender, C extends Config>
+    public static class Config
     {
-        public abstract T createInstance();
+    }
+
+    public interface Instantiator
+    {
+        Sender createInstance();
     }
 }

@@ -10,7 +10,6 @@ import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
@@ -216,7 +215,7 @@ public class FluencyTest
     private Sender getDoubleTCPSender(int firstPort, int secondPort)
     {
         return new MultiSender.Config(
-                Arrays.<Sender.Config>asList(
+                Arrays.<Sender.Instantiator>asList(
                     new TCPSender.Config()
                             .setPort(firstPort)
                             .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),

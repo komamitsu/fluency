@@ -8,11 +8,8 @@ import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +35,7 @@ public class Fluency
         return buildDefaultFluency(new TCPSender.Config().setHost(host).setPort(port), config);
     }
 
-    private static Fluency buildDefaultFluency(Sender.Config senderConfig, Config config)
+    private static Fluency buildDefaultFluency(Sender.Instantiator senderConfig, Config config)
     {
         PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
         if (config != null && config.getMaxBufferSize() != null) {
@@ -87,7 +84,7 @@ public class Fluency
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
             throws IOException
     {
-        List<Sender.Config> tcpSenderConfigs = new ArrayList<Sender.Config>();
+        List<Sender.Instantiator> tcpSenderConfigs = new ArrayList<Sender.Instantiator>();
         for (InetSocketAddress server : servers) {
             tcpSenderConfigs.add(
                     new TCPSender.Config()
