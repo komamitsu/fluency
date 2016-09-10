@@ -1,11 +1,14 @@
 package org.komamitsu.fluency.sender.retry;
 
 public class ConstantRetryStrategy
-    extends RetryStrategy<ConstantRetryStrategy.Config>
+    extends RetryStrategy
 {
+    private final Config config;
+
     private ConstantRetryStrategy(Config config)
     {
-        super(config);
+        super(config.getBaseConfig());
+        this.config = config;
     }
 
     @Override
@@ -14,9 +17,27 @@ public class ConstantRetryStrategy
         return config.getRetryIntervalMillis();
     }
 
-    public static class Config extends RetryStrategy.Config<ConstantRetryStrategy, Config>
+    public static class Config
+        implements Instantiator
     {
+        private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
         private long retryIntervalMillis = 2000;
+
+        public RetryStrategy.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public int getMaxRetryCount()
+        {
+            return baseConfig.getMaxRetryCount();
+        }
+
+        public Config setMaxRetryCount(int maxRetryCount)
+        {
+            baseConfig.setMaxRetryCount(maxRetryCount);
+            return this;
+        }
 
         public long getRetryIntervalMillis()
         {
@@ -27,6 +48,15 @@ public class ConstantRetryStrategy
         {
             this.retryIntervalMillis = retryIntervalMillis;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    ", retryIntervalMillis=" + retryIntervalMillis +
+                    '}';
         }
 
         @Override

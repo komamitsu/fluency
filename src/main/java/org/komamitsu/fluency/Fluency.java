@@ -56,7 +56,7 @@ public class Fluency
             flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
         }
 
-        RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
         if (config != null && config.getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
         }

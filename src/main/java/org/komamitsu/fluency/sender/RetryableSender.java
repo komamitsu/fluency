@@ -100,7 +100,7 @@ public class RetryableSender
 
     public static class Config extends Sender.Config<RetryableSender, Config>
     {
-        private RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+        private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
 
         public Config(Sender.Config baseSenderConfig)
         {
@@ -114,12 +114,12 @@ public class RetryableSender
             return baseSenderConfig;
         }
 
-        public RetryStrategy.Config getRetryStrategyConfig()
+        public RetryStrategy.Instantiator getRetryStrategyConfig()
         {
             return retryStrategyConfig;
         }
 
-        public Config setRetryStrategyConfig(RetryStrategy.Config retryStrategyConfig)
+        public Config setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
         {
             this.retryStrategyConfig = retryStrategyConfig;
             return this;
