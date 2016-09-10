@@ -17,7 +17,7 @@ public abstract class Flusher
     protected final Sender sender;
     private final Config config;
 
-    public Flusher(Buffer buffer, Sender sender, Config config)
+    protected Flusher(Buffer buffer, Sender sender, Config config)
     {
         this.buffer = buffer;
         this.sender = sender;
@@ -68,6 +68,16 @@ public abstract class Flusher
         buffer.close();
     }
 
+    @Override
+    public String toString()
+    {
+        return "Flusher{" +
+                "buffer=" + buffer +
+                ", sender=" + sender +
+                ", config=" + config +
+                '}';
+    }
+
     public static class Config
     {
         private int flushIntervalMillis = 600;
@@ -93,6 +103,15 @@ public abstract class Flusher
         {
             this.waitAfterClose = waitAfterClose;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "flushIntervalMillis=" + flushIntervalMillis +
+                    ", waitAfterClose=" + waitAfterClose +
+                    '}';
         }
     }
 

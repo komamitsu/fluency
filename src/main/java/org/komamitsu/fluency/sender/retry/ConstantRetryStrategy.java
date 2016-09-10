@@ -5,7 +5,7 @@ public class ConstantRetryStrategy
 {
     private final Config config;
 
-    private ConstantRetryStrategy(Config config)
+    protected ConstantRetryStrategy(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
@@ -15,6 +15,14 @@ public class ConstantRetryStrategy
     public long getNextIntervalMillis(int retryCount)
     {
         return config.getRetryIntervalMillis();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ConstantRetryStrategy{" +
+                "config=" + config +
+                "} " + super.toString();
     }
 
     public static class Config

@@ -214,7 +214,7 @@ public class TCPSender
         private int readTimeoutMilli = 5000;
         private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
         private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
-        private FailureDetectStrategy.Config failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
+        private FailureDetectStrategy.Instantiator failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
 
         public Sender.Config getBaseConfig()
         {
@@ -287,12 +287,12 @@ public class TCPSender
             return this;
         }
 
-        public FailureDetectStrategy.Config getFailureDetectorStrategyConfig()
+        public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
         {
             return failureDetectorStrategyConfig;
         }
 
-        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Config failureDetectorStrategyConfig)
+        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
         {
             this.failureDetectorStrategyConfig = failureDetectorStrategyConfig;
             return this;

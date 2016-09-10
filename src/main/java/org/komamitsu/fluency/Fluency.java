@@ -197,6 +197,15 @@ public class Fluency
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Fluency{" +
+                "buffer=" + buffer +
+                ", flusher=" + flusher +
+                '}';
+    }
+
     public static class Builder
     {
         private final Sender sender;
@@ -296,6 +305,18 @@ public class Fluency
         {
             this.fileBackupDir = fileBackupDir;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "maxBufferSize=" + maxBufferSize +
+                    ", flushIntervalMillis=" + flushIntervalMillis +
+                    ", senderMaxRetryCount=" + senderMaxRetryCount +
+                    ", ackResponseMode=" + ackResponseMode +
+                    ", fileBackupDir='" + fileBackupDir + '\'' +
+                    '}';
         }
     }
 }

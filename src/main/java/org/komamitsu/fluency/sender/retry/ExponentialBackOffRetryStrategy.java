@@ -5,7 +5,7 @@ public class ExponentialBackOffRetryStrategy
 {
     private final Config config;
 
-    private ExponentialBackOffRetryStrategy(Config config)
+    protected ExponentialBackOffRetryStrategy(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
@@ -21,8 +21,16 @@ public class ExponentialBackOffRetryStrategy
         return interval;
     }
 
+    @Override
+    public String toString()
+    {
+        return "ExponentialBackOffRetryStrategy{" +
+                "config=" + config +
+                "} " + super.toString();
+    }
+
     public static class Config
-        implements Instantiator
+            implements Instantiator
     {
         private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
         private long baseIntervalMillis = 400;

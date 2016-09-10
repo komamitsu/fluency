@@ -94,6 +94,15 @@ public abstract class Heartbeater
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "Heartbeater{" +
+                "config=" + config +
+                ", executorService=" + executorService +
+                '}';
+    }
+
     public interface Callback
     {
         void onHeartbeat();

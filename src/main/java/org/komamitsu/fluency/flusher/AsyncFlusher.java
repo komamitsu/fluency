@@ -110,6 +110,16 @@ public class AsyncFlusher
         return executorService.isTerminated();
     }
 
+    @Override
+    public String toString()
+    {
+        return "AsyncFlusher{" +
+                "eventQueue=" + eventQueue +
+                ", config=" + config +
+                ", task=" + task +
+                "} " + super.toString();
+    }
+
     public static class Config
         implements Flusher.Instantiator
     {

@@ -13,7 +13,7 @@ public class TCPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
     private final Config config;
 
-    private TCPHeartbeater(final Config config)
+    protected TCPHeartbeater(final Config config)
             throws IOException
     {
         super(config.getBaseConfig());
@@ -36,8 +36,16 @@ public class TCPHeartbeater
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "TCPHeartbeater{" +
+                "config=" + config +
+                "} " + super.toString();
+    }
+
     public static class Config
-        implements Instantiator
+            implements Instantiator
     {
         private final Heartbeater.Config baseConfig = new Heartbeater.Config();
 

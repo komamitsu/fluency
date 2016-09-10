@@ -15,7 +15,7 @@ public class UDPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
 
-    private UDPHeartbeater(final Config config)
+    protected UDPHeartbeater(final Config config)
             throws IOException
     {
         super(config.getBaseConfig());
@@ -39,6 +39,14 @@ public class UDPHeartbeater
                 datagramChannel.close();
             }
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UDPHeartbeater{" +
+                "socketAddress=" + socketAddress +
+                "} " + super.toString();
     }
 
     public static class Config

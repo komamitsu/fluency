@@ -80,6 +80,16 @@ public class SyncFlusher
         return isTerminated.get();
     }
 
+    @Override
+    public String toString()
+    {
+        return "SyncFlusher{" +
+                "lastFlushTimeMillis=" + lastFlushTimeMillis +
+                ", isTerminated=" + isTerminated +
+                ", config=" + config +
+                "} " + super.toString();
+    }
+
     public static class Config
         implements Flusher.Instantiator
     {
@@ -123,6 +133,15 @@ public class SyncFlusher
         {
             this.bufferOccupancyThreshold = bufferOccupancyThreshold;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    ", bufferOccupancyThreshold=" + bufferOccupancyThreshold +
+                    '}';
         }
 
         @Override

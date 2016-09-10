@@ -4,7 +4,7 @@ public abstract class RetryStrategy
 {
     private final Config config;
 
-    public RetryStrategy(Config config)
+    protected RetryStrategy(Config config)
     {
         this.config = config;
     }

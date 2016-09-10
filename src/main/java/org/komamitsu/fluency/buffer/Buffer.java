@@ -24,7 +24,7 @@ public abstract class Buffer
     protected final FileBackup fileBackup;
     private final Config config;
 
-    public Buffer(final Config config)
+    protected Buffer(final Config config)
     {
         this.config = config;
         if (config.getFileBackupDir() != null) {
@@ -124,6 +124,16 @@ public abstract class Buffer
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "Buffer{" +
+                "objectMapper=" + objectMapper +
+                ", fileBackup=" + fileBackup +
+                ", config=" + config +
+                '}';
+    }
+
     public static class Config
     {
         protected long maxBufferSize = 512 * 1024 * 1024;
@@ -195,7 +205,8 @@ public abstract class Buffer
                     "maxBufferSize=" + maxBufferSize +
                     ", ackResponseMode=" + ackResponseMode +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
-                    ", fileBackupPrefix='" + fileBackupPrefix +
+                    ", fileBackupPrefix='" + fileBackupPrefix + '\'' +
+                    ", jacksonModules=" + jacksonModules +
                     '}';
         }
     }

@@ -35,7 +35,7 @@ public class PackedForwardBuffer
     private final BufferPool bufferPool;
     private final Config config;
 
-    private PackedForwardBuffer(PackedForwardBuffer.Config config)
+    protected PackedForwardBuffer(PackedForwardBuffer.Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
@@ -341,6 +341,18 @@ public class PackedForwardBuffer
                     ", byteBuffer=" + byteBuffer +
                     '}';
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PackedForwardBuffer{" +
+                "retentionBuffers=" + retentionBuffers +
+                ", flushableBuffers=" + flushableBuffers +
+                ", backupBuffers=" + backupBuffers +
+                ", bufferPool=" + bufferPool +
+                ", config=" + config +
+                "} " + super.toString();
     }
 
     public static class Config
