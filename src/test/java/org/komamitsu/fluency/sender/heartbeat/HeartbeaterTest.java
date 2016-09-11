@@ -17,10 +17,13 @@ public class HeartbeaterTest
 
     private static class TestableHeartbeater extends Heartbeater
     {
+        private final Config config;
         private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<Tuple3<Long, String, Integer>>();
+
         public TestableHeartbeater(Config config)
         {
-            super(config);
+            super(config.getBaseConfig());
+            this.config = config;
         }
 
         public List<Tuple3<Long, String, Integer>> getPongedRecords()
@@ -34,10 +37,51 @@ public class HeartbeaterTest
             pongedRecords.add(new Tuple3<Long, String, Integer>(System.currentTimeMillis(), config.getHost(), config.getPort()));
         }
 
-        private static class Config extends Heartbeater.Config<Config>
+        private static class Config
+            implements Instantiator
         {
+            private final Heartbeater.Config baseConfig = new Heartbeater.Config();
+
+            public Heartbeater.Config getBaseConfig()
+            {
+                return baseConfig;
+            }
+
+            public String getHost()
+            {
+                return baseConfig.getHost();
+            }
+
+            public int getPort()
+            {
+                return baseConfig.getPort();
+            }
+
+            public Config setIntervalMillis(int intervalMillis)
+            {
+                baseConfig.setIntervalMillis(intervalMillis);
+                return this;
+            }
+
+            public int getIntervalMillis()
+            {
+                return baseConfig.getIntervalMillis();
+            }
+
+            public Config setHost(String host)
+            {
+                baseConfig.setHost(host);
+                return this;
+            }
+
+            public Config setPort(int port)
+            {
+                baseConfig.setPort(port);
+                return this;
+            }
+
             @Override
-            public Heartbeater createInstance()
+            public TestableHeartbeater createInstance()
                     throws IOException
             {
                 return new TestableHeartbeater(this);

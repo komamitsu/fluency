@@ -7,11 +7,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public class StubSender
-        extends Sender<StubSender.Config>
+        extends Sender
 {
     public StubSender()
     {
-        super(null);
+        super(new Sender.Config());
     }
 
     @Override
@@ -30,16 +30,5 @@ public class StubSender
     public void close()
             throws IOException
     {
-    }
-
-    public static class Config
-            extends Sender.Config<StubSender, Config>
-    {
-        // Dummy
-        @Override
-        public StubSender createInstance()
-        {
-            return null;
-        }
     }
 }

@@ -1,10 +1,5 @@
 package org.komamitsu.fluency.sender;
 
-import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.util.Tuple;
 import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,16 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MultiSender
-        extends Sender<MultiSender.Config>
+        extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     @VisibleForTesting
     final List<Sender> senders = new ArrayList<Sender>();
 
-    public MultiSender(Config config)
+    protected MultiSender(Config config)
     {
-        super(config);
-        for (Sender.Config senderConfig : config.getSenderConfigs()) {
+        super(config.getBaseConfig());
+        for (Instantiator senderConfig : config.getSenderConfigs()) {
             senders.add(senderConfig.createInstance());
         }
     }
@@ -89,16 +84,31 @@ public class MultiSender
         }
     }
 
-    public static class Config extends Sender.Config<MultiSender, Config>
+    @Override
+    public String toString()
     {
-        private final List<Sender.Config> senderConfigs;
+        return "MultiSender{" +
+                "senders=" + senders +
+                "} " + super.toString();
+    }
 
-        public Config(List<Sender.Config> senderConfigs)
+    public static class Config
+            implements Instantiator
+    {
+        private final Sender.Config baseConfig = new Sender.Config();
+        private final List<Instantiator> senderConfigs;
+
+        public Sender.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public Config(List<Instantiator> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
         }
 
-        public List<Sender.Config> getSenderConfigs()
+        public List<Instantiator> getSenderConfigs()
         {
             return senderConfigs;
         }

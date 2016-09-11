@@ -13,11 +13,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class AsyncFlusher
-        extends Flusher<AsyncFlusher.Config>
+        extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
     private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Config config;
     private final Runnable task = new Runnable() {
             @Override
             public void run()
@@ -25,7 +26,7 @@ public class AsyncFlusher
                 Event event = null;
                 while (!executorService.isShutdown()) {
                     try {
-                        event = eventQueue.poll(flusherConfig.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        event = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         boolean force = event != null;
                         buffer.flush(sender, force);
                     }
@@ -58,9 +59,10 @@ public class AsyncFlusher
         FORCE_FLUSH, CLOSE;
     }
 
-    private AsyncFlusher(final Buffer buffer, final Sender sender, final Config flusherConfig)
+    private AsyncFlusher(final Buffer buffer, final Sender sender, final Config config)
     {
-        super(buffer, sender, flusherConfig);
+        super(buffer, sender, config.getBaseConfig());
+        this.config = config;
         executorService.execute(task);
     }
 
@@ -90,7 +92,7 @@ public class AsyncFlusher
         }
         executorService.shutdown();
         try {
-            executorService.awaitTermination(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
+            executorService.awaitTermination(this.config.getWaitAfterClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
@@ -108,8 +110,48 @@ public class AsyncFlusher
         return executorService.isTerminated();
     }
 
-    public static class Config extends Flusher.Config<AsyncFlusher, Flusher.Config>
+    @Override
+    public String toString()
     {
+        return "AsyncFlusher{" +
+                "eventQueue=" + eventQueue +
+                ", config=" + config +
+                ", task=" + task +
+                "} " + super.toString();
+    }
+
+    public static class Config
+        implements Flusher.Instantiator
+    {
+        private final Flusher.Config baseConfig = new Flusher.Config();
+
+        public Flusher.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public int getFlushIntervalMillis()
+        {
+            return baseConfig.getFlushIntervalMillis();
+        }
+
+        public int getWaitAfterClose()
+        {
+            return baseConfig.getWaitAfterClose();
+        }
+
+        public Config setWaitAfterClose(int waitAfterClose)
+        {
+            baseConfig.setWaitAfterClose(waitAfterClose);
+            return this;
+        }
+
+        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        {
+            baseConfig.setFlushIntervalMillis(flushIntervalMillis);
+            return this;
+        }
+
         @Override
         public AsyncFlusher createInstance(Buffer buffer, Sender sender)
         {

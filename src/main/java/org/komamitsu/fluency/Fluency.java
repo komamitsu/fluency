@@ -8,11 +8,8 @@ import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +35,9 @@ public class Fluency
         return buildDefaultFluency(new TCPSender.Config().setHost(host).setPort(port), config);
     }
 
-    private static Fluency buildDefaultFluency(Sender.Config senderConfig, Config config)
+    private static Fluency buildDefaultFluency(Sender.Instantiator senderConfig, Config config)
     {
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config();
+        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
         if (config != null && config.getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
         }
@@ -51,12 +48,12 @@ public class Fluency
             bufferConfig.setFileBackupDir(config.getFileBackupDir());
         }
 
-        Flusher.Config flusherConfig = new AsyncFlusher.Config();
+        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
         if (config != null && config.getFlushIntervalMillis() != null) {
             flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
         }
 
-        RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
         if (config != null && config.getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
         }
@@ -87,7 +84,7 @@ public class Fluency
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
             throws IOException
     {
-        List<Sender.Config> tcpSenderConfigs = new ArrayList<Sender.Config>();
+        List<Sender.Instantiator> tcpSenderConfigs = new ArrayList<Sender.Instantiator>();
         for (InetSocketAddress server : servers) {
             tcpSenderConfigs.add(
                     new TCPSender.Config()
@@ -200,24 +197,33 @@ public class Fluency
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Fluency{" +
+                "buffer=" + buffer +
+                ", flusher=" + flusher +
+                '}';
+    }
+
     public static class Builder
     {
         private final Sender sender;
-        private Buffer.Config bufferConfig;
-        private Flusher.Config flusherConfig;
+        private Buffer.Instantiator bufferConfig;
+        private Flusher.Instantiator flusherConfig;
 
         public Builder(Sender sender)
         {
             this.sender = sender;
         }
 
-        public Builder setBufferConfig(Buffer.Config bufferConfig)
+        public Builder setBufferConfig(Buffer.Instantiator bufferConfig)
         {
             this.bufferConfig = bufferConfig;
             return this;
         }
 
-        public Builder setFlusherConfig(Flusher.Config flusherConfig)
+        public Builder setFlusherConfig(Flusher.Instantiator flusherConfig)
         {
             this.flusherConfig = flusherConfig;
             return this;
@@ -225,9 +231,9 @@ public class Fluency
 
         public Fluency build()
         {
-            Buffer.Config bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
+            Buffer.Instantiator bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
             Buffer buffer = bufferConfig.createInstance();
-            Flusher.Config flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
+            Flusher.Instantiator flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
             Flusher flusher = flusherConfig.createInstance(buffer, sender);
 
             return new Fluency(buffer, flusher);
@@ -299,6 +305,18 @@ public class Fluency
         {
             this.fileBackupDir = fileBackupDir;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "maxBufferSize=" + maxBufferSize +
+                    ", flushIntervalMillis=" + flushIntervalMillis +
+                    ", senderMaxRetryCount=" + senderMaxRetryCount +
+                    ", ackResponseMode=" + ackResponseMode +
+                    ", fileBackupDir='" + fileBackupDir + '\'' +
+                    '}';
         }
     }
 }

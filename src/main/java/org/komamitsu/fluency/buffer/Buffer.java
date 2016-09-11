@@ -7,7 +7,6 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,26 +16,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Buffer<T extends Buffer.Config>
+public abstract class Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     protected static final Charset CHARSET = Charset.forName("ASCII");
-    protected final T bufferConfig;
     protected final ObjectMapper objectMapper;
     protected final FileBackup fileBackup;
+    private final Config config;
 
-    public Buffer(final T bufferConfig)
+    protected Buffer(final Config config)
     {
-        this.bufferConfig = bufferConfig;
-        if (bufferConfig.getFileBackupDir() != null) {
-            fileBackup = new FileBackup(new File(bufferConfig.getFileBackupDir()), this, bufferConfig.getFileBackupPrefix());
+        this.config = config;
+        if (config.getFileBackupDir() != null) {
+            fileBackup = new FileBackup(new File(config.getFileBackupDir()), this, config.getFileBackupPrefix());
         }
         else {
             fileBackup = null;
         }
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
-        List<Module> jacksonModules = bufferConfig.getJacksonModules();
+        List<Module> jacksonModules = config.getJacksonModules();
         for (Module module : jacksonModules) {
             objectMapper.registerModule(module);
         }
@@ -106,7 +105,7 @@ public abstract class Buffer<T extends Buffer.Config>
 
     public long getMaxSize()
     {
-        return bufferConfig.getMaxBufferSize();
+        return config.getMaxBufferSize();
     }
 
     public float getBufferUsage()
@@ -125,23 +124,33 @@ public abstract class Buffer<T extends Buffer.Config>
         }
     }
 
-    public abstract static class Config<T extends Buffer, C extends Config>
+    @Override
+    public String toString()
+    {
+        return "Buffer{" +
+                "objectMapper=" + objectMapper +
+                ", fileBackup=" + fileBackup +
+                ", config=" + config +
+                '}';
+    }
+
+    public static class Config
     {
         protected long maxBufferSize = 512 * 1024 * 1024;
         protected boolean ackResponseMode = false;
         protected String fileBackupDir;
         protected String fileBackupPrefix;  // Mainly for testing
-        protected List<? extends Module> jacksonModules = Collections.emptyList();
+        protected List<Module> jacksonModules = Collections.emptyList();
 
         public long getMaxBufferSize()
         {
             return maxBufferSize;
         }
 
-        public C setMaxBufferSize(long maxBufferSize)
+        public Config setMaxBufferSize(long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
-            return (C)this;
+            return this;
         }
 
         public boolean isAckResponseMode()
@@ -149,10 +158,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return ackResponseMode;
         }
 
-        public C setAckResponseMode(boolean ackResponseMode)
+        public Config setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
-            return (C)this;
+            return this;
         }
 
         public String getFileBackupDir()
@@ -160,10 +169,10 @@ public abstract class Buffer<T extends Buffer.Config>
             return fileBackupDir;
         }
 
-        public C setFileBackupDir(String fileBackupDir)
+        public Config setFileBackupDir(String fileBackupDir)
         {
             this.fileBackupDir = fileBackupDir;
-            return (C) this;
+            return this;
         }
 
         public String getFileBackupPrefix()
@@ -171,22 +180,22 @@ public abstract class Buffer<T extends Buffer.Config>
             return fileBackupPrefix;
         }
 
-        public C setFileBackupPrefix(String fileBackupPrefix)
+        public Config setFileBackupPrefix(String fileBackupPrefix)
         {
             this.fileBackupPrefix = fileBackupPrefix;
-            return (C) this;
+            return this;
         }
 
 
-        public List<? extends Module> getJacksonModules()
+        public List<Module> getJacksonModules()
         {
             return jacksonModules;
         }
 
-        public C setJacksonModules(List<? extends Module> jacksonModules)
+        public Config setJacksonModules(List<Module> jacksonModules)
         {
             this.jacksonModules = jacksonModules;
-            return (C) this;
+            return this;
         }
 
         @Override
@@ -196,17 +205,14 @@ public abstract class Buffer<T extends Buffer.Config>
                     "maxBufferSize=" + maxBufferSize +
                     ", ackResponseMode=" + ackResponseMode +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
-                    ", fileBackupPrefix='" + fileBackupPrefix +
+                    ", fileBackupPrefix='" + fileBackupPrefix + '\'' +
+                    ", jacksonModules=" + jacksonModules +
                     '}';
         }
+    }
 
-        protected abstract T createInstanceInternal();
-
-        public T createInstance()
-        {
-            T instance = createInstanceInternal();
-            instance.init();
-            return instance;
-        }
+    public interface Instantiator
+    {
+        Buffer createInstance();
     }
 }

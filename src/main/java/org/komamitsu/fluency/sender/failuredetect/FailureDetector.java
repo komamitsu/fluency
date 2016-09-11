@@ -14,7 +14,7 @@ public class FailureDetector
     private final AtomicReference<Long> lastFailureTimestampMillis = new AtomicReference<Long>();
     private final Config config;
 
-    private FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater, Config config)
+    public FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater, Config config)
     {
         this.failureDetectStrategy = failureDetectStrategy;
         this.heartbeater = heartbeater;
@@ -28,13 +28,13 @@ public class FailureDetector
         this(failureDetectStrategy, heartbeater, new Config());
     }
 
-    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig, Config config)
+    public FailureDetector(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig, Config config)
             throws IOException
     {
         this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance(), config);
     }
 
-    public FailureDetector(FailureDetectStrategy.Config failureDetectorStrategyConfig, Heartbeater.Config heartbeaterConfig)
+    public FailureDetector(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig)
             throws IOException
     {
         this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance());
@@ -83,6 +83,17 @@ public class FailureDetector
         heartbeater.close();
     }
 
+    @Override
+    public String toString()
+    {
+        return "FailureDetector{" +
+                "failureDetectStrategy=" + failureDetectStrategy +
+                ", heartbeater=" + heartbeater +
+                ", lastFailureTimestampMillis=" + lastFailureTimestampMillis +
+                ", config=" + config +
+                '}';
+    }
+
     public static class Config
     {
         private long failureIntervalMillis = 3 * 1000;
@@ -95,6 +106,14 @@ public class FailureDetector
         public void setFailureIntervalMillis(long failureIntervalMillis)
         {
             this.failureIntervalMillis = failureIntervalMillis;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "failureIntervalMillis=" + failureIntervalMillis +
+                    '}';
         }
     }
 }

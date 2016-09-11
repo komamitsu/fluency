@@ -17,15 +17,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SyncFlusher
-        extends Flusher<SyncFlusher.Config>
+        extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(SyncFlusher.class);
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
     private final AtomicBoolean isTerminated = new AtomicBoolean();
+    private final Config config;
 
-    private SyncFlusher(Buffer buffer, Sender sender, Config flusherConfig)
+    private SyncFlusher(Buffer buffer, Sender sender, Config config)
     {
-        super(buffer, sender, flusherConfig);
+        super(buffer, sender, config.getBaseConfig());
+        this.config = config;
     }
 
     @Override
@@ -34,8 +36,8 @@ public class SyncFlusher
     {
         long now = System.currentTimeMillis();
         if (force ||
-                now > lastFlushTimeMillis.get() + flusherConfig.getFlushIntervalMillis() ||
-                buffer.getBufferUsage() > flusherConfig.getBufferOccupancyThreshold()) {
+                now > lastFlushTimeMillis.get() + config.getFlushIntervalMillis() ||
+                buffer.getBufferUsage() > config.getBufferOccupancyThreshold()) {
             buffer.flush(sender, force);
             lastFlushTimeMillis.set(now);
         }
@@ -57,7 +59,7 @@ public class SyncFlusher
             }
         });
         try {
-            future.get(flusherConfig.getWaitAfterClose(), TimeUnit.SECONDS);
+            future.get(config.getWaitAfterClose(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("Interrupted", e);
@@ -78,9 +80,49 @@ public class SyncFlusher
         return isTerminated.get();
     }
 
-    public static class Config extends Flusher.Config<SyncFlusher, Config>
+    @Override
+    public String toString()
     {
+        return "SyncFlusher{" +
+                "lastFlushTimeMillis=" + lastFlushTimeMillis +
+                ", isTerminated=" + isTerminated +
+                ", config=" + config +
+                "} " + super.toString();
+    }
+
+    public static class Config
+        implements Flusher.Instantiator
+    {
+        private final Flusher.Config baseConfig = new Flusher.Config();
+
         private float bufferOccupancyThreshold = 0.6f;
+
+        public Flusher.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public int getFlushIntervalMillis()
+        {
+            return baseConfig.getFlushIntervalMillis();
+        }
+
+        public int getWaitAfterClose()
+        {
+            return baseConfig.getWaitAfterClose();
+        }
+
+        public Config setWaitAfterClose(int waitAfterClose)
+        {
+            baseConfig.setWaitAfterClose(waitAfterClose);
+            return this;
+        }
+
+        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        {
+            baseConfig.setFlushIntervalMillis(flushIntervalMillis);
+            return this;
+        }
 
         public float getBufferOccupancyThreshold()
         {
@@ -91,6 +133,15 @@ public class SyncFlusher
         {
             this.bufferOccupancyThreshold = bufferOccupancyThreshold;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    ", bufferOccupancyThreshold=" + bufferOccupancyThreshold +
+                    '}';
         }
 
         @Override

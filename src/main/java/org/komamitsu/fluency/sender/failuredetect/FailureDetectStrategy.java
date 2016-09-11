@@ -13,8 +13,12 @@ public abstract class FailureDetectStrategy
 
     public abstract boolean isAvailable();
 
-    public abstract static class Config
+    public static class Config
     {
-        public abstract FailureDetectStrategy createInstance();
+    }
+
+    public interface Instantiator
+    {
+        FailureDetectStrategy createInstance();
     }
 }

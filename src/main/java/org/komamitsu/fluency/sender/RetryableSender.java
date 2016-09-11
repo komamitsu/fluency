@@ -7,13 +7,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetryableSender
-        extends Sender<RetryableSender.Config>
+        extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;
@@ -37,9 +36,9 @@ public class RetryableSender
         }
     }
 
-    public RetryableSender(Config config)
+    protected RetryableSender(Config config)
     {
-        super(config);
+        super(config.getBaseConfig());
         baseSender = config.getBaseSenderConfig().createInstance();
         retryStrategy = config.getRetryStrategyConfig().createInstance();
     }
@@ -95,34 +94,52 @@ public class RetryableSender
         return "RetryableSender{" +
                 "baseSender=" + baseSender +
                 ", retryStrategy=" + retryStrategy +
+                ", isClosed=" + isClosed +
                 "} " + super.toString();
     }
 
-    public static class Config extends Sender.Config<RetryableSender, Config>
+    public static class Config
+            implements Instantiator
     {
-        private RetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+        private final Sender.Config baseConfig = new Sender.Config();
+        private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
 
-        public Config(Sender.Config baseSenderConfig)
+        public Sender.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public Config(Instantiator baseSenderConfig)
         {
             this.baseSenderConfig = baseSenderConfig;
         }
 
-        private final Sender.Config baseSenderConfig;
+        private final Instantiator baseSenderConfig;
 
-        public Sender.Config getBaseSenderConfig()
+        public Instantiator getBaseSenderConfig()
         {
             return baseSenderConfig;
         }
 
-        public RetryStrategy.Config getRetryStrategyConfig()
+        public RetryStrategy.Instantiator getRetryStrategyConfig()
         {
             return retryStrategyConfig;
         }
 
-        public Config setRetryStrategyConfig(RetryStrategy.Config retryStrategyConfig)
+        public Config setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
         {
             this.retryStrategyConfig = retryStrategyConfig;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    ", retryStrategyConfig=" + retryStrategyConfig +
+                    ", baseSenderConfig=" + baseSenderConfig +
+                    '}';
         }
 
         @Override

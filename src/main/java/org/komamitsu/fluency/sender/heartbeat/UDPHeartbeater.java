@@ -15,10 +15,10 @@ public class UDPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
 
-    private UDPHeartbeater(final Config config)
+    protected UDPHeartbeater(final Config config)
             throws IOException
     {
-        super(config);
+        super(config.getBaseConfig());
         socketAddress = new InetSocketAddress(config.getHost(), config.getPort());
     }
 
@@ -41,8 +41,65 @@ public class UDPHeartbeater
         }
     }
 
-    public static class Config extends Heartbeater.Config<Config>
+    @Override
+    public String toString()
     {
+        return "UDPHeartbeater{" +
+                "socketAddress=" + socketAddress +
+                "} " + super.toString();
+    }
+
+    public static class Config
+        implements Instantiator
+    {
+        private final Heartbeater.Config baseConfig = new Heartbeater.Config();
+
+        public Heartbeater.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public String getHost()
+        {
+            return baseConfig.getHost();
+        }
+
+        public int getPort()
+        {
+            return baseConfig.getPort();
+        }
+
+        public Config setIntervalMillis(int intervalMillis)
+        {
+            baseConfig.setIntervalMillis(intervalMillis);
+            return this;
+        }
+
+        public int getIntervalMillis()
+        {
+            return baseConfig.getIntervalMillis();
+        }
+
+        public Config setHost(String host)
+        {
+            baseConfig.setHost(host);
+            return this;
+        }
+
+        public Config setPort(int port)
+        {
+            baseConfig.setPort(port);
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    '}';
+        }
+
         @Override
         public UDPHeartbeater createInstance()
                 throws IOException

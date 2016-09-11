@@ -1,5 +1,6 @@
 package org.komamitsu.fluency.buffer;
 
+import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.util.Tuple;
 import org.komamitsu.fluency.util.Tuple3;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestableBuffer
-        extends Buffer<TestableBuffer.Config>
+        extends Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestableBuffer.class);
     public static final int RECORD_DATA_SIZE = 100;
@@ -32,7 +33,7 @@ public class TestableBuffer
 
     private TestableBuffer(Config bufferConfig)
     {
-        super(bufferConfig);
+        super(bufferConfig.getBaseConfig());
     }
 
     public void setSavableBuffer(List<String> params, ByteBuffer buffer)
@@ -134,12 +135,75 @@ public class TestableBuffer
     }
 
     public static class Config
-            extends Buffer.Config<TestableBuffer, Config>
+        implements Buffer.Instantiator
     {
-        @Override
-        protected TestableBuffer createInstanceInternal()
+        private final Buffer.Config baseConfig = new Buffer.Config();
+
+        public Buffer.Config getBaseConfig()
         {
-            return new TestableBuffer(this);
+            return baseConfig;
+        }
+
+        public long getMaxBufferSize()
+        {
+            return baseConfig.getMaxBufferSize();
+        }
+
+        public Config setMaxBufferSize(long maxBufferSize)
+        {
+            baseConfig.setMaxBufferSize(maxBufferSize);
+            return this;
+        }
+
+        public Config setFileBackupPrefix(String fileBackupPrefix)
+        {
+            baseConfig.setFileBackupPrefix(fileBackupPrefix);
+            return this;
+        }
+
+        public Config setFileBackupDir(String fileBackupDir)
+        {
+            baseConfig.setFileBackupDir(fileBackupDir);
+            return this;
+        }
+
+        public Config setAckResponseMode(boolean ackResponseMode)
+        {
+            baseConfig.setAckResponseMode(ackResponseMode);
+            return this;
+        }
+
+        public boolean isAckResponseMode()
+        {
+            return baseConfig.isAckResponseMode();
+        }
+
+        public List<Module> getJacksonModules()
+        {
+            return baseConfig.getJacksonModules();
+        }
+
+        public String getFileBackupPrefix()
+        {
+            return baseConfig.getFileBackupPrefix();
+        }
+
+        public String getFileBackupDir()
+        {
+            return baseConfig.getFileBackupDir();
+        }
+
+        public Buffer.Config setJacksonModules(List<Module> jacksonModules)
+        {
+            return baseConfig.setJacksonModules(jacksonModules);
+        }
+
+        @Override
+        public TestableBuffer createInstance()
+        {
+            TestableBuffer buffer = new TestableBuffer(this);
+            buffer.init();
+            return buffer;
         }
     }
 }

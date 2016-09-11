@@ -1,6 +1,6 @@
 package org.komamitsu.fluency.buffer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
@@ -13,13 +13,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -29,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PackedForwardBuffer
-    extends Buffer<PackedForwardBuffer.Config>
+    extends Buffer
 {
     public static final String FORMAT_TYPE = "packed_forward";
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
@@ -37,11 +33,13 @@ public class PackedForwardBuffer
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
+    private final Config config;
 
-    private PackedForwardBuffer(PackedForwardBuffer.Config bufferConfig)
+    protected PackedForwardBuffer(PackedForwardBuffer.Config config)
     {
-        super(bufferConfig);
-        bufferPool = new BufferPool(bufferConfig.getInitialBufferSize(), bufferConfig.getMaxBufferSize());
+        super(config.getBaseConfig());
+        this.config = config;
+        bufferPool = new BufferPool(config.getInitialBufferSize(), config.getMaxBufferSize());
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
@@ -55,20 +53,20 @@ public class PackedForwardBuffer
         int existingDataSize = 0;
         int newRetentionBufferSize;
         if (retentionBuffer == null) {
-            newRetentionBufferSize = bufferConfig.getInitialBufferSize();
+            newRetentionBufferSize = config.getInitialBufferSize();
         }
         else{
             existingDataSize = retentionBuffer.getByteBuffer().position();
-            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * bufferConfig.getBufferExpandRatio());
+            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * config.getBufferExpandRatio());
         }
 
         while (newRetentionBufferSize < (writeSize + existingDataSize)) {
-            newRetentionBufferSize *= bufferConfig.getBufferExpandRatio();
+            newRetentionBufferSize *= config.getBufferExpandRatio();
         }
 
         ByteBuffer acquiredBuffer = bufferPool.acquireBuffer(newRetentionBufferSize);
         if (acquiredBuffer == null) {
-            throw new BufferFullException("Buffer is full. bufferConfig=" + bufferConfig + ", bufferPool=" + bufferPool);
+            throw new BufferFullException("Buffer is full. config=" + config + ", bufferPool=" + bufferPool);
         }
 
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
@@ -146,7 +144,7 @@ public class PackedForwardBuffer
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > bufferConfig.getBufferRetentionSize()) {
+        if (buffer.getByteBuffer().position() > config.getBufferRetentionSize()) {
             moveRetentionBufferToFlushable(tag, buffer);
         }
     }
@@ -154,7 +152,7 @@ public class PackedForwardBuffer
     private void moveRetentionBuffersToFlushable(boolean force)
             throws IOException
     {
-        long expiredThreshold = System.currentTimeMillis() - bufferConfig.getBufferRetentionTimeMillis();
+        long expiredThreshold = System.currentTimeMillis() - config.getBufferRetentionTimeMillis();
 
         synchronized (retentionBuffers) {
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
@@ -203,7 +201,7 @@ public class PackedForwardBuffer
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
                 ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
-                if (bufferConfig.isAckResponseMode()) {
+                if (config.isAckResponseMode()) {
                     messagePacker.packArrayHeader(3);
                 }
                 else {
@@ -216,7 +214,7 @@ public class PackedForwardBuffer
                 try {
                     ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
                     List<ByteBuffer> dataList = Arrays.asList(headerBuffer, byteBuffer);
-                    if (bufferConfig.isAckResponseMode()) {
+                    if (config.isAckResponseMode()) {
                         String uuid = UUID.randomUUID().toString();
                         byte[] uuidBytes = uuid.getBytes(CHARSET);
                         synchronized (sender) {
@@ -345,12 +343,86 @@ public class PackedForwardBuffer
         }
     }
 
-    public static class Config extends Buffer.Config<PackedForwardBuffer, Config>
+    @Override
+    public String toString()
     {
+        return "PackedForwardBuffer{" +
+                "retentionBuffers=" + retentionBuffers +
+                ", flushableBuffers=" + flushableBuffers +
+                ", backupBuffers=" + backupBuffers +
+                ", bufferPool=" + bufferPool +
+                ", config=" + config +
+                "} " + super.toString();
+    }
+
+    public static class Config
+        implements Buffer.Instantiator
+    {
+        private Buffer.Config baseConfig = new Buffer.Config();
         private int initialBufferSize = 1024 * 1024;
         private float bufferExpandRatio = 2.0f;
         private int bufferRetentionSize = 4 * 1024 * 1024;
         private int bufferRetentionTimeMillis = 400;
+
+        public Buffer.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public long getMaxBufferSize()
+        {
+            return baseConfig.getMaxBufferSize();
+        }
+
+        public Config setMaxBufferSize(long maxBufferSize)
+        {
+            baseConfig.setMaxBufferSize(maxBufferSize);
+            return this;
+        }
+
+        public Config setFileBackupPrefix(String fileBackupPrefix)
+        {
+            baseConfig.setFileBackupPrefix(fileBackupPrefix);
+            return this;
+        }
+
+        public Config setFileBackupDir(String fileBackupDir)
+        {
+            baseConfig.setFileBackupDir(fileBackupDir);
+            return this;
+        }
+
+        public Config setAckResponseMode(boolean ackResponseMode)
+        {
+            baseConfig.setAckResponseMode(ackResponseMode);
+            return this;
+        }
+
+        public boolean isAckResponseMode()
+        {
+            return baseConfig.isAckResponseMode();
+        }
+
+        public List<Module> getJacksonModules()
+        {
+            return baseConfig.getJacksonModules();
+        }
+
+        public String getFileBackupPrefix()
+        {
+            return baseConfig.getFileBackupPrefix();
+        }
+
+        public String getFileBackupDir()
+        {
+            return baseConfig.getFileBackupDir();
+        }
+
+        public Config setJacksonModules(List<Module> jacksonModules)
+        {
+            baseConfig.setJacksonModules(jacksonModules);
+            return this;
+        }
 
         public int getInitialBufferSize()
         {
@@ -400,17 +472,25 @@ public class PackedForwardBuffer
         public String toString()
         {
             return "Config{" +
-                    "initialBufferSize=" + initialBufferSize +
+                    "baseConfig=" + baseConfig +
+                    ", initialBufferSize=" + initialBufferSize +
                     ", bufferExpandRatio=" + bufferExpandRatio +
                     ", bufferRetentionSize=" + bufferRetentionSize +
                     ", bufferRetentionTimeMillis=" + bufferRetentionTimeMillis +
-                    "} " + super.toString();
+                    '}';
         }
 
-        @Override
         protected PackedForwardBuffer createInstanceInternal()
         {
             return new PackedForwardBuffer(this);
+        }
+
+        @Override
+        public PackedForwardBuffer createInstance()
+        {
+            PackedForwardBuffer buffer = new PackedForwardBuffer(this);
+            buffer.init();
+            return buffer;
         }
     }
 }
