@@ -164,10 +164,10 @@ public class FluencyTest
                 assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
                 assertThat(buffer.getFileBackupDir(), is(nullValue()));
                 assertThat(buffer.bufferFormatType(), is("packed_forward"));
-                assertThat(buffer.getBufferExpandRatio(), is(2f));
-                assertThat(buffer.getBufferRetentionSize(), is(4 * 1024 * 1024));
-                assertThat(buffer.getInitialBufferSize(), is(1 * 1024 * 1024));
-                assertThat(buffer.getBufferRetentionTimeMillis(), is(400));
+                assertThat(buffer.getChunkExpandRatio(), is(2f));
+                assertThat(buffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
+                assertThat(buffer.getChunkInitialSize(), is(1 * 1024 * 1024));
+                assertThat(buffer.getChunkRetentionTimeMillis(), is(400));
                 assertThat(buffer.isAckResponseMode(), is(false));
 
                 assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
@@ -221,6 +221,8 @@ public class FluencyTest
                         new Fluency.Config()
                                 .setFlushIntervalMillis(200)
                                 .setMaxBufferSize(Long.MAX_VALUE)
+                                .setBufferChunkInitialSize(7 * 1024 * 1024)
+                                .setBufferChunkRetentionSize(13 * 1024 * 1024)
                                 .setSenderMaxRetryCount(99)
                                 .setAckResponseMode(true)
                                 .setFileBackupDir(tmpdir);
@@ -235,10 +237,10 @@ public class FluencyTest
                 assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
                 assertThat(buffer.getFileBackupDir(), is(tmpdir));
                 assertThat(buffer.bufferFormatType(), is("packed_forward"));
-                assertThat(buffer.getBufferExpandRatio(), is(2f));
-                assertThat(buffer.getBufferRetentionSize(), is(4 * 1024 * 1024));
-                assertThat(buffer.getInitialBufferSize(), is(1 * 1024 * 1024));
-                assertThat(buffer.getBufferRetentionTimeMillis(), is(400));
+                assertThat(buffer.getChunkRetentionTimeMillis(), is(400));
+                assertThat(buffer.getChunkExpandRatio(), is(2f));
+                assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
+                assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
                 assertThat(buffer.isAckResponseMode(), is(true));
 
                 assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
@@ -865,7 +867,7 @@ public class FluencyTest
         Sender stuckSender = new StuckSender(latch);
 
         try {
-            PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setInitialBufferSize(64).setMaxBufferSize(256);
+            PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
             Fluency fluency = new Fluency.Builder(stuckSender).setBufferConfig(bufferConfig).build();
             Map<String, Object> event = new HashMap<String, Object>();
             event.put("name", "xxxx");
@@ -919,7 +921,7 @@ public class FluencyTest
 
         PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer
                 .Config()
-                .setInitialBufferSize(64)
+                .setChunkInitialSize(64)
                 .setMaxBufferSize(256)
                 .setJacksonModules(Collections.<Module>singletonList(simpleModule));
 
