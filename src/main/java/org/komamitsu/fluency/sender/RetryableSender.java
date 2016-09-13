@@ -98,7 +98,7 @@ public class RetryableSender
         return retryStrategy;
     }
 
-    public boolean getIsClosed()
+    public boolean isClosed()
     {
         return isClosed.get();
     }
