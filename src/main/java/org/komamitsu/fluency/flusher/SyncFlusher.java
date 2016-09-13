@@ -80,6 +80,11 @@ public class SyncFlusher
         return isTerminated.get();
     }
 
+    public float getBufferOccupancyThreshold()
+    {
+        return config.getBufferOccupancyThreshold();
+    }
+
     @Override
     public String toString()
     {

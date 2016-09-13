@@ -88,6 +88,21 @@ public class RetryableSender
         throw new RetryOverException("Sending data was retried over", firstException);
     }
 
+    public Sender getBaseSender()
+    {
+        return baseSender;
+    }
+
+    public RetryStrategy getRetryStrategy()
+    {
+        return retryStrategy;
+    }
+
+    public boolean isClosed()
+    {
+        return isClosed.get();
+    }
+
     @Override
     public String toString()
     {

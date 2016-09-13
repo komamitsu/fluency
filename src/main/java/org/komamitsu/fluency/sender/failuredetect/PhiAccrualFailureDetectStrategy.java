@@ -6,10 +6,12 @@ public class PhiAccrualFailureDetectStrategy
         extends FailureDetectStrategy
 {
     private final PhiAccuralFailureDetector failureDetector;
+    private final Config config;
 
     protected PhiAccrualFailureDetectStrategy(Config config)
     {
         super(config.getBaseConfig());
+        this.config = config;
         failureDetector = new PhiAccuralFailureDetector.Builder().
                 setThreshold(config.getPhiThreshold()).
                 setMaxSampleSize(config.getArrivalWindowSize()).
@@ -26,6 +28,24 @@ public class PhiAccrualFailureDetectStrategy
     public boolean isAvailable()
     {
         return failureDetector.isAvailable();
+    }
+
+    public double getPhiThreshold()
+    {
+        return config.getPhiThreshold();
+    }
+
+    public int getArrivalWindowSize()
+    {
+        return config.getArrivalWindowSize();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PhiAccrualFailureDetectStrategy{" +
+                "failureDetector=" + failureDetector +
+                "} " + super.toString();
     }
 
     public static class Config

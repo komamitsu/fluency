@@ -9,11 +9,24 @@ public abstract class RetryStrategy
         this.config = config;
     }
 
-    public abstract long getNextIntervalMillis(int retryCount);
+    public abstract int getNextIntervalMillis(int retryCount);
 
     public boolean isRetriedOver(int retryCount)
     {
         return retryCount > config.getMaxRetryCount();
+    }
+
+    public int getMaxRetryCount()
+    {
+        return config.getMaxRetryCount();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RetryStrategy{" +
+                "config=" + config +
+                '}';
     }
 
     public static class Config

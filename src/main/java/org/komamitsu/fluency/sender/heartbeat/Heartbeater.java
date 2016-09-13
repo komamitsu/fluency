@@ -37,16 +37,6 @@ public abstract class Heartbeater
         }, config.getIntervalMillis(), config.getIntervalMillis(), TimeUnit.MILLISECONDS);
     }
 
-    public String getHost()
-    {
-        return config.getHost();
-    }
-
-    public int getPort()
-    {
-        return config.getPort();
-    }
-
     protected abstract void invoke()
             throws IOException;
 
@@ -94,12 +84,26 @@ public abstract class Heartbeater
         }
     }
 
+    public String getHost()
+    {
+        return config.getHost();
+    }
+
+    public int getPort()
+    {
+        return config.getPort();
+    }
+
+    public int getIntervalMillis()
+    {
+        return config.getIntervalMillis();
+    }
+
     @Override
     public String toString()
     {
         return "Heartbeater{" +
                 "config=" + config +
-                ", executorService=" + executorService +
                 '}';
     }
 
