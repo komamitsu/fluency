@@ -40,16 +40,6 @@ public class FailureDetector
         this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance());
     }
 
-    public FailureDetectStrategy getFailureDetectStrategy()
-    {
-        return failureDetectStrategy;
-    }
-
-    public Heartbeater getHeartbeater()
-    {
-        return heartbeater;
-    }
-
     @Override
     public void onHeartbeat()
     {
@@ -83,6 +73,21 @@ public class FailureDetector
         heartbeater.close();
     }
 
+    public FailureDetectStrategy getFailureDetectStrategy()
+    {
+        return failureDetectStrategy;
+    }
+
+    public Heartbeater getHeartbeater()
+    {
+        return heartbeater;
+    }
+
+    public int getFailureIntervalMillis()
+    {
+        return config.getFailureIntervalMillis();
+    }
+
     @Override
     public String toString()
     {
@@ -96,14 +101,14 @@ public class FailureDetector
 
     public static class Config
     {
-        private long failureIntervalMillis = 3 * 1000;
+        private int failureIntervalMillis = 3 * 1000;
 
-        public long getFailureIntervalMillis()
+        public int getFailureIntervalMillis()
         {
             return failureIntervalMillis;
         }
 
-        public void setFailureIntervalMillis(long failureIntervalMillis)
+        public void setFailureIntervalMillis(int failureIntervalMillis)
         {
             this.failureIntervalMillis = failureIntervalMillis;
         }

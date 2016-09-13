@@ -45,19 +45,19 @@ public class MultiSenderTest
                                                     .setPort(24226))
                                     )).createInstance();
 
-            assertEquals(2, multiSender.senders.size());
+            assertEquals(2, multiSender.getSenders().size());
 
-            TCPSender tcpSender = (TCPSender) multiSender.senders.get(0);
+            TCPSender tcpSender = (TCPSender) multiSender.getSenders().get(0);
             assertEquals("127.0.0.1", tcpSender.getHost());
             assertEquals(24225, tcpSender.getPort());
-            assertEquals("127.0.0.1", tcpSender.failureDetector.getHeartbeater().getHost());
-            assertEquals(24225, tcpSender.failureDetector.getHeartbeater().getPort());
+            assertEquals("127.0.0.1", tcpSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24225, tcpSender.getFailureDetector().getHeartbeater().getPort());
 
-            tcpSender = (TCPSender) multiSender.senders.get(1);
+            tcpSender = (TCPSender) multiSender.getSenders().get(1);
             assertEquals("0.0.0.0", tcpSender.getHost());
             assertEquals(24226, tcpSender.getPort());
-            assertEquals("0.0.0.0", tcpSender.failureDetector.getHeartbeater().getHost());
-            assertEquals(24226, tcpSender.failureDetector.getHeartbeater().getPort());
+            assertEquals("0.0.0.0", tcpSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24226, tcpSender.getFailureDetector().getHeartbeater().getPort());
         }
         finally {
             if (multiSender != null) {

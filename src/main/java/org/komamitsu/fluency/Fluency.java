@@ -197,6 +197,16 @@ public class Fluency
         return false;
     }
 
+    public Buffer getBuffer()
+    {
+        return buffer;
+    }
+
+    public Flusher getFlusher()
+    {
+        return flusher;
+    }
+
     @Override
     public String toString()
     {

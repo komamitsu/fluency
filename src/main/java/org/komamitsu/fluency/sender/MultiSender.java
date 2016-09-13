@@ -1,20 +1,19 @@
 package org.komamitsu.fluency.sender;
 
-import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MultiSender
         extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
-    @VisibleForTesting
-    final List<Sender> senders = new ArrayList<Sender>();
+    private final List<Sender> senders = new ArrayList<Sender>();
 
     protected MultiSender(Config config)
     {
@@ -82,6 +81,11 @@ public class MultiSender
         {
             super(s);
         }
+    }
+
+    public List<Sender> getSenders()
+    {
+        return Collections.unmodifiableList(senders);
     }
 
     @Override

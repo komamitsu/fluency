@@ -12,13 +12,23 @@ public class ExponentialBackOffRetryStrategy
     }
 
     @Override
-    public long getNextIntervalMillis(int retryCount)
+    public int getNextIntervalMillis(int retryCount)
     {
-        long interval = config.getBaseIntervalMillis() * ((int) Math.pow(2.0, (double) retryCount));
+        int interval = config.getBaseIntervalMillis() * ((int) Math.pow(2.0, (double) retryCount));
         if (interval > config.getMaxIntervalMillis()) {
             return config.getMaxIntervalMillis();
         }
         return interval;
+    }
+
+    public int getBaseIntervalMillis()
+    {
+        return config.getBaseIntervalMillis();
+    }
+
+    public int getMaxIntervalMillis()
+    {
+        return config.getMaxIntervalMillis();
     }
 
     @Override
@@ -33,8 +43,8 @@ public class ExponentialBackOffRetryStrategy
             implements Instantiator
     {
         private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
-        private long baseIntervalMillis = 400;
-        private long maxIntervalMillis = 30 * 1000;
+        private int baseIntervalMillis = 400;
+        private int maxIntervalMillis = 30 * 1000;
 
         public RetryStrategy.Config getBaseConfig()
         {
@@ -52,23 +62,23 @@ public class ExponentialBackOffRetryStrategy
             return this;
         }
 
-        public long getBaseIntervalMillis()
+        public int getBaseIntervalMillis()
         {
             return baseIntervalMillis;
         }
 
-        public Config setBaseIntervalMillis(long baseIntervalMillis)
+        public Config setBaseIntervalMillis(int baseIntervalMillis)
         {
             this.baseIntervalMillis = baseIntervalMillis;
             return this;
         }
 
-        public long getMaxIntervalMillis()
+        public int getMaxIntervalMillis()
         {
             return maxIntervalMillis;
         }
 
-        public Config setMaxIntervalMillis(long maxIntervalMillis)
+        public Config setMaxIntervalMillis(int maxIntervalMillis)
         {
             this.maxIntervalMillis = maxIntervalMillis;
             return this;

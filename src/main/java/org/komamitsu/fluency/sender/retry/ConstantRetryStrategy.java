@@ -12,7 +12,7 @@ public class ConstantRetryStrategy
     }
 
     @Override
-    public long getNextIntervalMillis(int retryCount)
+    public int getNextIntervalMillis(int retryCount)
     {
         return config.getRetryIntervalMillis();
     }
@@ -29,7 +29,7 @@ public class ConstantRetryStrategy
         implements Instantiator
     {
         private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
-        private long retryIntervalMillis = 2000;
+        private int retryIntervalMillis = 2000;
 
         public RetryStrategy.Config getBaseConfig()
         {
@@ -47,12 +47,12 @@ public class ConstantRetryStrategy
             return this;
         }
 
-        public long getRetryIntervalMillis()
+        public int getRetryIntervalMillis()
         {
             return retryIntervalMillis;
         }
 
-        public Config setRetryIntervalMillis(long retryIntervalMillis)
+        public Config setRetryIntervalMillis(int retryIntervalMillis)
         {
             this.retryIntervalMillis = retryIntervalMillis;
             return this;

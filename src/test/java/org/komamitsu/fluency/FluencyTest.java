@@ -17,9 +17,13 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
+import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
+import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -48,9 +52,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.*;
 
 @RunWith(Theories.class)
@@ -147,16 +154,149 @@ public class FluencyTest
     public void testDefaultFluency()
             throws IOException
     {
-        Fluency.defaultFluency().close();
-        Fluency.defaultFluency(12345).close();
-        Fluency.defaultFluency("333.333.333.333", 12345).close();
-        Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210))).close();
-        Fluency.Config config = new Fluency.Config();
-        config.setFlushIntervalMillis(200).setMaxBufferSize(Long.MAX_VALUE).setSenderMaxRetryCount(99);
-        Fluency.defaultFluency(config).close();
-        Fluency.defaultFluency(12345, config).close();
-        Fluency.defaultFluency("333.333.333.333", 12345, config).close();
-        Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config).close();
+        {
+            Fluency fluency = null;
+            try {
+                fluency = Fluency.defaultFluency();
+
+                assertThat(fluency.getBuffer(), instanceOf(PackedForwardBuffer.class));
+                PackedForwardBuffer buffer = (PackedForwardBuffer) fluency.getBuffer();
+                assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
+                assertThat(buffer.getFileBackupDir(), is(nullValue()));
+                assertThat(buffer.bufferFormatType(), is("packed_forward"));
+                assertThat(buffer.getBufferExpandRatio(), is(2f));
+                assertThat(buffer.getBufferRetentionSize(), is(4 * 1024 * 1024));
+                assertThat(buffer.getInitialBufferSize(), is(1 * 1024 * 1024));
+                assertThat(buffer.getBufferRetentionTimeMillis(), is(400));
+                assertThat(buffer.isAckResponseMode(), is(false));
+
+                assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
+                AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
+                assertThat(flusher.isTerminated(), is(false));
+                assertThat(flusher.getFlushIntervalMillis(), is(600));
+                assertThat(flusher.getWaitAfterClose(), is(10));
+
+                assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
+                RetryableSender retryableSender = (RetryableSender) flusher.getSender();
+                assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
+                ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
+                assertThat(retryStrategy.getMaxRetryCount(), is(7));
+                assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+                assertThat(retryableSender.getBaseSender(), instanceOf(TCPSender.class));
+                TCPSender sender = (TCPSender) retryableSender.getBaseSender();
+                assertThat(sender.getHost(), is("127.0.0.1"));
+                assertThat(sender.getPort(), is(24224));
+                assertThat(sender.getConnectionTimeoutMilli(), is(5000));
+                assertThat(sender.getReadTimeoutMilli(), is(5000));
+
+                FailureDetector failureDetector = sender.getFailureDetector();
+                assertThat(failureDetector, is(nullValue()));
+            }
+            finally {
+                if (fluency != null) {
+                    fluency.close();
+                }
+            }
+        }
+
+        {
+            Fluency.defaultFluency(12345).close();
+            Fluency.defaultFluency("333.333.333.333", 12345).close();
+            Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210))).close();
+            Fluency.Config config = new Fluency.Config();
+            config.setFlushIntervalMillis(200).setMaxBufferSize(Long.MAX_VALUE).setSenderMaxRetryCount(99);
+            Fluency.defaultFluency(config).close();
+            Fluency.defaultFluency(12345, config).close();
+            Fluency.defaultFluency("333.333.333.333", 12345, config).close();
+            Fluency.defaultFluency(Arrays.asList(new InetSocketAddress(43210)), config).close();
+        }
+
+        {
+            Fluency fluency = null;
+            try {
+                String tmpdir = System.getProperty("java.io.tmpdir");
+                assertThat(tmpdir, is(notNullValue()));
+
+                Fluency.Config config =
+                        new Fluency.Config()
+                                .setFlushIntervalMillis(200)
+                                .setMaxBufferSize(Long.MAX_VALUE)
+                                .setSenderMaxRetryCount(99)
+                                .setAckResponseMode(true)
+                                .setFileBackupDir(tmpdir);
+
+                fluency = Fluency.defaultFluency(
+                        Arrays.asList(
+                                new InetSocketAddress("333.333.333.333", 11111),
+                                new InetSocketAddress("444.444.444.444", 22222)), config);
+
+                assertThat(fluency.getBuffer(), instanceOf(PackedForwardBuffer.class));
+                PackedForwardBuffer buffer = (PackedForwardBuffer) fluency.getBuffer();
+                assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
+                assertThat(buffer.getFileBackupDir(), is(tmpdir));
+                assertThat(buffer.bufferFormatType(), is("packed_forward"));
+                assertThat(buffer.getBufferExpandRatio(), is(2f));
+                assertThat(buffer.getBufferRetentionSize(), is(4 * 1024 * 1024));
+                assertThat(buffer.getInitialBufferSize(), is(1 * 1024 * 1024));
+                assertThat(buffer.getBufferRetentionTimeMillis(), is(400));
+                assertThat(buffer.isAckResponseMode(), is(true));
+
+                assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
+                AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
+                assertThat(flusher.isTerminated(), is(false));
+                assertThat(flusher.getFlushIntervalMillis(), is(200));
+                assertThat(flusher.getWaitAfterClose(), is(10));
+
+                assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
+                RetryableSender retryableSender = (RetryableSender) flusher.getSender();
+                assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
+                ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
+                assertThat(retryStrategy.getMaxRetryCount(), is(99));
+                assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+
+                assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
+                MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();
+                assertThat(multiSender.getSenders().size(), is(2));
+
+                assertThat(multiSender.getSenders().get(0), instanceOf(TCPSender.class));
+                {
+                    TCPSender sender = (TCPSender) multiSender.getSenders().get(0);
+                    assertThat(sender.getHost(), is("333.333.333.333"));
+                    assertThat(sender.getPort(), is(11111));
+                    assertThat(sender.getConnectionTimeoutMilli(), is(5000));
+                    assertThat(sender.getReadTimeoutMilli(), is(5000));
+
+                    FailureDetector failureDetector = sender.getFailureDetector();
+                    assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
+                    assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
+                    assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
+                    assertThat(failureDetector.getHeartbeater().getHost(), is("333.333.333.333"));
+                    assertThat(failureDetector.getHeartbeater().getPort(), is(11111));
+                    assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
+                }
+
+                {
+                    TCPSender sender = (TCPSender) multiSender.getSenders().get(1);
+                    assertThat(sender.getHost(), is("444.444.444.444"));
+                    assertThat(sender.getPort(), is(22222));
+                    assertThat(sender.getConnectionTimeoutMilli(), is(5000));
+                    assertThat(sender.getReadTimeoutMilli(), is(5000));
+
+                    FailureDetector failureDetector = sender.getFailureDetector();
+                    assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
+                    assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
+                    assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
+                    assertThat(failureDetector.getHeartbeater().getHost(), is("444.444.444.444"));
+                    assertThat(failureDetector.getHeartbeater().getPort(), is(22222));
+                    assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
+                }
+            }
+            finally {
+                if (fluency != null) {
+                    fluency.close();
+                }
+            }
+        }
     }
 
     @Test

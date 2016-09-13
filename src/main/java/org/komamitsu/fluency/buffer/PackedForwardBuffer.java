@@ -343,6 +343,26 @@ public class PackedForwardBuffer
         }
     }
 
+    public int getInitialBufferSize()
+    {
+        return config.getInitialBufferSize();
+    }
+
+    public float getBufferExpandRatio()
+    {
+        return config.getBufferExpandRatio();
+    }
+
+    public int getBufferRetentionSize()
+    {
+        return config.getBufferRetentionSize();
+    }
+
+    public int getBufferRetentionTimeMillis()
+    {
+        return config.getBufferRetentionTimeMillis();
+    }
+
     @Override
     public String toString()
     {

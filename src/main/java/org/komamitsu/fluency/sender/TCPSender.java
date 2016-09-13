@@ -4,7 +4,6 @@ import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
-import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,18 +35,7 @@ public class TCPSender
     private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
-    @VisibleForTesting
-    final FailureDetector failureDetector;
-
-    public String getHost()
-    {
-        return config.getHost();
-    }
-
-    public int getPort()
-    {
-        return config.getPort();
-    }
+    private final FailureDetector failureDetector;
 
     protected TCPSender(Config config)
     {
@@ -191,14 +179,36 @@ public class TCPSender
         }
     }
 
+    public String getHost()
+    {
+        return config.getHost();
+    }
+
+    public int getPort()
+    {
+        return config.getPort();
+    }
+
+    public int getConnectionTimeoutMilli()
+    {
+        return config.getConnectionTimeoutMilli();
+    }
+
+    public int getReadTimeoutMilli()
+    {
+        return config.getReadTimeoutMilli();
+    }
+
+    public FailureDetector getFailureDetector()
+    {
+        return failureDetector;
+    }
+
     @Override
     public String toString()
     {
         return "TCPSender{" +
                 "channel=" + channel +
-                ", optionBuffer=" + Arrays.toString(optionBuffer) +
-                ", ackTokenSerDe=" + ackTokenSerDe +
-                ", executorService=" + executorService +
                 ", config=" + config +
                 ", failureDetector=" + failureDetector +
                 "} " + super.toString();

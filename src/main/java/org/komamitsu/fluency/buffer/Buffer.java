@@ -124,6 +124,31 @@ public abstract class Buffer
         }
     }
 
+    public long getMaxBufferSize()
+    {
+        return config.getMaxBufferSize();
+    }
+
+    public boolean isAckResponseMode()
+    {
+        return config.isAckResponseMode();
+    }
+
+    public String getFileBackupPrefix()
+    {
+        return config.getFileBackupPrefix();
+    }
+
+    public String getFileBackupDir()
+    {
+        return config.getFileBackupDir();
+    }
+
+    public List<Module> getJacksonModules()
+    {
+        return Collections.unmodifiableList(config.getJacksonModules());
+    }
+
     @Override
     public String toString()
     {

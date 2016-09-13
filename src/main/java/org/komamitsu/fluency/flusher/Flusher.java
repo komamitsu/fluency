@@ -68,6 +68,21 @@ public abstract class Flusher
         buffer.close();
     }
 
+    public Sender getSender()
+    {
+        return sender;
+    }
+
+    public int getFlushIntervalMillis()
+    {
+        return config.getFlushIntervalMillis();
+    }
+
+    public int getWaitAfterClose()
+    {
+        return config.getWaitAfterClose();
+    }
+
     @Override
     public String toString()
     {
