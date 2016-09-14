@@ -1,7 +1,9 @@
 package org.komamitsu.fluency.sender;
 
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.komamitsu.fluency.MockTCPServer;
+import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +18,47 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class TCPSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSenderTest.class);
 
+    interface TCPSenderConfigurator
+    {
+        TCPSender.Config config(int port);
+    }
+
     @Test
     public void testSend()
+            throws IOException, InterruptedException
+    {
+        testSendBase(new TCPSenderConfigurator() {
+            @Override
+            public TCPSender.Config config(int port)
+            {
+                return new TCPSender.Config().setPort(port);
+            }
+        }, is(1), is(1));
+    }
+
+    @Test
+    public void testSendWithHeartbeart()
+            throws IOException, InterruptedException
+    {
+        testSendBase(new TCPSenderConfigurator() {
+            @Override
+            public TCPSender.Config config(int port)
+            {
+                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(500);
+                return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
+            }
+        }, greaterThan(1), greaterThan(1));
+    }
+
+    private void testSendBase(TCPSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
             throws IOException, InterruptedException
     {
         MockTCPServerWithMetrics server = new MockTCPServerWithMetrics();
@@ -32,7 +67,8 @@ public class TCPSenderTest
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
-        final TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).createInstance();
+        TCPSender.Config config = configurator.config(server.getLocalPort());
+        final TCPSender sender = config.createInstance();
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         for (int i = 0; i < concurency; i++) {
             senderExecutorService.execute(new Runnable()
@@ -81,9 +117,9 @@ public class TCPSenderTest
         }
         LOG.debug("recvCount={}", recvCount);
 
-        assertEquals(1, connectCount);
-        assertEquals((long)concurency * reqNum * 10, recvLen);
-        assertEquals(1, closeCount);
+        assertThat(connectCount, connectCountMatcher);
+        assertThat(recvLen, is((long)concurency * reqNum * 10));
+        assertThat(closeCount, closeCountMatcher);
     }
 
     @Test

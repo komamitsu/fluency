@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 public class MultiSenderTest
@@ -44,6 +45,8 @@ public class MultiSenderTest
                                                     .setHost("0.0.0.0")
                                                     .setPort(24226))
                                     )).createInstance();
+
+            assertThat(multiSender.toString().length(), greaterThan(0));
 
             assertEquals(2, multiSender.getSenders().size());
 
