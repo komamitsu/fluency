@@ -52,7 +52,7 @@ public class TCPSenderTest
             @Override
             public TCPSender.Config config(int port)
             {
-                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(500);
+                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
                 return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
             }
         }, greaterThan(1), greaterThan(1));
@@ -69,6 +69,10 @@ public class TCPSenderTest
         final CountDownLatch latch = new CountDownLatch(concurency);
         TCPSender.Config config = configurator.config(server.getLocalPort());
         final TCPSender sender = config.createInstance();
+
+        // To receive heartbeat at least once
+        TimeUnit.MILLISECONDS.sleep(500);
+
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         for (int i = 0; i < concurency; i++) {
             senderExecutorService.execute(new Runnable()
