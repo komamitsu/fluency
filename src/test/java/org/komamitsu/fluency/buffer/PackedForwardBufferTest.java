@@ -32,7 +32,7 @@ public class PackedForwardBufferTest
     public void testGetAllocatedSize()
             throws IOException
     {
-        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setInitialBufferSize(256 * 1024).createInstance();
+        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setChunkInitialSize(256 * 1024).createInstance();
         assertThat(buffer.getAllocatedSize(), is(0L));
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("name", "komamitsu");
@@ -46,7 +46,7 @@ public class PackedForwardBufferTest
     public void testGetBufferedDataSize()
             throws IOException, InterruptedException
     {
-        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setInitialBufferSize(256 * 1024).createInstance();
+        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setChunkInitialSize(256 * 1024).createInstance();
         assertThat(buffer.getBufferedDataSize(), is(0L));
 
         Map<String, Object> map = new HashMap<String, Object>();
@@ -66,7 +66,7 @@ public class PackedForwardBufferTest
     public void testAppendIfItDoesNotThrowBufferOverflow()
             throws IOException
     {
-        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setInitialBufferSize(64 * 1024).createInstance();
+        PackedForwardBuffer buffer = new PackedForwardBuffer.Config().setChunkInitialSize(64 * 1024).createInstance();
 
         StringBuilder buf = new StringBuilder();
 

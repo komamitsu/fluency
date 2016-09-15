@@ -39,7 +39,11 @@ public class PackedForwardBuffer
     {
         super(config.getBaseConfig());
         this.config = config;
-        bufferPool = new BufferPool(config.getInitialBufferSize(), config.getMaxBufferSize());
+        if (config.getChunkInitialSize() > config.getChunkRetentionSize()) {
+            LOG.warn("Initial Buffer Chunk Size ({}) shouldn't be more than Buffer Chunk Retention Size ({}) for better performance.",
+                    config.getChunkInitialSize(), config.getChunkRetentionSize());
+        }
+        bufferPool = new BufferPool(config.getChunkInitialSize(), config.getMaxBufferSize());
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
@@ -51,20 +55,20 @@ public class PackedForwardBuffer
         }
 
         int existingDataSize = 0;
-        int newRetentionBufferSize;
+        int newBufferChunkRetentionSize;
         if (retentionBuffer == null) {
-            newRetentionBufferSize = config.getInitialBufferSize();
+            newBufferChunkRetentionSize = config.getChunkInitialSize();
         }
         else{
             existingDataSize = retentionBuffer.getByteBuffer().position();
-            newRetentionBufferSize = (int) (retentionBuffer.getByteBuffer().capacity() * config.getBufferExpandRatio());
+            newBufferChunkRetentionSize = (int) (retentionBuffer.getByteBuffer().capacity() * config.getChunkExpandRatio());
         }
 
-        while (newRetentionBufferSize < (writeSize + existingDataSize)) {
-            newRetentionBufferSize *= config.getBufferExpandRatio();
+        while (newBufferChunkRetentionSize < (writeSize + existingDataSize)) {
+            newBufferChunkRetentionSize *= config.getChunkExpandRatio();
         }
 
-        ByteBuffer acquiredBuffer = bufferPool.acquireBuffer(newRetentionBufferSize);
+        ByteBuffer acquiredBuffer = bufferPool.acquireBuffer(newBufferChunkRetentionSize);
         if (acquiredBuffer == null) {
             throw new BufferFullException("Buffer is full. config=" + config + ", bufferPool=" + bufferPool);
         }
@@ -144,7 +148,7 @@ public class PackedForwardBuffer
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > config.getBufferRetentionSize()) {
+        if (buffer.getByteBuffer().position() > config.getChunkRetentionSize()) {
             moveRetentionBufferToFlushable(tag, buffer);
         }
     }
@@ -152,7 +156,7 @@ public class PackedForwardBuffer
     private void moveRetentionBuffersToFlushable(boolean force)
             throws IOException
     {
-        long expiredThreshold = System.currentTimeMillis() - config.getBufferRetentionTimeMillis();
+        long expiredThreshold = System.currentTimeMillis() - config.getChunkRetentionTimeMillis();
 
         synchronized (retentionBuffers) {
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
@@ -343,24 +347,24 @@ public class PackedForwardBuffer
         }
     }
 
-    public int getInitialBufferSize()
+    public int getChunkInitialSize()
     {
-        return config.getInitialBufferSize();
+        return config.getChunkInitialSize();
     }
 
-    public float getBufferExpandRatio()
+    public float getChunkExpandRatio()
     {
-        return config.getBufferExpandRatio();
+        return config.getChunkExpandRatio();
     }
 
-    public int getBufferRetentionSize()
+    public int getChunkRetentionSize()
     {
-        return config.getBufferRetentionSize();
+        return config.getChunkRetentionSize();
     }
 
-    public int getBufferRetentionTimeMillis()
+    public int getChunkRetentionTimeMillis()
     {
-        return config.getBufferRetentionTimeMillis();
+        return config.getChunkRetentionTimeMillis();
     }
 
     @Override
@@ -379,10 +383,10 @@ public class PackedForwardBuffer
         implements Buffer.Instantiator
     {
         private Buffer.Config baseConfig = new Buffer.Config();
-        private int initialBufferSize = 1024 * 1024;
-        private float bufferExpandRatio = 2.0f;
-        private int bufferRetentionSize = 4 * 1024 * 1024;
-        private int bufferRetentionTimeMillis = 400;
+        private int chunkInitialSize = 1024 * 1024;
+        private float chunkExpandRatio = 2.0f;
+        private int chunkRetentionSize = 4 * 1024 * 1024;
+        private int chunkRetentionTimeMillis = 400;
 
         public Buffer.Config getBaseConfig()
         {
@@ -444,47 +448,47 @@ public class PackedForwardBuffer
             return this;
         }
 
-        public int getInitialBufferSize()
+        public int getChunkInitialSize()
         {
-            return initialBufferSize;
+            return chunkInitialSize;
         }
 
-        public Config setInitialBufferSize(int initialBufferSize)
+        public Config setChunkInitialSize(int chunkInitialSize)
         {
-            this.initialBufferSize = initialBufferSize;
+            this.chunkInitialSize = chunkInitialSize;
             return this;
         }
 
-        public float getBufferExpandRatio()
+        public float getChunkExpandRatio()
         {
-            return bufferExpandRatio;
+            return chunkExpandRatio;
         }
 
-        public Config setBufferExpandRatio(float bufferExpandRatio)
+        public Config setChunkExpandRatio(float chunkExpandRatio)
         {
-            this.bufferExpandRatio = bufferExpandRatio;
+            this.chunkExpandRatio = chunkExpandRatio;
             return this;
         }
 
-        public int getBufferRetentionSize()
+        public int getChunkRetentionSize()
         {
-            return bufferRetentionSize;
+            return chunkRetentionSize;
         }
 
-        public Config setBufferRetentionSize(int bufferRetentionSize)
+        public Config setChunkRetentionSize(int chunkRetentionSize)
         {
-            this.bufferRetentionSize = bufferRetentionSize;
+            this.chunkRetentionSize = chunkRetentionSize;
             return this;
         }
 
-        public int getBufferRetentionTimeMillis()
+        public int getChunkRetentionTimeMillis()
         {
-            return bufferRetentionTimeMillis;
+            return chunkRetentionTimeMillis;
         }
 
-        public Config setBufferRetentionTimeMillis(int bufferRetentionTimeMillis)
+        public Config setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
         {
-            this.bufferRetentionTimeMillis = bufferRetentionTimeMillis;
+            this.chunkRetentionTimeMillis = chunkRetentionTimeMillis;
             return this;
         }
 
@@ -493,10 +497,10 @@ public class PackedForwardBuffer
         {
             return "Config{" +
                     "baseConfig=" + baseConfig +
-                    ", initialBufferSize=" + initialBufferSize +
-                    ", bufferExpandRatio=" + bufferExpandRatio +
-                    ", bufferRetentionSize=" + bufferRetentionSize +
-                    ", bufferRetentionTimeMillis=" + bufferRetentionTimeMillis +
+                    ", chunkInitialSize=" + chunkInitialSize +
+                    ", chunkExpandRatio=" + chunkExpandRatio +
+                    ", chunkRetentionSize=" + chunkRetentionSize +
+                    ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
                     '}';
         }
 

@@ -41,6 +41,12 @@ public class Fluency
         if (config != null && config.getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
         }
+        if (config != null && config.getBufferChunkInitialSize() != null) {
+            bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
+        }
+        if (config != null && config.getBufferChunkRetentionSize() != null) {
+            bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
+        }
         if (config != null) {
             bufferConfig.setAckResponseMode(config.isAckResponseMode());
         }
@@ -254,6 +260,10 @@ public class Fluency
     {
         private Long maxBufferSize;
 
+        private Integer bufferChunkInitialSize;
+
+        private Integer bufferChunkRetentionSize;
+
         private Integer flushIntervalMillis;
 
         private Integer senderMaxRetryCount;
@@ -270,6 +280,28 @@ public class Fluency
         public Config setMaxBufferSize(Long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
+            return this;
+        }
+
+        public Integer getBufferChunkInitialSize()
+        {
+            return bufferChunkInitialSize;
+        }
+
+        public Config setBufferChunkInitialSize(Integer bufferChunkInitialSize)
+        {
+            this.bufferChunkInitialSize = bufferChunkInitialSize;
+            return this;
+        }
+
+        public Integer getBufferChunkRetentionSize()
+        {
+            return bufferChunkRetentionSize;
+        }
+
+        public Config setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
+        {
+            this.bufferChunkRetentionSize = bufferChunkRetentionSize;
             return this;
         }
 
@@ -322,6 +354,8 @@ public class Fluency
         {
             return "Config{" +
                     "maxBufferSize=" + maxBufferSize +
+                    ", bufferChunkInitialSize=" + bufferChunkInitialSize +
+                    ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
                     ", flushIntervalMillis=" + flushIntervalMillis +
                     ", senderMaxRetryCount=" + senderMaxRetryCount +
                     ", ackResponseMode=" + ackResponseMode +
