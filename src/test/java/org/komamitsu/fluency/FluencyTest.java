@@ -643,13 +643,6 @@ public class FluencyTest
             else {
                 fluency.get().flush();
             }
-            for (int i = 0; i < 20; i++) {
-                TimeUnit.MILLISECONDS.sleep(500);
-                LOG.debug("BufferedDataSize is {}", fluency.get().getBufferedDataSize());
-                if (fluency.get().getBufferedDataSize() == 0) {
-                    break;
-                }
-            }
 
             fluentd.stop();
             secondaryFluentd.stop();
@@ -960,7 +953,6 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
@@ -996,7 +988,6 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
@@ -1025,20 +1016,9 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
         }
         finally {
             fluency.close();
         }
-
-        for (int i = 0; i < 60; i++) {
-            if (fluency.isTerminated()) {
-                LOG.info("Fluency is terminated successfully");
-                return;
-            }
-            LOG.debug("Fluency is still running");
-            TimeUnit.SECONDS.sleep(1);
-        }
-        LOG.warn("Fluency isn't terminated yet");
     }
 }

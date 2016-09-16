@@ -28,6 +28,9 @@ public class Fluency
     private static final Logger LOG = LoggerFactory.getLogger(Fluency.class);
     private final Buffer buffer;
     private final Flusher flusher;
+    private final int maxWaitUntilBufferFlushedSeconds;
+    private final int maxWaitUntilFlusherTerminatedSeconds;
+
 
     public static Fluency defaultFluency(String host, int port, Config config)
             throws IOException
@@ -69,10 +72,20 @@ public class Fluency
                         .setRetryStrategyConfig(retryStrategyConfig)
                         .createInstance();
 
-        return new Fluency.Builder(retryableSender)
-                .setBufferConfig(bufferConfig)
-                .setFlusherConfig(flusherConfig)
-                .build();
+        Builder builder =
+                new Builder(retryableSender)
+                        .setBufferConfig(bufferConfig)
+                        .setFlusherConfig(flusherConfig);
+
+        if (config != null && config.getMaxWaitUntilBufferFlushedSeconds() != null) {
+            builder.setMaxWaitUntilBufferFlushedSeconds(config.getMaxWaitUntilBufferFlushedSeconds());
+        }
+
+        if (config != null && config.getMaxWaitUntilFlusherTerminatedSeconds() != null) {
+            builder.setMaxWaitUntilFlusherTerminatedSeconds(config.getMaxWaitUntilFlusherTerminatedSeconds());
+        }
+
+        return builder.build();
     }
 
     public static Fluency defaultFluency(int port, Config config)
@@ -128,10 +141,14 @@ public class Fluency
         return defaultFluency(servers, null);
     }
 
-    private Fluency(Buffer buffer, Flusher flusher)
+    private Fluency(Buffer buffer, Flusher flusher,
+            int maxWaitUntilBufferFlushedSeconds,
+            int maxWaitUntilFlusherTerminatedSeconds)
     {
         this.buffer = buffer;
         this.flusher = flusher;
+        this.maxWaitUntilBufferFlushedSeconds = maxWaitUntilBufferFlushedSeconds;
+        this.maxWaitUntilFlusherTerminatedSeconds = maxWaitUntilFlusherTerminatedSeconds;
     }
 
     public void emit(String tag, long timestamp, Map<String, Object> data)
@@ -165,7 +182,27 @@ public class Fluency
     public void close()
             throws IOException
     {
+        if (maxWaitUntilBufferFlushedSeconds > 0) {
+            try {
+                waitUntilFlushingAllBuffer(maxWaitUntilBufferFlushedSeconds);
+            }
+            catch (InterruptedException e) {
+                LOG.warn("Interrupted when flushing all buffer", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+
         flusher.close();
+
+        if (maxWaitUntilFlusherTerminatedSeconds > 0) {
+            try {
+                waitUntilFlusherTerminated(maxWaitUntilFlusherTerminatedSeconds);
+            }
+            catch (InterruptedException e) {
+                LOG.warn("Interrupted when waiting the flusher's termination", e);
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public void clearBackupFiles()
@@ -203,6 +240,22 @@ public class Fluency
         return false;
     }
 
+    public boolean waitUntilFlusherTerminated(int maxWaitSeconds)
+            throws InterruptedException
+    {
+        for (int i = 0; i < maxWaitSeconds; i++) {
+            boolean terminated = isTerminated();
+            LOG.info("Waiting for the flusher is terminated: {}", terminated);
+            if (terminated) {
+                return true;
+            }
+            TimeUnit.SECONDS.sleep(1);
+        }
+        LOG.warn("The flusher isn't terminated");
+        return false;
+    }
+
+
     public Buffer getBuffer()
     {
         return buffer;
@@ -224,9 +277,13 @@ public class Fluency
 
     public static class Builder
     {
+        private static final int DEFAULT_MAX_WAIT_UNTIL_BUFFER_FLUSHED_SECONDS = 30;
+        private static final int DEFAULT_MAX_WAIT_UNTIL_FLUSHER_TERMINATED_SECONDS = 30;
         private final Sender sender;
         private Buffer.Instantiator bufferConfig;
         private Flusher.Instantiator flusherConfig;
+        private Integer maxWaitUntilBufferFlushedSeconds;
+        private Integer maxWaitUntilFlusherTerminatedSeconds;
 
         public Builder(Sender sender)
         {
@@ -245,14 +302,33 @@ public class Fluency
             return this;
         }
 
+        public Builder setMaxWaitUntilBufferFlushedSeconds(Integer maxWaitUntilBufferFlushedSeconds)
+        {
+            this.maxWaitUntilBufferFlushedSeconds = maxWaitUntilBufferFlushedSeconds;
+            return this;
+        }
+
+        public Builder setMaxWaitUntilFlusherTerminatedSeconds(Integer maxWaitUntilFlusherTerminatedSeconds)
+        {
+            this.maxWaitUntilFlusherTerminatedSeconds = maxWaitUntilFlusherTerminatedSeconds;
+            return this;
+        }
+
         public Fluency build()
         {
             Buffer.Instantiator bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
             Buffer buffer = bufferConfig.createInstance();
             Flusher.Instantiator flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
             Flusher flusher = flusherConfig.createInstance(buffer, sender);
+            int maxWaitUntilBufferFlushedSeconds =
+                    this.maxWaitUntilBufferFlushedSeconds != null ?
+                            this.maxWaitUntilBufferFlushedSeconds : DEFAULT_MAX_WAIT_UNTIL_BUFFER_FLUSHED_SECONDS;
+            int maxWaitUntilFlusherTerminatedSeconds =
+                    this.maxWaitUntilFlusherTerminatedSeconds != null ?
+                            this.maxWaitUntilFlusherTerminatedSeconds : DEFAULT_MAX_WAIT_UNTIL_FLUSHER_TERMINATED_SECONDS;
 
-            return new Fluency(buffer, flusher);
+            return new Fluency(buffer, flusher,
+                    maxWaitUntilBufferFlushedSeconds, maxWaitUntilFlusherTerminatedSeconds);
         }
     }
 
@@ -271,6 +347,10 @@ public class Fluency
         private boolean ackResponseMode;
 
         private String fileBackupDir;
+
+        private Integer maxWaitUntilBufferFlushedSeconds;
+
+        private Integer maxWaitUntilFlusherTerminatedSeconds;
 
         public Long getMaxBufferSize()
         {
@@ -349,6 +429,28 @@ public class Fluency
             return this;
         }
 
+        public Integer getMaxWaitUntilBufferFlushedSeconds()
+        {
+            return maxWaitUntilBufferFlushedSeconds;
+        }
+
+        public Config setMaxWaitUntilBufferFlushedSeconds(Integer maxWaitUntilBufferFlushedSeconds)
+        {
+            this.maxWaitUntilBufferFlushedSeconds = maxWaitUntilBufferFlushedSeconds;
+            return this;
+        }
+
+        public Integer getMaxWaitUntilFlusherTerminatedSeconds()
+        {
+            return maxWaitUntilFlusherTerminatedSeconds;
+        }
+
+        public Config setMaxWaitUntilFlusherTerminatedSeconds(Integer maxWaitUntilFlusherTerminatedSeconds)
+        {
+            this.maxWaitUntilFlusherTerminatedSeconds = maxWaitUntilFlusherTerminatedSeconds;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -360,6 +462,8 @@ public class Fluency
                     ", senderMaxRetryCount=" + senderMaxRetryCount +
                     ", ackResponseMode=" + ackResponseMode +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
+                    ", maxWaitUntilBufferFlushedSeconds=" + maxWaitUntilBufferFlushedSeconds +
+                    ", maxWaitUntilFlusherTerminatedSeconds=" + maxWaitUntilFlusherTerminatedSeconds +
                     '}';
         }
     }
