@@ -8,12 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestableBuffer
@@ -30,10 +32,12 @@ public class TestableBuffer
     private final AtomicInteger allocatedSize = new AtomicInteger();
     private final List<Tuple<List<String>, ByteBuffer>> savableBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
     private final List<Tuple<List<String>, ByteBuffer>> loadedBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
+    private final Config config;
 
-    private TestableBuffer(Config bufferConfig)
+    private TestableBuffer(Config config)
     {
-        super(bufferConfig.getBaseConfig());
+        super(config.getBaseConfig());
+        this.config = config;
     }
 
     public void setSavableBuffer(List<String> params, ByteBuffer buffer)
@@ -75,6 +79,23 @@ public class TestableBuffer
     public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
+        if (config.getWaitBeforeFlushMillis() > 0) {
+            long start = System.currentTimeMillis();
+            try {
+                TimeUnit.MILLISECONDS.sleep(config.getWaitBeforeFlushMillis());
+            }
+            catch (InterruptedException e) {
+                long rest = config.getWaitBeforeFlushMillis() - (System.currentTimeMillis() - start);
+                if (rest > 0) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(rest);
+                    }
+                    catch (InterruptedException e1) {
+                    }
+                }
+            }
+        }
+
         if (force) {
             forceFlushCount.incrementAndGet();
         }
@@ -138,6 +159,7 @@ public class TestableBuffer
         implements Buffer.Instantiator
     {
         private final Buffer.Config baseConfig = new Buffer.Config();
+        private int waitBeforeFlushMillis;
 
         public Buffer.Config getBaseConfig()
         {
@@ -196,6 +218,17 @@ public class TestableBuffer
         public Buffer.Config setJacksonModules(List<Module> jacksonModules)
         {
             return baseConfig.setJacksonModules(jacksonModules);
+        }
+
+        public int getWaitBeforeFlushMillis()
+        {
+            return waitBeforeFlushMillis;
+        }
+
+        public Config setWaitBeforeFlushMillis(int waitBeforeFlushMillis)
+        {
+            this.waitBeforeFlushMillis = waitBeforeFlushMillis;
+            return this;
         }
 
         @Override

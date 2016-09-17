@@ -28,6 +28,7 @@ public class SyncFlusher
     {
         super(buffer, sender, config.getBaseConfig());
         this.config = config;
+        lastFlushTimeMillis.set(System.currentTimeMillis());
     }
 
     @Override

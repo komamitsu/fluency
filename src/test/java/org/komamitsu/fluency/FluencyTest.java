@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -343,6 +344,54 @@ public class FluencyTest
         assertThat(fluency.getAllocatedBufferSize(), is(TestableBuffer.ALLOC_SIZE * 10000L));
     }
 
+    @Test
+    public void testWaitUntilFlusherTerminated()
+            throws IOException, InterruptedException
+    {
+        {
+            Sender sender = new MockTCPSender(24224);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(1200);
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            fluency.emit("foo.bar", new HashMap<String, Object>());
+            fluency.close();
+            assertThat(fluency.waitUntilFlusherTerminated(1), is(false));
+        }
+
+        {
+            Sender sender = new MockTCPSender(24224);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(1200);
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            fluency.emit("foo.bar", new HashMap<String, Object>());
+            fluency.close();
+            assertThat(fluency.waitUntilFlusherTerminated(2), is(true));
+        }
+    }
+
+    @Test
+    public void testWaitUntilFlushingAllBuffer()
+            throws IOException, InterruptedException
+    {
+        {
+            Sender sender = new MockTCPSender(24224);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            fluency.emit("foo.bar", new HashMap<String, Object>());
+            assertThat(fluency.waitUntilFlushingAllBuffer(2), is(true));
+        }
+
+        {
+            Sender sender = new MockTCPSender(24224);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
+            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            fluency.emit("foo.bar", new HashMap<String, Object>());
+            assertThat(fluency.waitUntilFlushingAllBuffer(1), is(false));
+        }
+    }
+
     interface FluencyFactory
     {
         Fluency generate(List<Integer> localPort)
@@ -643,13 +692,7 @@ public class FluencyTest
             else {
                 fluency.get().flush();
             }
-            for (int i = 0; i < 20; i++) {
-                TimeUnit.MILLISECONDS.sleep(500);
-                LOG.debug("BufferedDataSize is {}", fluency.get().getBufferedDataSize());
-                if (fluency.get().getBufferedDataSize() == 0) {
-                    break;
-                }
-            }
+            fluency.get().waitUntilFlushingAllBuffer(10);
 
             fluentd.stop();
             secondaryFluentd.stop();
@@ -1031,14 +1074,7 @@ public class FluencyTest
             fluency.close();
         }
 
-        for (int i = 0; i < 60; i++) {
-            if (fluency.isTerminated()) {
-                LOG.info("Fluency is terminated successfully");
-                return;
-            }
-            LOG.debug("Fluency is still running");
-            TimeUnit.SECONDS.sleep(1);
-        }
+        fluency.waitUntilFlusherTerminated(60);
         LOG.warn("Fluency isn't terminated yet");
     }
 }
