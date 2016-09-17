@@ -3,12 +3,11 @@ package org.komamitsu.fluency.sender;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MockTCPSender extends TCPSender
+public class MockTCPSender
+        extends TCPSender
 {
     private final List<ByteBuffer> events = new ArrayList<ByteBuffer>();
     private final AtomicInteger closeCount = new AtomicInteger();
@@ -26,17 +25,10 @@ public class MockTCPSender extends TCPSender
     }
 
     @Override
-    public synchronized void send(List<ByteBuffer> dataList)
+    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
         events.addAll(dataList);
-    }
-
-    @Override
-    public synchronized void send(ByteBuffer data)
-            throws IOException
-    {
-        events.add(data);
     }
 
     @Override

@@ -191,15 +191,32 @@ public class Fluency
     public boolean waitUntilFlushingAllBuffer(int maxWaitSeconds)
             throws InterruptedException
     {
-        for (int i = 0; i < maxWaitSeconds; i++) {
+        int intervalMilli = 500;
+        for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
             long bufferedDataSize = getBufferedDataSize();
             LOG.info("Waiting for flushing all buffer: {}", bufferedDataSize);
             if (getBufferedDataSize() == 0) {
                 return true;
             }
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(intervalMilli);
         }
         LOG.warn("Buffered data still remains: {}", getBufferedDataSize());
+        return false;
+    }
+
+    public boolean waitUntilFlusherTerminated(int maxWaitSeconds)
+            throws InterruptedException
+    {
+        int intervalMilli = 500;
+            for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
+            boolean terminated = isTerminated();
+            LOG.info("Waiting until the flusher is terminated: {}", terminated);
+            if (terminated) {
+                return true;
+            }
+            TimeUnit.MILLISECONDS.sleep(intervalMilli);
+        }
+        LOG.warn("The flusher isn't terminated");
         return false;
     }
 
