@@ -349,7 +349,7 @@ public class FluencyTest
     {
         {
             Sender sender = new MockTCPSender(24224);
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(1200);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(2000);
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             fluency.emit("foo.bar", new HashMap<String, Object>());
@@ -359,12 +359,12 @@ public class FluencyTest
 
         {
             Sender sender = new MockTCPSender(24224);
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(1200);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(2000);
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             fluency.emit("foo.bar", new HashMap<String, Object>());
             fluency.close();
-            assertThat(fluency.waitUntilFlusherTerminated(2), is(true));
+            assertThat(fluency.waitUntilFlusherTerminated(3), is(true));
         }
     }
 
@@ -375,12 +375,12 @@ public class FluencyTest
         {
             Sender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
                 fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
                 fluency.emit("foo.bar", new HashMap<String, Object>());
-                assertThat(fluency.waitUntilAllBufferFlushed(2), is(true));
+                assertThat(fluency.waitUntilAllBufferFlushed(3), is(true));
             }
             finally {
                 if (fluency != null) {
@@ -392,7 +392,7 @@ public class FluencyTest
         {
             Sender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
                 fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
