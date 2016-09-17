@@ -16,18 +16,18 @@ public class AsyncFlusher
         extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
-    private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
+    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<Boolean>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
     private final Runnable task = new Runnable() {
             @Override
             public void run()
             {
-                Event event = null;
+                Boolean wakeup = null;
                 while (!executorService.isShutdown()) {
                     try {
-                        event = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
-                        boolean force = event != null;
+                        wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                        boolean force = wakeup != null;
                         buffer.flush(sender, force);
                     }
                     catch (InterruptedException e) {
@@ -36,28 +36,26 @@ public class AsyncFlusher
                     catch (IOException e) {
                         LOG.error("Failed to flush", e);
                     }
-
-                    if (event == Event.CLOSE) {
-                        break;
-                    }
                 }
 
-                try {
-                    if (event != Event.CLOSE) {
+                if (wakeup == null) {
+                    // The above run loop can quit without force buffer flush in the following cases
+                    // - close() is called right after the constructor is called.
+                    // - close() is called right after the repeated non-force buffer flush executed in the run loop
+                    //
+                    // In these cases, remaining buffers wont't be flushed.
+                    // So force buffer flush is executed here just in case
+                    try {
                         buffer.flush(sender, true);
                     }
+                    catch (IOException e) {
+                        LOG.error("Failed to flush", e);
+                    }
                 }
-                catch (IOException e) {
-                    LOG.error("Failed to flush", e);
-                }
+
                 closeBuffer();
             }
         };
-
-    private enum Event
-    {
-        FORCE_FLUSH, CLOSE;
-    }
 
     private AsyncFlusher(final Buffer buffer, final Sender sender, final Config config)
     {
@@ -72,7 +70,7 @@ public class AsyncFlusher
     {
         if (force) {
             try {
-                eventQueue.put(Event.FORCE_FLUSH);
+                eventQueue.put(true);
             }
             catch (InterruptedException e) {
                 LOG.warn("Failed to force flushing buffer", e);
@@ -85,7 +83,7 @@ public class AsyncFlusher
             throws IOException
     {
         try {
-            eventQueue.put(Event.CLOSE);
+            eventQueue.put(true);
         }
         catch (InterruptedException e) {
             LOG.warn("Failed to close buffer", e);
