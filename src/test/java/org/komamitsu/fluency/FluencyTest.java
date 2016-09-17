@@ -377,18 +377,34 @@ public class FluencyTest
             Sender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            fluency.emit("foo.bar", new HashMap<String, Object>());
-            assertThat(fluency.waitUntilFlushingAllBuffer(2), is(true));
+            Fluency fluency = null;
+            try {
+                fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+                fluency.emit("foo.bar", new HashMap<String, Object>());
+                assertThat(fluency.waitUntilFlushingAllBuffer(2), is(true));
+            }
+            finally {
+                if (fluency != null) {
+                    fluency.close();
+                }
+            }
         }
 
         {
             Sender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(1200);
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            fluency.emit("foo.bar", new HashMap<String, Object>());
-            assertThat(fluency.waitUntilFlushingAllBuffer(1), is(false));
+            Fluency fluency = null;
+            try {
+                fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+                fluency.emit("foo.bar", new HashMap<String, Object>());
+                assertThat(fluency.waitUntilFlushingAllBuffer(1), is(false));
+            }
+            finally {
+                if (fluency != null) {
+                    fluency.close();
+                }
+            }
         }
     }
 
