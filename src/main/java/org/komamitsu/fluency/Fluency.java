@@ -188,7 +188,7 @@ public class Fluency
         return flusher.isTerminated();
     }
 
-    public boolean waitUntilFlushingAllBuffer(int maxWaitSeconds)
+    public boolean waitUntilAllBufferFlushed(int maxWaitSeconds)
             throws InterruptedException
     {
         int intervalMilli = 500;

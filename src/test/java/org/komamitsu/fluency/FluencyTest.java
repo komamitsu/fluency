@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -381,7 +380,7 @@ public class FluencyTest
             try {
                 fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
                 fluency.emit("foo.bar", new HashMap<String, Object>());
-                assertThat(fluency.waitUntilFlushingAllBuffer(2), is(true));
+                assertThat(fluency.waitUntilAllBufferFlushed(2), is(true));
             }
             finally {
                 if (fluency != null) {
@@ -398,7 +397,7 @@ public class FluencyTest
             try {
                 fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
                 fluency.emit("foo.bar", new HashMap<String, Object>());
-                assertThat(fluency.waitUntilFlushingAllBuffer(1), is(false));
+                assertThat(fluency.waitUntilAllBufferFlushed(1), is(false));
             }
             finally {
                 if (fluency != null) {
@@ -708,7 +707,7 @@ public class FluencyTest
             else {
                 fluency.get().flush();
             }
-            fluency.get().waitUntilFlushingAllBuffer(10);
+            fluency.get().waitUntilAllBufferFlushed(10);
 
             fluentd.stop();
             secondaryFluentd.stop();
@@ -1019,7 +1018,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
+            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
@@ -1055,7 +1054,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
+            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
@@ -1084,7 +1083,7 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilFlushingAllBuffer(60);
+            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
