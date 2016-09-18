@@ -1,3 +1,38 @@
+## 1.0.0 (2016-09-19)
+
+Features:
+
+- Add shadow jar to avoid jackson version incompatibility
+- Support Jackson module registration to take care of https://github.com/komamitsu/fluency/issues/30
+- Add Fluency.Config#setBufferChunkInitialSize and setBufferChunkRetentionSize
+- Add Fluency#waitUntilFlusherTerminated
+- Add Fluency.Config#setWaitUntilBufferFlushed and setWaitUntilFlusherTerminated
+- Make Flusher appropriately wait until all buffers flushed
+
+Refactoring:
+- Rename Fluency#waitUntilFlushingAllBuffer to waitUntilAllBufferFlushed
+- Remove ThreadLocal from PackedForwardBuffer
+- Move FailureDetector to TCPSender from MultiSender
+- Simplify Xxxxx.Config classes to address https://github.com/komamitsu/fluency/pull/33
+- Simplify AsyncFlusher
+- Improve the close sequence of Flusher, Buffer and Sender
+
+## 0.0.12 (2016-08-08)
+
+Optimizations:
+
+- Reuse instances and reduce scope of Synchronization PackedForwardBuffer
+
+Bugfixes:
+
+- Fix bug PackedForwardBuffer#append occationally throws BufferOverflow exception
+
+## 0.0.11 (2016-05-30)
+
+Bugfixes:
+
+- Fix bug PackedForwardBuffer#append occationally throws BufferOverflow exception
+
 ## 0.0.10 (2016-04-11)
 
 Features:
