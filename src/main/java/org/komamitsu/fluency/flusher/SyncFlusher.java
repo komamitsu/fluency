@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SyncFlusher
@@ -21,7 +20,6 @@ public class SyncFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(SyncFlusher.class);
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
-    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
 
     private SyncFlusher(Buffer buffer, Sender sender, Config config)
@@ -45,7 +43,7 @@ public class SyncFlusher
     }
 
     @Override
-    protected void closeInternal()
+    protected void beforeClosingBuffer()
             throws IOException
     {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -60,10 +58,11 @@ public class SyncFlusher
             }
         });
         try {
-            future.get(config.getWaitAfterClose(), TimeUnit.SECONDS);
+            future.get(config.getWaitUntilBufferFlushed(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("Interrupted", e);
+            Thread.currentThread().interrupt();
         }
         catch (ExecutionException e) {
             LOG.warn("flushInternal() failed", e);
@@ -71,14 +70,6 @@ public class SyncFlusher
         catch (TimeoutException e) {
             LOG.warn("flushInternal() timed out", e);
         }
-        closeBuffer();
-        isTerminated.set(true);
-    }
-
-    @Override
-    public boolean isTerminated()
-    {
-        return isTerminated.get();
     }
 
     public float getBufferOccupancyThreshold()
@@ -91,7 +82,6 @@ public class SyncFlusher
     {
         return "SyncFlusher{" +
                 "lastFlushTimeMillis=" + lastFlushTimeMillis +
-                ", isTerminated=" + isTerminated +
                 ", config=" + config +
                 "} " + super.toString();
     }
@@ -113,20 +103,31 @@ public class SyncFlusher
             return baseConfig.getFlushIntervalMillis();
         }
 
-        public int getWaitAfterClose()
-        {
-            return baseConfig.getWaitAfterClose();
-        }
-
-        public Config setWaitAfterClose(int waitAfterClose)
-        {
-            baseConfig.setWaitAfterClose(waitAfterClose);
-            return this;
-        }
-
         public Config setFlushIntervalMillis(int flushIntervalMillis)
         {
             baseConfig.setFlushIntervalMillis(flushIntervalMillis);
+            return this;
+        }
+
+        public int getWaitUntilBufferFlushed()
+        {
+            return baseConfig.getWaitUntilBufferFlushed();
+        }
+
+        public Config setWaitUntilBufferFlushed(int wait)
+        {
+            baseConfig.setWaitUntilBufferFlushed(wait);
+            return this;
+        }
+
+        public int getWaitUntilTerminated()
+        {
+            return baseConfig.getWaitUntilTerminated();
+        }
+
+        public Config setWaitUntilTerminated(int wait)
+        {
+            baseConfig.setWaitUntilTerminated(wait);
             return this;
         }
 

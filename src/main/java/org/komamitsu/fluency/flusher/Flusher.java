@@ -8,11 +8,20 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
+    private final AtomicBoolean isTerminated = new AtomicBoolean();
     protected final Buffer buffer;
     protected final Sender sender;
     private final Config config;
@@ -32,7 +41,7 @@ public abstract class Flusher
     protected abstract void flushInternal(boolean force)
             throws IOException;
 
-    protected abstract void closeInternal()
+    protected abstract void beforeClosingBuffer()
             throws IOException;
 
     public void onUpdate()
@@ -53,16 +62,55 @@ public abstract class Flusher
             throws IOException
     {
         try {
-            closeInternal();
+            beforeClosingBuffer();
+        }
+        catch (Exception e) {
+            LOG.error("Failed to call beforeClosingBuffer()", e);
         }
         finally {
-            sender.close();
+            try {
+                sender.close();
+            }
+            catch (Exception e) {
+                LOG.error("Failed to close the sender", e);
+            }
+            finally {
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<Void> future = executor.submit(new Callable<Void>()
+                {
+                    @Override
+                    public Void call()
+                            throws Exception
+                    {
+                        closeBuffer();
+                        isTerminated.set(true);
+                        return null;
+                    }
+                });
+
+                try {
+                    future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e) {
+                    LOG.warn("Interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
+                catch (ExecutionException e) {
+                    LOG.warn("closeBuffer() failed", e);
+                }
+                catch (TimeoutException e) {
+                    LOG.warn("closeBuffer() timed out", e);
+                }
+            }
         }
     }
 
-    public abstract boolean isTerminated();
+    public boolean isTerminated()
+    {
+        return isTerminated.get();
+    }
 
-    protected void closeBuffer()
+    private void closeBuffer()
     {
         LOG.trace("closeBuffer(): closing buffer");
         buffer.close();
@@ -78,16 +126,22 @@ public abstract class Flusher
         return config.getFlushIntervalMillis();
     }
 
-    public int getWaitAfterClose()
+    public int getWaitUntilBufferFlushed()
     {
-        return config.getWaitAfterClose();
+        return config.getWaitUntilBufferFlushed();
+    }
+
+    public int getWaitUntilTerminated()
+    {
+        return config.getWaitUntilTerminated();
     }
 
     @Override
     public String toString()
     {
         return "Flusher{" +
-                "buffer=" + buffer +
+                "isTerminated=" + isTerminated +
+                ", buffer=" + buffer +
                 ", sender=" + sender +
                 ", config=" + config +
                 '}';
@@ -96,7 +150,8 @@ public abstract class Flusher
     public static class Config
     {
         private int flushIntervalMillis = 600;
-        private int waitAfterClose = 10;
+        private int waitUntilBufferFlushed = 10;
+        private int waitUntilTerminated = 10;
 
         public int getFlushIntervalMillis()
         {
@@ -109,14 +164,25 @@ public abstract class Flusher
             return this;
         }
 
-        public int getWaitAfterClose()
+        public int getWaitUntilBufferFlushed()
         {
-            return waitAfterClose;
+            return waitUntilBufferFlushed;
         }
 
-        public Config setWaitAfterClose(int waitAfterClose)
+        public Config setWaitUntilBufferFlushed(int waitUntilBufferFlushed)
         {
-            this.waitAfterClose = waitAfterClose;
+            this.waitUntilBufferFlushed = waitUntilBufferFlushed;
+            return this;
+        }
+
+        public int getWaitUntilTerminated()
+        {
+            return waitUntilTerminated;
+        }
+
+        public Config setWaitUntilTerminated(int waitUntilTerminated)
+        {
+            this.waitUntilTerminated = waitUntilTerminated;
             return this;
         }
 
@@ -125,7 +191,8 @@ public abstract class Flusher
         {
             return "Config{" +
                     "flushIntervalMillis=" + flushIntervalMillis +
-                    ", waitAfterClose=" + waitAfterClose +
+                    ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
+                    ", waitUntilTerminated=" + waitUntilTerminated +
                     '}';
         }
     }
