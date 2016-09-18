@@ -80,6 +80,24 @@ In this mode, Fluency takes backup of unsent memory buffers as files when closin
 Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
 ```
 
+#### Buffer configuration
+
+```java
+// Single Fluentd(xxx.xxx.xxx.xxx:24224)
+//   - Asynchronous flush
+//   - PackedForward format
+//   - Initial chunk buffer size = 4MB (default: 1MB)
+//   - Threshold chunk buffer size to flush = 16MB (default: 4MB)
+//     Keep this value (BufferRetentionSize) between `Initial chunk buffer size` and `Max total buffer size`
+//   - Max total buffer size = 256MB (default: 16MB)
+Fluency fluency = Fluency.defaultFluency("xxx.xxx.xxx.xxx", 24224,
+        new Fluency.Config()
+            .setBufferChunkInitialSize(4 * 1024 * 1024)
+            .setBufferChunkRetentionSize(16 * 1024 * 1024)
+            .setMaxBufferSize(256 * 1024 * 1024L));
+```
+
+
 #### Other configurations
 
 ```java
@@ -88,35 +106,16 @@ Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(S
 //   - Asynchronous flush
 //   - PackedForward format
 //   - Without ack response
-//   - Max total buffer size = 32MB (default: 16MB)
 //   - Flush interval = 200ms (default: 600ms)
 //   - Max retry of sending events = 12 (default: 8)
 Fluency fluency = Fluency.defaultFluency(
 			Arrays.asList(
 	    			new InetSocketAddress(24224), new InetSocketAddress(24225)),
 	    			new Fluency.Config().
-	    				setMaxBufferSize(32 * 1024 * 1024).
 	    				setFlushIntervalMillis(200).
 	    				setSenderMaxRetryCount(12));
 ```
 
-#### Advanced buffer configuration
-
-```java
-//   - Initial chunk buffer size = 4MB (default: 1MB)
-//   - Threshold chunk buffer size to flush = 16MB (default: 4MB)
-//     Keep this value (BufferRetentionSize) between InitialBufferSize and MaxBufferSize
-//   - Max total buffer size = 256MB (default: 16MB)
-Sender sender = new TCPSender.Config().setHost("xxx.xxx.xxx.xxx").createInstance();
-
-PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config()
-        .setInitialBufferSize(4 * 1024 * 1024)
-        .setBufferRetentionSize(16 * 1024 * 1024)
-        .setMaxBufferSize(256 * 1024 * 1024);
-
-Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).build();
-```
- 
 ### Emit event
 
 ```java
@@ -137,20 +136,15 @@ fluency.close();
 ### Wait until all buffer is flushed
 
 ```java
-fluency.waitUntilFlushingAllBuffer(MAX_WAIT_BUF_FLUSH);
 fluency.close();
+fluency.waitUntilFlushingAllBuffer(MAX_WAIT_BUF_FLUSH);
 ```
 
-### Check if Fluency is terminated
+### Wait until Fluency is terminated. It's important for file backup mode
 
 ```java
 fluency.close();
-for (int i = 0; i < MAX_CHECK_TERMINATE; i++) {
-	if (fluency.isTerminated()) {
-		break;
-	}
-	TimeUnit.SECONDS.sleep(CHECK_TERMINATE_INTERVAL);
-}
+fluency.waitUntilFlusherTerminated(MAX_WAIT_FLUSHER_TERMINATED);
 ```
 
 ### Know how much Fluency is allocating memory
