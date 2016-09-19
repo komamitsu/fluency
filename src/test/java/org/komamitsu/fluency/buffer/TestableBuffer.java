@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -79,23 +78,6 @@ public class TestableBuffer
     public void flushInternal(Sender sender, boolean force)
             throws IOException
     {
-        if (config.getWaitBeforeFlushMillis() > 0) {
-            long start = System.currentTimeMillis();
-            try {
-                TimeUnit.MILLISECONDS.sleep(config.getWaitBeforeFlushMillis());
-            }
-            catch (InterruptedException e) {
-                long rest = config.getWaitBeforeFlushMillis() - (System.currentTimeMillis() - start);
-                if (rest > 0) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(rest);
-                    }
-                    catch (InterruptedException e1) {
-                    }
-                }
-            }
-        }
-
         if (force) {
             forceFlushCount.incrementAndGet();
         }
@@ -115,6 +97,23 @@ public class TestableBuffer
     @Override
     protected void closeInternal()
     {
+        if (config.getWaitBeforeCloseMillis() > 0) {
+            long start = System.currentTimeMillis();
+            try {
+                TimeUnit.MILLISECONDS.sleep(config.getWaitBeforeCloseMillis());
+            }
+            catch (InterruptedException e) {
+                long rest = config.getWaitBeforeCloseMillis() - (System.currentTimeMillis() - start);
+                if (rest > 0) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(rest);
+                    }
+                    catch (InterruptedException e1) {
+                    }
+                }
+            }
+        }
+
         closeCount.incrementAndGet();
     }
 
@@ -159,7 +158,7 @@ public class TestableBuffer
         implements Buffer.Instantiator
     {
         private final Buffer.Config baseConfig = new Buffer.Config();
-        private int waitBeforeFlushMillis;
+        private int waitBeforeCloseMillis;
 
         public Buffer.Config getBaseConfig()
         {
@@ -220,14 +219,14 @@ public class TestableBuffer
             return baseConfig.setJacksonModules(jacksonModules);
         }
 
-        public int getWaitBeforeFlushMillis()
+        public int getWaitBeforeCloseMillis()
         {
-            return waitBeforeFlushMillis;
+            return waitBeforeCloseMillis;
         }
 
-        public Config setWaitBeforeFlushMillis(int waitBeforeFlushMillis)
+        public Config setWaitBeforeCloseMillis(int wait)
         {
-            this.waitBeforeFlushMillis = waitBeforeFlushMillis;
+            this.waitBeforeCloseMillis = wait;
             return this;
         }
 

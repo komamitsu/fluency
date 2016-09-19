@@ -24,7 +24,7 @@ public class AsyncFlusher
             public void run()
             {
                 Boolean wakeup = null;
-                while (!executorService.isShutdown()) {
+                do {
                     try {
                         wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         boolean force = wakeup != null;
@@ -36,11 +36,10 @@ public class AsyncFlusher
                     catch (IOException e) {
                         LOG.error("Failed to flush", e);
                     }
-                }
+                } while (!executorService.isShutdown());
 
                 if (wakeup == null) {
                     // The above run loop can quit without force buffer flush in the following cases
-                    // - close() is called right after the constructor is called.
                     // - close() is called right after the repeated non-force buffer flush executed in the run loop
                     //
                     // In these cases, remaining buffers wont't be flushed.
@@ -52,8 +51,6 @@ public class AsyncFlusher
                         LOG.error("Failed to flush", e);
                     }
                 }
-
-                closeBuffer();
             }
         };
 
@@ -79,7 +76,7 @@ public class AsyncFlusher
     }
 
     @Override
-    protected void closeInternal()
+    protected void beforeClosingBuffer()
             throws IOException
     {
         try {
@@ -90,7 +87,7 @@ public class AsyncFlusher
         }
         executorService.shutdown();
         try {
-            executorService.awaitTermination(this.config.getWaitAfterClose(), TimeUnit.SECONDS);
+            executorService.awaitTermination(this.config.getWaitUntilBufferFlushed(), TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             LOG.warn("1st awaitTermination was interrupted", e);
@@ -100,12 +97,6 @@ public class AsyncFlusher
         if (!executorService.isTerminated()) {
             executorService.shutdownNow();
         }
-    }
-
-    @Override
-    public boolean isTerminated()
-    {
-        return executorService.isTerminated();
     }
 
     @Override
@@ -133,21 +124,40 @@ public class AsyncFlusher
             return baseConfig.getFlushIntervalMillis();
         }
 
-        public int getWaitAfterClose()
-        {
-            return baseConfig.getWaitAfterClose();
-        }
-
-        public Config setWaitAfterClose(int waitAfterClose)
-        {
-            baseConfig.setWaitAfterClose(waitAfterClose);
-            return this;
-        }
-
         public Config setFlushIntervalMillis(int flushIntervalMillis)
         {
             baseConfig.setFlushIntervalMillis(flushIntervalMillis);
             return this;
+        }
+
+        public Config setWaitUntilBufferFlushed(int wait)
+        {
+            baseConfig.setWaitUntilBufferFlushed(wait);
+            return this;
+        }
+
+        public int getWaitUntilBufferFlushed()
+        {
+            return baseConfig.getWaitUntilBufferFlushed();
+        }
+
+        public Config setWaitUntilTerminated(int wait)
+        {
+            baseConfig.setWaitUntilTerminated(wait);
+            return this;
+        }
+
+        public int getWaitUntilTerminated()
+        {
+            return baseConfig.getWaitUntilTerminated();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "baseConfig=" + baseConfig +
+                    '}';
         }
 
         @Override

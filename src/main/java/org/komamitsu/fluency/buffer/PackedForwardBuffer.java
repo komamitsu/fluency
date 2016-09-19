@@ -199,7 +199,8 @@ public class PackedForwardBuffer
         TaggableBuffer flushableBuffer;
         ByteArrayOutputStream header = new ByteArrayOutputStream();
         MessagePacker messagePacker = MessagePack.newDefaultPacker(header);
-        while ((flushableBuffer = flushableBuffers.poll()) != null) {
+        while (!Thread.currentThread().isInterrupted() &&
+                (flushableBuffer = flushableBuffers.poll()) != null) {
             boolean keepBuffer = false;
             try {
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);

@@ -38,30 +38,43 @@ public class Fluency
     private static Fluency buildDefaultFluency(Sender.Instantiator senderConfig, Config config)
     {
         PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
-        if (config != null && config.getMaxBufferSize() != null) {
-            bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
-        }
-        if (config != null && config.getBufferChunkInitialSize() != null) {
-            bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
-        }
-        if (config != null && config.getBufferChunkRetentionSize() != null) {
-            bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
-        }
-        if (config != null) {
-            bufferConfig.setAckResponseMode(config.isAckResponseMode());
-        }
-        if (config != null && config.getFileBackupDir() != null) {
-            bufferConfig.setFileBackupDir(config.getFileBackupDir());
-        }
-
-        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
-        if (config != null && config.getFlushIntervalMillis() != null) {
-            flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
-        }
-
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-        if (config != null && config.getSenderMaxRetryCount() != null) {
-            retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
+        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+
+        if (config != null) {
+            if (config.getMaxBufferSize() != null) {
+                bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
+            }
+
+            if (config.getBufferChunkInitialSize() != null) {
+                bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
+            }
+
+            if (config.getBufferChunkRetentionSize() != null) {
+                bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
+            }
+
+            bufferConfig.setAckResponseMode(config.isAckResponseMode());
+
+            if (config.getFileBackupDir() != null) {
+                bufferConfig.setFileBackupDir(config.getFileBackupDir());
+            }
+
+            if (config.getFlushIntervalMillis() != null) {
+                flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
+            }
+
+            if (config.getWaitUntilBufferFlushed() != null) {
+                flusherConfig.setWaitUntilBufferFlushed(config.getWaitUntilBufferFlushed());
+            }
+
+            if (config.getWaitUntilFlusherTerminated() != null) {
+                flusherConfig.setWaitUntilTerminated(config.getWaitUntilFlusherTerminated());
+            }
+
+            if (config.getSenderMaxRetryCount() != null) {
+                retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
+            }
         }
 
         RetryableSender retryableSender =
@@ -208,7 +221,7 @@ public class Fluency
             throws InterruptedException
     {
         int intervalMilli = 500;
-            for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
+        for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
             boolean terminated = isTerminated();
             LOG.info("Waiting until the flusher is terminated: {}", terminated);
             if (terminated) {
@@ -289,6 +302,10 @@ public class Fluency
 
         private String fileBackupDir;
 
+        private Integer waitUntilBufferFlushed;
+
+        private Integer waitUntilFlusherTerminated;
+
         public Long getMaxBufferSize()
         {
             return maxBufferSize;
@@ -366,6 +383,28 @@ public class Fluency
             return this;
         }
 
+        public Integer getWaitUntilBufferFlushed()
+        {
+            return waitUntilBufferFlushed;
+        }
+
+        public Config setWaitUntilBufferFlushed(Integer wait)
+        {
+            this.waitUntilBufferFlushed = wait;
+            return this;
+        }
+
+        public Integer getWaitUntilFlusherTerminated()
+        {
+            return waitUntilFlusherTerminated;
+        }
+
+        public Config setWaitUntilFlusherTerminated(Integer wait)
+        {
+            this.waitUntilFlusherTerminated = wait;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -377,6 +416,8 @@ public class Fluency
                     ", senderMaxRetryCount=" + senderMaxRetryCount +
                     ", ackResponseMode=" + ackResponseMode +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
+                    ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
+                    ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                     '}';
         }
     }

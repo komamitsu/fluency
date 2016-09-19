@@ -78,7 +78,7 @@ public class MockTCPServer
         if (executorService == null) {
             return;
         }
-
+        LOG.debug("Stopping MockTCPServer...");
         executorService.shutdown();
         try {
             executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
@@ -124,20 +124,20 @@ public class MockTCPServer
                     serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, accept));
                 }
                 catch (RejectedExecutionException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed: this=" + this);
+                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (ClosedByInterruptException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed: this=" + this);
+                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (IOException e) {
-                    LOG.warn("ServerSocketChannel.accept() failed: this=" + this);
+                    LOG.warn("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
             }
             try {
                 serverSocketChannel.close();
             }
             catch (IOException e) {
-                LOG.warn("ServerSocketChannel.close() interrupted");
+                LOG.warn("ServerSocketChannel.close() failed", e);
             }
             LOG.info("Finishing ServerTask...: this={}", this);
         }

@@ -174,7 +174,8 @@ public class FluencyTest
                 AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
                 assertThat(flusher.isTerminated(), is(false));
                 assertThat(flusher.getFlushIntervalMillis(), is(600));
-                assertThat(flusher.getWaitAfterClose(), is(10));
+                assertThat(flusher.getWaitUntilBufferFlushed(), is(10));
+                assertThat(flusher.getWaitUntilTerminated(), is(10));
 
                 assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
                 RetryableSender retryableSender = (RetryableSender) flusher.getSender();
@@ -225,6 +226,8 @@ public class FluencyTest
                                 .setBufferChunkRetentionSize(13 * 1024 * 1024)
                                 .setSenderMaxRetryCount(99)
                                 .setAckResponseMode(true)
+                                .setWaitUntilBufferFlushed(42)
+                                .setWaitUntilFlusherTerminated(24)
                                 .setFileBackupDir(tmpdir);
 
                 fluency = Fluency.defaultFluency(
@@ -247,7 +250,8 @@ public class FluencyTest
                 AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
                 assertThat(flusher.isTerminated(), is(false));
                 assertThat(flusher.getFlushIntervalMillis(), is(200));
-                assertThat(flusher.getWaitAfterClose(), is(10));
+                assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
+                assertThat(flusher.getWaitUntilTerminated(), is(24));
 
                 assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
                 RetryableSender retryableSender = (RetryableSender) flusher.getSender();
@@ -349,8 +353,8 @@ public class FluencyTest
     {
         {
             Sender sender = new MockTCPSender(24224);
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(2000);
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
+            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             fluency.emit("foo.bar", new HashMap<String, Object>());
             fluency.close();
@@ -359,8 +363,8 @@ public class FluencyTest
 
         {
             Sender sender = new MockTCPSender(24224);
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeFlushMillis(2000);
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setWaitAfterClose(0);
+            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
+            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             fluency.emit("foo.bar", new HashMap<String, Object>());
             fluency.close();
@@ -706,8 +710,8 @@ public class FluencyTest
             }
             else {
                 fluency.get().flush();
+                fluency.get().waitUntilAllBufferFlushed(20);
             }
-            fluency.get().waitUntilAllBufferFlushed(10);
 
             fluentd.stop();
             secondaryFluentd.stop();
@@ -1018,7 +1022,6 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
@@ -1054,7 +1057,6 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
@@ -1068,7 +1070,12 @@ public class FluencyTest
         int concurrency = 4;
         int reqNum = 1000000;
 
-        Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setSenderMaxRetryCount(5).setFileBackupDir(System.getProperty("java.io.tmpdir")));
+        Fluency fluency = Fluency.defaultFluency(
+                new Fluency.Config()
+                        // Fluency might use a lot of buffer for loaded backup files.
+                        // So it'd better increase max buffer size
+                        .setMaxBufferSize(512 * 1024 * 1024L)
+                        .setFileBackupDir(System.getProperty("java.io.tmpdir")));
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         data.put("age", 42);
@@ -1083,13 +1090,9 @@ public class FluencyTest
             for (Future<Void> future : futures) {
                 future.get(60, TimeUnit.SECONDS);
             }
-            fluency.waitUntilAllBufferFlushed(60);
         }
         finally {
             fluency.close();
         }
-
-        fluency.waitUntilFlusherTerminated(60);
-        LOG.warn("Fluency isn't terminated yet");
     }
 }
