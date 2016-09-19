@@ -18,7 +18,7 @@ Yet another fluentd logger.
 
 ```groovy
 dependencies {
-    compile 'org.komamitsu:fluency:0.0.12'
+    compile 'org.komamitsu:fluency:1.0.0'
 }
 ```
 
@@ -28,7 +28,7 @@ dependencies {
 <dependency>
     <groupId>org.komamitsu</groupId>
     <artifactId>fluency</artifactId>
-    <version>0.0.12</version>
+    <version>1.0.0</version>
 </dependency>
 ```
  
@@ -39,10 +39,17 @@ dependencies {
 #### For single Fluentd
 
 ```java
-// Single Fluentd(localhost:24224)
-//   - Asynchronous flush
-//   - PackedForward format
-//   - Without ack response
+// Single Fluentd(localhost:24224 by default)
+//   - TCP heartbeat (by default)
+//   - Asynchronous flush (by default)
+//   - Without ack response (by default)
+//   - Flush interval is 600ms (by default)
+//   - Initial chunk buffer size is 1MB (by default)
+//   - Threshold chunk buffer size to flush is 4MB (by default)
+//   - Max total buffer size is 16MB (by default)
+//   - Max retry of sending events is 8 (by default)
+//   - Max wait until all buffers are flushed is 10 seconds (by default)
+//   - Max wait until the flusher is terminated is 10 seconds (by default)
 Fluency fluency = Fluency.defaultFluency();
 ```
 
@@ -50,10 +57,6 @@ Fluency fluency = Fluency.defaultFluency();
 
 ```java    
 // Multiple Fluentd(localhost:24224, localhost:24225)
-//   - TCP heartbeat
-//   - Asynchronous flush
-//   - PackedForward format
-//   - Without ack response
 Fluency fluency = Fluency.defaultFluency(
 			Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)));
 ```
@@ -62,8 +65,6 @@ Fluency fluency = Fluency.defaultFluency(
 
 ```java
 // Single Fluentd(localhost:24224)
-//   - Asynchronous flush
-//   - PackedForward format
 //   - With ack response
 Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setAckResponseMode(true));
 ```
@@ -74,8 +75,6 @@ In this mode, Fluency takes backup of unsent memory buffers as files when closin
 
 ```java
 // Single Fluentd(localhost:24224)
-//   - Asynchronous flush
-//   - PackedForward format
 //   - Backup directory is the temporary directory
 Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(System.getProperty("java.io.tmpdir")));
 ```
@@ -84,36 +83,56 @@ Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setFileBackupDir(S
 
 ```java
 // Single Fluentd(xxx.xxx.xxx.xxx:24224)
-//   - Asynchronous flush
-//   - PackedForward format
-//   - Initial chunk buffer size = 4MB (default: 1MB)
-//   - Threshold chunk buffer size to flush = 16MB (default: 4MB)
+//   - Initial chunk buffer size = 4MB
+//   - Threshold chunk buffer size to flush = 16MB
 //     Keep this value (BufferRetentionSize) between `Initial chunk buffer size` and `Max total buffer size`
-//   - Max total buffer size = 256MB (default: 16MB)
+//   - Max total buffer size = 256MB
 Fluency fluency = Fluency.defaultFluency("xxx.xxx.xxx.xxx", 24224,
-        new Fluency.Config()
-            .setBufferChunkInitialSize(4 * 1024 * 1024)
-            .setBufferChunkRetentionSize(16 * 1024 * 1024)
-            .setMaxBufferSize(256 * 1024 * 1024L));
+	new Fluency.Config()
+	    .setBufferChunkInitialSize(4 * 1024 * 1024)
+	    .setBufferChunkRetentionSize(16 * 1024 * 1024)
+	    .setMaxBufferSize(256 * 1024 * 1024L));
 ```
 
+#### Waits on close sequence
+
+```java
+// Single Fluentd(localhost:24224)
+//   - Max wait until all buffers are flushed is 30 seconds
+//   - Max wait until the flusher is terminated is 40 seconds
+Fluency fluency = Fluency.defaultFluency(
+	new Fluency.Config()
+        .setWaitUntilBufferFlushed(30)
+        .setWaitUntilFlusherTerminated(40));
+```
+
+#### Register Jackson modules
+```java
+// Single Fluentd(localhost:24224)
+//   - SimpleModule that has FooSerializer is enabled
+Sender sender = new TCPSender.Config().createInstance();
+
+SimpleModule simpleModule = new SimpleModule();
+simpleModule.addSerializer(Foo.class, new FooSerializer());
+
+PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config()
+	.setJacksonModules(Collections.<Module>singletonList(simpleModule));
+
+Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).build();
+```
 
 #### Other configurations
 
 ```java
 // Multiple Fluentd(localhost:24224, localhost:24225)
-//   - TCP heartbeat
-//   - Asynchronous flush
-//   - PackedForward format
-//   - Without ack response
-//   - Flush interval = 200ms (default: 600ms)
-//   - Max retry of sending events = 12 (default: 8)
+//   - Flush interval = 200ms
+//   - Max retry of sending events = 12
 Fluency fluency = Fluency.defaultFluency(
 			Arrays.asList(
-	    			new InetSocketAddress(24224), new InetSocketAddress(24225)),
-	    			new Fluency.Config().
-	    				setFlushIntervalMillis(200).
-	    				setSenderMaxRetryCount(12));
+				new InetSocketAddress(24224), new InetSocketAddress(24225)),
+				new Fluency.Config().
+					setFlushIntervalMillis(200).
+					setSenderMaxRetryCount(12));
 ```
 
 ### Emit event
@@ -131,20 +150,6 @@ fluency.emit(tag, event);
 
 ```java
 fluency.close();
-```
-
-### Wait until all buffer is flushed
-
-```java
-fluency.close();
-fluency.waitUntilFlushingAllBuffer(MAX_WAIT_BUF_FLUSH);
-```
-
-### Wait until Fluency is terminated. It's important for file backup mode
-
-```java
-fluency.close();
-fluency.waitUntilFlusherTerminated(MAX_WAIT_FLUSHER_TERMINATED);
 ```
 
 ### Know how much Fluency is allocating memory
