@@ -5,7 +5,7 @@ Yet another fluentd logger.
 
 ## Features
 
-* Better performance ([3 times faster than fluent-logger-java](https://gist.github.com/komamitsu/781a8b519afdc553f50c))
+* Better performance ([4 times faster than fluent-logger-java](https://gist.github.com/komamitsu/c1e4045fe2ddb108cfbf12d5f014b683))
 * Asynchronous / synchronous flush to Fluentd
 * TCP / UDP heartbeat with Fluentd
 * `PackedForward` format
