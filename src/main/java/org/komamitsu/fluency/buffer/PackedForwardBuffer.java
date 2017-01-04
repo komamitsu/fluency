@@ -3,6 +3,7 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.EventTime;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.slf4j.Logger;
@@ -134,12 +135,12 @@ public class PackedForwardBuffer
     }
 
     @Override
-    public void append(String tag, long timestamp, Map<String, Object> data)
+    public void append(String tag, EventTime eventTime, Map<String, Object> data)
             throws IOException
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         outputStream.reset();
-        objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
+        objectMapper.writeValue(outputStream, Arrays.asList(eventTime.pack(), data));
         outputStream.close();
 
         loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));

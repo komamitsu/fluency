@@ -10,6 +10,7 @@ import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.util.EventTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,8 +151,15 @@ public class Fluency
     public void emit(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
+        // the typecast is not nice, but unfortunately required due to their EvenTime specification
+        emit(tag, EventTime.fromTimestamp((int)timestamp), data);
+    }
+
+    public void emit(String tag, EventTime eventTime, Map<String, Object> data)
+            throws IOException
+    {
         try {
-            buffer.append(tag, timestamp, data);
+            buffer.append(tag, eventTime, data);
             flusher.onUpdate();
         }
         catch (BufferFullException e) {
@@ -164,7 +172,7 @@ public class Fluency
     public void emit(String tag, Map<String, Object> data)
             throws IOException
     {
-        emit(tag, System.currentTimeMillis() / 1000, data);
+        emit(tag, EventTime.fromMillis(System.currentTimeMillis()), data);
     }
 
     @Override

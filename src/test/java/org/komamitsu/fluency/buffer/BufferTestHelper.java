@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.util.EventTime;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -11,7 +12,6 @@ import org.msgpack.value.ImmutableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -76,7 +76,7 @@ public class BufferTestHelper
                         data.put("age", i);
                         data.put("comment", i % 31 == 0 ? longStr : "hello");
                         String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
-                        buffer.append(tag, System.currentTimeMillis(), data);
+                        buffer.append(tag, EventTime.fromMillis(System.currentTimeMillis()), data);
 
                         if (syncFlush) {
                             if (i % 20 == 0) {
