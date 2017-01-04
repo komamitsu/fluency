@@ -151,8 +151,7 @@ public class Fluency
     public void emit(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        // the typecast is not nice, but unfortunately required due to their EvenTime specification
-        emit(tag, EventTime.fromTimestamp((int)timestamp), data);
+        emit(tag, EventTime.fromTimestamp(timestamp), data);
     }
 
     public void emit(String tag, EventTime eventTime, Map<String, Object> data)
