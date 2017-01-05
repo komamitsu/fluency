@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.util;
 
 import org.msgpack.jackson.dataformat.MessagePackExtensionType;
+import org.msgpack.value.ExtensionValue;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -45,6 +46,39 @@ public class EventTime implements Serializable {
            +-------+----+----+----+----+----+----+----+----+----+
          */
         return new MessagePackExtensionType((byte)0x0, ByteBuffer.allocate(8).putInt(this.seconds).putInt(this.nanoseconds).array());
+    }
+
+    public static EventTime unpack(ExtensionValue packed) {
+
+        /*
+        The fixext8 header gets stripped before, so we can just verify the type and fetch both values
+           +-------+----+----+----+----+----+----+----+----+----+
+           |     1 |  2 |  3 |  4 |  5 |  6 |  7 |  8 |  9 | 10 |
+           +-------+----+----+----+----+----+----+----+----+----+
+           |    D7 | 00 | second from epoch |     nanosecond    |
+           +-------+----+----+----+----+----+----+----+----+----+
+           |fixext8|type| 32bits integer BE | 32bits integer BE |
+           +-------+----+----+----+----+----+----+----+----+----+
+        */
+        if (packed.getType() != 0x0) {
+            return null;
+        }
+
+        if (packed.getData().length != 8) {
+            return null;
+        }
+
+        ByteBuffer data = ByteBuffer.wrap(packed.getData());
+
+        return new EventTime(data.getInt(0), data.getInt(4));
+    }
+
+    public int getSeconds() {
+        return seconds;
+    }
+
+    public void setSeconds(int seconds) {
+        this.seconds = seconds;
     }
 
     @Override

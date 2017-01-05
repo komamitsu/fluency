@@ -24,6 +24,7 @@ import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.util.EventTime;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -806,7 +807,7 @@ public class FluencyTest
                 }
 
                 @Override
-                public void onReceive(String tag, long timestampMillis, MapValue data)
+                public void onReceive(String tag, EventTime eventTime, MapValue data)
                 {
                     if (tag.equals("foodb0.bartbl0")) {
                         tag0EventsCounter.incrementAndGet();
@@ -823,7 +824,7 @@ public class FluencyTest
                     else {
                         throw new IllegalArgumentException("Unexpected tag: tag=" + tag);
                     }
-                    assertTrue(startTimestamp <= timestampMillis && timestampMillis < startTimestamp + 60 * 1000);
+                    assertTrue(startTimestamp <= eventTime.getSeconds() && eventTime.getSeconds() < startTimestamp + 60 * 1000);
 
                     assertEquals(4, data.size());
                     for (Map.Entry<Value, Value> kv : data.entrySet()) {
