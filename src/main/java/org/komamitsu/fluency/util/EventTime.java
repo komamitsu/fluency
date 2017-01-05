@@ -34,6 +34,10 @@ public class EventTime implements Serializable {
         return new EventTime((int)(timeInMillis / 1000), (int)(timeInMillis % 1000 * 1000000));
     }
 
+    public long inMillis() {
+        return (long)this.seconds * 1000 + (long)this.nanoseconds / 1000000;
+    }
+
     public MessagePackExtensionType pack() {
         // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1 => EventTime Ext Format
         /*
