@@ -1,9 +1,9 @@
 package org.komamitsu.fluency.util;
 
-import org.msgpack.core.*;
+import org.msgpack.jackson.dataformat.MessagePackExtensionType;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
  * Implementation of Fluentd EventTime
@@ -33,9 +33,7 @@ public class EventTime implements Serializable {
         return new EventTime((int)(timeInMillis / 1000), (int)(timeInMillis % 1000 * 1000000));
     }
 
-    public byte[] pack() throws IOException {
-        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
-
+    public MessagePackExtensionType pack() {
         // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1 => EventTime Ext Format
         /*
            +-------+----+----+----+----+----+----+----+----+----+
@@ -46,30 +44,7 @@ public class EventTime implements Serializable {
            |fixext8|type| 32bits integer BE | 32bits integer BE |
            +-------+----+----+----+----+----+----+----+----+----+
          */
-        packer.packExtensionTypeHeader((byte) 0, 8);
-        packer.packInt((int)this.seconds);
-        packer.packInt((int)this.nanoseconds);
-
-        return packer.toByteArray();
-    }
-
-    public static EventTime unpack(byte[] message) {
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(message);
-
-        int seconds;
-        int nanoseconds;
-
-        try {
-            if (!unpacker.getNextFormat().equals(MessageFormat.FIXEXT8)) return null;
-            if (unpacker.unpackExtensionTypeHeader().getType() != 0x0)   return null;
-
-            seconds = unpacker.unpackInt();
-            nanoseconds = unpacker.unpackInt();
-        } catch (IOException e) {
-            return null;
-        }
-
-        return new EventTime(seconds, nanoseconds);
+        return new MessagePackExtensionType((byte)0x0, ByteBuffer.allocate(8).putInt(this.seconds).putInt(this.nanoseconds).array());
     }
 
     @Override

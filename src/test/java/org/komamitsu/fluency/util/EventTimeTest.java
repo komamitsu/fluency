@@ -1,11 +1,14 @@
 package org.komamitsu.fluency.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.*;
+import org.msgpack.jackson.dataformat.MessagePackExtensionType;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,17 +42,19 @@ public class EventTimeTest {
     public void testPacking() {
 
         long fixedTimeMillis = 1483457616859L;
-
         EventTime time = EventTime.fromMillis(fixedTimeMillis);
 
         Exception ex = null;
-        byte[] packed;
+        MessagePackExtensionType packed;
 
         try {
             packed = time.pack();
 
-            MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packed);
+            ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            objectMapper.writeValue(outputStream, packed);
 
+            MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(outputStream.toByteArray());
             /*
                +-------+----+----+----+----+----+----+----+----+----+
                |     1 |  2 |  3 |  4 |  5 |  6 |  7 |  8 |  9 | 10 |
@@ -58,17 +63,14 @@ public class EventTimeTest {
                +-------+----+----+----+----+----+----+----+----+----+
                |fixext8|type| 32bits integer BE | 32bits integer BE |
                +-------+----+----+----+----+----+----+----+----+----+
-             */
+            */
             assertEquals(MessageFormat.FIXEXT8, unpacker.getNextFormat());
             assertEquals(0x0, unpacker.unpackExtensionTypeHeader().getType());
 
-            assertEquals(time.seconds, unpacker.unpackInt());
-            assertEquals(time.nanoseconds, unpacker.unpackInt());
+            assertEquals(time.seconds, ByteBuffer.wrap(unpacker.readPayload(4)).getInt());
+            assertEquals(time.nanoseconds, ByteBuffer.wrap(unpacker.readPayload(4)).getInt());
 
             assertEquals(false, unpacker.hasNext());
-
-            assertEquals(time, EventTime.unpack(packed));
-
         } catch (IOException e) {
             ex = e;
         }
