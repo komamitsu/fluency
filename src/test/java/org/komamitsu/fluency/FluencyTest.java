@@ -933,7 +933,7 @@ public class FluencyTest
             Fluency fluency = new Fluency.Builder(stuckSender).setBufferConfig(bufferConfig).build();
             Map<String, Object> event = new HashMap<String, Object>();
             event.put("name", "xxxx");
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 5; i++) {
                 fluency.emit("tag", event);
             }
             try {
