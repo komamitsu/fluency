@@ -100,6 +100,8 @@ public abstract class Flusher
                 }
                 catch (TimeoutException e) {
                     LOG.warn("closeBuffer() timed out", e);
+                } finally {
+                    executor.shutdown();
                 }
             }
         }
