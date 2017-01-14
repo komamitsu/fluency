@@ -2,6 +2,7 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.EventTime;
 import org.komamitsu.fluency.util.Tuple;
 import org.komamitsu.fluency.util.Tuple3;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class TestableBuffer
     private static final Logger LOG = LoggerFactory.getLogger(TestableBuffer.class);
     public static final int RECORD_DATA_SIZE = 100;
     public static final int ALLOC_SIZE = 128;
-    private final List<Tuple3<String, Long, Map<String, Object>>> events = new ArrayList<Tuple3<String, Long, Map<String, Object>>>();
+    private final List<Tuple3<String, EventTime, Map<String, Object>>> events = new ArrayList<Tuple3<String, EventTime, Map<String, Object>>>();
     private final AtomicInteger flushCount = new AtomicInteger();
     private final AtomicInteger forceFlushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
@@ -66,10 +67,10 @@ public class TestableBuffer
     }
 
     @Override
-    public void append(String tag, long timestamp, Map data)
+    public void append(String tag, EventTime eventTime, Map data)
             throws IOException
     {
-        events.add(new Tuple3<String, Long, Map<String, Object>>(tag, timestamp, data));
+        events.add(new Tuple3<String, EventTime, Map<String, Object>>(tag, eventTime, data));
         allocatedSize.addAndGet(ALLOC_SIZE);
         bufferedDataSize.addAndGet(RECORD_DATA_SIZE);
     }
@@ -129,7 +130,7 @@ public class TestableBuffer
         return bufferedDataSize.get();
     }
 
-    public List<Tuple3<String, Long, Map<String, Object>>> getEvents()
+    public List<Tuple3<String, EventTime, Map<String, Object>>> getEvents()
     {
         return events;
     }

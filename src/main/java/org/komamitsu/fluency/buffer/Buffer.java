@@ -3,6 +3,7 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.EventTime;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public abstract class Buffer
         }
     }
 
-    public abstract void append(String tag, long timestamp, Map<String, Object> data)
+    public abstract void append(String tag, EventTime eventTime, Map<String, Object> data)
             throws IOException;
 
     protected abstract void loadBufferFromFile(List<String> params, FileChannel channel);

@@ -1,12 +1,10 @@
 package org.komamitsu.fluency;
 
+import org.komamitsu.fluency.util.EventTime;
+import org.msgpack.core.MessageFormatException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
-import org.msgpack.value.ImmutableArrayValue;
-import org.msgpack.value.ImmutableValue;
-import org.msgpack.value.MapValue;
-import org.msgpack.value.Value;
-import org.msgpack.value.ValueType;
+import org.msgpack.value.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +33,7 @@ public abstract class AbstractFluentdServer
     {
         void onConnect(SocketChannel accpetSocketChannel);
 
-        void onReceive(String tag, long timestampMillis, MapValue data);
+        void onReceive(String tag, EventTime eventTime, MapValue data);
 
         void onClose(SocketChannel accpetSocketChannel);
     }
@@ -137,9 +135,12 @@ public abstract class AbstractFluentdServer
                         while (eventsUnpacker.hasNext()) {
                             ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
                             assertEquals(2, arrayValue.size());
-                            long timestamp = arrayValue.get(0).asIntegerValue().asLong();
+                            if (arrayValue.get(0).getValueType() != ValueType.EXTENSION) {
+                                throw new MessageFormatException("expected Extension - got " + arrayValue.get(0).getValueType());
+                            }
+                            EventTime eventTime = EventTime.unpack(arrayValue.get(0).asExtensionValue());
                             MapValue mapValue = arrayValue.get(1).asMapValue();
-                            eventHandler.onReceive(tag, timestamp, mapValue);
+                            eventHandler.onReceive(tag, eventTime, mapValue);
                         }
                         if (rootValue.size() == 3) {
                             ack(acceptSocketChannel, rootValue.get(2));

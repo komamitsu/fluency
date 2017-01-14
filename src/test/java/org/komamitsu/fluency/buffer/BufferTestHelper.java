@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.util.EventTime;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessageFormatException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ExtensionValue;
 import org.msgpack.value.ImmutableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -76,7 +79,7 @@ public class BufferTestHelper
                         data.put("age", i);
                         data.put("comment", i % 31 == 0 ? longStr : "hello");
                         String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
-                        buffer.append(tag, System.currentTimeMillis(), data);
+                        buffer.append(tag, EventTime.fromMillis(System.currentTimeMillis()), data);
 
                         if (syncFlush) {
                             if (i % 20 == 0) {
@@ -171,7 +174,10 @@ public class BufferTestHelper
                 while (messageUnpacker.hasNext()) {
                     assertEquals(2, messageUnpacker.unpackArrayHeader());
 
-                    long timestamp = messageUnpacker.unpackLong();
+                    if (messageUnpacker.getNextFormat() != MessageFormat.FIXEXT8) {
+                        throw new MessageFormatException("expected Extension - got " + messageUnpacker.getNextFormat());
+                    }
+                    EventTime eventTime = EventTime.unpack(messageUnpacker.unpackValue().asExtensionValue());
 
                     int size = messageUnpacker.unpackMapHeader();
                     assertEquals(3, size);
@@ -187,7 +193,7 @@ public class BufferTestHelper
                         }
                     }
 
-                    analyzeResult(tag, timestamp, data, start, end);
+                    analyzeResult(tag, eventTime, data, start, end);
                     recordCount++;
                 }
             }
@@ -199,13 +205,13 @@ public class BufferTestHelper
                 assertTrue(items.get(0) instanceof String);
                 String tag = (String) items.get(0);
 
-                assertTrue(items.get(1) instanceof Long);
-                long timestamp = (Long) items.get(1);
+                assertTrue(items.get(1) instanceof ExtensionValue);
+                EventTime eventTime = EventTime.unpack((ExtensionValue)items.get(1));
 
                 assertTrue(items.get(2) instanceof Map);
                 Map<String, Object> data = (Map<String, Object>) items.get(2);
 
-                analyzeResult(tag, timestamp, data, start, end);
+                analyzeResult(tag, eventTime, data, start, end);
                 recordCount++;
             }
         }
@@ -233,7 +239,7 @@ public class BufferTestHelper
         assertTrue(totalLoopCount / 31 - 5 <= longCommentCount && longCommentCount <= totalLoopCount / 31 + 5);
     }
 
-    private void analyzeResult(String tag, long timestamp, Map<String, Object> data, long start, long end)
+    private void analyzeResult(String tag, EventTime eventTime, Map<String, Object> data, long start, long end)
     {
         Integer count = tagCounts.get(tag);
         if (count == null) {
@@ -241,7 +247,7 @@ public class BufferTestHelper
         }
         tagCounts.put(tag, count + 1);
 
-        assertTrue(start <= timestamp && timestamp <= end);
+        assertTrue(start <= eventTime.inMillis() && eventTime.inMillis() <= end);
 
         assertEquals(3, data.size());
         String name = (String) data.get("name");

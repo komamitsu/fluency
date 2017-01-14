@@ -2,6 +2,8 @@ package org.komamitsu.fluency.buffer;
 
 import org.junit.Test;
 import org.komamitsu.fluency.StubSender;
+import org.komamitsu.fluency.util.EventTime;
+import org.komamitsu.fluency.util.EventTimeTest;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +32,13 @@ public class BufferTest
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
         for (int i = 0; i < 10; i++) {
-            buffer.append("foodb.bartbl" + i, 1420070400, data);
+            buffer.append("foodb.bartbl" + i, EventTime.fromTimestamp(1420070400), data);
         }
         assertEquals(TestableBuffer.ALLOC_SIZE * 10, buffer.getAllocatedSize());
         assertEquals(TestableBuffer.RECORD_DATA_SIZE * 10, buffer.getBufferedDataSize());
         assertEquals(TestableBuffer.ALLOC_SIZE * 10 / 10000f, buffer.getBufferUsage(), 0.001);
         for (int i = 0; i < 10; i++) {
-            buffer.append("foodb.bartbl" + i, 1420070400, data);
+            buffer.append("foodb.bartbl" + i, EventTime.fromTimestamp(1420070400), data);
         }
         assertEquals(TestableBuffer.ALLOC_SIZE * 20, buffer.getAllocatedSize());
         assertEquals(TestableBuffer.RECORD_DATA_SIZE * 20, buffer.getBufferedDataSize());

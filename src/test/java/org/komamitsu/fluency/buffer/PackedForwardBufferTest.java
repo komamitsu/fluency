@@ -2,6 +2,7 @@ package org.komamitsu.fluency.buffer;
 
 import org.junit.Test;
 import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.util.EventTime;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class PackedForwardBufferTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("name", "komamitsu");
         for (int i = 0; i < 10; i++) {
-            buffer.append("foo.bar", new Date().getTime(), map);
+            buffer.append("foo.bar", EventTime.fromTimestamp(new Date().getTime()), map);
         }
         assertThat(buffer.getAllocatedSize(), is(256 * 1024L));
     }
@@ -52,7 +53,7 @@ public class PackedForwardBufferTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("name", "komamitsu");
         for (int i = 0; i < 10; i++) {
-            buffer.append("foo.bar", new Date().getTime(), map);
+            buffer.append("foo.bar", EventTime.fromTimestamp(new Date().getTime()), map);
         }
         assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
         assertThat(buffer.getBufferedDataSize(), is(lessThan(512L)));
@@ -83,13 +84,13 @@ public class PackedForwardBufferTest
         {
             Map<String, Object> map = new HashMap<String, Object>();
             map.put("k", str60kb);
-            buffer.append("tag0", new Date().getTime(), map);
+            buffer.append("tag0", EventTime.fromTimestamp(new Date().getTime()), map);
         }
 
         {
             Map<String, Object> map = new HashMap<String, Object>();
             map.put("k", str100kb);
-            buffer.append("tag0", new Date().getTime(), map);
+            buffer.append("tag0", EventTime.fromTimestamp(new Date().getTime()), map);
         }
     }
 }

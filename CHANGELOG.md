@@ -1,3 +1,11 @@
+## 1.1.0-SNAPSHOT (unreleased)
+
+Requires fluentd >= 0.14
+
+Features:
+
+- Add support for nanosecond timestamps
+
 ## 1.0.0 (2016-09-19)
 
 Features:
