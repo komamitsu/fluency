@@ -1,3 +1,17 @@
+## 1.1.0 (2017-01-14)
+
+Optimizations:
+
+- Change the following default values
+  - `waitUntilBufferFlushed`: 10 -> 60 seconds
+  - `waitUntilTerminated`: 10 -> 60 seconds
+
+- Upgrade the version of `msgpack-java` from 0.8.9 to 0.8.11 which fixes some serious bugs
+
+Bugfixes:
+
+- Fix bug that a temporary thread invoked to release resources can prevent the process from exiting immediately
+
 ## 1.0.0 (2016-09-19)
 
 Features:
@@ -10,6 +24,7 @@ Features:
 - Make Flusher appropriately wait until all buffers flushed
 
 Refactoring:
+
 - Rename Fluency#waitUntilFlushingAllBuffer to waitUntilAllBufferFlushed
 - Remove ThreadLocal from PackedForwardBuffer
 - Move FailureDetector to TCPSender from MultiSender
