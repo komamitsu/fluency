@@ -464,7 +464,9 @@ public class FluencyTest
                 if (options.fileBackup) {
                     bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
                 }
-                Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
+                Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
+                        .setWaitUntilBufferFlushed(10)
+                        .setWaitUntilTerminated(10);
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
         }, options);
@@ -499,7 +501,9 @@ public class FluencyTest
                 if (options.fileBackup) {
                     bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingSyncFlusher" + options.hashCode());
                 }
-                Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
+                Flusher.Instantiator flusherConfig = new SyncFlusher.Config()
+                        .setWaitUntilBufferFlushed(10)
+                        .setWaitUntilTerminated(10);
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
         }, options);
