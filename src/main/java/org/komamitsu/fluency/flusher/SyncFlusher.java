@@ -2,6 +2,7 @@ package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +70,9 @@ public class SyncFlusher
         }
         catch (TimeoutException e) {
             LOG.warn("flushInternal() timed out", e);
+        }
+        finally {
+            ExecutorServiceUtils.finishExecutorService(executorService);
         }
     }
 

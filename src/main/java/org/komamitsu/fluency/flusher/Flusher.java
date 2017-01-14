@@ -2,6 +2,7 @@ package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,8 +76,8 @@ public abstract class Flusher
                 LOG.error("Failed to close the sender", e);
             }
             finally {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Future<Void> future = executor.submit(new Callable<Void>()
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                Future<Void> future = executorService.submit(new Callable<Void>()
                 {
                     @Override
                     public Void call()
@@ -100,8 +101,9 @@ public abstract class Flusher
                 }
                 catch (TimeoutException e) {
                     LOG.warn("closeBuffer() timed out", e);
-                } finally {
-                    executor.shutdown();
+                }
+                finally {
+                    executorService.shutdown();
                 }
             }
         }

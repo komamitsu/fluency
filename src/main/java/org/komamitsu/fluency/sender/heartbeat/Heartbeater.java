@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.sender.heartbeat;
 
 import org.komamitsu.fluency.flusher.AsyncFlusher;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,17 +72,7 @@ public abstract class Heartbeater
     public void close()
             throws IOException
     {
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(3, TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            LOG.warn("1st awaitTermination was interrupted", e);
-            Thread.currentThread().interrupt();
-        }
-        if (!executorService.isTerminated()) {
-            executorService.shutdownNow();
-        }
+        ExecutorServiceUtils.finishExecutorService(executorService);
     }
 
     public String getHost()

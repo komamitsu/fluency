@@ -4,6 +4,7 @@ import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,8 +165,13 @@ public class TCPSender
             closeSocket();
         }
         finally {
-            if (failureDetector != null) {
-                failureDetector.close();
+            try {
+                if (failureDetector != null) {
+                    failureDetector.close();
+                }
+            }
+            finally {
+                ExecutorServiceUtils.finishExecutorService(executorService);
             }
         }
     }

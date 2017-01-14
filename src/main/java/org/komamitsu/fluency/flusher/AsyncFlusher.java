@@ -2,6 +2,7 @@ package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,17 +86,8 @@ public class AsyncFlusher
         catch (InterruptedException e) {
             LOG.warn("Failed to close buffer", e);
         }
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(this.config.getWaitUntilBufferFlushed(), TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            LOG.warn("1st awaitTermination was interrupted", e);
-            Thread.currentThread().interrupt();
-        }
-
-        if (!executorService.isTerminated()) {
-            executorService.shutdownNow();
+        finally {
+            ExecutorServiceUtils.finishExecutorService(executorService, this.config.getWaitUntilBufferFlushed());
         }
     }
 
