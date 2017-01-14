@@ -174,8 +174,8 @@ public class FluencyTest
                 AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
                 assertThat(flusher.isTerminated(), is(false));
                 assertThat(flusher.getFlushIntervalMillis(), is(600));
-                assertThat(flusher.getWaitUntilBufferFlushed(), is(10));
-                assertThat(flusher.getWaitUntilTerminated(), is(10));
+                assertThat(flusher.getWaitUntilBufferFlushed(), is(60));
+                assertThat(flusher.getWaitUntilTerminated(), is(60));
 
                 assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
                 RetryableSender retryableSender = (RetryableSender) flusher.getSender();
