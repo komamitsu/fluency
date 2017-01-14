@@ -152,8 +152,8 @@ public abstract class Flusher
     public static class Config
     {
         private int flushIntervalMillis = 600;
-        private int waitUntilBufferFlushed = 10;
-        private int waitUntilTerminated = 10;
+        private int waitUntilBufferFlushed = 60;
+        private int waitUntilTerminated = 60;
 
         public int getFlushIntervalMillis()
         {
