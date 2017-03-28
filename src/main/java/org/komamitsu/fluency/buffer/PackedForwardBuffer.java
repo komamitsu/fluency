@@ -29,11 +29,54 @@ public class PackedForwardBuffer
 {
     public static final String FORMAT_TYPE = "packed_forward";
     private static final Logger LOG = LoggerFactory.getLogger(PackedForwardBuffer.class);
-    private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
+    private final RetentionBuffers retentionBuffers = new RetentionBuffers();
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
     private final Config config;
+
+    private static class RetentionBuffers {
+        private final Map<String, RetentionBuffer> buffers = new HashMap<String, RetentionBuffer>();
+
+        synchronized RetentionBuffer get(String tag)
+        {
+            return buffers.get(tag);
+        }
+
+        synchronized void put(String tag, RetentionBuffer buffer)
+        {
+            buffers.put(tag, buffer);
+        }
+
+        synchronized void foreach(IterateAction iterateAction)
+        {
+            for (Map.Entry<String, RetentionBuffer> entry : buffers.entrySet()) {
+                iterateAction.iterate(entry.getKey(), entry.getValue());
+            }
+        }
+
+        synchronized <E extends Exception> void foreachWithException(ThrowableIterateAction<E> iterateAction)
+                throws E
+        {
+            for (Map.Entry<String, RetentionBuffer> entry : buffers.entrySet()) {
+                iterateAction.<E>iterateWithException(entry.getKey(), entry.getValue());
+            }
+        }
+
+        void clear()
+        {
+            buffers.clear();
+        }
+
+        interface IterateAction {
+            void iterate(String tag, RetentionBuffer buffer);
+        }
+
+        interface ThrowableIterateAction <E extends Exception> {
+            void iterateWithException(String tag, RetentionBuffer buffer)
+                    throws E;
+        }
+    }
 
     protected PackedForwardBuffer(PackedForwardBuffer.Config config)
     {
@@ -153,21 +196,25 @@ public class PackedForwardBuffer
         }
     }
 
-    private void moveRetentionBuffersToFlushable(boolean force)
+    private void moveRetentionBuffersToFlushable(final boolean force)
             throws IOException
     {
-        long expiredThreshold = System.currentTimeMillis() - config.getChunkRetentionTimeMillis();
+        final long expiredThreshold = System.currentTimeMillis() - config.getChunkRetentionTimeMillis();
 
-        synchronized (retentionBuffers) {
-            for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
-                // it can be null because moveRetentionBufferToFlushable() can set null
-                if (entry.getValue() != null) {
-                    if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
-                        moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
+        retentionBuffers.foreachWithException(
+                new RetentionBuffers.ThrowableIterateAction<IOException>() {
+                    @Override
+                    public void iterateWithException(String tag, RetentionBuffer buffer)
+                            throws IOException
+                    {
+                        if (buffer != null) {
+                            if (force || buffer.getLastUpdatedTimeMillis().get() < expiredThreshold) {
+                                moveRetentionBufferToFlushable(tag, buffer);
+                            }
+                        }
                     }
                 }
-            }
-        }
+        );
     }
 
     private void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
@@ -271,20 +318,23 @@ public class PackedForwardBuffer
     @Override
     public long getBufferedDataSize()
     {
-        long size = 0;
-        synchronized (retentionBuffers) {
-            for (Map.Entry<String, RetentionBuffer> buffer : retentionBuffers.entrySet()) {
-                if (buffer.getValue() != null && buffer.getValue().getByteBuffer() != null) {
-                    size += buffer.getValue().getByteBuffer().position();
+        final AtomicLong size = new AtomicLong();
+        retentionBuffers.foreach(new RetentionBuffers.IterateAction() {
+            @Override
+            public void iterate(String tag, RetentionBuffer buffer)
+            {
+                if (buffer != null && buffer.getByteBuffer() != null) {
+                    size.addAndGet(buffer.getByteBuffer().position());
                 }
             }
-        }
+        });
+
         for (TaggableBuffer buffer : flushableBuffers) {
             if (buffer.getByteBuffer() != null) {
-                size += buffer.getByteBuffer().remaining();
+                size.addAndGet(buffer.getByteBuffer().remaining());
             }
         }
-        return size;
+        return size.get();
     }
 
     private static class RetentionBuffer
