@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class PackedForwardBuffer
     extends Buffer
@@ -36,36 +38,89 @@ public class PackedForwardBuffer
     private final Config config;
 
     private static class RetentionBuffers {
-        private final Map<String, RetentionBuffer> buffers = new HashMap<String, RetentionBuffer>();
+        private static final int STRIPE_NUM = 32;
+        private final Map<String, RetentionBuffer> buffers = new ConcurrentHashMap<String, RetentionBuffer>();
+        private final ReentrantLock[] locks = new ReentrantLock[STRIPE_NUM];
 
-        synchronized RetentionBuffer get(String tag)
+        RetentionBuffers()
+        {
+            for (int i = 0; i < STRIPE_NUM; i++) {
+                locks[i] = new ReentrantLock();
+            }
+        }
+
+        RetentionBuffer get(String tag)
         {
             return buffers.get(tag);
         }
 
-        synchronized void put(String tag, RetentionBuffer buffer)
+        void put(String tag, RetentionBuffer buffer)
         {
             buffers.put(tag, buffer);
         }
 
-        synchronized void foreach(IterateAction iterateAction)
+        void remove(String tag)
+        {
+            buffers.remove(tag);
+        }
+
+        void foreach(IterateAction iterateAction, boolean withLock)
         {
             for (Map.Entry<String, RetentionBuffer> entry : buffers.entrySet()) {
-                iterateAction.iterate(entry.getKey(), entry.getValue());
+                String tag = entry.getKey();
+                if (withLock) {
+                    lock(tag);
+                }
+                try {
+                    iterateAction.iterate(tag, entry.getValue());
+                }
+                finally {
+                    if (withLock) {
+                        unlock(tag);
+                    }
+                }
             }
         }
 
-        synchronized <E extends Exception> void foreachWithException(ThrowableIterateAction<E> iterateAction)
+        <E extends Exception> void foreachWithException(ThrowableIterateAction<E> iterateAction, boolean withLock)
                 throws E
         {
             for (Map.Entry<String, RetentionBuffer> entry : buffers.entrySet()) {
-                iterateAction.<E>iterateWithException(entry.getKey(), entry.getValue());
+                String tag = entry.getKey();
+                if (withLock) {
+                    lock(tag);
+                }
+                try {
+                    iterateAction.<E>iterateWithException(entry.getKey(), entry.getValue());
+                }
+                finally {
+                    if (withLock) {
+                        unlock(tag);
+                    }
+                }
             }
         }
 
         void clear()
         {
             buffers.clear();
+        }
+
+        private ReentrantLock getLock(String tag)
+        {
+            return locks[Math.abs(tag.hashCode() % STRIPE_NUM)];
+        }
+
+        void lock(String tag)
+        {
+            ReentrantLock lock = getLock(tag);
+            lock.lock();
+        }
+
+        void unlock(String tag)
+        {
+            ReentrantLock lock = getLock(tag);
+            lock.unlock();
         }
 
         interface IterateAction {
@@ -131,11 +186,15 @@ public class PackedForwardBuffer
     private void loadDataToRetentionBuffers(String tag, ByteBuffer src)
             throws IOException
     {
-        synchronized (retentionBuffers) {
+        retentionBuffers.lock(tag);
+        try {
             RetentionBuffer buffer = prepareBuffer(tag, src.remaining());
             buffer.getByteBuffer().put(src);
             buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
             moveRetentionBufferIfNeeded(tag, buffer);
+        }
+        finally {
+            retentionBuffers.unlock(tag);
         }
     }
 
@@ -214,7 +273,7 @@ public class PackedForwardBuffer
                         }
                     }
                 }
-        );
+        , true);
     }
 
     private void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
@@ -224,7 +283,7 @@ public class PackedForwardBuffer
             LOG.trace("moveRetentionBufferToFlushable(): tag={}, buffer={}", tag, buffer);
             buffer.getByteBuffer().flip();
             flushableBuffers.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
-            retentionBuffers.put(tag, null);
+            retentionBuffers.remove(tag);
         }
         catch (InterruptedException e) {
             throw new IOException("Failed to move retention buffer due to interruption", e);
@@ -327,7 +386,7 @@ public class PackedForwardBuffer
                     size.addAndGet(buffer.getByteBuffer().position());
                 }
             }
-        });
+        }, false);
 
         for (TaggableBuffer buffer : flushableBuffers) {
             if (buffer.getByteBuffer() != null) {
