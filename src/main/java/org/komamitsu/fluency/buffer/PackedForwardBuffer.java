@@ -260,20 +260,23 @@ public class PackedForwardBuffer
     {
         final long expiredThreshold = System.currentTimeMillis() - config.getChunkRetentionTimeMillis();
 
-        retentionBuffers.foreachWithException(
-                new RetentionBuffers.ThrowableIterateAction<IOException>() {
-                    @Override
-                    public void iterateWithException(String tag, RetentionBuffer buffer)
-                            throws IOException
+        synchronized (retentionBuffers) {
+            retentionBuffers.foreachWithException(
+                    new RetentionBuffers.ThrowableIterateAction<IOException>()
                     {
-                        if (buffer != null) {
-                            if (force || buffer.getLastUpdatedTimeMillis().get() < expiredThreshold) {
-                                moveRetentionBufferToFlushable(tag, buffer);
+                        @Override
+                        public void iterateWithException(String tag, RetentionBuffer buffer)
+                                throws IOException
+                        {
+                            if (buffer != null) {
+                                if (force || buffer.getLastUpdatedTimeMillis().get() < expiredThreshold) {
+                                    moveRetentionBufferToFlushable(tag, buffer);
+                                }
                             }
                         }
                     }
-                }
-        , true);
+                    , true);
+        }
     }
 
     private void moveRetentionBufferToFlushable(String tag, RetentionBuffer buffer)
@@ -364,7 +367,9 @@ public class PackedForwardBuffer
     @Override
     protected synchronized void closeInternal()
     {
-        retentionBuffers.clear();
+        synchronized (retentionBuffers) {
+            retentionBuffers.clear();
+        }
         bufferPool.releaseBuffers();
     }
 
