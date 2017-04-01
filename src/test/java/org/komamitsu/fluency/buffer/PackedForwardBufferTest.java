@@ -20,7 +20,7 @@ public class PackedForwardBufferTest
     public void testPackedForwardBuffer()
             throws IOException, InterruptedException
     {
-        for (Integer loopCount : Arrays.asList(100, 1000, 10000)) {
+        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true, new PackedForwardBuffer.Config().createInstance());
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true, new PackedForwardBuffer.Config().createInstance());
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false, new PackedForwardBuffer.Config().createInstance());
