@@ -2,6 +2,7 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.BufferFullException;
+import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -133,8 +134,7 @@ public class PackedForwardBuffer
         }
     }
 
-    @Override
-    public void append(String tag, long timestamp, Map<String, Object> data)
+    private void appendInternal(String tag, Object timestamp, Map<String, Object> data)
             throws IOException
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -143,6 +143,20 @@ public class PackedForwardBuffer
         outputStream.close();
 
         loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+    }
+
+    @Override
+    public void append(String tag, long timestamp, Map<String, Object> data)
+            throws IOException
+    {
+        appendInternal(tag, timestamp, data);
+    }
+
+    @Override
+    public void append(String tag, EventTime timestamp, Map<String, Object> data)
+            throws IOException
+    {
+        appendInternal(tag, timestamp, data);
     }
 
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)

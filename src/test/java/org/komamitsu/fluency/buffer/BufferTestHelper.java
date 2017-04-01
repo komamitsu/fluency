@@ -1,21 +1,22 @@
 package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.CoreMatchers;
+import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ExtensionValue;
 import org.msgpack.value.ImmutableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -52,7 +53,7 @@ public class BufferTestHelper
         longCommentCount = 0;
     }
 
-    public void baseTestMessageBuffer(final int loopCount, final boolean packedFwd, final boolean multiTags, final boolean syncFlush, final Buffer buffer)
+    public void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final Buffer buffer)
             throws IOException, InterruptedException
     {
         assertThat(buffer.getBufferUsage(), is(0f));
@@ -76,7 +77,12 @@ public class BufferTestHelper
                         data.put("age", i);
                         data.put("comment", i % 31 == 0 ? longStr : "hello");
                         String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
-                        buffer.append(tag, System.currentTimeMillis(), data);
+                        if (eventTime) {
+                            buffer.append(tag, new EventTime(System.currentTimeMillis() / 1000, 0xFFFFFFFF), data);
+                        }
+                        else {
+                            buffer.append(tag, System.currentTimeMillis(), data);
+                        }
 
                         if (syncFlush) {
                             if (i % 20 == 0) {
@@ -152,60 +158,41 @@ public class BufferTestHelper
         ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
         for (ByteBuffer byteBuffer : sender.getEvents()) {
-            if (packedFwd) {
-                if (headerBuffer == null) {
-                    headerBuffer = byteBuffer;
-                    continue;
-                }
-                byte[] bytes = new byte[headerBuffer.limit() + byteBuffer.limit()];
-                headerBuffer.get(bytes, 0, headerBuffer.limit());
-                byteBuffer.get(bytes, headerBuffer.limit(), byteBuffer.limit());
-                headerBuffer = null;
+            if (headerBuffer == null) {
+                headerBuffer = byteBuffer;
+                continue;
+            }
+            byte[] bytes = new byte[headerBuffer.limit() + byteBuffer.limit()];
+            headerBuffer.get(bytes, 0, headerBuffer.limit());
+            byteBuffer.get(bytes, headerBuffer.limit(), byteBuffer.limit());
+            headerBuffer = null;
 
-                MessageUnpacker messageUnpacker = MessagePack.newDefaultUnpacker(bytes);
+            MessageUnpacker messageUnpacker = MessagePack.newDefaultUnpacker(bytes);
+            assertEquals(2, messageUnpacker.unpackArrayHeader());
+
+            String tag = messageUnpacker.unpackString();
+            byte[] payload = messageUnpacker.readPayload(messageUnpacker.unpackBinaryHeader());
+            messageUnpacker = MessagePack.newDefaultUnpacker(payload);
+            while (messageUnpacker.hasNext()) {
                 assertEquals(2, messageUnpacker.unpackArrayHeader());
 
-                String tag = messageUnpacker.unpackString();
-                byte[] payload = messageUnpacker.readPayload(messageUnpacker.unpackBinaryHeader());
-                messageUnpacker = MessagePack.newDefaultUnpacker(payload);
-                while (messageUnpacker.hasNext()) {
-                    assertEquals(2, messageUnpacker.unpackArrayHeader());
+                ImmutableValue timestamp = messageUnpacker.unpackValue();
 
-                    long timestamp = messageUnpacker.unpackLong();
-
-                    int size = messageUnpacker.unpackMapHeader();
-                    assertEquals(3, size);
-                    Map<String, Object> data = new HashMap<String, Object>();
-                    for (int i = 0; i < size; i++) {
-                        String key = messageUnpacker.unpackString();
-                        ImmutableValue value = messageUnpacker.unpackValue();
-                        if (value.isStringValue()) {
-                            data.put(key, value.asStringValue().asString());
-                        }
-                        else if (value.isIntegerValue()) {
-                            data.put(key, value.asIntegerValue().asInt());
-                        }
+                int size = messageUnpacker.unpackMapHeader();
+                assertEquals(3, size);
+                Map<String, Object> data = new HashMap<String, Object>();
+                for (int i = 0; i < size; i++) {
+                    String key = messageUnpacker.unpackString();
+                    ImmutableValue value = messageUnpacker.unpackValue();
+                    if (value.isStringValue()) {
+                        data.put(key, value.asStringValue().asString());
                     }
-
-                    analyzeResult(tag, timestamp, data, start, end);
-                    recordCount++;
+                    else if (value.isIntegerValue()) {
+                        data.put(key, value.asIntegerValue().asInt());
+                    }
                 }
-            }
-            else {
-                byte[] bytes = new byte[byteBuffer.limit()];
-                byteBuffer.get(bytes);
-                List<Object> items = objectMapper.readValue(bytes, new TypeReference<List<Object>>() {});
 
-                assertTrue(items.get(0) instanceof String);
-                String tag = (String) items.get(0);
-
-                assertTrue(items.get(1) instanceof Long);
-                long timestamp = (Long) items.get(1);
-
-                assertTrue(items.get(2) instanceof Map);
-                Map<String, Object> data = (Map<String, Object>) items.get(2);
-
-                analyzeResult(tag, timestamp, data, start, end);
+                analyzeResult(tag, timestamp, data, start, end, eventTime);
                 recordCount++;
             }
         }
@@ -233,7 +220,7 @@ public class BufferTestHelper
         assertTrue(totalLoopCount / 31 - 5 <= longCommentCount && longCommentCount <= totalLoopCount / 31 + 5);
     }
 
-    private void analyzeResult(String tag, long timestamp, Map<String, Object> data, long start, long end)
+    private void analyzeResult(String tag, ImmutableValue timestamp, Map<String, Object> data, long start, long end, boolean eventTime)
     {
         Integer count = tagCounts.get(tag);
         if (count == null) {
@@ -241,7 +228,22 @@ public class BufferTestHelper
         }
         tagCounts.put(tag, count + 1);
 
-        assertTrue(start <= timestamp && timestamp <= end);
+        if (eventTime) {
+            assertThat(timestamp.isExtensionValue(), is(true));
+            ExtensionValue tsInEventTime = timestamp.asExtensionValue();
+            assertThat(tsInEventTime.getType(), CoreMatchers.is((byte) 0x00));
+            ByteBuffer secondsAndNanoSeconds = ByteBuffer.wrap(tsInEventTime.getData());
+            secondsAndNanoSeconds.order(ByteOrder.BIG_ENDIAN);
+            int seconds = secondsAndNanoSeconds.getInt();
+            int nanoSeconds = secondsAndNanoSeconds.getInt();
+            assertTrue(start / 1000 <= seconds && seconds <= end / 1000);
+            assertThat(nanoSeconds, is(0xFFFFFFFF));
+        }
+        else {
+            assertThat(timestamp.isIntegerValue(), is(true));
+            long tsInEpochMilli = timestamp.asIntegerValue().asLong();
+            assertTrue(start <= tsInEpochMilli && tsInEpochMilli<= end);
+        }
 
         assertEquals(3, data.size());
         String name = (String) data.get("name");

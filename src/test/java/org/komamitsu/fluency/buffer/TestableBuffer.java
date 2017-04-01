@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.Module;
+import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.util.Tuple;
 import org.komamitsu.fluency.util.Tuple3;
@@ -42,6 +43,13 @@ public class TestableBuffer
     public void setSavableBuffer(List<String> params, ByteBuffer buffer)
     {
         savableBuffers.add(new Tuple<List<String>, ByteBuffer>(params, buffer));
+    }
+
+    @Override
+    public void append(String tag, EventTime timestamp, Map<String, Object> data)
+            throws IOException
+    {
+        throw new IllegalStateException("Shouldn't be called");
     }
 
     @Override

@@ -167,6 +167,20 @@ public class Fluency
         emit(tag, System.currentTimeMillis() / 1000, data);
     }
 
+    public void emit(String tag, EventTime eventTime, Map<String, Object> data)
+            throws IOException
+    {
+        try {
+            buffer.append(tag, eventTime, data);
+            flusher.onUpdate();
+        }
+        catch (BufferFullException e) {
+            LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
+            flusher.flush();
+            throw e;
+        }
+    }
+
     @Override
     public void flush()
             throws IOException
