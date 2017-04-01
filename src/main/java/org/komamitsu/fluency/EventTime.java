@@ -22,9 +22,9 @@ public class EventTime
         return new EventTime(epochSeconds, 0);
     }
 
-    public static EventTime fromEpoch(long epochSeconds, long nanoSecond)
+    public static EventTime fromEpoch(long epochSeconds, long nanoSeconds)
     {
-        return new EventTime(epochSeconds, nanoSecond);
+        return new EventTime(epochSeconds, nanoSeconds);
     }
 
     public static EventTime fromEpochMilli(long epochMilliSecond)
