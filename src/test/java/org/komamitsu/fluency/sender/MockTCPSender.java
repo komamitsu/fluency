@@ -1,5 +1,8 @@
 package org.komamitsu.fluency.sender;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -9,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MockTCPSender
         extends TCPSender
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MockTCPSender.class);
+
     private final List<ByteBuffer> events = new ArrayList<ByteBuffer>();
     private final AtomicInteger closeCount = new AtomicInteger();
 
@@ -28,7 +33,12 @@ public class MockTCPSender
     protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
-        events.addAll(dataList);
+        for (ByteBuffer data : dataList) {
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(data.capacity());
+            byteBuffer.put(data);
+            byteBuffer.flip();
+            events.add(byteBuffer);
+        }
     }
 
     @Override
