@@ -14,36 +14,36 @@ import java.nio.ByteOrder;
 @JsonSerialize(using = EventTime.Serilizer.class)
 public class EventTime
 {
-    private final long seconds;
-    private final long nanoSeconds;
+    private final int seconds;
+    private final int nanoSeconds;
 
-    public static EventTime fromEpoch(long epochSeconds)
+    public static EventTime fromEpoch(int epochSeconds)
     {
         return new EventTime(epochSeconds, 0);
     }
 
-    public static EventTime fromEpoch(long epochSeconds, long nanoSeconds)
+    public static EventTime fromEpoch(int epochSeconds, int nanoSeconds)
     {
         return new EventTime(epochSeconds, nanoSeconds);
     }
 
     public static EventTime fromEpochMilli(long epochMilliSecond)
     {
-        return new EventTime(epochMilliSecond/ 1000, 0);
+        return new EventTime((int) (epochMilliSecond/ 1000), (int) ((epochMilliSecond % 1000) * 1000000));
     }
 
-    public EventTime(long seconds, long nanoSeconds)
+    public EventTime(int seconds, int nanoSeconds)
     {
         this.seconds = seconds;
         this.nanoSeconds = nanoSeconds;
     }
 
-    public long getSeconds()
+    public int getSeconds()
     {
         return seconds;
     }
 
-    public long getNanoSeconds()
+    public int getNanoSeconds()
     {
         return nanoSeconds;
     }
@@ -69,9 +69,18 @@ public class EventTime
     @Override
     public int hashCode()
     {
-        int result = (int) (seconds ^ (seconds >>> 32));
-        result = 31 * result + (int) (nanoSeconds ^ (nanoSeconds >>> 32));
+        int result = seconds;
+        result = 31 * result + nanoSeconds;
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "EventTime{" +
+                "seconds=" + seconds +
+                ", nanoSeconds=" + nanoSeconds +
+                '}';
     }
 
     public static class Serilizer
@@ -108,8 +117,7 @@ public class EventTime
             // |fixext8|type| 32bits integer BE | 32bits integer BE |
             // +-------+----+----+----+----+----+----+----+----+----+
             ByteBuffer buffer = ByteBuffer.allocate(8);
-            buffer.order(ByteOrder.BIG_ENDIAN);
-            buffer.putInt((int) value.seconds).putInt((int) value.nanoSeconds);
+            buffer.putInt(value.seconds).putInt(value.nanoSeconds);
             messagePackGenerator.writeExtensionType(new MessagePackExtensionType((byte)0x0, buffer.array()));
         }
     }

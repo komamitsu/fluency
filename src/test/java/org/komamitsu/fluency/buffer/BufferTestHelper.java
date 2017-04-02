@@ -78,7 +78,7 @@ public class BufferTestHelper
                         data.put("comment", i % 31 == 0 ? longStr : "hello");
                         String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
                         if (eventTime) {
-                            buffer.append(tag, new EventTime(System.currentTimeMillis() / 1000, 0xFFFFFFFF), data);
+                            buffer.append(tag, new EventTime((int) (System.currentTimeMillis() / 1000), 999999999), data);
                         }
                         else {
                             buffer.append(tag, System.currentTimeMillis(), data);
@@ -233,11 +233,10 @@ public class BufferTestHelper
             ExtensionValue tsInEventTime = timestamp.asExtensionValue();
             assertThat(tsInEventTime.getType(), CoreMatchers.is((byte) 0x00));
             ByteBuffer secondsAndNanoSeconds = ByteBuffer.wrap(tsInEventTime.getData());
-            secondsAndNanoSeconds.order(ByteOrder.BIG_ENDIAN);
             int seconds = secondsAndNanoSeconds.getInt();
             int nanoSeconds = secondsAndNanoSeconds.getInt();
             assertTrue(start / 1000 <= seconds && seconds <= end / 1000);
-            assertThat(nanoSeconds, is(0xFFFFFFFF));
+            assertThat(nanoSeconds, is(999999999));
         }
         else {
             assertThat(timestamp.isIntegerValue(), is(true));
