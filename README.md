@@ -146,6 +146,20 @@ event.put("rate", 3.14);
 fluency.emit(tag, event);
 ```
 
+If you want to use [EventTime](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#eventtime-ext-format) as a timestamp, call `Fluency#emit` with an `EventTime` object in the following way
+
+```java
+int epochSeconds;
+int nanoSeconds;
+    :
+EventTime eventTime = EventTime.fromEpoch(epochSeconds, nanoSeconds);
+
+// You can also create an EventTime object like this
+// EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+
+fluency.emit(tag, eventTime, event);
+```
+
 ### Release resources
 
 ```java
