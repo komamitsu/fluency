@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -138,5 +137,31 @@ public class BufferPoolTest
             }
         }
         return totalBufferedSize;
+    }
+
+    @Test
+    public void useOffHeap()
+            throws IOException
+    {
+        BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024);
+        assertFalse(bufferPool.useJvmHeap());
+        ByteBuffer buffer0 = bufferPool.acquireBuffer(100 * 1024);
+        assertTrue(buffer0.isDirect());
+        assertEquals(128 * 1024, buffer0.capacity());
+        assertEquals(0, buffer0.position());
+        assertEquals(128 * 1024, bufferPool.getAllocatedSize());
+    }
+
+    @Test
+    public void useOnHeap()
+            throws IOException
+    {
+        BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024, true);
+        assertTrue(bufferPool.useJvmHeap());
+        ByteBuffer buffer0 = bufferPool.acquireBuffer(100 * 1024);
+        assertFalse(buffer0.isDirect());
+        assertEquals(128 * 1024, buffer0.capacity());
+        assertEquals(0, buffer0.position());
+        assertEquals(128 * 1024, bufferPool.getAllocatedSize());
     }
 }
