@@ -146,6 +146,7 @@ public class BufferTestHelper
         if (!flushService.isTerminated()) {
             flushService.shutdownNow();
         }
+        buffer.close();     // Just in case
         assertThat(buffer.getBufferUsage(), is(0f));
         assertThat(buffer.getAllocatedSize(), is(0L));
         assertThat(buffer.getBufferedDataSize(), is(0L));
