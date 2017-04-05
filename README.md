@@ -47,6 +47,7 @@ dependencies {
 //   - Initial chunk buffer size is 1MB (by default)
 //   - Threshold chunk buffer size to flush is 4MB (by default)
 //   - Max total buffer size is 16MB (by default)
+//   - Use off heap memory for buffer pool (by default)
 //   - Max retry of sending events is 8 (by default)
 //   - Max wait until all buffers are flushed is 10 seconds (by default)
 //   - Max wait until the flusher is terminated is 10 seconds (by default)
@@ -127,12 +128,14 @@ Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).buil
 // Multiple Fluentd(localhost:24224, localhost:24225)
 //   - Flush interval = 200ms
 //   - Max retry of sending events = 12
+//   - Use JVM heap memory for buffer pool
 Fluency fluency = Fluency.defaultFluency(
 			Arrays.asList(
 				new InetSocketAddress(24224), new InetSocketAddress(24225)),
 				new Fluency.Config().
 					setFlushIntervalMillis(200).
-					setSenderMaxRetryCount(12));
+					setSenderMaxRetryCount(12).
+					setJvmHeapBufferMode(true));
 ```
 
 ### Emit event

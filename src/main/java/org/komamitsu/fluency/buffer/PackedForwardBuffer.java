@@ -44,7 +44,8 @@ public class PackedForwardBuffer
             LOG.warn("Initial Buffer Chunk Size ({}) shouldn't be more than Buffer Chunk Retention Size ({}) for better performance.",
                     config.getChunkInitialSize(), config.getChunkRetentionSize());
         }
-        bufferPool = new BufferPool(config.getChunkInitialSize(), config.getMaxBufferSize());
+        bufferPool = new BufferPool(
+                config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
@@ -301,6 +302,11 @@ public class PackedForwardBuffer
         return size;
     }
 
+    public boolean getJvmHeapBufferMode()
+    {
+        return bufferPool.getJvmHeapBufferMode();
+    }
+
     private static class RetentionBuffer
     {
         private final AtomicLong lastUpdatedTimeMillis = new AtomicLong();
@@ -402,6 +408,7 @@ public class PackedForwardBuffer
         private float chunkExpandRatio = 2.0f;
         private int chunkRetentionSize = 4 * 1024 * 1024;
         private int chunkRetentionTimeMillis = 400;
+        private boolean jvmHeapBufferMode = false;
 
         public Buffer.Config getBaseConfig()
         {
@@ -507,6 +514,17 @@ public class PackedForwardBuffer
             return this;
         }
 
+        public boolean getJvmHeapBufferMode()
+        {
+            return jvmHeapBufferMode;
+        }
+
+        public Config setJvmHeapBufferMode(boolean jvmHeapBufferMode)
+        {
+            this.jvmHeapBufferMode = jvmHeapBufferMode;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -516,6 +534,7 @@ public class PackedForwardBuffer
                     ", chunkExpandRatio=" + chunkExpandRatio +
                     ", chunkRetentionSize=" + chunkRetentionSize +
                     ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
+                    ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     '}';
         }
 

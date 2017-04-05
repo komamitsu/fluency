@@ -8,18 +8,25 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class BufferPool
+class BufferPool
 {
     @VisibleForTesting
     final Map<Integer, LinkedBlockingQueue<ByteBuffer>> bufferPool = new HashMap<Integer, LinkedBlockingQueue<ByteBuffer>>();
     private final AtomicLong allocatedSize = new AtomicLong();
     private final int initialBufferSize;
     private final long maxBufferSize;
+    private final boolean jvmHeapBufferMode;
 
     public BufferPool(int initialBufferSize, long maxBufferSize)
     {
+        this(initialBufferSize, maxBufferSize, false);
+    }
+
+    public BufferPool(int initialBufferSize, long maxBufferSize, boolean jvmHeapBufferMode)
+    {
         this.initialBufferSize = initialBufferSize;
         this.maxBufferSize = maxBufferSize;
+        this.jvmHeapBufferMode = jvmHeapBufferMode;
     }
 
     public ByteBuffer acquireBuffer(int bufferSize)
@@ -60,7 +67,14 @@ public class BufferPool
                 return null;    // `null` means the buffer is full.
             }
             if (currentAllocatedSize == allocatedSize.getAndAdd(normalizedBufferSize)) {
-                return ByteBuffer.allocateDirect(normalizedBufferSize);
+                ByteBuffer buf;
+                if (jvmHeapBufferMode) {
+                    buf = ByteBuffer.allocate(normalizedBufferSize);
+                }
+                else {
+                    buf = ByteBuffer.allocateDirect(normalizedBufferSize);
+                }
+                return buf;
             }
             allocatedSize.getAndAdd(-normalizedBufferSize);
         }
@@ -96,6 +110,11 @@ public class BufferPool
         }
     }
 
+    public boolean getJvmHeapBufferMode()
+    {
+        return jvmHeapBufferMode;
+    }
+
     @Override
     public String toString()
     {
@@ -104,6 +123,7 @@ public class BufferPool
                 ", allocatedSize=" + allocatedSize +
                 ", initialBufferSize=" + initialBufferSize +
                 ", maxBufferSize=" + maxBufferSize +
+                ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                 '}';
     }
 }
