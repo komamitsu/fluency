@@ -45,7 +45,7 @@ public class PackedForwardBuffer
                     config.getChunkInitialSize(), config.getChunkRetentionSize());
         }
         bufferPool = new BufferPool(
-                config.getChunkInitialSize(), config.getMaxBufferSize(),config.jvmHeapBufferMode);
+                config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
