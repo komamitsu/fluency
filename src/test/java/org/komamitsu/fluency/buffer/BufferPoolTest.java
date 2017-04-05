@@ -144,7 +144,7 @@ public class BufferPoolTest
             throws IOException
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024);
-        assertFalse(bufferPool.useJvmHeap());
+        assertFalse(bufferPool.getJvmHeapBufferMode());
         ByteBuffer buffer0 = bufferPool.acquireBuffer(100 * 1024);
         assertTrue(buffer0.isDirect());
         assertEquals(128 * 1024, buffer0.capacity());
@@ -157,7 +157,7 @@ public class BufferPoolTest
             throws IOException
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024, true);
-        assertTrue(bufferPool.useJvmHeap());
+        assertTrue(bufferPool.getJvmHeapBufferMode());
         ByteBuffer buffer0 = bufferPool.acquireBuffer(100 * 1024);
         assertFalse(buffer0.isDirect());
         assertEquals(128 * 1024, buffer0.capacity());

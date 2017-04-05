@@ -168,7 +168,7 @@ public class FluencyTest
                 assertThat(buffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
                 assertThat(buffer.getChunkInitialSize(), is(1 * 1024 * 1024));
                 assertThat(buffer.getChunkRetentionTimeMillis(), is(400));
-                assertThat(buffer.useJvmHeap(), is(false));
+                assertThat(buffer.getJvmHeapBufferMode(), is(false));
                 assertThat(buffer.isAckResponseMode(), is(false));
 
                 assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
@@ -225,7 +225,7 @@ public class FluencyTest
                                 .setMaxBufferSize(Long.MAX_VALUE)
                                 .setBufferChunkInitialSize(7 * 1024 * 1024)
                                 .setBufferChunkRetentionSize(13 * 1024 * 1024)
-                                .setUseJvmHeapForBufferPool(true)
+                                .setJvmHeapBufferMode(true)
                                 .setSenderMaxRetryCount(99)
                                 .setAckResponseMode(true)
                                 .setWaitUntilBufferFlushed(42)
@@ -246,7 +246,7 @@ public class FluencyTest
                 assertThat(buffer.getChunkExpandRatio(), is(2f));
                 assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
                 assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
-                assertThat(buffer.useJvmHeap(), is(true));
+                assertThat(buffer.getJvmHeapBufferMode(), is(true));
                 assertThat(buffer.isAckResponseMode(), is(true));
 
                 assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));

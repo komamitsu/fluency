@@ -15,18 +15,18 @@ class BufferPool
     private final AtomicLong allocatedSize = new AtomicLong();
     private final int initialBufferSize;
     private final long maxBufferSize;
-    private final boolean useJvmHeap;
+    private final boolean jvmHeapBufferMode;
 
     public BufferPool(int initialBufferSize, long maxBufferSize)
     {
         this(initialBufferSize, maxBufferSize, false);
     }
 
-    public BufferPool(int initialBufferSize, long maxBufferSize, boolean useJvmHeap)
+    public BufferPool(int initialBufferSize, long maxBufferSize, boolean jvmHeapBufferMode)
     {
         this.initialBufferSize = initialBufferSize;
         this.maxBufferSize = maxBufferSize;
-        this.useJvmHeap = useJvmHeap;
+        this.jvmHeapBufferMode = jvmHeapBufferMode;
     }
 
     public ByteBuffer acquireBuffer(int bufferSize)
@@ -68,7 +68,7 @@ class BufferPool
             }
             if (currentAllocatedSize == allocatedSize.getAndAdd(normalizedBufferSize)) {
                 ByteBuffer buf;
-                if (useJvmHeap) {
+                if (jvmHeapBufferMode) {
                     buf = ByteBuffer.allocate(normalizedBufferSize);
                 }
                 else {
@@ -110,9 +110,9 @@ class BufferPool
         }
     }
 
-    public boolean useJvmHeap()
+    public boolean getJvmHeapBufferMode()
     {
-        return useJvmHeap;
+        return jvmHeapBufferMode;
     }
 
     @Override
@@ -123,7 +123,7 @@ class BufferPool
                 ", allocatedSize=" + allocatedSize +
                 ", initialBufferSize=" + initialBufferSize +
                 ", maxBufferSize=" + maxBufferSize +
-                ", useJvmHeap=" + useJvmHeap +
+                ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                 '}';
     }
 }

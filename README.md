@@ -135,7 +135,7 @@ Fluency fluency = Fluency.defaultFluency(
 				new Fluency.Config().
 					setFlushIntervalMillis(200).
 					setSenderMaxRetryCount(12).
-					setUseJvmHeapForBufferPool(true));
+					setJvmHeapBufferMode(true));
 ```
 
 ### Emit event

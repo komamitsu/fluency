@@ -45,7 +45,7 @@ public class PackedForwardBuffer
                     config.getChunkInitialSize(), config.getChunkRetentionSize());
         }
         bufferPool = new BufferPool(
-                config.getChunkInitialSize(), config.getMaxBufferSize(),config.useJvmHeapForBufferPool);
+                config.getChunkInitialSize(), config.getMaxBufferSize(),config.jvmHeapBufferMode);
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
@@ -302,9 +302,9 @@ public class PackedForwardBuffer
         return size;
     }
 
-    public boolean useJvmHeap()
+    public boolean getJvmHeapBufferMode()
     {
-        return bufferPool.useJvmHeap();
+        return bufferPool.getJvmHeapBufferMode();
     }
 
     private static class RetentionBuffer
@@ -408,7 +408,7 @@ public class PackedForwardBuffer
         private float chunkExpandRatio = 2.0f;
         private int chunkRetentionSize = 4 * 1024 * 1024;
         private int chunkRetentionTimeMillis = 400;
-        private boolean useJvmHeapForBufferPool = false;
+        private boolean jvmHeapBufferMode = false;
 
         public Buffer.Config getBaseConfig()
         {
@@ -514,14 +514,15 @@ public class PackedForwardBuffer
             return this;
         }
 
-        public boolean isUseJvmHeapForBufferPool()
+        public boolean getJvmHeapBufferMode()
         {
-            return useJvmHeapForBufferPool;
+            return jvmHeapBufferMode;
         }
 
-        public void setUseJvmHeapForBufferPool(boolean useJvmHeapForBufferPool)
+        public Config setJvmHeapBufferMode(boolean jvmHeapBufferMode)
         {
-            this.useJvmHeapForBufferPool = useJvmHeapForBufferPool;
+            this.jvmHeapBufferMode = jvmHeapBufferMode;
+            return this;
         }
 
         @Override
@@ -533,7 +534,7 @@ public class PackedForwardBuffer
                     ", chunkExpandRatio=" + chunkExpandRatio +
                     ", chunkRetentionSize=" + chunkRetentionSize +
                     ", chunkRetentionTimeMillis=" + chunkRetentionTimeMillis +
-                    ", useJvmHeapForBufferPool=" + useJvmHeapForBufferPool +
+                    ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     '}';
         }
 

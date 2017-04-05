@@ -60,8 +60,8 @@ public class Fluency
                 bufferConfig.setFileBackupDir(config.getFileBackupDir());
             }
 
-            if (config.getUseJvmHeapForBufferPool() != null) {
-                bufferConfig.setUseJvmHeapForBufferPool(config.useJvmHeapForBufferPool);
+            if (config.getJvmHeapBufferMode() != null) {
+                bufferConfig.setJvmHeapBufferMode(config.jvmHeapBufferMode);
             }
 
             if (config.getFlushIntervalMillis() != null) {
@@ -324,7 +324,7 @@ public class Fluency
 
         private Integer waitUntilFlusherTerminated;
 
-        private Boolean useJvmHeapForBufferPool;
+        private Boolean jvmHeapBufferMode;
 
         public Long getMaxBufferSize()
         {
@@ -425,14 +425,14 @@ public class Fluency
             return this;
         }
 
-        public Boolean getUseJvmHeapForBufferPool()
+        public Boolean getJvmHeapBufferMode()
         {
-            return useJvmHeapForBufferPool;
+            return jvmHeapBufferMode;
         }
 
-        public Config setUseJvmHeapForBufferPool(Boolean useJvmHeapForBufferPool)
+        public Config setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
         {
-            this.useJvmHeapForBufferPool = useJvmHeapForBufferPool;
+            this.jvmHeapBufferMode = jvmHeapBufferMode;
             return this;
         }
 
@@ -449,7 +449,7 @@ public class Fluency
                     ", fileBackupDir='" + fileBackupDir + '\'' +
                     ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                     ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
-                    ", useJvmHeapForBufferPool=" + useJvmHeapForBufferPool +
+                    ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     '}';
         }
     }
