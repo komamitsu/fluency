@@ -1,3 +1,10 @@
+## 1.2.0 (2017-04-09)
+
+Features:
+
+- Support EventTime https://github.com/komamitsu/fluency/pull/62
+- Support buffer pool on JVM heap https://github.com/komamitsu/fluency/pull/63
+
 ## 1.1.0 (2017-01-14)
 
 Optimizations:
