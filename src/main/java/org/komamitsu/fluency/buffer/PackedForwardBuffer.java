@@ -79,6 +79,7 @@ public class PackedForwardBuffer
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
+            newBuffer.getCreatedTimeMillis().set(System.currentTimeMillis());
             bufferPool.returnBuffer(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
@@ -93,7 +94,6 @@ public class PackedForwardBuffer
         synchronized (retentionBuffers) {
             RetentionBuffer buffer = prepareBuffer(tag, src.remaining());
             buffer.getByteBuffer().put(src);
-            buffer.getLastUpdatedTimeMillis().set(System.currentTimeMillis());
             moveRetentionBufferIfNeeded(tag, buffer);
         }
     }
@@ -177,7 +177,7 @@ public class PackedForwardBuffer
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
                 // it can be null because moveRetentionBufferToFlushable() can set null
                 if (entry.getValue() != null) {
-                    if (force || entry.getValue().getLastUpdatedTimeMillis().get() < expiredThreshold) {
+                    if (force || entry.getValue().getCreatedTimeMillis().get() < expiredThreshold) {
                         moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
                     }
                 }
@@ -309,7 +309,7 @@ public class PackedForwardBuffer
 
     private static class RetentionBuffer
     {
-        private final AtomicLong lastUpdatedTimeMillis = new AtomicLong();
+        private final AtomicLong createdTimeMillis = new AtomicLong();
         private final ByteBuffer byteBuffer;
 
         public RetentionBuffer(ByteBuffer byteBuffer)
@@ -317,9 +317,9 @@ public class PackedForwardBuffer
             this.byteBuffer = byteBuffer;
         }
 
-        public AtomicLong getLastUpdatedTimeMillis()
+        public AtomicLong getCreatedTimeMillis()
         {
-            return lastUpdatedTimeMillis;
+            return createdTimeMillis;
         }
 
         public ByteBuffer getByteBuffer()
@@ -331,7 +331,7 @@ public class PackedForwardBuffer
         public String toString()
         {
             return "RetentionBuffer{" +
-                    "lastUpdatedTimeMillis=" + lastUpdatedTimeMillis +
+                    "createdTimeMillis=" + createdTimeMillis+
                     ", byteBuffer=" + byteBuffer +
                     '}';
         }
@@ -407,7 +407,7 @@ public class PackedForwardBuffer
         private int chunkInitialSize = 1024 * 1024;
         private float chunkExpandRatio = 2.0f;
         private int chunkRetentionSize = 4 * 1024 * 1024;
-        private int chunkRetentionTimeMillis = 400;
+        private int chunkRetentionTimeMillis = 1000;
         private boolean jvmHeapBufferMode = false;
 
         public Buffer.Config getBaseConfig()

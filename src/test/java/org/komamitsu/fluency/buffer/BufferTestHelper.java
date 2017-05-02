@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -82,12 +81,6 @@ public class BufferTestHelper
                         }
                         else {
                             buffer.append(tag, System.currentTimeMillis(), data);
-                        }
-
-                        if (syncFlush) {
-                            if (i % 20 == 0) {
-                                buffer.flush(sender, false);
-                            }
                         }
                     }
                     latch.countDown();
