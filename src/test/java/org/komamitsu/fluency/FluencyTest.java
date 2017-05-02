@@ -167,7 +167,7 @@ public class FluencyTest
                 assertThat(buffer.getChunkExpandRatio(), is(2f));
                 assertThat(buffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
                 assertThat(buffer.getChunkInitialSize(), is(1 * 1024 * 1024));
-                assertThat(buffer.getChunkRetentionTimeMillis(), is(400));
+                assertThat(buffer.getChunkRetentionTimeMillis(), is(1000));
                 assertThat(buffer.getJvmHeapBufferMode(), is(false));
                 assertThat(buffer.isAckResponseMode(), is(false));
 
@@ -242,7 +242,7 @@ public class FluencyTest
                 assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
                 assertThat(buffer.getFileBackupDir(), is(tmpdir));
                 assertThat(buffer.bufferFormatType(), is("packed_forward"));
-                assertThat(buffer.getChunkRetentionTimeMillis(), is(400));
+                assertThat(buffer.getChunkRetentionTimeMillis(), is(1000));
                 assertThat(buffer.getChunkExpandRatio(), is(2f));
                 assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
                 assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
