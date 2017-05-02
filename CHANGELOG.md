@@ -1,3 +1,9 @@
+## 1.3.0 (2017-05-03)
+
+Bugfixes:
+
+- Fix bug Fluency with SyncFlusher doesn't flush buffered events without manually calling flush()
+
 ## 1.2.0 (2017-04-09)
 
 Features:
