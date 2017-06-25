@@ -124,6 +124,17 @@ public class RetryableSender
             return baseConfig;
         }
 
+        public ErrorHandler getErrorHandler()
+        {
+            return baseConfig.getErrorHandler();
+        }
+
+        public Config setErrorHandler(ErrorHandler errorHandler)
+        {
+            baseConfig.setErrorHandler(errorHandler);
+            return this;
+        }
+
         public Config(Instantiator baseSenderConfig)
         {
             this.baseSenderConfig = baseSenderConfig;
