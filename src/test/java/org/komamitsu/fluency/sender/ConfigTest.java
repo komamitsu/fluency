@@ -50,7 +50,7 @@ public class ConfigTest
             throws IOException
     {
         final AtomicBoolean errorOccurred = new AtomicBoolean();
-        Sender.Config config = new Sender.Config().setErrorHandler(new Sender.ErrorHandler()
+        Sender.Config config = new Sender.Config().setErrorHandler(new ErrorHandler()
         {
             @Override
             public void handle(Throwable e)

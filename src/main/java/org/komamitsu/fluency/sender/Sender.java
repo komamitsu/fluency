@@ -40,11 +40,6 @@ public abstract class Sender
         sendInternalWithRestoreBufferPositions(dataList, ackToken);
     }
 
-    public interface ErrorHandler
-    {
-        void handle(Throwable e);
-    }
-
     private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
