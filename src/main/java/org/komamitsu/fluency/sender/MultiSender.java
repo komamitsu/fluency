@@ -107,6 +107,17 @@ public class MultiSender
             return baseConfig;
         }
 
+        public SenderErrorHandler getSenderErrorHandler()
+        {
+            return baseConfig.getSenderErrorHandler();
+        }
+
+        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
+        {
+            baseConfig.setSenderErrorHandler(senderErrorHandler);
+            return this;
+        }
+
         public Config(List<Instantiator> senderConfigs)
         {
             this.senderConfigs = senderConfigs;

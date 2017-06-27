@@ -1,5 +1,8 @@
 package org.komamitsu.fluency.sender;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 
 import java.io.IOException;
@@ -11,6 +14,7 @@ import java.util.List;
 public abstract class Sender
     implements Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Sender.class);
     private final Config config;
 
     protected Sender(Config config)
@@ -51,6 +55,16 @@ public abstract class Sender
             for (int i = 0; i < dataList.size(); i++) {
                 dataList.get(i).position(positions.get(i));
             }
+
+            if (config.senderErrorHandler != null) {
+                try {
+                    config.senderErrorHandler.handle(e);
+                }
+                catch (Exception ex) {
+                    LOG.warn("Failed to handle an error in the error handler {}", config.senderErrorHandler, ex);
+                }
+            }
+
             if (e instanceof IOException) {
                 throw (IOException)e;
             }
@@ -66,6 +80,26 @@ public abstract class Sender
 
     public static class Config
     {
+        private SenderErrorHandler senderErrorHandler;
+
+        public SenderErrorHandler getSenderErrorHandler()
+        {
+            return senderErrorHandler;
+        }
+
+        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
+        {
+            this.senderErrorHandler = senderErrorHandler;
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "senderErrorHandler=" + senderErrorHandler +
+                    '}';
+        }
     }
 
     public interface Instantiator

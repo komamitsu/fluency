@@ -15,6 +15,7 @@ import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
@@ -412,6 +413,37 @@ public class FluencyTest
                 }
             }
         }
+    }
+
+    @Test
+    public void testSenderErrorHandler()
+            throws IOException, InterruptedException
+    {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
+
+        Fluency fluency = Fluency.defaultFluency(Integer.MAX_VALUE,
+                new Fluency.Config()
+                        .setSenderMaxRetryCount(1)
+                        .setSenderErrorHandler(new SenderErrorHandler()
+                        {
+                            @Override
+                            public void handle(Throwable e)
+                            {
+                                errorContainer.set(e);
+                                countDownLatch.countDown();
+                            }
+                        }));
+
+        HashMap<String, Object> event = new HashMap<String, Object>();
+        event.put("name", "foo");
+        fluency.emit("tag", event);
+
+        if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
+            throw new AssertionError("Timeout");
+        }
+
+        assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
 
     interface FluencyFactory
