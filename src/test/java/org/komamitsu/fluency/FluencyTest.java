@@ -439,7 +439,9 @@ public class FluencyTest
         event.put("name", "foo");
         fluency.emit("tag", event);
 
-        countDownLatch.await(10, TimeUnit.SECONDS);
+        if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
+            throw new AssertionError("Timeout");
+        }
 
         assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
