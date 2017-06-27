@@ -4,6 +4,7 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.sender.ErrorHandler;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
@@ -35,7 +36,7 @@ public class Fluency
         return buildDefaultFluency(new TCPSender.Config().setHost(host).setPort(port), config);
     }
 
-    private static Fluency buildDefaultFluency(Sender.Instantiator senderConfig, Config config)
+    private static Fluency buildDefaultFluency(Sender.Instantiator baseSenderConfig, Config config)
     {
         PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
@@ -81,10 +82,16 @@ public class Fluency
             }
         }
 
-        RetryableSender retryableSender =
-                new RetryableSender.Config(senderConfig)
-                        .setRetryStrategyConfig(retryStrategyConfig)
-                        .createInstance();
+        RetryableSender.Config senderConfig = new RetryableSender.Config(baseSenderConfig)
+                .setRetryStrategyConfig(retryStrategyConfig);
+
+        if (config != null) {
+            if (config.getSenderErrorHandler() != null) {
+                senderConfig.setErrorHandler(config.getSenderErrorHandler());
+            }
+        }
+
+        RetryableSender retryableSender = senderConfig.createInstance();
 
         return new Fluency.Builder(retryableSender)
                 .setBufferConfig(bufferConfig)
@@ -326,6 +333,8 @@ public class Fluency
 
         private Boolean jvmHeapBufferMode;
 
+        private ErrorHandler senderErrorHandler;
+
         public Long getMaxBufferSize()
         {
             return maxBufferSize;
@@ -436,6 +445,17 @@ public class Fluency
             return this;
         }
 
+        public ErrorHandler getSenderErrorHandler()
+        {
+            return senderErrorHandler;
+        }
+
+        public Config setSenderErrorHandler(ErrorHandler senderErrorHandler)
+        {
+            this.senderErrorHandler = senderErrorHandler;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -450,6 +470,7 @@ public class Fluency
                     ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                     ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                     ", jvmHeapBufferMode=" + jvmHeapBufferMode +
+                    ", senderErrorHandler=" + senderErrorHandler +
                     '}';
         }
     }

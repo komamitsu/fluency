@@ -15,6 +15,7 @@ import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
+import org.komamitsu.fluency.sender.ErrorHandler;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
@@ -58,6 +59,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.theInstance;
 import static org.junit.Assert.*;
 
 @RunWith(Theories.class)
@@ -412,6 +414,36 @@ public class FluencyTest
                 }
             }
         }
+    }
+
+    @Test
+    public void testSenderErrorHandler()
+            throws IOException, InterruptedException
+    {
+        final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
+
+        Fluency fluency = Fluency.defaultFluency(Integer.MAX_VALUE,
+                new Fluency.Config()
+                        .setSenderMaxRetryCount(1)
+                        .setSenderErrorHandler(new ErrorHandler()
+                        {
+                            @Override
+                            public void handle(Throwable e)
+                            {
+                                errorContainer.set(e);
+                            }
+                        }));
+
+        HashMap<String, Object> event = new HashMap<String, Object>();
+        event.put("name", "foo");
+        fluency.emit("tag", event);
+
+        while (errorContainer.get() == null) {
+            System.out.println("Waiting...");
+            TimeUnit.SECONDS.sleep(1);
+        }
+
+        assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
 
     interface FluencyFactory
