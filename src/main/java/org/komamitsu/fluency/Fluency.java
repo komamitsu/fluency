@@ -4,7 +4,7 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.sender.ErrorHandler;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
@@ -87,7 +87,7 @@ public class Fluency
 
         if (config != null) {
             if (config.getSenderErrorHandler() != null) {
-                senderConfig.setErrorHandler(config.getSenderErrorHandler());
+                senderConfig.setSenderErrorHandler(config.getSenderErrorHandler());
             }
         }
 
@@ -333,7 +333,7 @@ public class Fluency
 
         private Boolean jvmHeapBufferMode;
 
-        private ErrorHandler senderErrorHandler;
+        private SenderErrorHandler senderErrorHandler;
 
         public Long getMaxBufferSize()
         {
@@ -445,12 +445,12 @@ public class Fluency
             return this;
         }
 
-        public ErrorHandler getSenderErrorHandler()
+        public SenderErrorHandler getSenderErrorHandler()
         {
             return senderErrorHandler;
         }
 
-        public Config setSenderErrorHandler(ErrorHandler senderErrorHandler)
+        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
         {
             this.senderErrorHandler = senderErrorHandler;
             return this;

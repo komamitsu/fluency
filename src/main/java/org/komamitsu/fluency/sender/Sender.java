@@ -56,12 +56,12 @@ public abstract class Sender
                 dataList.get(i).position(positions.get(i));
             }
 
-            if (config.errorHandler != null) {
+            if (config.senderErrorHandler != null) {
                 try {
-                    config.errorHandler.handle(e);
+                    config.senderErrorHandler.handle(e);
                 }
                 catch (Exception ex) {
-                    LOG.warn("Failed to handle an error in the error handler {}", config.errorHandler, ex);
+                    LOG.warn("Failed to handle an error in the error handler {}", config.senderErrorHandler, ex);
                 }
             }
 
@@ -80,16 +80,16 @@ public abstract class Sender
 
     public static class Config
     {
-        private ErrorHandler errorHandler;
+        private SenderErrorHandler senderErrorHandler;
 
-        public ErrorHandler getErrorHandler()
+        public SenderErrorHandler getSenderErrorHandler()
         {
-            return errorHandler;
+            return senderErrorHandler;
         }
 
-        public Config setErrorHandler(ErrorHandler errorHandler)
+        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
         {
-            this.errorHandler = errorHandler;
+            this.senderErrorHandler = senderErrorHandler;
             return this;
         }
 
@@ -97,7 +97,7 @@ public abstract class Sender
         public String toString()
         {
             return "Config{" +
-                    "errorHandler=" + errorHandler +
+                    "senderErrorHandler=" + senderErrorHandler +
                     '}';
         }
     }

@@ -107,14 +107,14 @@ public class MultiSender
             return baseConfig;
         }
 
-        public ErrorHandler getErrorHandler()
+        public SenderErrorHandler getSenderErrorHandler()
         {
-            return baseConfig.getErrorHandler();
+            return baseConfig.getSenderErrorHandler();
         }
 
-        public Config setErrorHandler(ErrorHandler errorHandler)
+        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
         {
-            baseConfig.setErrorHandler(errorHandler);
+            baseConfig.setSenderErrorHandler(senderErrorHandler);
             return this;
         }
 

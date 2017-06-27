@@ -1,6 +1,6 @@
 package org.komamitsu.fluency.sender;
 
-public interface ErrorHandler
+public interface SenderErrorHandler
 {
     void handle(Throwable e);
 }
