@@ -134,7 +134,9 @@ Fluency fluency = Fluency.defaultFluency(
                 // Send a notification
             }
         }));
+
 	:
+
 // If flushing events to Fluentd fails and retried out, the error handler is called back.
 fluency.emit("foo.bar", event);
 ```
