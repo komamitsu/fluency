@@ -125,15 +125,15 @@ Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).buil
 #### Set a custom error handler
 ```java
 Fluency fluency = Fluency.defaultFluency(
-        new Fluency.Config()
-				.setSenderErrorHandler(new SenderErrorHandler()
-				{
-					@Override
-					public void handle(Throwable e)
-					{
-						// Send a notification
-					}
-				}));
+    new Fluency.Config()
+        .setSenderErrorHandler(new SenderErrorHandler()
+        {
+            @Override
+            public void handle(Throwable e)
+            {
+                // Send a notification
+            }
+        }));
 	:
 // If flushing events to Fluentd fails and retried out, the error handler is called back.
 fluency.emit("foo.bar", event);
