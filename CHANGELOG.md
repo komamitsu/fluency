@@ -1,3 +1,9 @@
+## 1.4.0 (2017-07-01)
+
+Features:
+
+- Support custom error handler that is called back when a send error occurs
+
 ## 1.3.0 (2017-05-03)
 
 Bugfixes:
