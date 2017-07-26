@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-@JsonSerialize(using = EventTime.Serilizer.class)
+@JsonSerialize(using = EventTime.Serializer.class)
 public class EventTime
 {
     private final int seconds;
@@ -83,15 +83,15 @@ public class EventTime
                 '}';
     }
 
-    public static class Serilizer
+    public static class Serializer
             extends StdSerializer<EventTime>
     {
-        public Serilizer()
+        public Serializer()
         {
             super(EventTime.class);
         }
 
-        protected Serilizer(Class<EventTime> t)
+        protected Serializer(Class<EventTime> t)
         {
             super(t);
         }
