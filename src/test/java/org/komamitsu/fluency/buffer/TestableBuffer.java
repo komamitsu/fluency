@@ -53,6 +53,34 @@ public class TestableBuffer
     }
 
     @Override
+    public void appendMessagePackMapValue(String tag, long timestamp, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        throw new IllegalStateException("Shouldn't be called");
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, EventTime timestamp, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        throw new IllegalStateException("Shouldn't be called");
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, long timestamp, ByteBuffer mapValue)
+            throws IOException
+    {
+        throw new IllegalStateException("Shouldn't be called");
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, EventTime timestamp, ByteBuffer mapValue)
+            throws IOException
+    {
+        throw new IllegalStateException("Shouldn't be called");
+    }
+
+    @Override
     protected void loadBufferFromFile(List<String> params, FileChannel channel)
     {
         try {

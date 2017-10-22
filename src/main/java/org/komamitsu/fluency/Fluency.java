@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class Fluency
     private static final Logger LOG = LoggerFactory.getLogger(Fluency.class);
     private final Buffer buffer;
     private final Flusher flusher;
+    private final Emitter emitter = new Emitter();
 
     public static Fluency defaultFluency(String host, int port, Config config)
             throws IOException
@@ -158,18 +160,41 @@ public class Fluency
         this.flusher = flusher;
     }
 
-    public void emit(String tag, long timestamp, Map<String, Object> data)
+    private interface Append
+    {
+        void append()
+            throws IOException;
+    }
+
+    private class Emitter
+    {
+        void emit(Append appender)
+                throws IOException
+        {
+            try {
+                appender.append();
+                flusher.onUpdate();
+            }
+            catch (BufferFullException e) {
+                LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
+                flusher.flush();
+                throw e;
+            }
+        }
+    }
+
+    public void emit(final String tag, final long timestamp, final Map<String, Object> data)
             throws IOException
     {
-        try {
-            buffer.append(tag, timestamp, data);
-            flusher.onUpdate();
-        }
-        catch (BufferFullException e) {
-            LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
-            flusher.flush();
-            throw e;
-        }
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.append(tag, timestamp, data);
+            }
+        });
     }
 
     public void emit(String tag, Map<String, Object> data)
@@ -178,18 +203,86 @@ public class Fluency
         emit(tag, System.currentTimeMillis() / 1000, data);
     }
 
-    public void emit(String tag, EventTime eventTime, Map<String, Object> data)
+    public void emit(final String tag, final EventTime eventTime, final Map<String, Object> data)
             throws IOException
     {
-        try {
-            buffer.append(tag, eventTime, data);
-            flusher.onUpdate();
-        }
-        catch (BufferFullException e) {
-            LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
-            flusher.flush();
-            throw e;
-        }
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.append(tag, eventTime, data);
+            }
+        });
+    }
+
+    public void emit(final String tag, final long timestamp, final byte[] mapValue, final int offset, final int len)
+            throws IOException
+    {
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.appendMessagePackMapValue(tag, timestamp, mapValue, offset, len);
+            }
+        });
+    }
+
+    public void emit(String tag, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        emit(tag, System.currentTimeMillis() / 1000, mapValue, offset, len);
+    }
+
+    public void emit(final String tag, final EventTime eventTime, final byte[] mapValue, final int offset, final int len)
+            throws IOException
+    {
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.appendMessagePackMapValue(tag, eventTime, mapValue, offset, len);
+            }
+        });
+    }
+
+    public void emit(final String tag, final long timestamp, final ByteBuffer mapValue)
+            throws IOException
+    {
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.appendMessagePackMapValue(tag, timestamp, mapValue);
+            }
+        });
+    }
+
+    public void emit(String tag, ByteBuffer mapValue)
+            throws IOException
+    {
+        emit(tag, System.currentTimeMillis() / 1000, mapValue);
+    }
+
+    public void emit(final String tag, final EventTime eventTime, final ByteBuffer mapValue)
+            throws IOException
+    {
+        emitter.emit(new Append()
+        {
+            @Override
+            public void append()
+                    throws IOException
+            {
+                buffer.appendMessagePackMapValue(tag, eventTime, mapValue);
+            }
+        });
     }
 
     @Override

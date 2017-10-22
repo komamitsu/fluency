@@ -64,6 +64,18 @@ public abstract class Buffer
     public abstract void append(String tag, EventTime timestamp, Map<String, Object> data)
             throws IOException;
 
+    public abstract void appendMessagePackMapValue(String tag, long timestamp, byte[] mapValue, int offset, int len)
+            throws IOException;
+
+    public abstract void appendMessagePackMapValue(String tag, EventTime timestamp, byte[] mapValue, int offset, int len)
+            throws IOException;
+
+    public abstract void appendMessagePackMapValue(String tag, long timestamp, ByteBuffer mapValue)
+            throws IOException;
+
+    public abstract void appendMessagePackMapValue(String tag, EventTime timestamp, ByteBuffer mapValue)
+            throws IOException;
+
     protected abstract void loadBufferFromFile(List<String> params, FileChannel channel);
 
     protected abstract void saveAllBuffersToFile()

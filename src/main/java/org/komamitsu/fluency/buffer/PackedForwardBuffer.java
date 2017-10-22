@@ -135,12 +135,40 @@ public class PackedForwardBuffer
         }
     }
 
-    private void appendInternal(String tag, Object timestamp, Map<String, Object> data)
+    private void appendMapInternal(String tag, Object timestamp, Map<String, Object> data)
             throws IOException
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        outputStream.reset();
         objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
+        outputStream.close();
+
+        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+    }
+
+    private void appendMessagePackMapValueInternal(String tag, Object timestamp, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        // 2 items array
+        outputStream.write(0x92);
+        objectMapper.writeValue(outputStream, timestamp);
+        outputStream.write(mapValue, offset, len);
+        outputStream.close();
+
+        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+    }
+
+    private void appendMessagePackMapValueInternal(String tag, Object timestamp, ByteBuffer mapValue)
+            throws IOException
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        // 2 items array
+        outputStream.write(0x92);
+        objectMapper.writeValue(outputStream, timestamp);
+        // TODO: Optimize
+        while (mapValue.hasRemaining()) {
+            outputStream.write(mapValue.get());
+        }
         outputStream.close();
 
         loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
@@ -150,14 +178,43 @@ public class PackedForwardBuffer
     public void append(String tag, long timestamp, Map<String, Object> data)
             throws IOException
     {
-        appendInternal(tag, timestamp, data);
+        appendMapInternal(tag, timestamp, data);
     }
 
     @Override
     public void append(String tag, EventTime timestamp, Map<String, Object> data)
             throws IOException
     {
-        appendInternal(tag, timestamp, data);
+        appendMapInternal(tag, timestamp, data);
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, long timestamp, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        appendMessagePackMapValueInternal(tag, timestamp, mapValue, offset, len);
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, EventTime timestamp, byte[] mapValue, int offset, int len)
+            throws IOException
+    {
+        appendMessagePackMapValueInternal(tag, timestamp, mapValue, offset, len);
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, long timestamp, ByteBuffer mapValue)
+            throws IOException
+    {
+        appendMessagePackMapValueInternal(tag, timestamp, mapValue);
+    }
+
+    @Override
+    public void appendMessagePackMapValue(String tag, EventTime timestamp, ByteBuffer mapValue)
+            throws IOException
+    {
+        appendMessagePackMapValueInternal(tag, timestamp, mapValue);
+
     }
 
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)

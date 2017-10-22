@@ -2,6 +2,7 @@ package org.komamitsu.fluency;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -25,6 +26,7 @@ import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -80,8 +82,20 @@ public class FluencyTest
             new Options(false, false, false, true, true),   // Ack response + Small buffer
             new Options(true, false, true, false, false),   // Failover + Close instead of flush
             new Options(false, true, true, true, false),    // File backup + Ack response + Close instead of flush
-            new Options(false, false, true, true, false)    // Ack response + Close instead of flush
+            new Options(false, false, true, true, false),   // Ack response + Close instead of flush
+            new Options(false, false, false, false, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
+            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
+            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
     };
+
+    private enum EmitType
+    {
+        MAP, MAP_WITH_EVENT_TIME,
+        MSGPACK_MAP_VALUE_BYTES, MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME,
+        MSGPACK_MAP_VALUE_BYTEBUFFER, MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME,
+    }
 
     public static class Options
     {
@@ -90,14 +104,32 @@ public class FluencyTest
         private final boolean closeInsteadOfFlush;
         private final boolean ackResponse;
         private final boolean smallBuffer;
+        private final EmitType emitType;
 
-        public Options(boolean failover, boolean fileBackup, boolean closeInsteadOfFlush, boolean ackResponse, boolean smallBuffer)
+        public Options(
+                boolean failover,
+                boolean fileBackup,
+                boolean closeInsteadOfFlush,
+                boolean ackResponse,
+                boolean smallBuffer)
+        {
+            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, EmitType.MAP);
+        }
+
+        public Options(
+                boolean failover,
+                boolean fileBackup,
+                boolean closeInsteadOfFlush,
+                boolean ackResponse,
+                boolean smallBuffer,
+                EmitType emitType)
         {
             this.failover = failover;
             this.fileBackup = fileBackup;
             this.closeInsteadOfFlush = closeInsteadOfFlush;
             this.ackResponse = ackResponse;
             this.smallBuffer = smallBuffer;
+            this.emitType = emitType;
         }
 
         @Override
@@ -109,6 +141,7 @@ public class FluencyTest
                     ", closeInsteadOfFlush=" + closeInsteadOfFlush +
                     ", ackResponse=" + ackResponse +
                     ", smallBuffer=" + smallBuffer +
+                    ", emitType=" + emitType +
                     '}';
         }
 
@@ -118,7 +151,7 @@ public class FluencyTest
             if (this == o) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (!(o instanceof Options)) {
                 return false;
             }
 
@@ -136,7 +169,10 @@ public class FluencyTest
             if (ackResponse != options.ackResponse) {
                 return false;
             }
-            return smallBuffer == options.smallBuffer;
+            if (smallBuffer != options.smallBuffer) {
+                return false;
+            }
+            return emitType == options.emitType;
         }
 
         @Override
@@ -147,6 +183,7 @@ public class FluencyTest
             result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
             result = 31 * result + (ackResponse ? 1 : 0);
             result = 31 * result + (smallBuffer ? 1 : 0);
+            result = 31 * result + (emitType != null ? emitType.hashCode() : 0);
             return result;
         }
     }
@@ -567,6 +604,8 @@ public class FluencyTest
             fluency.get().clearBackupFiles();
         }
 
+        final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
         final int maxNameLen = 200;
         final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);
         for (int i = 1; i <= maxNameLen; i++) {
@@ -707,11 +746,44 @@ public class FluencyTest
                             hashMap.put("age", age);
                             hashMap.put("comment", "hello, world");
                             hashMap.put("rate", 1.23);
+
                             try {
                                 Exception exception = null;
                                 for (int retry = 0; retry < 10; retry++) {
                                     try {
-                                        fluency.get().emit(tag, hashMap);
+                                        switch (options.emitType) {
+                                            case MAP: {
+                                                fluency.get().emit(tag, hashMap);
+                                                break;
+                                            }
+                                            case MAP_WITH_EVENT_TIME: {
+                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                                fluency.get().emit(tag, eventTime, hashMap);
+                                                break;
+                                            }
+                                            case MSGPACK_MAP_VALUE_BYTES: {
+                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                                fluency.get().emit(tag, bytes, 0, bytes.length);
+                                                break;
+                                            }
+                                            case MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME: {
+                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                                fluency.get().emit(tag, eventTime, bytes, 0, bytes.length);
+                                                break;
+                                            }
+                                            case MSGPACK_MAP_VALUE_BYTEBUFFER: {
+                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                                fluency.get().emit(tag, ByteBuffer.wrap(bytes));
+                                                break;
+                                            }
+                                            case MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME: {
+                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                                fluency.get().emit(tag, eventTime, ByteBuffer.wrap(bytes));
+                                                break;
+                                            }
+                                        }
                                         exception = null;
                                         break;
                                     }
@@ -799,7 +871,7 @@ public class FluencyTest
         private final AtomicLong tag2EventsCounter;
         private final AtomicLong tag3EventsCounter;
         private final AtomicLong closeCounter;
-        private final long startTimestamp;
+        private final long startTimestampMillis;
 
         public MockFluentdServer()
                 throws IOException
@@ -814,7 +886,7 @@ public class FluencyTest
             tag2EventsCounter = new AtomicLong();
             tag3EventsCounter = new AtomicLong();
             closeCounter = new AtomicLong();
-            startTimestamp = System.currentTimeMillis() / 1000;
+            startTimestampMillis = System.currentTimeMillis();
         }
 
         public MockFluentdServer(MockFluentdServer base)
@@ -830,7 +902,7 @@ public class FluencyTest
             tag2EventsCounter = base.tag2EventsCounter;
             tag3EventsCounter = base.tag3EventsCounter;
             closeCounter = base.closeCounter;
-            startTimestamp = System.currentTimeMillis() / 1000;
+            startTimestampMillis = System.currentTimeMillis();
         }
 
         @Override
@@ -862,7 +934,7 @@ public class FluencyTest
                     else {
                         throw new IllegalArgumentException("Unexpected tag: tag=" + tag);
                     }
-                    assertTrue(startTimestamp <= timestampMillis && timestampMillis < startTimestamp + 60 * 1000);
+                    assertTrue(startTimestampMillis / 1000 <= timestampMillis / 1000 && timestampMillis < startTimestampMillis + 60 * 1000);
 
                     assertEquals(4, data.size());
                     for (Map.Entry<Value, Value> kv : data.entrySet()) {

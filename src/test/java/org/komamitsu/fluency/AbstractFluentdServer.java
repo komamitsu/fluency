@@ -2,6 +2,7 @@ package org.komamitsu.fluency;
 
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.value.ExtensionValue;
 import org.msgpack.value.ImmutableArrayValue;
 import org.msgpack.value.ImmutableValue;
 import org.msgpack.value.MapValue;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -137,9 +139,26 @@ public abstract class AbstractFluentdServer
                         while (eventsUnpacker.hasNext()) {
                             ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
                             assertEquals(2, arrayValue.size());
-                            long timestamp = arrayValue.get(0).asIntegerValue().asLong();
+                            Value timestampValue = arrayValue.get(0);
                             MapValue mapValue = arrayValue.get(1).asMapValue();
-                            eventHandler.onReceive(tag, timestamp, mapValue);
+                            long timestampMillis;
+                            if (timestampValue.isIntegerValue()) {
+                                timestampMillis = timestampValue.asIntegerValue().asLong() * 1000;
+                            }
+                            else if (timestampValue.isExtensionValue()) {
+                                ExtensionValue extensionValue = timestampValue.asExtensionValue();
+                                if (extensionValue.getType() != 0) {
+                                    throw new IllegalArgumentException("Unexpected extension type: " + extensionValue.getType());
+                                }
+                                byte[] data = extensionValue.getData();
+                                long seconds = ByteBuffer.wrap(data, 0, 4).order(ByteOrder.BIG_ENDIAN).getInt();
+                                long nanos = ByteBuffer.wrap(data, 4, 4).order(ByteOrder.BIG_ENDIAN).getInt();
+                                timestampMillis = seconds * 1000 + nanos / 1000000;
+                            }
+                            else {
+                                throw new IllegalArgumentException("Unexpected value type: " + timestampValue);
+                            }
+                            eventHandler.onReceive(tag, timestampMillis, mapValue);
                         }
                         if (rootValue.size() == 3) {
                             ack(acceptSocketChannel, rootValue.get(2));
