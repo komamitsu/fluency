@@ -1,8 +1,11 @@
 language: java
 
 jdk:
-  - openjdk7
-  - oraclejdk7
+  # Tests On Travis CI fail with Java7 due to this exception...
+  #   java.security.NoSuchProviderException: no such provider: SunEC
+  # - openjdk7
+  # - oraclejdk7
+  - openjdk8
   - oraclejdk8
 
 addons:
