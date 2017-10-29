@@ -101,7 +101,7 @@ public class WithRealFluentd
                         Integer waitSeconds)
         {
             this.host = host == null ? "127.0.0.1" : host;
-            this.port = port == null ? 24224 : port;
+            this.port = port == null ? Integer.valueOf(24224) : port;
 
             this.anotherHost = anotherHost == null ? "127.0.0.1" : anotherHost;
             // Nullable
