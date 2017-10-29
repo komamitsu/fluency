@@ -1,3 +1,9 @@
+## 1.5.0 (2017-10-30)
+
+Features:
+
+- Add emit methods to output MessagePack encoded data directly
+
 ## 1.4.0 (2017-07-01)
 
 Features:
