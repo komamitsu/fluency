@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -966,43 +965,6 @@ public class FluencyTest
         }
     }
 
-    private static class EmitTask
-            implements Callable<Void>
-    {
-        private final Fluency fluency;
-        private final String tag;
-        private final Map<String, Object> data;
-        private final int count;
-
-        private EmitTask(Fluency fluency, String tag, Map<String, Object> data, int count)
-        {
-            this.fluency = fluency;
-            this.tag = tag;
-            this.data = data;
-            this.count = count;
-        }
-
-        @Override
-        public Void call()
-        {
-            for (int i = 0; i < count; i++) {
-                try {
-                    fluency.emit(tag, data);
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(500);
-                    }
-                    catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                }
-            }
-            return null;
-        }
-    }
-
     private static class StuckSender
             extends StubSender
     {
@@ -1112,98 +1074,4 @@ public class FluencyTest
         assertThat(serialized.get(), is(true));
     }
 
-    // @Test
-    public void testWithRealFluentd()
-            throws Exception
-    {
-        int concurrency = 4;
-        int reqNum = 1000000;
-        Fluency fluency = Fluency.defaultFluency();
-
-        HashMap<String, Object> data = new HashMap<String, Object>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
-        try {
-            for (int i = 0; i < concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(60, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
-        }
-    }
-
-    // @Test
-    public void testWithRealMultipleFluentd()
-            throws IOException, InterruptedException, TimeoutException, ExecutionException
-    {
-        int concurrency = 4;
-        int reqNum = 1000000;
-        /*
-        MultiSender sender = new MultiSender(Arrays.asList(new TCPSender(24224), new TCPSender(24225)));
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(128 * 1024 * 1024).setAckResponseMode(true);
-        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-        */
-        Fluency fluency = Fluency.defaultFluency(
-                Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)),
-                new Fluency.Config().setAckResponseMode(true));
-
-        HashMap<String, Object> data = new HashMap<String, Object>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
-        try {
-            for (int i = 0; i < concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(60, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
-        }
-    }
-
-    // @Test
-    public void testWithRealFluentdWithFileBackup()
-            throws ExecutionException, TimeoutException, IOException, InterruptedException
-    {
-        int concurrency = 4;
-        int reqNum = 1000000;
-
-        Fluency fluency = Fluency.defaultFluency(
-                new Fluency.Config()
-                        // Fluency might use a lot of buffer for loaded backup files.
-                        // So it'd better increase max buffer size
-                        .setMaxBufferSize(512 * 1024 * 1024L)
-                        .setFileBackupDir(System.getProperty("java.io.tmpdir")));
-        HashMap<String, Object> data = new HashMap<String, Object>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
-        try {
-            for (int i = 0; i < concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, "foodb.bartbl", data, reqNum)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(60, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
-        }
-    }
 }
