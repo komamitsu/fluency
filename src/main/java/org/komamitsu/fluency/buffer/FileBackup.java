@@ -132,6 +132,10 @@ public class FileBackup
     public List<SavedBuffer> getSavedFiles()
     {
         File[] files = backupDir.listFiles();
+        if (files == null) {
+            LOG.warn("Failed to list the backup directory. {}", backupDir);
+            return new ArrayList<SavedBuffer>();
+        }
         ArrayList<SavedBuffer> savedBuffers = new ArrayList<SavedBuffer>();
         for (File f : files) {
             Matcher matcher = pattern.matcher(f.getName());
