@@ -162,6 +162,15 @@ public class TCPSender
             throws IOException
     {
         try {
+            // Wait to confirm unsent request is flushed
+            try {
+                TimeUnit.MILLISECONDS.sleep(config.getWaitBeforeCloseMilli());
+            }
+            catch (InterruptedException e) {
+                LOG.warn("Interrupted", e);
+                Thread.currentThread().interrupt();
+            }
+
             closeSocket();
         }
         finally {
@@ -231,6 +240,7 @@ public class TCPSender
         private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
         private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
         private FailureDetectStrategy.Instantiator failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
+        private int waitBeforeCloseMilli = 1000;
 
         public Sender.Config getBaseConfig()
         {
@@ -325,6 +335,17 @@ public class TCPSender
             return this;
         }
 
+        public int getWaitBeforeCloseMilli()
+        {
+            return waitBeforeCloseMilli;
+        }
+
+        public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
+        {
+            this.waitBeforeCloseMilli = waitBeforeCloseMilli;
+            return this;
+        }
+
         @Override
         public TCPSender createInstance()
         {
@@ -343,6 +364,7 @@ public class TCPSender
                     ", heartbeaterConfig=" + heartbeaterConfig +
                     ", failureDetectorConfig=" + failureDetectorConfig +
                     ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
+                    ", waitBeforeCloseMilli=" + waitBeforeCloseMilli +
                     '}';
         }
     }
