@@ -161,7 +161,7 @@ public class TCPSender
                     break;
                 }
                 try {
-                    TimeUnit.MILLISECONDS.sleep(200);
+                    TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException e) {
                     LOG.warn("Interrupted", e);
