@@ -13,10 +13,15 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -181,5 +186,52 @@ public class TCPSenderTest
         finally {
             server.stop();
         }
+    }
+
+    @Test
+    public void testClose()
+            throws IOException, InterruptedException, TimeoutException, ExecutionException
+    {
+        final MockTCPServer server = new MockTCPServer();
+        server.start();
+
+        try {
+            final AtomicLong duration = new AtomicLong();
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Future<Void> future = executorService.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                        throws Exception
+                {
+                    TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
+                    long start;
+                    try {
+                        sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
+                        start = System.currentTimeMillis();
+                        sender.close();
+                        duration.set(System.currentTimeMillis() - start);
+                    }
+                    catch (Exception e) {
+                        LOG.error("Unexpected exception", e);
+                    }
+
+                    return null;
+                }
+            });
+            future.get(3000, TimeUnit.MILLISECONDS);
+            assertTrue(duration.get() > 1000 && duration.get() < 2000);
+        }
+        finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testConfig()
+    {
+        TCPSender.Config config = new TCPSender.Config();
+        assertEquals(1000, config.getWaitBeforeCloseMilli());
+        // TODO: Add others later
     }
 }
