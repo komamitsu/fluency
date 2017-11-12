@@ -152,6 +152,27 @@ public class TCPSender
     {
         SocketChannel socketChannel;
         if ((socketChannel = channel.getAndSet(null)) != null) {
+            socketChannel.socket().shutdownOutput();
+
+            int i;
+            int maxWait = 10;
+            for (i = 0; i < maxWait; i++) {
+                if (socketChannel.socket().isInputShutdown()) {
+                    break;
+                }
+                try {
+                    TimeUnit.MILLISECONDS.sleep(200);
+                }
+                catch (InterruptedException e) {
+                    LOG.warn("Interrupted", e);
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            if (i >= maxWait) {
+                LOG.warn("This socket wasn't closed from the receiver side in an expected time");
+            }
+
             socketChannel.close();
             channel.set(null);
         }
