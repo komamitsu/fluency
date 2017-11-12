@@ -69,41 +69,45 @@ public abstract class Flusher
             LOG.error("Failed to call beforeClosingBuffer()", e);
         }
         finally {
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Future<Void> future = executorService.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                        throws Exception
+                {
+                    closeBuffer();
+                    isTerminated.set(true);
+                    return null;
+                }
+            });
+
             try {
-                sender.close();
+                future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
             }
-            catch (Exception e) {
-                LOG.error("Failed to close the sender", e);
+            catch (InterruptedException e) {
+                LOG.warn("Interrupted", e);
+                Thread.currentThread().interrupt();
+            }
+            catch (ExecutionException e) {
+                LOG.warn("closeBuffer() failed", e);
+            }
+            catch (TimeoutException e) {
+                LOG.warn("closeBuffer() timed out", e);
             }
             finally {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                Future<Void> future = executorService.submit(new Callable<Void>()
-                {
-                    @Override
-                    public Void call()
-                            throws Exception
-                    {
-                        closeBuffer();
-                        isTerminated.set(true);
-                        return null;
-                    }
-                });
-
                 try {
-                    future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
-                }
-                catch (InterruptedException e) {
-                    LOG.warn("Interrupted", e);
-                    Thread.currentThread().interrupt();
-                }
-                catch (ExecutionException e) {
-                    LOG.warn("closeBuffer() failed", e);
-                }
-                catch (TimeoutException e) {
-                    LOG.warn("closeBuffer() timed out", e);
+                    executorService.shutdown();
                 }
                 finally {
-                    executorService.shutdown();
+                    try {
+                        // Close the socket at the end to prevent the server from failing to read from the connection
+                        sender.close();
+                    }
+                    catch (Exception e) {
+                        LOG.error("Failed to close the sender", e);
+                    }
+
                 }
             }
         }
