@@ -1,3 +1,11 @@
+## 1.6.0 (2017-11-24)
+
+Bugfixes:
+
+- Improve closing sequence after Fluency#close is called
+  - Call sender.close() at the end to prevent receiver from failing to read socket
+  - Make TCPSender#close to wait unsent request is flushed
+
 ## 1.5.0 (2017-10-30)
 
 Features:

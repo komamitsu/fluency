@@ -18,7 +18,7 @@ Yet another fluentd logger.
 
 ```groovy
 dependencies {
-    compile 'org.komamitsu:fluency:1.5.0'
+    compile 'org.komamitsu:fluency:1.6.0'
 }
 ```
 
@@ -28,7 +28,7 @@ dependencies {
 <dependency>
     <groupId>org.komamitsu</groupId>
     <artifactId>fluency</artifactId>
-    <version>1.5.0</version>
+    <version>1.6.0</version>
 </dependency>
 ```
  
