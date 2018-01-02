@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,8 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -480,6 +481,101 @@ public class FluencyTest
         }
 
         assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
+    }
+
+    private interface WithServerPort
+    {
+        void run(int serverPort)
+                throws Exception;
+    }
+
+    private Exception withReadingEverythingTCPServer(final WithServerPort testTask, long timeoutMilli)
+            throws Throwable
+    {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        try {
+            serverSocketChannel.socket().bind(new InetSocketAddress(0));
+            final int serverPort = serverSocketChannel.socket().getLocalPort();
+
+            executorService.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                        throws Exception
+                {
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    try {
+                        ByteBuffer buffer = ByteBuffer.allocate(256);
+                        // Just read everything and ignore it
+                        while (socketChannel.read(buffer) > 0) {
+                        }
+                    }
+                    finally {
+                        socketChannel.close();
+                    }
+                    return null;
+                }
+            });
+
+            Future<Void> testTaskFuture = executorService.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                        throws Exception
+                {
+                    testTask.run(serverPort);
+                    return null;
+                }
+            });
+
+            try {
+                testTaskFuture.get(timeoutMilli, TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e) {
+                return e;
+            }
+        }
+        finally {
+            executorService.shutdownNow();
+            serverSocketChannel.close();
+        }
+        return null;
+    }
+
+    @Test
+    public void testAckResponse()
+            throws Throwable
+    {
+        {
+            Exception exception = withReadingEverythingTCPServer(new WithServerPort()
+            {
+                @Override
+                public void run(int serverPort)
+                        throws Exception
+                {
+                    Fluency fluency = Fluency.defaultFluency(serverPort);
+                    fluency.emit("foo.bar", new HashMap<String, Object>());
+                    fluency.close();
+                }
+            }, 5000);
+            assertNull(exception);
+        }
+
+        {
+            Exception exception = withReadingEverythingTCPServer(new WithServerPort()
+            {
+                @Override
+                public void run(int serverPort)
+                        throws Exception
+                {
+                    Fluency fluency = Fluency.defaultFluency(new Fluency.Config().setAckResponseMode(true));
+                    fluency.emit("foo.bar", new HashMap<String, Object>());
+                    fluency.close();
+                }
+            }, 5000);
+            assertEquals(exception.getClass(), TimeoutException.class);
+        }
     }
 
     interface FluencyFactory
