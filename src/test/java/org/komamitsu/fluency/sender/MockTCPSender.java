@@ -19,7 +19,7 @@ public class MockTCPSender
     private final List<Event> events = new ArrayList<Event>();
     private final AtomicInteger closeCount = new AtomicInteger();
 
-    public class Event
+    public static class Event
     {
         ByteBuffer header;
         ByteBuffer data;
