@@ -95,14 +95,8 @@ public class TCPSender
     protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
             throws IOException
     {
-        ArrayList<ByteBuffer> buffers = new ArrayList<ByteBuffer>();
-        buffers.addAll(dataList);
-        if (ackToken != null) {
-            buffers.add(ByteBuffer.wrap(ackTokenSerDe.pack(ackToken)));
-        }
-
         try {
-            sendBuffers(buffers);
+            sendBuffers(dataList);
 
             if (ackToken == null) {
                 return;

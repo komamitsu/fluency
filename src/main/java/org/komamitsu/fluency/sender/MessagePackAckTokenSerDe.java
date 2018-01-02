@@ -3,6 +3,7 @@ package org.komamitsu.fluency.sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.annotations.Nullable;
 import org.msgpack.core.buffer.ArrayBufferInput;
 import org.msgpack.core.buffer.MessageBufferInput;
 import org.msgpack.core.buffer.MessageBufferOutput;
@@ -27,17 +28,34 @@ public class MessagePackAckTokenSerDe
     }
 
     @Override
-    public byte[] pack(byte[] token)
+    public byte[] pack(int size)
+            throws IOException
+    {
+        return packWithAckResponseToken(size, null);
+    }
+
+    @Override
+    public byte[] packWithAckResponseToken(int size, @Nullable byte[] ackResponseToken)
             throws IOException
     {
         synchronized (packer) {
             outputStream.reset();
             MessageBufferOutput bufferOutput = new OutputStreamBufferOutput(outputStream);
             packer.reset(bufferOutput);
-            packer.packMapHeader(1);
-            packer.packString("chunk");
-            packer.packBinaryHeader(token.length);
-            packer.writePayload(token);
+
+            if (ackResponseToken == null) {
+                packer.packMapHeader(1);
+            }
+            else {
+                packer.packMapHeader(2);
+                packer.packString("chunk");
+                packer.packBinaryHeader(ackResponseToken.length);
+                packer.writePayload(ackResponseToken);
+            }
+
+            packer.packString("size");
+            packer.packInt(size);
+
             packer.flush();
             return outputStream.toByteArray();
         }

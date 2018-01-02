@@ -3,6 +3,7 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
+import org.komamitsu.fluency.sender.MessagePackAckTokenSerDe;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -35,6 +36,7 @@ public class PackedForwardBuffer
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
     private final Config config;
+    private MessagePackAckTokenSerDe messagePackAckTokenSerDe = new MessagePackAckTokenSerDe();
 
     protected PackedForwardBuffer(PackedForwardBuffer.Config config)
     {
@@ -277,29 +279,30 @@ public class PackedForwardBuffer
             try {
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
-                ByteBuffer byteBuffer = flushableBuffer.getByteBuffer();
-                if (config.isAckResponseMode()) {
-                    messagePacker.packArrayHeader(3);
-                }
-                else {
-                    messagePacker.packArrayHeader(2);
-                }
+                ByteBuffer dataBuffer = flushableBuffer.getByteBuffer();
+                int dataLength = dataBuffer.limit();
+                messagePacker.packArrayHeader(3);
                 messagePacker.packString(tag);
-                messagePacker.packRawStringHeader(byteBuffer.limit());
+                messagePacker.packRawStringHeader(dataLength);
                 messagePacker.flush();
 
+                ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
+
                 try {
-                    ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-                    List<ByteBuffer> dataList = Arrays.asList(headerBuffer, byteBuffer);
                     if (config.isAckResponseMode()) {
-                        String uuid = UUID.randomUUID().toString();
-                        byte[] uuidBytes = uuid.getBytes(CHARSET);
+                        byte[] uuidBytes = UUID.randomUUID().toString().getBytes(CHARSET);
+                        ByteBuffer optionBuffer = ByteBuffer.wrap(messagePackAckTokenSerDe.packWithAckResponseToken(dataLength, uuidBytes));
+                        List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
+
                         synchronized (sender) {
-                            sender.sendWithAck(dataList, uuidBytes);
+                            sender.sendWithAck(buffers, uuidBytes);
                         }
                     } else {
+                        ByteBuffer optionBuffer = ByteBuffer.wrap(messagePackAckTokenSerDe.pack(dataLength));
+                        List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
+
                         synchronized (sender) {
-                            sender.send(dataList);
+                            sender.send(buffers);
                         }
                     }
                 }

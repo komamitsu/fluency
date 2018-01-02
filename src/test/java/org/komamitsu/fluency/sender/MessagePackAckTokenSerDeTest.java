@@ -21,18 +21,35 @@ public class MessagePackAckTokenSerDeTest
     private static final Charset CHARSET = Charset.forName("ASCII");
 
     @Test
-    public void testPack()
+    public void testPackWithAckResponseToken()
             throws IOException
     {
         MessagePackAckTokenSerDe serDe = new MessagePackAckTokenSerDe();
-        byte[] token = UUID.randomUUID().toString().getBytes(CHARSET);
-        byte[] packedToken = serDe.pack(token);
+        byte[] ackResponseToken = UUID.randomUUID().toString().getBytes(CHARSET);
+        int size = Integer.MAX_VALUE;
+        byte[] packedToken = serDe.packWithAckResponseToken(size, ackResponseToken);
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packedToken);
+        ImmutableValue value = unpacker.unpackValue();
+        assertEquals(ValueType.MAP, value.getValueType());
+        ImmutableMapValue mapValue = value.asMapValue();
+        assertEquals(2, mapValue.size());
+        assertArrayEquals(ackResponseToken, mapValue.map().get(ValueFactory.newString("chunk")).asBinaryValue().asByteArray());
+        assertEquals(size, mapValue.map().get(ValueFactory.newString("size")).asIntegerValue().asInt());
+    }
+
+    @Test
+    public void testPackWithoutAckResponseToken()
+            throws IOException
+    {
+        MessagePackAckTokenSerDe serDe = new MessagePackAckTokenSerDe();
+        int size = Integer.MAX_VALUE;
+        byte[] packedToken = serDe.packWithAckResponseToken(size, null);
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packedToken);
         ImmutableValue value = unpacker.unpackValue();
         assertEquals(ValueType.MAP, value.getValueType());
         ImmutableMapValue mapValue = value.asMapValue();
         assertEquals(1, mapValue.size());
-        assertArrayEquals(token, mapValue.map().get(ValueFactory.newString("chunk")).asBinaryValue().asByteArray());
+        assertEquals(size, mapValue.map().get(ValueFactory.newString("size")).asIntegerValue().asInt());
     }
 
     @Test
