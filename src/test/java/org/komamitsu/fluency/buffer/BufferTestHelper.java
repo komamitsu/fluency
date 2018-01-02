@@ -162,7 +162,7 @@ public class BufferTestHelper
             headerBuffer = null;
 
             MessageUnpacker messageUnpacker = MessagePack.newDefaultUnpacker(bytes);
-            assertEquals(2, messageUnpacker.unpackArrayHeader());
+            assertEquals(3, messageUnpacker.unpackArrayHeader());
 
             String tag = messageUnpacker.unpackString();
             byte[] payload = messageUnpacker.readPayload(messageUnpacker.unpackBinaryHeader());

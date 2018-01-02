@@ -3,7 +3,7 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.sender.MessagePackAckTokenSerDe;
+import org.komamitsu.fluency.format.RequestOption;
 import org.komamitsu.fluency.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -36,7 +36,6 @@ public class PackedForwardBuffer
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
     private final Config config;
-    private MessagePackAckTokenSerDe messagePackAckTokenSerDe = new MessagePackAckTokenSerDe();
 
     protected PackedForwardBuffer(PackedForwardBuffer.Config config)
     {
@@ -291,14 +290,14 @@ public class PackedForwardBuffer
                 try {
                     if (config.isAckResponseMode()) {
                         byte[] uuidBytes = UUID.randomUUID().toString().getBytes(CHARSET);
-                        ByteBuffer optionBuffer = ByteBuffer.wrap(messagePackAckTokenSerDe.packWithAckResponseToken(dataLength, uuidBytes));
+                        ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, uuidBytes)));
                         List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
                         synchronized (sender) {
                             sender.sendWithAck(buffers, uuidBytes);
                         }
                     } else {
-                        ByteBuffer optionBuffer = ByteBuffer.wrap(messagePackAckTokenSerDe.pack(dataLength));
+                        ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, null)));
                         List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
                         synchronized (sender) {
