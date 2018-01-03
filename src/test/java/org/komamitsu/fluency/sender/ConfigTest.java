@@ -30,7 +30,7 @@ public class ConfigTest
         }
 
         @Override
-        protected void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+        protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
                 throws IOException
         {
             if (shouldFail) {

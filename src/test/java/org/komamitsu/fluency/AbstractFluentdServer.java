@@ -6,7 +6,10 @@ import org.msgpack.value.ExtensionValue;
 import org.msgpack.value.ImmutableArrayValue;
 import org.msgpack.value.ImmutableValue;
 import org.msgpack.value.MapValue;
+import org.msgpack.value.RawValue;
+import org.msgpack.value.StringValue;
 import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 import org.msgpack.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,7 @@ public abstract class AbstractFluentdServer
 
     public interface EventHandler
     {
-        void onConnect(SocketChannel accpetSocketChannel);
+        void onConnect(SocketChannel acceptSocketChannel);
 
         void onReceive(String tag, long timestampMillis, MapValue data);
 
@@ -45,6 +48,8 @@ public abstract class AbstractFluentdServer
     private static class FluentdEventHandler
             implements MockTCPServer.EventHandler
     {
+        private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
+        private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
         private final EventHandler eventHandler;
         private final ExecutorService executorService = Executors.newCachedThreadPool();
         private final Map<SocketChannel, FluentdAcceptTask> fluentdTasks = new ConcurrentHashMap<SocketChannel, FluentdAcceptTask>();
@@ -54,32 +59,22 @@ public abstract class AbstractFluentdServer
             this.eventHandler = eventHandler;
         }
 
-        private void ack(SocketChannel acceptSocketChannel, Value option)
+        private void ack(SocketChannel acceptSocketChannel, byte[] ackResponseToken)
                 throws IOException
         {
-            assertEquals(ValueType.MAP, option.getValueType());
-            byte[] bytes = null;
-            for (Map.Entry<Value, Value> entry : option.asMapValue().entrySet()) {
-                if (entry.getKey().asStringValue().asString().equals("chunk")) {
-                    assertEquals(ValueType.BINARY, entry.getValue().getValueType());
-                    bytes = entry.getValue().asBinaryValue().asByteArray();
-                    break;
-                }
-            }
-            assertNotNull(bytes);
             ByteBuffer byteBuffer = ByteBuffer.allocate(
                     1 /* map header */ +
                     1 /* key header */ +
                     3 /* key body */ +
                     2 /* value header(including len) */ +
-                    bytes.length);
+                    ackResponseToken.length);
 
             byteBuffer.put((byte) 0x81); /* map header */
             byteBuffer.put((byte) 0xA3); /* key header */
             byteBuffer.put("ack".getBytes(CHARSET));    /* key body */
             byteBuffer.put((byte) 0xC4);
-            byteBuffer.put((byte) bytes.length);
-            byteBuffer.put(bytes);
+            byteBuffer.put((byte) ackResponseToken.length);
+            byteBuffer.put(ackResponseToken);
             byteBuffer.flip();
             acceptSocketChannel.write(byteBuffer);
         }
@@ -98,12 +93,12 @@ public abstract class AbstractFluentdServer
                 this.pipedInputStream = new PipedInputStream(pipedOutputStream);
             }
 
-            public PipedInputStream getPipedInputStream()
+            PipedInputStream getPipedInputStream()
             {
                 return pipedInputStream;
             }
 
-            public PipedOutputStream getPipedOutputStream()
+            PipedOutputStream getPipedOutputStream()
             {
                 return pipedOutputStream;
             }
@@ -115,7 +110,7 @@ public abstract class AbstractFluentdServer
 
                 try {
                     while (!executorService.isTerminated()) {
-                        ImmutableValue value = null;
+                        ImmutableValue value;
                         try {
                             if (!unpacker.hasNext()) {
                                 break;
@@ -129,13 +124,14 @@ public abstract class AbstractFluentdServer
                         }
                         assertEquals(ValueType.ARRAY, value.getValueType());
                         ImmutableArrayValue rootValue = value.asArrayValue();
+                        assertEquals(rootValue.size(), 3);
 
                         String tag = rootValue.get(0).toString();
                         Value secondValue = rootValue.get(1);
 
                         // PackedForward
-                        byte[] bytes = secondValue.asRawValue().asByteArray();
-                        MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(bytes);
+                        byte[] packedBytes = secondValue.asRawValue().asByteArray();
+                        MessageUnpacker eventsUnpacker = MessagePack.newDefaultUnpacker(packedBytes);
                         while (eventsUnpacker.hasNext()) {
                             ImmutableArrayValue arrayValue = eventsUnpacker.unpackValue().asArrayValue();
                             assertEquals(2, arrayValue.size());
@@ -160,8 +156,16 @@ public abstract class AbstractFluentdServer
                             }
                             eventHandler.onReceive(tag, timestampMillis, mapValue);
                         }
-                        if (rootValue.size() == 3) {
-                            ack(acceptSocketChannel, rootValue.get(2));
+
+                        // Option
+                        Map<Value, Value> map = rootValue.get(2).asMapValue().map();
+                        //    "size"
+                        assertEquals(map.get(KEY_OPTION_SIZE).asIntegerValue().asLong(), packedBytes.length);
+                        //    "chunk"
+                        Value chunk = map.get(KEY_OPTION_CHUNK);
+                        if (chunk != null) {
+                            RawValue ackResponseToken = chunk.asRawValue();
+                            ack(acceptSocketChannel, ackResponseToken.asBinaryValue().asByteArray());
                         }
                     }
 

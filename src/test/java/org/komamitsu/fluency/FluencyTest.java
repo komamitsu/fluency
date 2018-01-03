@@ -26,9 +26,15 @@ import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ImmutableRawValue;
 import org.msgpack.value.MapValue;
+import org.msgpack.value.StringValue;
 import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +49,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,6 +73,8 @@ public class FluencyTest
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final int SMALL_BUF_SIZE = 4 * 1024 * 1024;
     private static final String TMPDIR = System.getProperty("java.io.tmpdir");
+    private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
+    private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
     @DataPoints
     public static final Options[] OPTIONS = {
             new Options(false, false, false, false, false), // Normal
@@ -480,6 +487,160 @@ public class FluencyTest
         }
 
         assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
+    }
+
+    @Test
+    public void testWithoutAckResponse()
+            throws Throwable
+    {
+        Exception exception = new ConfigurableTestServer().run(
+                new ConfigurableTestServer.WithClientSocket() {
+                    @Override
+                    public void run(SocketChannel clientSocketChannel)
+                            throws Exception
+                    {
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getChannel());
+                        assertEquals(3, unpacker.unpackArrayHeader());
+                        assertEquals("foo.bar", unpacker.unpackString());
+                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                        assertEquals(1, map.size());
+                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                        unpacker.close();
+                    }
+                },
+                new ConfigurableTestServer.WithServerPort()
+                {
+                    @Override
+                    public void run(int serverPort)
+                            throws Exception
+                    {
+                        Fluency fluency = Fluency.defaultFluency(serverPort);
+                        fluency.emit("foo.bar", new HashMap<String, Object>());
+                        fluency.close();
+                    }
+                }, 5000);
+        assertNull(exception);
+    }
+
+    @Test
+    public void testWithAckResponseButNotReceiveToken()
+            throws Throwable
+    {
+        Exception exception = new ConfigurableTestServer().run(
+                new ConfigurableTestServer.WithClientSocket() {
+                    @Override
+                    public void run(SocketChannel clientSocketChannel)
+                            throws Exception
+                    {
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getChannel());
+                        assertEquals(3, unpacker.unpackArrayHeader());
+                        assertEquals("foo.bar", unpacker.unpackString());
+                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                        assertEquals(2, map.size());
+                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                        assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
+                        unpacker.close();
+                    }
+                },
+                new ConfigurableTestServer.WithServerPort()
+                {
+                    @Override
+                    public void run(int serverPort)
+                            throws Exception
+                    {
+                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        fluency.emit("foo.bar", new HashMap<String, Object>());
+                        fluency.close();
+                    }
+                }, 5000);
+        assertEquals(exception.getClass(), TimeoutException.class);
+    }
+
+    @Test
+    public void testWithAckResponseButWrongReceiveToken()
+            throws Throwable
+    {
+        Exception exception = new ConfigurableTestServer().run(
+                new ConfigurableTestServer.WithClientSocket() {
+                    @Override
+                    public void run(SocketChannel clientSocketChannel)
+                            throws Exception
+                    {
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getInputStream());
+                        assertEquals(3, unpacker.unpackArrayHeader());
+                        assertEquals("foo.bar", unpacker.unpackString());
+                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                        assertEquals(2, map.size());
+                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                        assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
+
+                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocketChannel.socket().getOutputStream());
+                        packer.packMapHeader(1)
+                                .packString("ack").packString(UUID.randomUUID().toString())
+                                .close();
+
+                        // Close the input stream after closing the output stream to avoid closing a socket too early
+                        unpacker.close();
+                    }
+                },
+                new ConfigurableTestServer.WithServerPort()
+                {
+                    @Override
+                    public void run(int serverPort)
+                            throws Exception
+                    {
+                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        fluency.emit("foo.bar", new HashMap<String, Object>());
+                        fluency.close();
+                    }
+                }, 5000);
+        assertEquals(exception.getClass(), TimeoutException.class);
+    }
+
+    @Test
+    public void testWithAckResponseWithProperToken()
+            throws Throwable
+    {
+        Exception exception = new ConfigurableTestServer().run(
+                new ConfigurableTestServer.WithClientSocket() {
+                    @Override
+                    public void run(SocketChannel clientSocketChannel)
+                            throws Exception
+                    {
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getInputStream());
+                        assertEquals(3, unpacker.unpackArrayHeader());
+                        assertEquals("foo.bar", unpacker.unpackString());
+                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                        assertEquals(2, map.size());
+                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                        String ackResponseToken = map.get(KEY_OPTION_CHUNK).asRawValue().asString();
+                        assertNotNull(ackResponseToken);
+
+                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocketChannel.socket().getOutputStream());
+                        packer.packMapHeader(1)
+                                .packString("ack").packString(ackResponseToken)
+                                .close();
+
+                        // Close the input stream after closing the output stream to avoid closing a socket too early
+                        unpacker.close();
+                    }
+                },
+                new ConfigurableTestServer.WithServerPort()
+                {
+                    @Override
+                    public void run(int serverPort)
+                            throws Exception
+                    {
+                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        fluency.emit("foo.bar", new HashMap<String, Object>());
+                        fluency.close();
+                    }
+                }, 5000);
+        assertNull(exception);
     }
 
     interface FluencyFactory
@@ -910,7 +1071,7 @@ public class FluencyTest
             return new EventHandler()
             {
                 @Override
-                public void onConnect(SocketChannel accpetSocketChannel)
+                public void onConnect(SocketChannel acceptSocketChannel)
                 {
                     connectCounter.incrementAndGet();
                 }
@@ -976,7 +1137,7 @@ public class FluencyTest
         }
 
         @Override
-        public void send(ByteBuffer data)
+        public void send(ByteBuffer buffer)
                 throws IOException
         {
             try {

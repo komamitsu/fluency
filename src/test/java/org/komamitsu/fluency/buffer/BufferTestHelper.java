@@ -52,7 +52,7 @@ public class BufferTestHelper
         longCommentCount = 0;
     }
 
-    public void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final Buffer buffer)
+    void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final Buffer buffer)
             throws IOException, InterruptedException
     {
         assertThat(buffer.getBufferUsage(), is(0f));
@@ -146,23 +146,14 @@ public class BufferTestHelper
 
         int totalLoopCount = concurrency * loopCount;
 
-        ByteBuffer headerBuffer = null;
-
         int recordCount = 0;
         ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
         objectMapper.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
-        for (ByteBuffer byteBuffer : sender.getEvents()) {
-            if (headerBuffer == null) {
-                headerBuffer = byteBuffer;
-                continue;
-            }
-            byte[] bytes = new byte[headerBuffer.limit() + byteBuffer.limit()];
-            headerBuffer.get(bytes, 0, headerBuffer.limit());
-            byteBuffer.get(bytes, headerBuffer.limit(), byteBuffer.limit());
-            headerBuffer = null;
+        for (MockTCPSender.Event event : sender.getEvents()) {
+            byte[] bytes = event.getAllBytes();
 
             MessageUnpacker messageUnpacker = MessagePack.newDefaultUnpacker(bytes);
-            assertEquals(2, messageUnpacker.unpackArrayHeader());
+            assertEquals(3, messageUnpacker.unpackArrayHeader());
 
             String tag = messageUnpacker.unpackString();
             byte[] payload = messageUnpacker.readPayload(messageUnpacker.unpackBinaryHeader());

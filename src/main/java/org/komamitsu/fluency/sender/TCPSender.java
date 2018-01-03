@@ -1,10 +1,13 @@
 package org.komamitsu.fluency.sender;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.format.Response;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +17,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -33,10 +35,10 @@ public class TCPSender
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final byte[] optionBuffer = new byte[256];
-    private final AckTokenSerDe ackTokenSerDe = new MessagePackAckTokenSerDe();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
     private final FailureDetector failureDetector;
+    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
     protected TCPSender(Config config)
     {
@@ -77,11 +79,11 @@ public class TCPSender
         return channel.get();
     }
 
-    private synchronized void sendBuffers(List<ByteBuffer> dataList)
+    private synchronized void sendBuffers(List<ByteBuffer> buffers)
             throws IOException
     {
         LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
-        getOrOpenChannel().write(dataList.toArray(new ByteBuffer[dataList.size()]));
+        getOrOpenChannel().write(buffers.toArray(new ByteBuffer[buffers.size()]));
     }
 
     private void propagateFailure(Throwable e)
@@ -92,15 +94,9 @@ public class TCPSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        ArrayList<ByteBuffer> buffers = new ArrayList<ByteBuffer>();
-        buffers.addAll(dataList);
-        if (ackToken != null) {
-            buffers.add(ByteBuffer.wrap(ackTokenSerDe.pack(ackToken)));
-        }
-
         try {
             sendBuffers(buffers);
 
@@ -135,7 +131,8 @@ public class TCPSender
                 throw new SocketTimeoutException("Socket read timeout");
             }
 
-            byte[] unpackedToken = ackTokenSerDe.unpack(optionBuffer);
+            Response response = objectMapper.readValue(optionBuffer, Response.class);
+            byte[] unpackedToken = response.getAck();
             if (!Arrays.equals(ackToken, unpackedToken)) {
                 throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken, CHARSET_FOR_ERRORLOG) + ", got=" + new String(unpackedToken, CHARSET_FOR_ERRORLOG));
             }

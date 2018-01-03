@@ -50,7 +50,7 @@ public class RetryableSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
         IOException firstException = null;
@@ -63,10 +63,10 @@ public class RetryableSender
 
             try {
                 if (ackToken == null) {
-                    baseSender.send(dataList);
+                    baseSender.send(buffers);
                 }
                 else {
-                    baseSender.sendWithAck(dataList, ackToken);
+                    baseSender.sendWithAck(buffers, ackToken);
                 }
                 return;
             }

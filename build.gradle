@@ -33,6 +33,7 @@ dependencies {
 
 findbugs {
     effort = 'max'
+    excludeFilter = file("${rootProject.projectDir}/findbugs-exclude.xml")
 }
 
 shadowJar {
