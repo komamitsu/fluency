@@ -1,7 +1,7 @@
 package org.komamitsu.fluency.sender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.format.ResponseOption;
+import org.komamitsu.fluency.format.Response;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
@@ -131,8 +131,8 @@ public class TCPSender
                 throw new SocketTimeoutException("Socket read timeout");
             }
 
-            ResponseOption responseOption = objectMapper.readValue(optionBuffer, ResponseOption.class);
-            byte[] unpackedToken = responseOption.getAck();
+            Response response = objectMapper.readValue(optionBuffer, Response.class);
+            byte[] unpackedToken = response.getAck();
             if (!Arrays.equals(ackToken, unpackedToken)) {
                 throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken, CHARSET_FOR_ERRORLOG) + ", got=" + new String(unpackedToken, CHARSET_FOR_ERRORLOG));
             }

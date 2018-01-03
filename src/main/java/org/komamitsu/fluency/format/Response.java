@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-public class ResponseOption
+public class Response
 {
     private final byte[] ack;
 
-    public ResponseOption(@JsonProperty("ack") byte[] ack)
+    public Response(@JsonProperty("ack") byte[] ack)
     {
         this.ack = ack;
     }
