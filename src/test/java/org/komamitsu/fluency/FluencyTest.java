@@ -1137,7 +1137,7 @@ public class FluencyTest
         }
 
         @Override
-        public void send(ByteBuffer data)
+        public void send(ByteBuffer buffer)
                 throws IOException
         {
             try {

@@ -79,11 +79,11 @@ public class TCPSender
         return channel.get();
     }
 
-    private synchronized void sendBuffers(List<ByteBuffer> dataList)
+    private synchronized void sendBuffers(List<ByteBuffer> buffers)
             throws IOException
     {
         LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
-        getOrOpenChannel().write(dataList.toArray(new ByteBuffer[dataList.size()]));
+        getOrOpenChannel().write(buffers.toArray(new ByteBuffer[buffers.size()]));
     }
 
     private void propagateFailure(Throwable e)
@@ -94,11 +94,11 @@ public class TCPSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
         try {
-            sendBuffers(dataList);
+            sendBuffers(buffers);
 
             if (ackToken == null) {
                 return;

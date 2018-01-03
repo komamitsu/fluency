@@ -22,38 +22,38 @@ public abstract class Sender
         this.config = config;
     }
 
-    public synchronized void send(ByteBuffer data)
+    public synchronized void send(ByteBuffer buffer)
             throws IOException
     {
-        sendInternalWithRestoreBufferPositions(Arrays.asList(data), null);
+        sendInternalWithRestoreBufferPositions(Arrays.asList(buffer), null);
     }
 
-    public synchronized void send(List<ByteBuffer> dataList)
+    public synchronized void send(List<ByteBuffer> buffers)
             throws IOException
     {
-        sendInternalWithRestoreBufferPositions(dataList, null);
+        sendInternalWithRestoreBufferPositions(buffers, null);
     }
 
-    public void sendWithAck(List<ByteBuffer> dataList, byte[] ackToken)
+    public void sendWithAck(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        sendInternalWithRestoreBufferPositions(dataList, ackToken);
+        sendInternalWithRestoreBufferPositions(buffers, ackToken);
     }
 
-    private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> dataList, byte[] ackToken)
+    private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        List<Integer> positions = new ArrayList<Integer>(dataList.size());
-        for (ByteBuffer data : dataList) {
+        List<Integer> positions = new ArrayList<Integer>(buffers.size());
+        for (ByteBuffer data : buffers) {
             positions.add(data.position());
         }
 
         try {
-            sendInternal(dataList, ackToken);
+            sendInternal(buffers, ackToken);
         }
         catch (Exception e) {
-            for (int i = 0; i < dataList.size(); i++) {
-                dataList.get(i).position(positions.get(i));
+            for (int i = 0; i < buffers.size(); i++) {
+                buffers.get(i).position(positions.get(i));
             }
 
             if (config.senderErrorHandler != null) {
@@ -76,7 +76,7 @@ public abstract class Sender
 
     public abstract boolean isAvailable();
 
-    abstract protected void sendInternal(List<ByteBuffer> dataList, byte[] ackToken) throws IOException;
+    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken) throws IOException;
 
     public static class Config
     {

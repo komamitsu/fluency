@@ -59,13 +59,13 @@ public class MockTCPSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        assertEquals(3, dataList.size());
+        assertEquals(3, buffers.size());
         Event event = new Event();
         int i = 0;
-        for (ByteBuffer data : dataList) {
+        for (ByteBuffer data : buffers) {
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(data.capacity());
             byteBuffer.put(data);
             byteBuffer.flip();

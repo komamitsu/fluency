@@ -30,7 +30,7 @@ public class MultiSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> dataList, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws AllNodesUnavailableException
     {
         for (Sender sender : senders) {
@@ -39,10 +39,10 @@ public class MultiSender
             if (isAvailable) {
                 try {
                     if (ackToken == null) {
-                        sender.send(dataList);
+                        sender.send(buffers);
                     }
                     else {
-                        sender.sendWithAck(dataList, ackToken);
+                        sender.sendWithAck(buffers, ackToken);
                     }
                     return;
                 }
