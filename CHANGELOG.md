@@ -1,3 +1,9 @@
+## 1.7.0 (2018-01-05)
+
+Features:
+
+- Add `size` field to `option` section of PackedForward requests
+
 ## 1.6.0 (2017-11-24)
 
 Bugfixes:
