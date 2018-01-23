@@ -14,6 +14,7 @@ public class MultiSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     private final List<Sender> senders = new ArrayList<Sender>();
+    private int senderIndex = 0;
 
     protected MultiSender(Config config)
     {
@@ -33,7 +34,11 @@ public class MultiSender
     protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws AllNodesUnavailableException
     {
-        for (Sender sender : senders) {
+        for (int index=0; index < senders.size(); index++) {
+            final Sender sender = getCircularSender();
+            if (null == sender) {
+                continue;
+            }
             boolean isAvailable = sender.isAvailable();
             LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
             if (isAvailable) {
@@ -86,6 +91,17 @@ public class MultiSender
     public List<Sender> getSenders()
     {
         return Collections.unmodifiableList(senders);
+    }
+
+    protected Sender getCircularSender() {
+        Sender sender = null;
+        if (!this.senders.isEmpty()) {
+            int index = this.senderIndex % this.senders.size();
+            sender = this.senders.get(index);
+            this.senderIndex = index + 1;
+            LOG.trace("getCircularSender(): sender index={}", index);
+        }
+        return sender;
     }
 
     @Override
