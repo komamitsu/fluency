@@ -34,13 +34,13 @@ public class TCPSender
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
-    private final byte[] optionBuffer = new byte[256];
+    final byte[] optionBuffer = new byte[256];
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    protected TCPSender(Config config)
+    TCPSender(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
@@ -79,11 +79,16 @@ public class TCPSender
         return channel.get();
     }
 
-    private synchronized void sendBuffers(List<ByteBuffer> buffers)
+    protected synchronized void sendBuffers(List<ByteBuffer> buffers)
             throws IOException
     {
-        LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
         getOrOpenChannel().write(buffers.toArray(new ByteBuffer[buffers.size()]));
+    }
+
+    protected void recvResponse(ByteBuffer buffer)
+            throws IOException
+    {
+        getOrOpenChannel().read(buffer);
     }
 
     private void propagateFailure(Throwable e)
@@ -98,6 +103,7 @@ public class TCPSender
             throws IOException
     {
         try {
+            LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
             sendBuffers(buffers);
 
             if (ackToken == null) {
@@ -113,7 +119,8 @@ public class TCPSender
                 public Void call()
                         throws Exception
                 {
-                    getOrOpenChannel().read(byteBuffer);
+                    LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
+                    recvResponse(byteBuffer);
                     return null;
                 }
             });
@@ -144,7 +151,7 @@ public class TCPSender
         }
     }
 
-    private void closeSocket()
+    protected void closeSocket()
             throws IOException
     {
         SocketChannel socketChannel;
