@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractFluentdServer
         extends MockTCPServer
@@ -38,11 +37,11 @@ public abstract class AbstractFluentdServer
 
     public interface EventHandler
     {
-        void onConnect(SocketChannel acceptSocketChannel);
+        void onConnect(Socket acceptSocket);
 
         void onReceive(String tag, long timestampMillis, MapValue data);
 
-        void onClose(SocketChannel accpetSocketChannel);
+        void onClose(Socket accpetSocket);
     }
 
     private static class FluentdEventHandler
@@ -52,14 +51,14 @@ public abstract class AbstractFluentdServer
         private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
         private final EventHandler eventHandler;
         private final ExecutorService executorService = Executors.newCachedThreadPool();
-        private final Map<SocketChannel, FluentdAcceptTask> fluentdTasks = new ConcurrentHashMap<SocketChannel, FluentdAcceptTask>();
+        private final Map<Socket, FluentdAcceptTask> fluentdTasks = new ConcurrentHashMap<Socket, FluentdAcceptTask>();
 
         private FluentdEventHandler(EventHandler eventHandler)
         {
             this.eventHandler = eventHandler;
         }
 
-        private void ack(SocketChannel acceptSocketChannel, byte[] ackResponseToken)
+        private void ack(Socket acceptSocket, byte[] ackResponseToken)
                 throws IOException
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(
@@ -76,19 +75,19 @@ public abstract class AbstractFluentdServer
             byteBuffer.put((byte) ackResponseToken.length);
             byteBuffer.put(ackResponseToken);
             byteBuffer.flip();
-            acceptSocketChannel.write(byteBuffer);
+            acceptSocket.getOutputStream().write(byteBuffer.array());
         }
 
         private class FluentdAcceptTask implements Runnable
         {
-            private final SocketChannel acceptSocketChannel;
+            private final Socket acceptSocket;
             private final PipedInputStream pipedInputStream;
             private final PipedOutputStream pipedOutputStream;
 
-            private FluentdAcceptTask(SocketChannel acceptSocketChannel)
+            private FluentdAcceptTask(Socket acceptSocket)
                     throws IOException
             {
-                this.acceptSocketChannel = acceptSocketChannel;
+                this.acceptSocket = acceptSocket;
                 this.pipedOutputStream = new PipedOutputStream();
                 this.pipedInputStream = new PipedInputStream(pipedOutputStream);
             }
@@ -116,10 +115,10 @@ public abstract class AbstractFluentdServer
                                 break;
                             }
                             value = unpacker.unpackValue();
-                            LOG.trace("value={}, local.port={}, remote.port={}", value, acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort());
+                            LOG.trace("Received a value: local.port={}, remote.port={}", acceptSocket.getLocalPort(), acceptSocket.getPort());
                         }
                         catch (Exception e) {
-                            LOG.debug("Fluentd accept task received IOException");
+                            LOG.debug("Fluentd accept task received IOException: {}", e.getMessage());
                             break;
                         }
                         assertEquals(ValueType.ARRAY, value.getValueType());
@@ -165,12 +164,12 @@ public abstract class AbstractFluentdServer
                         Value chunk = map.get(KEY_OPTION_CHUNK);
                         if (chunk != null) {
                             RawValue ackResponseToken = chunk.asRawValue();
-                            ack(acceptSocketChannel, ackResponseToken.asBinaryValue().asByteArray());
+                            ack(acceptSocket, ackResponseToken.asBinaryValue().asByteArray());
                         }
                     }
 
                     try {
-                        LOG.debug("Closing unpacker: this={}, local.port={}, remote.port={}", this, acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort());
+                        LOG.debug("Closing unpacker: this={}, local.port={}, remote.port={}", this, acceptSocket.getLocalPort(), acceptSocket.getPort());
                         unpacker.close();
                     }
                     catch (IOException e) {
@@ -178,9 +177,9 @@ public abstract class AbstractFluentdServer
                     }
                 }
                 catch (Throwable e) {
-                    LOG.error("Fluentd server failed: this=" + this + ", local.port=" + acceptSocketChannel.socket().getLocalPort() + ", remote.port=" + acceptSocketChannel.socket().getPort(), e);
+                    LOG.error("Fluentd server failed: this=" + this + ", local.port=" + acceptSocket.getLocalPort() + ", remote.port=" + acceptSocket.getPort(), e);
                     try {
-                        acceptSocketChannel.close();
+                        acceptSocket.close();
                     }
                     catch (IOException e1) {
                         LOG.warn("Failed to close accept socket quietly", e1);
@@ -190,34 +189,31 @@ public abstract class AbstractFluentdServer
         }
 
         @Override
-        public void onConnect(final SocketChannel acceptSocketChannel)
+        public void onConnect(final Socket acceptSocket)
         {
-            eventHandler.onConnect(acceptSocketChannel);
+            eventHandler.onConnect(acceptSocket);
             try {
-                FluentdAcceptTask fluentdAcceptTask = new FluentdAcceptTask(acceptSocketChannel);
-                fluentdTasks.put(acceptSocketChannel, fluentdAcceptTask);
+                FluentdAcceptTask fluentdAcceptTask = new FluentdAcceptTask(acceptSocket);
+                fluentdTasks.put(acceptSocket, fluentdAcceptTask);
                 executorService.execute(fluentdAcceptTask);
             }
             catch (IOException e) {
-                fluentdTasks.remove(acceptSocketChannel);
+                fluentdTasks.remove(acceptSocket);
                 throw new IllegalStateException("Failed to create FluentdAcceptTask", e);
             }
         }
 
         @Override
-        public void onReceive(SocketChannel acceptSocketChannel, ByteBuffer data)
+        public void onReceive(Socket acceptSocket, int len, byte[] data)
         {
-            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.get(acceptSocketChannel);
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.get(acceptSocket);
             if (fluentdAcceptTask == null) {
                 throw new IllegalStateException("fluentAccept is null: this=" + this);
             }
-            data.flip();
-            byte[] bytes = new byte[data.limit()];
-            data.get(bytes);
 
-            LOG.trace("onReceived: local.port={}, remote.port={}, dataLen={}", acceptSocketChannel.socket().getLocalPort(), acceptSocketChannel.socket().getPort(), bytes.length);
+            LOG.trace("onReceived: local.port={}, remote.port={}, dataLen={}", acceptSocket.getLocalPort(), acceptSocket.getPort(), len);
             try {
-                fluentdAcceptTask.getPipedOutputStream().write(bytes);
+                fluentdAcceptTask.getPipedOutputStream().write(data, 0, len);
                 fluentdAcceptTask.getPipedOutputStream().flush();
             }
             catch (IOException e) {
@@ -226,10 +222,10 @@ public abstract class AbstractFluentdServer
         }
 
         @Override
-        public void onClose(SocketChannel acceptSocketChannel)
+        public void onClose(Socket acceptSocket)
         {
-            eventHandler.onClose(acceptSocketChannel);
-            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocketChannel);
+            eventHandler.onClose(acceptSocket);
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocket);
             try {
                 fluentdAcceptTask.getPipedInputStream().close();
             }
@@ -245,10 +241,10 @@ public abstract class AbstractFluentdServer
         }
     }
 
-    public AbstractFluentdServer()
-            throws IOException
+    public AbstractFluentdServer(boolean sslEnabled)
+            throws Exception
     {
-        super();
+        super(sslEnabled);
     }
 
     @Override

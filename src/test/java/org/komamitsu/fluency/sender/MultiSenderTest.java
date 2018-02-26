@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
+import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
@@ -18,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
 
 public class MultiSenderTest
@@ -25,7 +29,7 @@ public class MultiSenderTest
     private static final Logger LOG = LoggerFactory.getLogger(MultiSenderTest.class);
 
     @Test
-    public void testConstructor()
+    public void testConstructorForTCPSender()
             throws IOException
     {
         MultiSender multiSender = null;
@@ -70,32 +74,105 @@ public class MultiSenderTest
     }
 
     @Test
-    public void testSend()
-            throws IOException, InterruptedException
+    public void testConstructorForSSLSender()
+            throws IOException
     {
-        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics();
+        MultiSender multiSender = null;
+        try {
+            multiSender = new MultiSender.Config(
+                    Arrays.<Sender.Instantiator>asList(
+                            new SSLSender.Config()
+                                    .setPort(24225)
+                                    .setHeartbeaterConfig(
+                                            new SSLHeartbeater.Config().
+                                                    setPort(24225)),
+                            new SSLSender.Config()
+                                    .setHost("0.0.0.0")
+                                    .setPort(24226)
+                                    .setHeartbeaterConfig(
+                                            new SSLHeartbeater.Config()
+                                                    .setHost("0.0.0.0")
+                                                    .setPort(24226))
+                                    )).createInstance();
+
+            assertThat(multiSender.toString().length(), greaterThan(0));
+
+            assertEquals(2, multiSender.getSenders().size());
+
+            SSLSender sslSender = (SSLSender) multiSender.getSenders().get(0);
+            assertEquals("127.0.0.1", sslSender.getHost());
+            assertEquals(24225, sslSender.getPort());
+            assertEquals("127.0.0.1", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24225, sslSender.getFailureDetector().getHeartbeater().getPort());
+
+            sslSender = (SSLSender) multiSender.getSenders().get(1);
+            assertEquals("0.0.0.0", sslSender.getHost());
+            assertEquals(24226, sslSender.getPort());
+            assertEquals("0.0.0.0", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24226, sslSender.getFailureDetector().getHeartbeater().getPort());
+        }
+        finally {
+            if (multiSender != null) {
+                multiSender.close();
+            }
+        }
+    }
+
+    @Test
+    public void testTCPSend()
+            throws Exception
+    {
+        testSend(false);
+    }
+
+    @Test
+    public void testSSLSend()
+            throws Exception
+    {
+        testSend(true);
+    }
+
+    private void testSend(boolean sslEnabled)
+            throws Exception
+    {
+        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics(sslEnabled);
         server0.start();
-        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics();
+        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics(sslEnabled);
         server1.start();
-        TimeUnit.MILLISECONDS.sleep(500);
 
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
 
         final MultiSender sender = new MultiSender.Config(
-                Arrays.<Sender.Instantiator>asList(
-                        new TCPSender.Config()
-                                .setPort(server0.getLocalPort())
-                                .setHeartbeaterConfig(
-                                        new UDPHeartbeater.Config()
-                                            .setPort(server0.getLocalPort())),
-                        new TCPSender.Config()
-                                .setPort(server1.getLocalPort())
-                                .setHeartbeaterConfig(
-                                        new UDPHeartbeater.Config()
-                                                .setPort(server1.getLocalPort()))
-                                )).createInstance();
+                sslEnabled ?
+                        Arrays.<Sender.Instantiator>asList(
+                                new SSLSender.Config()
+                                        .setPort(server0.getLocalPort())
+                                        .setReadTimeoutMilli(500)
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server0.getLocalPort())),
+                                new SSLSender.Config()
+                                        .setPort(server1.getLocalPort())
+                                        .setReadTimeoutMilli(500)
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server1.getLocalPort()))
+                        ) :
+                        Arrays.<Sender.Instantiator>asList(
+                                new TCPSender.Config()
+                                        .setPort(server0.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server0.getLocalPort())),
+                                new TCPSender.Config()
+                                        .setPort(server1.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server1.getLocalPort()))
+                        )
+        ).createInstance();
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {
@@ -126,17 +203,14 @@ public class MultiSenderTest
             });
         }
 
-        for (int i = 0; i < 60; i++) {
-            if (latch.await(1, TimeUnit.SECONDS)) {
-                break;
-            }
+        if (!latch.await(60, TimeUnit.SECONDS)) {
+            assertTrue("Sending all requests is timed out", false);
         }
-        assertEquals(0, latch.getCount());
 
         sender.close();
-        TimeUnit.MILLISECONDS.sleep(1000);
+
+        server1.waitUntilEventsStop();
         server1.stop();
-        TimeUnit.MILLISECONDS.sleep(1000);
 
         int connectCount = 0;
         int closeCount = 0;
@@ -162,7 +236,12 @@ public class MultiSenderTest
         LOG.debug("recvLen={}", recvLen);
 
         assertEquals(2, connectCount);
-        assertTrue(((long)(concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
-        assertEquals(2, closeCount);
+        // This test doesn't use actual PackedForward format so that it can simply test MultiSender itself.
+        // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here
+        long minExpectedRecvLen = ((long)(concurency - (sslEnabled ? 6 : 2)) * reqNum) * 10;
+        long maxExpectedRecvLen = ((long)concurency * reqNum) * 10;
+        assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
+        assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));
+        assertEquals(1, closeCount);
     }
 }

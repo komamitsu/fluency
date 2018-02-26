@@ -141,6 +141,25 @@ Fluency fluency = Fluency.defaultFluency(
 fluency.emit("foo.bar", event);
 ```
 
+#### Send requests over SSL/TLS
+
+```java
+// Single Fluentd(localhost:24224)
+//   - Enable SSL/TLS
+Fluency fluency = Fluency.defaultFluency(
+	new Fluency.Config()
+        .setUseSsl(true);
+```
+
+If you want to use a custom truststore, specify the JKS file path using `-Djavax.net.ssl.trustStore` (and `-Djavax.net.ssl.trustStorePassword` if needed). You can create a custom truststore like this:
+
+```
+$ keytool -import -file server.crt -alias mytruststore -keystore truststore.jks
+```
+
+For server side configuration, see https://docs.fluentd.org/v1.0/articles/in_forward#how-to-enable-tls/ssl-encryption .
+
+
 #### Other configurations
 
 ```java
