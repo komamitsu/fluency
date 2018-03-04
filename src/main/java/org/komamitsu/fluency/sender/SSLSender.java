@@ -27,14 +27,15 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TLSSender
+public class SSLSender
     extends TCPSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
+    private static final String SSL_PROTOCOL = "TLSv1.2";
     private final Config config;
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
 
-    public TLSSender(Config config)
+    public SSLSender(Config config)
     {
         super(config.tcpSenderConfig);
 
@@ -107,14 +108,13 @@ public class TLSSender
             try {
                 KeyManager[] keyManagers = createKeyManagers();
 
-                SSLContext sslContext = SSLContext.getInstance(config.getVersion().getProtocolName());
+                SSLContext sslContext = SSLContext.getInstance(SSL_PROTOCOL);
                 sslContext.init(keyManagers, null, new SecureRandom());
                 SSLSocketFactory socketFactory = sslContext.getSocketFactory();
                 socket.set((SSLSocket) socketFactory.createSocket(config.getHost(), config.getPort()));
             }
             catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException(
-                        String.format("Failed to get SSLContext: protocol=%s", config.getVersion().getProtocolName()), e);
+                throw new IllegalStateException("Failed to get SSLContext", e);
             }
             catch (KeyManagementException e) {
                 throw new IllegalStateException("Failed to init SSLContext", e);
@@ -159,29 +159,11 @@ public class TLSSender
         }
     }
 
-    public enum Version
-    {
-        TLSv1_1("TLSv1.1"), TLSv1_2("TLSv1.2");
-
-        private final String protocolName;
-
-        Version(String protocolName)
-        {
-            this.protocolName = protocolName;
-        }
-
-        public String getProtocolName()
-        {
-            return protocolName;
-        }
-    }
-
     public static class Config
         implements Instantiator
     {
         private final Sender.Config baseConfig = new Sender.Config();
         private final TCPSender.Config tcpSenderConfig = new TCPSender.Config();
-        private Version version = Version.TLSv1_2;
         private String keystorePath;
         private String keyPassword;
         private String storePassword;
@@ -291,6 +273,9 @@ public class TLSSender
             return this;
         }
 
+        /*
+         * SSL sender config
+         */
         public String getKeystorePath()
         {
             return keystorePath;
@@ -324,21 +309,10 @@ public class TLSSender
             return this;
         }
 
-        public Version getVersion()
-        {
-            return version;
-        }
-
-        public Config setVersion(Version version)
-        {
-            this.version = version;
-            return this;
-        }
-
         @Override
-        public TLSSender createInstance()
+        public SSLSender createInstance()
         {
-            return new TLSSender(this);
+            return new SSLSender(this);
         }
 
         @Override
@@ -347,7 +321,6 @@ public class TLSSender
             return "Config{" +
                     "baseConfig=" + baseConfig +
                     ", tcpSenderConfig=" + tcpSenderConfig +
-                    ", version=" + version +
                     ", keystorePath='" + keystorePath + '\'' +
                     ", keyPassword='" + keyPassword + '\'' +
                     ", storePassword='" + storePassword + '\'' +

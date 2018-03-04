@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
 
-public class TLSSenderTest
+public class SSLSenderTest
 {
     private ObjectMapper objectMapper;
 
@@ -72,7 +72,7 @@ public class TLSSenderTest
         assumeNotNull(config);
 
         Fluency fluency = new Fluency.Builder(
-                new TLSSender.Config()
+                new SSLSender.Config()
                         .setPort(config.port)
                         .setKeystorePath(config.keystorePath)
                         .setStorePassword(config.storePassword)
