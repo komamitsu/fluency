@@ -6,119 +6,37 @@ import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
     extends TCPSender
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
-    private static final String SSL_PROTOCOL = "TLSv1.2";
-    private final Config config;
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
+    private final SSLSocketBuilder socketBuilder;
 
     public SSLSender(Config config)
     {
         super(config.tcpSenderConfig);
-
-        if (config.keystorePath == null || config.keystorePath.isEmpty()) {
-            throw new IllegalArgumentException("Config.keystorePath: " + config.keystorePath);
-        }
-
-        this.config = config;
-    }
-
-    private KeyManager[] createKeyManagers()
-    {
-        KeyStore keyStore;
-        FileInputStream fileInputStream = null;
-        try {
-            fileInputStream = new FileInputStream(config.keystorePath);
-            keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(fileInputStream, config.getStorePassword().toCharArray());
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format("Failed to load KeyStore: keystorePath=%s", config.keystorePath), e);
-        }
-        catch (CertificateException e) {
-            throw new IllegalArgumentException(
-                    String.format("Failed to load KeyStore: keystorePath=%s", config.keystorePath), e);
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(
-                    String.format("Failed to get KeyStore: algorithm=%s",
-                            KeyManagerFactory.getDefaultAlgorithm()));
-        }
-        catch (KeyStoreException e) {
-            throw new IllegalStateException("Failed to get KeyStore", e);
-        }
-        finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                }
-                catch (IOException e) {
-                    LOG.warn("Failed to close certificate file", e);
-                }
-            }
-        }
-
-        try {
-            KeyManagerFactory keyManagerFactory =
-                    KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(keyStore, config.getKeyPassword().toCharArray());
-            return keyManagerFactory.getKeyManagers();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(
-                    String.format("Failed to get KeyManagerFactory: algorithm=%s",
-                            KeyManagerFactory.getDefaultAlgorithm()));
-        }
-        catch (UnrecoverableKeyException e) {
-            throw new IllegalStateException("Failed to initialize KeyManagerFactory", e);
-        }
-        catch (KeyStoreException e) {
-            throw new IllegalStateException("Failed to initialize KeyManagerFactory", e);
-        }
+        socketBuilder = new SSLSocketBuilder()
+                .setHost(config.getHost())
+                .setPort(config.getPort())
+                .setKeystorePath(config.getKeystorePath())
+                .setStorePassword(config.getStorePassword())
+                .setKeyPassword(config.getKeyPassword());
     }
 
     private SSLSocket getOrOpenSSLSocket()
             throws IOException
     {
         if (socket.get() == null) {
-            try {
-                KeyManager[] keyManagers = createKeyManagers();
-
-                SSLContext sslContext = SSLContext.getInstance(SSL_PROTOCOL);
-                sslContext.init(keyManagers, null, new SecureRandom());
-                SSLSocketFactory socketFactory = sslContext.getSocketFactory();
-                socket.set((SSLSocket) socketFactory.createSocket(config.getHost(), config.getPort()));
-            }
-            catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException("Failed to get SSLContext", e);
-            }
-            catch (KeyManagementException e) {
-                throw new IllegalStateException("Failed to init SSLContext", e);
-            }
+            socket.set(socketBuilder.build());
         }
         return socket.get();
     }
