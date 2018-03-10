@@ -23,25 +23,13 @@ public class SSLSenderTest
         public final Integer port;
         @JsonProperty("tag")
         public final String tag;
-        @JsonProperty("keystore_path")
-        public final String keystorePath;
-        @JsonProperty("store_password")
-        public final String storePassword;
-        @JsonProperty("key_password")
-        public final String keyPassword;
 
         public RealSSLFluentdConfig(
                 @JsonProperty("port") Integer port,
-                @JsonProperty("tag") String tag,
-                @JsonProperty("keystore_path") String keystorePath,
-                @JsonProperty("store_password") String storePassword,
-                @JsonProperty("key_password") String keyPassword)
+                @JsonProperty("tag") String tag)
         {
             this.port = port == null ? Integer.valueOf(24224) : port;
             this.tag = tag == null ? "foodb.bartbl" : tag;
-            this.keystorePath = keystorePath;
-            this.storePassword = storePassword;
-            this.keyPassword = keyPassword;
         }
     }
 
@@ -74,9 +62,6 @@ public class SSLSenderTest
         Fluency fluency = new Fluency.Builder(
                 new SSLSender.Config()
                         .setPort(config.port)
-                        .setKeystorePath(config.keystorePath)
-                        .setStorePassword(config.storePassword)
-                        .setKeyPassword(config.keyPassword)
                         .createInstance()
         ).build();
         Map<String, Object> event = new HashMap<String, Object>();

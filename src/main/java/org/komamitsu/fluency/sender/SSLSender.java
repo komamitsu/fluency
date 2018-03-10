@@ -3,8 +3,6 @@ package org.komamitsu.fluency.sender;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSocket;
 
@@ -26,10 +24,7 @@ public class SSLSender
         super(config.tcpSenderConfig);
         socketBuilder = new SSLSocketBuilder()
                 .setHost(config.getHost())
-                .setPort(config.getPort())
-                .setKeystorePath(config.getKeystorePath())
-                .setStorePassword(config.getStorePassword())
-                .setKeyPassword(config.getKeyPassword());
+                .setPort(config.getPort());
     }
 
     private SSLSocket getOrOpenSSLSocket()
@@ -82,9 +77,6 @@ public class SSLSender
     {
         private final Sender.Config baseConfig = new Sender.Config();
         private final TCPSender.Config tcpSenderConfig = new TCPSender.Config();
-        private String keystorePath;
-        private String keyPassword;
-        private String storePassword;
 
         /*
          * Base config
@@ -191,42 +183,6 @@ public class SSLSender
             return this;
         }
 
-        /*
-         * SSL sender config
-         */
-        public String getKeystorePath()
-        {
-            return keystorePath;
-        }
-
-        public String getKeyPassword()
-        {
-            return keyPassword;
-        }
-
-        public Config setKeyPassword(String keyPassword)
-        {
-            this.keyPassword = keyPassword;
-            return this;
-        }
-
-        public String getStorePassword()
-        {
-            return storePassword;
-        }
-
-        public Config setStorePassword(String storePassword)
-        {
-            this.storePassword = storePassword;
-            return this;
-        }
-
-        public Config setKeystorePath(String keystorePath)
-        {
-            this.keystorePath = keystorePath;
-            return this;
-        }
-
         @Override
         public SSLSender createInstance()
         {
@@ -239,9 +195,6 @@ public class SSLSender
             return "Config{" +
                     "baseConfig=" + baseConfig +
                     ", tcpSenderConfig=" + tcpSenderConfig +
-                    ", keystorePath='" + keystorePath + '\'' +
-                    ", keyPassword='" + keyPassword + '\'' +
-                    ", storePassword='" + storePassword + '\'' +
                     '}';
         }
     }

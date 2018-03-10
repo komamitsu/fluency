@@ -34,7 +34,6 @@ public class SSLSocketBuilderTest
 {
     private static final String KEYSTORE_PASSWORD = "storepassword";
     private static final String KEY_PASSWORD = "keypassword";
-    private String keyStorePath;
     private SSLServerSocket serverSocket;
 
     @Before
@@ -44,7 +43,7 @@ public class SSLSocketBuilderTest
         String trustStorePath = SSLSocketBuilder.class.getClassLoader().getResource("truststore.jks").getFile();
         System.getProperties().setProperty("javax.net.ssl.trustStore", trustStorePath);
 
-        keyStorePath = SSLSocketBuilder.class.getClassLoader().getResource("keystore.jks").getFile();
+        String keyStorePath = SSLSocketBuilder.class.getClassLoader().getResource("keystore.jks").getFile();
 
         InputStream keystoreStream = null;
         try {
@@ -102,9 +101,6 @@ public class SSLSocketBuilderTest
         SSLSocket sslSocket = new SSLSocketBuilder()
                 .setHost("localhost")
                 .setPort(serverSocket.getLocalPort())
-                .setKeystorePath(keyStorePath)
-                .setStorePassword(KEYSTORE_PASSWORD)
-                .setKeyPassword(KEY_PASSWORD)
                 .build();
 
         try {
