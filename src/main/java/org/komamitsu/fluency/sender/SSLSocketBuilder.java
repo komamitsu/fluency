@@ -46,4 +46,13 @@ public class SSLSocketBuilder
             throw new IllegalStateException("Failed to init SSLContext", e);
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "SSLSocketBuilder{" +
+                "host='" + host + '\'' +
+                ", port=" + port +
+                '}';
+    }
 }
