@@ -24,8 +24,12 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -81,13 +85,14 @@ public class SSLSocketBuilderTest
 
     @Test
     public void testWithServer()
-            throws IOException, InterruptedException
+            throws IOException, InterruptedException, ExecutionException, TimeoutException
     {
         final AtomicInteger readLen = new AtomicInteger();
         final byte[] buf = new byte[256];
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(new Callable<Void>() {
+        Future<Void> future = executorService.submit(new Callable<Void>()
+        {
             @Override
             public Void call()
                     throws Exception
@@ -105,13 +110,17 @@ public class SSLSocketBuilderTest
 
         try {
             OutputStream outputStream = sslSocket.getOutputStream();
-            outputStream.write("hello".getBytes());
+            outputStream.write("hello".getBytes("ASCII"));
             outputStream.flush();
         }
         finally {
             sslSocket.close();
         }
 
-        assertEquals(new String(buf, 0, readLen.get()), "hello");
+        future.get(10, TimeUnit.SECONDS);
+        executorService.shutdown();
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
+
+        assertEquals(new String(buf, 0, readLen.get(), "ASCII"), "hello");
     }
 }
