@@ -4,11 +4,13 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
+import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
 import org.slf4j.Logger;
@@ -35,7 +37,52 @@ public class Fluency
     public static Fluency defaultFluency(String host, int port, Config config)
             throws IOException
     {
-        return buildDefaultFluency(new TCPSender.Config().setHost(host).setPort(port), config);
+        return buildDefaultFluency(createBaseSenderConfig(config, host, port), config);
+    }
+
+    private static Sender.Instantiator createBaseSenderConfig(Config config, String host, Integer port)
+    {
+        return createBaseSenderConfig(config, host, port, false);
+    }
+
+    private static Sender.Instantiator createBaseSenderConfig(Config config, String host, Integer port, boolean withHeartBeater)
+    {
+        if (withHeartBeater && port == null) {
+            throw new IllegalArgumentException("`port` should be specified when using heartbeat");
+        }
+
+        if (config != null && config.useSsl) {
+            SSLSender.Config senderConfig = new SSLSender.Config();
+            if (host != null) {
+                senderConfig.setHost(host);
+            }
+            if (port != null) {
+                senderConfig.setPort(port);
+            }
+            if (withHeartBeater) {
+                senderConfig.setHeartbeaterConfig(
+                        new SSLHeartbeater.Config()
+                                .setHost(host)
+                                .setPort(port));
+            }
+            return senderConfig;
+        }
+        else {
+            TCPSender.Config senderConfig = new TCPSender.Config();
+            if (host != null) {
+                senderConfig.setHost(host);
+            }
+            if (port != null) {
+                senderConfig.setPort(port);
+            }
+            if (withHeartBeater) {
+                senderConfig.setHeartbeaterConfig(
+                        new TCPHeartbeater.Config()
+                                .setHost(host)
+                                .setPort(port));
+            }
+            return senderConfig;
+        }
     }
 
     private static Fluency buildDefaultFluency(Sender.Instantiator baseSenderConfig, Config config)
@@ -104,30 +151,23 @@ public class Fluency
     public static Fluency defaultFluency(int port, Config config)
             throws IOException
     {
-        return buildDefaultFluency(new TCPSender.Config().setPort(port), config);
+        return buildDefaultFluency(createBaseSenderConfig(config, null, port), config);
     }
 
     public static Fluency defaultFluency(Config config)
             throws IOException
     {
-        return buildDefaultFluency(new TCPSender.Config(), config);
+        return buildDefaultFluency(createBaseSenderConfig(config, null, null), config);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
             throws IOException
     {
-        List<Sender.Instantiator> tcpSenderConfigs = new ArrayList<Sender.Instantiator>();
+        List<Sender.Instantiator> senderConfigs = new ArrayList<Sender.Instantiator>();
         for (InetSocketAddress server : servers) {
-            tcpSenderConfigs.add(
-                    new TCPSender.Config()
-                            .setHost(server.getHostName())
-                            .setPort(server.getPort())
-                            .setHeartbeaterConfig(
-                                    new TCPHeartbeater.Config()
-                                            .setHost(server.getHostName())
-                                            .setPort(server.getPort())));
+            senderConfigs.add(createBaseSenderConfig(config, server.getHostName(), server.getPort(), true));
         }
-        return buildDefaultFluency(new MultiSender.Config(tcpSenderConfigs), config);
+        return buildDefaultFluency(new MultiSender.Config(senderConfigs), config);
     }
 
     public static Fluency defaultFluency(String host, int port)
@@ -145,7 +185,7 @@ public class Fluency
     public static Fluency defaultFluency()
             throws IOException
     {
-        return buildDefaultFluency(new TCPSender.Config(), null);
+        return buildDefaultFluency(createBaseSenderConfig(null, null, null), null);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers)
@@ -428,6 +468,8 @@ public class Fluency
 
         private SenderErrorHandler senderErrorHandler;
 
+        private Boolean useSsl;
+
         public Long getMaxBufferSize()
         {
             return maxBufferSize;
@@ -549,6 +591,17 @@ public class Fluency
             return this;
         }
 
+        public Boolean getUseSsl()
+        {
+            return useSsl;
+        }
+
+        public Config setUseSsl(Boolean useSsl)
+        {
+            this.useSsl = useSsl;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -564,6 +617,7 @@ public class Fluency
                     ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                     ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     ", senderErrorHandler=" + senderErrorHandler +
+                    ", useSsl =" + useSsl +
                     '}';
         }
     }
