@@ -468,7 +468,7 @@ public class Fluency
 
         private SenderErrorHandler senderErrorHandler;
 
-        private Boolean useSsl;
+        private boolean useSsl;
 
         public Long getMaxBufferSize()
         {
@@ -591,12 +591,12 @@ public class Fluency
             return this;
         }
 
-        public Boolean getUseSsl()
+        public boolean getUseSsl()
         {
             return useSsl;
         }
 
-        public Config setUseSsl(Boolean useSsl)
+        public Config setUseSsl(boolean useSsl)
         {
             this.useSsl = useSsl;
             return this;
