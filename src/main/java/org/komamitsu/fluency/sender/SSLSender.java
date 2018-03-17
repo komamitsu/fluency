@@ -18,6 +18,7 @@ public class SSLSender
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
     private final SSLSocketBuilder socketBuilder;
+    private final Config config;
 
     public SSLSender(Config config)
     {
@@ -25,6 +26,7 @@ public class SSLSender
         socketBuilder = new SSLSocketBuilder()
                 .setHost(config.getHost())
                 .setPort(config.getPort());
+        this.config = config;
     }
 
     private SSLSocket getOrOpenSSLSocket()
@@ -69,7 +71,17 @@ public class SSLSender
     {
         if (socket.get() != null) {
             getOrOpenSSLSocket().close();
+            socket.set(null);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "SSLSender{" +
+                "socketBuilder=" + socketBuilder +
+                ", config=" + config +
+                "} " + super.toString();
     }
 
     public static class Config
