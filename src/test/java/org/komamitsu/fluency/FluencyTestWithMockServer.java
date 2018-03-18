@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -522,9 +523,15 @@ public class FluencyTestWithMockServer
             else {
                 assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));
                 assertThat(fluentd.connectCounter.get(), is(lessThanOrEqualTo(2L)));
-                assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
+                if (options.closeInsteadOfFlush) {
+                    assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
+                }
+                else {
+                    assertThat(fluentd.closeCounter.get(), is(0L));
+                }
                 assertThat(fluentd.closeCounter.get(), is(lessThanOrEqualTo(2L)));
             }
+
             assertEquals((long) concurrency * reqNum, fluentd.ageEventsCounter.get());
             assertEquals(ageEventsSum.get(), fluentd.ageEventsSum.get());
             assertEquals((long) concurrency * reqNum, fluentd.nameEventsCounter.get());
@@ -596,7 +603,7 @@ public class FluencyTestWithMockServer
             return new EventHandler()
             {
                 @Override
-                public void onConnect(SocketChannel acceptSocketChannel)
+                public void onConnect(Socket acceptSocket)
                 {
                     connectCounter.incrementAndGet();
                 }
@@ -643,7 +650,7 @@ public class FluencyTestWithMockServer
                 }
 
                 @Override
-                public void onClose(SocketChannel accpetSocketChannel)
+                public void onClose(Socket accpetSocket)
                 {
                     closeCounter.incrementAndGet();
                 }
