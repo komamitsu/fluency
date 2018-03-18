@@ -8,8 +8,8 @@ import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MultiSender;
+import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
@@ -220,6 +220,24 @@ public class FluencyTestWithMockServer
                 )).createInstance();
     }
 
+    private Sender getSingleSSLSender(int port)
+    {
+        return new SSLSender.Config().setPort(port).createInstance();
+    }
+
+    private Sender getDoubleSSLSender(int firstPort, int secondPort)
+    {
+        return new MultiSender.Config(
+                Arrays.<Sender.Instantiator>asList(
+                    new SSLSender.Config()
+                            .setPort(firstPort)
+                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
+                    new SSLSender.Config()
+                            .setPort(secondPort)
+                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
+                )).createInstance();
+    }
+
     @Theory
     public void testFluencyUsingAsyncFlusher(final Options options)
             throws Exception
@@ -234,10 +252,20 @@ public class FluencyTestWithMockServer
                 int fluentdPort = localPorts.get(0);
                 if (options.failover) {
                     int secondaryFluentdPort = localPorts.get(1);
-                    sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
+                    if (options.useSsl) {
+                        sender = getDoubleSSLSender(fluentdPort, secondaryFluentdPort);
+                    }
+                    else {
+                        sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
+                    }
                 }
                 else {
-                    sender = getSingleTCPSender(fluentdPort);
+                    if (options.useSsl) {
+                        sender = getSingleSSLSender(fluentdPort);
+                    }
+                    else {
+                        sender = getSingleTCPSender(fluentdPort);
+                    }
                 }
                 PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
                 if (options.ackResponse) {
@@ -250,43 +278,6 @@ public class FluencyTestWithMockServer
                     bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
                 }
                 Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
-                        .setWaitUntilBufferFlushed(10)
-                        .setWaitUntilTerminated(10);
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            }
-        }, options);
-    }
-
-    @Theory
-    public void testFluencyUsingSyncFlusher(final Options options)
-            throws Exception
-    {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                Sender sender;
-                int fluentdPort = localPorts.get(0);
-                if (options.failover) {
-                    int secondaryFluentdPort = localPorts.get(1);
-                    sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                }
-                else {
-                    sender = getSingleTCPSender(fluentdPort);
-                }
-                PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingSyncFlusher" + options.hashCode());
-                }
-                Flusher.Instantiator flusherConfig = new SyncFlusher.Config()
                         .setWaitUntilBufferFlushed(10)
                         .setWaitUntilTerminated(10);
                 return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();

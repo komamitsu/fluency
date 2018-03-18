@@ -196,7 +196,7 @@ public class MockTCPServer
                             }
                         }
                         catch (IOException e) {
-                            LOG.warn("AcceptTask: recv() failed: this={}", this, e);
+                            LOG.warn("AcceptTask: recv() failed: this={}, message={}", this, e.getMessage());
                         }
                     }
                 }

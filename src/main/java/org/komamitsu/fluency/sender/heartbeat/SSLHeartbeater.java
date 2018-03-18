@@ -34,6 +34,7 @@ public class SSLHeartbeater
         SSLSocket sslSocket = null;
         try {
             sslSocket = sslSocketBuilder.build();
+            LOG.trace("SSLHeartbeat: remotePort={}, localPort={}", sslSocket.getPort(), sslSocket.getLocalPort());
             // Try SSL handshake
             sslSocket.getSession();
             pong();

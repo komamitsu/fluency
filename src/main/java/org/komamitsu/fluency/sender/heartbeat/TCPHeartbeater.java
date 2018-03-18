@@ -27,6 +27,8 @@ public class TCPHeartbeater
         SocketChannel socketChannel = null;
         try {
             socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()));
+            LOG.trace("TCPHeartbeat: remotePort={}, localPort={}",
+                    socketChannel.socket().getPort(), socketChannel.socket().getLocalPort());
             pong();
         }
         finally {
