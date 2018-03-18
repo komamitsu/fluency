@@ -1,5 +1,6 @@
 package org.komamitsu.fluency;
 
+import org.komamitsu.fluency.sender.SSLTestServerSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,17 +8,24 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
     private ExecutorService executorService;
     private ServerTask serverTask;
+    private final boolean useSsl;
+
+    public MockTCPServer(boolean useSsl)
+    {
+        this.useSsl = useSsl;
+    }
 
     public interface EventHandler
     {
@@ -51,15 +59,24 @@ public class MockTCPServer
         };
     }
 
+    private final AtomicInteger threadSeqNum = new AtomicInteger();
+
     public synchronized void start()
-            throws IOException
+            throws Exception
     {
         if (executorService == null) {
-            this.executorService = Executors.newCachedThreadPool();
+            this.executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return new Thread(r, String.format("accepted-socket-worker-%d", threadSeqNum.getAndAdd(1)));
+                }
+            });
         }
 
         if (serverTask == null) {
-            serverTask = new ServerTask(executorService, getEventHandler());
+            serverTask = new ServerTask(executorService, getEventHandler(),
+                    useSsl ? new SSLTestServerSocketFactory().create() : new ServerSocket());
             executorService.execute(serverTask);
         }
     }
@@ -95,18 +112,13 @@ public class MockTCPServer
         private final ExecutorService serverExecutorService;
         private final EventHandler eventHandler;
 
-        private ServerTask(ExecutorService executorService, EventHandler eventHandler)
-                throws IOException
-        {
-            this(executorService, eventHandler, new ServerSocket());
-        }
-
         private ServerTask(ExecutorService executorService, EventHandler eventHandler, ServerSocket serverSocket)
                 throws IOException
         {
             this.serverExecutorService = executorService;
             this.eventHandler = eventHandler;
             this.serverSocket = serverSocket;
+            if (!serverSocket.isBound())
             serverSocket.bind(null);
         }
 
@@ -127,13 +139,13 @@ public class MockTCPServer
                     serverExecutorService.execute(new AcceptTask(eventHandler, acceptSocket));
                 }
                 catch (RejectedExecutionException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (ClosedByInterruptException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (IOException e) {
-                    LOG.warn("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.warn("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
             }
             try {
@@ -160,7 +172,8 @@ public class MockTCPServer
             @Override
             public void run()
             {
-                LOG.debug("AcceptTask: connected. this={}, local={}, remote={}", this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                LOG.debug("AcceptTask: connected. this={}, local={}, remote={}",
+                        this, acceptSocket.getLocalPort(), acceptSocket.getPort());
                 try {
                     eventHandler.onConnect(acceptSocket);
                     byte[] byteBuf = new byte[512 * 1024];
@@ -168,13 +181,14 @@ public class MockTCPServer
                         try {
                             int len = acceptSocket.getInputStream().read(byteBuf);
                             if (len <= 0) {
-                                LOG.debug("AcceptTask: closed. this={}, local={}, remote={}", this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                                LOG.debug("AcceptTask: closed. this={}, local={}, remote={}",
+                                        this, acceptSocket.getLocalPort(), acceptSocket.getPort());
                                 eventHandler.onClose(acceptSocket);
                                 try {
                                     acceptSocket.close();
                                 }
                                 catch (IOException e) {
-                                    LOG.warn("AcceptTask: close() failed: this=" + this, e);
+                                    LOG.warn("AcceptTask: close() failed: this={}", this, e);
                                 }
                             }
                             else {
@@ -182,13 +196,14 @@ public class MockTCPServer
                             }
                         }
                         catch (IOException e) {
-                            LOG.warn("AcceptTask: recv() failed: this=" + this, e);
+                            LOG.warn("AcceptTask: recv() failed: this={}", this, e);
                         }
                     }
                 }
                 finally {
                     try {
-                        LOG.debug("AcceptTask: Finished. Closing... this={}, local={}, remote={}", this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                        LOG.debug("AcceptTask: Finished. Closing... this={}, local={}, remote={}",
+                                this, acceptSocket.getLocalPort(), acceptSocket.getPort());
                         acceptSocket.close();
                     }
                     catch (IOException e) {

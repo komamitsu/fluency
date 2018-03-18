@@ -8,7 +8,8 @@ import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class MockTCPServerWithMetrics extends MockTCPServer
+public class MockTCPServerWithMetrics
+        extends MockTCPServer
 {
     private final List<Tuple<Type, Integer>> events = new CopyOnWriteArrayList<Tuple<Type, Integer>>();
     private final EventHandler eventHandler = new EventHandler() {
@@ -31,9 +32,9 @@ public class MockTCPServerWithMetrics extends MockTCPServer
         }
     };
 
-    public MockTCPServerWithMetrics()
-            throws IOException
+    public MockTCPServerWithMetrics(boolean useSsl)
     {
+        super(useSsl);
     }
 
     @Override

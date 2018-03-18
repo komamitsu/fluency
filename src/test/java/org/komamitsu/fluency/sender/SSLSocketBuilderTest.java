@@ -66,10 +66,7 @@ public class SSLSocketBuilderTest
             }
         });
 
-        SSLSocket sslSocket = new SSLSocketBuilder()
-                .setHost("localhost")
-                .setPort(serverSocket.getLocalPort())
-                .build();
+        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000).build();
 
         try {
             OutputStream outputStream = sslSocket.getOutputStream();

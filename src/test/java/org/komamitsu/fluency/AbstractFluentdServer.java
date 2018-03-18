@@ -241,10 +241,10 @@ public abstract class AbstractFluentdServer
         }
     }
 
-    public AbstractFluentdServer()
-            throws IOException
+    public AbstractFluentdServer(boolean useSsl)
+            throws Exception
     {
-        super();
+        super(useSsl);
     }
 
     @Override

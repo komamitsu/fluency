@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,23 +51,42 @@ public class FluencyTestWithMockServer
     private static final String TMPDIR = System.getProperty("java.io.tmpdir");
     @DataPoints
     public static final Options[] OPTIONS = {
-            new Options(false, false, false, false, false), // Normal
-            new Options(true, false, false, false, false),  // Failover
-            new Options(false, true, false, true, false),   // File backup + Ack response
-            new Options(false, false, true, false, false),  // Close instead of flush
-            new Options(false, false, false, true, false),  // Ack response
-            new Options(false, false, false, false, true),  // Small buffer
-            new Options(true, false, false, false, true),   // Failover + Small buffer
-            new Options(false, false, true, false, true),   // Close instead of flush + Small buffer
-            new Options(false, false, false, true, true),   // Ack response + Small buffer
-            new Options(true, false, true, false, false),   // Failover + Close instead of flush
-            new Options(false, true, true, true, false),    // File backup + Ack response + Close instead of flush
-            new Options(false, false, true, true, false),   // Ack response + Close instead of flush
-            new Options(false, false, false, false, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
-            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
-            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
-            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
-            new Options(false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
+            // TCP
+            new Options(false, false, false, false, false, false), // Normal
+            new Options(true, false, false, false, false, false),  // Failover
+            new Options(false, true, false, true, false, false),   // File backup + Ack response
+            new Options(false, false, true, false, false, false),  // Close instead of flush
+            new Options(false, false, false, true, false, false),  // Ack response
+            new Options(false, false, false, false, true, false),  // Small buffer
+            new Options(true, false, false, false, true, false),   // Failover + Small buffer
+            new Options(false, false, true, false, true, false),   // Close instead of flush + Small buffer
+            new Options(false, false, false, true, true, false),   // Ack response + Small buffer
+            new Options(true, false, true, false, false, false),   // Failover + Close instead of flush
+            new Options(false, true, true, true, false, false),    // File backup + Ack response + Close instead of flush
+            new Options(false, false, true, true, false, false),   // Ack response + Close instead of flush
+            new Options(false, false, false, false, false, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
+            new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
+            new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
+            // SSL
+            new Options(false, false, false, false, false, true), // Normal
+            new Options(true, false, false, false, false, true),  // Failover
+            new Options(false, true, false, true, false, true),   // File backup + Ack response
+            new Options(false, false, true, false, false, true),  // Close instead of flush
+            new Options(false, false, false, true, false, true),  // Ack response
+            new Options(false, false, false, false, true, true),  // Small buffer
+            new Options(true, false, false, false, true, true),   // Failover + Small buffer
+            new Options(false, false, true, false, true, true),   // Close instead of flush + Small buffer
+            new Options(false, false, false, true, true, true),   // Ack response + Small buffer
+            new Options(true, false, true, false, false, true),   // Failover + Close instead of flush
+            new Options(false, true, true, true, false, true),    // File backup + Ack response + Close instead of flush
+            new Options(false, false, true, true, false, true),   // Ack response + Close instead of flush
+            new Options(false, false, false, false, false, true, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
+            new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
+            new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
+            new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
     };
 
     private enum EmitType
@@ -85,6 +103,7 @@ public class FluencyTestWithMockServer
         private final boolean closeInsteadOfFlush;
         private final boolean ackResponse;
         private final boolean smallBuffer;
+        private final boolean useSsl;
         private final EmitType emitType;
 
         Options(
@@ -92,9 +111,10 @@ public class FluencyTestWithMockServer
                 boolean fileBackup,
                 boolean closeInsteadOfFlush,
                 boolean ackResponse,
-                boolean smallBuffer)
+                boolean smallBuffer,
+                boolean useSsl)
         {
-            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, EmitType.MAP);
+            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, useSsl, EmitType.MAP);
         }
 
         Options(
@@ -103,6 +123,7 @@ public class FluencyTestWithMockServer
                 boolean closeInsteadOfFlush,
                 boolean ackResponse,
                 boolean smallBuffer,
+                boolean useSsl,
                 EmitType emitType)
         {
             this.failover = failover;
@@ -110,20 +131,8 @@ public class FluencyTestWithMockServer
             this.closeInsteadOfFlush = closeInsteadOfFlush;
             this.ackResponse = ackResponse;
             this.smallBuffer = smallBuffer;
+            this.useSsl = useSsl;
             this.emitType = emitType;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Options{" +
-                    "failover=" + failover +
-                    ", fileBackup=" + fileBackup +
-                    ", closeInsteadOfFlush=" + closeInsteadOfFlush +
-                    ", ackResponse=" + ackResponse +
-                    ", smallBuffer=" + smallBuffer +
-                    ", emitType=" + emitType +
-                    '}';
         }
 
         @Override
@@ -153,6 +162,9 @@ public class FluencyTestWithMockServer
             if (smallBuffer != options.smallBuffer) {
                 return false;
             }
+            if (useSsl != options.useSsl) {
+                return false;
+            }
             return emitType == options.emitType;
         }
 
@@ -164,8 +176,23 @@ public class FluencyTestWithMockServer
             result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
             result = 31 * result + (ackResponse ? 1 : 0);
             result = 31 * result + (smallBuffer ? 1 : 0);
+            result = 31 * result + (useSsl ? 1 : 0);
             result = 31 * result + (emitType != null ? emitType.hashCode() : 0);
             return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Options{" +
+                    "failover=" + failover +
+                    ", fileBackup=" + fileBackup +
+                    ", closeInsteadOfFlush=" + closeInsteadOfFlush +
+                    ", ackResponse=" + ackResponse +
+                    ", smallBuffer=" + smallBuffer +
+                    ", useSsl=" + useSsl +
+                    ", emitType=" + emitType +
+                    '}';
         }
     }
 
@@ -274,10 +301,10 @@ public class FluencyTestWithMockServer
 
         final ArrayList<Integer> localPorts = new ArrayList<Integer>();
 
-        final MockFluentdServer fluentd = new MockFluentdServer();
+        final MockFluentdServer fluentd = new MockFluentdServer(options.useSsl);
         fluentd.start();
 
-        final MockFluentdServer secondaryFluentd = new MockFluentdServer(fluentd);
+        final MockFluentdServer secondaryFluentd = new MockFluentdServer(options.useSsl, fluentd);
         secondaryFluentd.start();
 
         TimeUnit.MILLISECONDS.sleep(200);
@@ -565,9 +592,10 @@ public class FluencyTestWithMockServer
         private final AtomicLong closeCounter;
         private final long startTimestampMillis;
 
-        public MockFluentdServer()
-                throws IOException
+        public MockFluentdServer(boolean useSsl)
+                throws Exception
         {
+            super(useSsl);
             connectCounter = new AtomicLong();
             ageEventsCounter = new AtomicLong();
             ageEventsSum = new AtomicLong();
@@ -581,9 +609,10 @@ public class FluencyTestWithMockServer
             startTimestampMillis = System.currentTimeMillis();
         }
 
-        public MockFluentdServer(MockFluentdServer base)
-                throws IOException
+        public MockFluentdServer(boolean useSsl, MockFluentdServer base)
+                throws Exception
         {
+            super(useSsl);
             connectCounter = base.connectCounter;
             ageEventsCounter = base.ageEventsCounter;
             ageEventsSum = base.ageEventsSum;

@@ -4,6 +4,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -11,33 +13,32 @@ import java.security.SecureRandom;
 public class SSLSocketBuilder
 {
     private static final String SSL_PROTOCOL = "TLSv1.2";
-    private String host;
-    private Integer port;
+    private final String host;
+    private final int port;
+    private final int connectionTimeoutMilli;
+    private final int readTimeoutMilli;
 
-    public SSLSocketBuilder setHost(String host)
+    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli)
     {
         this.host = host;
-        return this;
-    }
-
-    public SSLSocketBuilder setPort(int port)
-    {
         this.port = port;
-        return this;
+        this.connectionTimeoutMilli = connectionTimeoutMilli;
+        this.readTimeoutMilli = readTimeoutMilli;
     }
 
     public SSLSocket build()
             throws IOException
     {
-        if (port == null) {
-            throw new IllegalArgumentException("port is null");
-        }
-
         try {
             SSLContext sslContext = SSLContext.getInstance(SSL_PROTOCOL);
             sslContext.init(null, null, new SecureRandom());
             javax.net.ssl.SSLSocketFactory socketFactory = sslContext.getSocketFactory();
-            return (SSLSocket) socketFactory.createSocket(host == null ? "localhost" : host, port);
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
+            socket.setTcpNoDelay(true);
+            socket.setSoTimeout(readTimeoutMilli);
+
+            return (SSLSocket) socketFactory.createSocket(socket, host, port, true);
         }
         catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Failed to get SSLContext", e);

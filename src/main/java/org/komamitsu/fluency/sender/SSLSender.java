@@ -23,9 +23,11 @@ public class SSLSender
     public SSLSender(Config config)
     {
         super(config.tcpSenderConfig);
-        socketBuilder = new SSLSocketBuilder()
-                .setHost(config.getHost())
-                .setPort(config.getPort());
+        socketBuilder = new SSLSocketBuilder(
+                config.getHost(),
+                config.getPort(),
+                config.getConnectionTimeoutMilli(),
+                config.getConnectionTimeoutMilli());
         this.config = config;
     }
 

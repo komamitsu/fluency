@@ -20,9 +20,11 @@ public class SSLHeartbeater
     {
         super(config.getBaseConfig());
         this.config = config;
-        sslSocketBuilder = new SSLSocketBuilder()
-                .setHost(config.getHost())
-                .setPort(config.getPort());
+        sslSocketBuilder = new SSLSocketBuilder(
+                config.getHost(),
+                config.getPort(),
+                // TODO: Make these configurable
+                5000, 5000);
     }
 
     @Override
@@ -32,6 +34,8 @@ public class SSLHeartbeater
         SSLSocket sslSocket = null;
         try {
             sslSocket = sslSocketBuilder.build();
+            // Try SSL handshake
+            sslSocket.getSession();
             pong();
         }
         finally {

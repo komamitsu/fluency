@@ -70,12 +70,25 @@ public class MultiSenderTest
     }
 
     @Test
-    public void testSend()
-            throws IOException, InterruptedException
+    public void testTCPSend()
+            throws Exception
     {
-        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics();
+        testSend(false);
+    }
+
+    @Test
+    public void testSSLSend()
+            throws Exception
+    {
+        testSend(true);
+    }
+
+    private void testSend(boolean useSsl)
+            throws Exception
+    {
+        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics(useSsl);
         server0.start();
-        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics();
+        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics(useSsl);
         server1.start();
         TimeUnit.MILLISECONDS.sleep(500);
 

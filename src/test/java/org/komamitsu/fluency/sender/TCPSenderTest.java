@@ -38,7 +38,7 @@ public class TCPSenderTest
 
     @Test
     public void testSend()
-            throws IOException, InterruptedException
+            throws Exception
     {
         testSendBase(new TCPSenderConfigurator() {
             @Override
@@ -51,7 +51,7 @@ public class TCPSenderTest
 
     @Test
     public void testSendWithHeartbeart()
-            throws IOException, InterruptedException
+            throws Exception
     {
         testSendBase(new TCPSenderConfigurator() {
             @Override
@@ -64,9 +64,9 @@ public class TCPSenderTest
     }
 
     private void testSendBase(TCPSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
-            throws IOException, InterruptedException
+            throws Exception
     {
-        MockTCPServerWithMetrics server = new MockTCPServerWithMetrics();
+        MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(false);
         server.start();
 
         int concurency = 20;
@@ -157,9 +157,9 @@ public class TCPSenderTest
 
     @Test
     public void testReadTimeout()
-            throws IOException, InterruptedException
+            throws Exception
     {
-        final MockTCPServer server = new MockTCPServer();
+        final MockTCPServer server = new MockTCPServer(false);
         server.start();
 
         try {
@@ -190,9 +190,9 @@ public class TCPSenderTest
 
     @Test
     public void testClose()
-            throws IOException, InterruptedException, TimeoutException, ExecutionException
+            throws Exception
     {
-        final MockTCPServer server = new MockTCPServer();
+        final MockTCPServer server = new MockTCPServer(false);
         server.start();
 
         try {
