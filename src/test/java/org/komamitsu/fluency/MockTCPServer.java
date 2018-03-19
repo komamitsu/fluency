@@ -4,6 +4,9 @@ import org.komamitsu.fluency.sender.SSLTestServerSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLHandshakeException;
+
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -177,28 +180,33 @@ public class MockTCPServer
                 try {
                     eventHandler.onConnect(acceptSocket);
                     byte[] byteBuf = new byte[512 * 1024];
-                    while (!acceptSocket.isClosed()) {
+                    while (true) {
                         try {
                             int len = acceptSocket.getInputStream().read(byteBuf);
                             if (len <= 0) {
                                 LOG.debug("AcceptTask: closed. this={}, local={}, remote={}",
                                         this, acceptSocket.getLocalPort(), acceptSocket.getPort());
-                                eventHandler.onClose(acceptSocket);
                                 try {
                                     acceptSocket.close();
                                 }
                                 catch (IOException e) {
                                     LOG.warn("AcceptTask: close() failed: this={}", this, e);
                                 }
+                                break;
                             }
                             else {
                                 eventHandler.onReceive(acceptSocket, len, byteBuf);
                             }
                         }
                         catch (IOException e) {
-                            LOG.warn("AcceptTask: recv() failed: this={}, message={}", this, e.getMessage());
+                            LOG.warn("AcceptTask: recv() failed: this={}, message={}, cause={}",
+                                    this, e.getMessage(), e.getCause() == null ? "" : e.getCause().getMessage());
+                            if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+                                break;
+                            }
                         }
                     }
+                    eventHandler.onClose(acceptSocket);
                 }
                 finally {
                     try {

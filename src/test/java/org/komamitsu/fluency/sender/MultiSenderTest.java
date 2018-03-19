@@ -1,6 +1,7 @@
 package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
+import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
@@ -25,7 +26,7 @@ public class MultiSenderTest
     private static final Logger LOG = LoggerFactory.getLogger(MultiSenderTest.class);
 
     @Test
-    public void testConstructor()
+    public void testConstructorForTCPSender()
             throws IOException
     {
         MultiSender multiSender = null;
@@ -70,6 +71,51 @@ public class MultiSenderTest
     }
 
     @Test
+    public void testConstructorForSSLSender()
+            throws IOException
+    {
+        MultiSender multiSender = null;
+        try {
+            multiSender = new MultiSender.Config(
+                    Arrays.<Sender.Instantiator>asList(
+                            new SSLSender.Config()
+                                    .setPort(24225)
+                                    .setHeartbeaterConfig(
+                                            new SSLHeartbeater.Config().
+                                                    setPort(24225)),
+                            new SSLSender.Config()
+                                    .setHost("0.0.0.0")
+                                    .setPort(24226)
+                                    .setHeartbeaterConfig(
+                                            new SSLHeartbeater.Config()
+                                                    .setHost("0.0.0.0")
+                                                    .setPort(24226))
+                                    )).createInstance();
+
+            assertThat(multiSender.toString().length(), greaterThan(0));
+
+            assertEquals(2, multiSender.getSenders().size());
+
+            SSLSender sslSender = (SSLSender) multiSender.getSenders().get(0);
+            assertEquals("127.0.0.1", sslSender.getHost());
+            assertEquals(24225, sslSender.getPort());
+            assertEquals("127.0.0.1", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24225, sslSender.getFailureDetector().getHeartbeater().getPort());
+
+            sslSender = (SSLSender) multiSender.getSenders().get(1);
+            assertEquals("0.0.0.0", sslSender.getHost());
+            assertEquals(24226, sslSender.getPort());
+            assertEquals("0.0.0.0", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24226, sslSender.getFailureDetector().getHeartbeater().getPort());
+        }
+        finally {
+            if (multiSender != null) {
+                multiSender.close();
+            }
+        }
+    }
+
+    @Test
     public void testTCPSend()
             throws Exception
     {
@@ -97,18 +143,32 @@ public class MultiSenderTest
         final CountDownLatch latch = new CountDownLatch(concurency);
 
         final MultiSender sender = new MultiSender.Config(
-                Arrays.<Sender.Instantiator>asList(
-                        new TCPSender.Config()
-                                .setPort(server0.getLocalPort())
-                                .setHeartbeaterConfig(
-                                        new UDPHeartbeater.Config()
-                                            .setPort(server0.getLocalPort())),
-                        new TCPSender.Config()
-                                .setPort(server1.getLocalPort())
-                                .setHeartbeaterConfig(
-                                        new UDPHeartbeater.Config()
-                                                .setPort(server1.getLocalPort()))
-                                )).createInstance();
+                useSsl ?
+                        Arrays.<Sender.Instantiator>asList(
+                                new SSLSender.Config()
+                                        .setPort(server0.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server0.getLocalPort())),
+                                new SSLSender.Config()
+                                        .setPort(server1.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server1.getLocalPort()))
+                        ) :
+                        Arrays.<Sender.Instantiator>asList(
+                                new TCPSender.Config()
+                                        .setPort(server0.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server0.getLocalPort())),
+                                new TCPSender.Config()
+                                        .setPort(server1.getLocalPort())
+                                        .setHeartbeaterConfig(
+                                                new UDPHeartbeater.Config()
+                                                        .setPort(server1.getLocalPort()))
+                        )
+        ).createInstance();
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {
