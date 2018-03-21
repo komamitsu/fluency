@@ -45,19 +45,16 @@ public class MockTCPServer
             @Override
             public void onConnect(Socket acceptSocket)
             {
-
             }
 
             @Override
             public void onReceive(Socket acceptSocket, int len, byte[] data)
             {
-
             }
 
             @Override
             public void onClose(Socket acceptSocket)
             {
-
             }
         };
     }
@@ -84,6 +81,15 @@ public class MockTCPServer
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "MockTCPServer{" +
+                "serverTask=" + serverTask +
+                ", useSsl=" + useSsl +
+                '}';
+    }
+
     public int getLocalPort()
     {
         return serverTask.getLocalPort();
@@ -95,16 +101,17 @@ public class MockTCPServer
         if (executorService == null) {
             return;
         }
-        LOG.debug("Stopping MockTCPServer...");
+        LOG.debug("Stopping MockTCPServer... {}", this);
         executorService.shutdown();
         try {
-            executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
+            if (!executorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                executorService.shutdownNow();
+            }
         }
         catch (InterruptedException e) {
-            LOG.warn("ExecutorService.shutdown() was interrupted: this=" + this, e);
+            LOG.warn("ExecutorService.shutdown() was failed: {}", this, e);
+            Thread.currentThread().interrupt();
         }
-        executorService.shutdownNow();
-
         executorService = null;
         serverTask = null;
     }
@@ -121,8 +128,9 @@ public class MockTCPServer
             this.serverExecutorService = executorService;
             this.eventHandler = eventHandler;
             this.serverSocket = serverSocket;
-            if (!serverSocket.isBound())
-            serverSocket.bind(null);
+            if (!serverSocket.isBound()) {
+                serverSocket.bind(null);
+            }
         }
 
         public int getLocalPort()
@@ -130,6 +138,13 @@ public class MockTCPServer
             return serverSocket.getLocalPort();
         }
 
+        @Override
+        public String toString()
+        {
+            return "ServerTask{" +
+                    "serverSocket=" + serverSocket +
+                    '}';
+        }
 
         @Override
         public void run()
@@ -139,25 +154,25 @@ public class MockTCPServer
                     LOG.debug("ServerTask: accepting... this={}, local.port={}", this, getLocalPort());
                     Socket acceptSocket = serverSocket.accept();
                     LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), acceptSocket.getPort());
-                    serverExecutorService.execute(new AcceptTask(eventHandler, acceptSocket));
+                    serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, acceptSocket));
                 }
                 catch (RejectedExecutionException e) {
-                    LOG.debug("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (ClosedByInterruptException e) {
-                    LOG.debug("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (IOException e) {
-                    LOG.warn("ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.warn("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
             }
             try {
                 serverSocket.close();
             }
             catch (IOException e) {
-                LOG.warn("ServerSocketChannel.close() failed", e);
+                LOG.warn("ServerTask: ServerSocketChannel.close() failed", e);
             }
-            LOG.info("Finishing ServerTask...: this={}", this);
+            LOG.info("ServerTask: Finishing ServerTask...: this={}", this);
         }
 
         private static class AcceptTask
@@ -165,9 +180,11 @@ public class MockTCPServer
         {
             private final Socket acceptSocket;
             private final EventHandler eventHandler;
+            private final ExecutorService serverExecutorService;
 
-            private AcceptTask(EventHandler eventHandler, Socket acceptSocket)
+            private AcceptTask(ExecutorService serverExecutorService, EventHandler eventHandler, Socket acceptSocket)
             {
+                this.serverExecutorService = serverExecutorService;
                 this.eventHandler = eventHandler;
                 this.acceptSocket = acceptSocket;
             }
@@ -180,7 +197,7 @@ public class MockTCPServer
                 try {
                     eventHandler.onConnect(acceptSocket);
                     byte[] byteBuf = new byte[512 * 1024];
-                    while (true) {
+                    while (!serverExecutorService.isShutdown()) {
                         try {
                             int len = acceptSocket.getInputStream().read(byteBuf);
                             if (len <= 0) {

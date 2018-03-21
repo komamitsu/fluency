@@ -513,12 +513,9 @@ public class FluencyTestWithMockServer
                 });
             }
 
-            for (int i = 0; i < 60; i++) {
-                if (latch.await(1, TimeUnit.SECONDS)) {
-                    break;
-                }
+            if (!latch.await(60, TimeUnit.SECONDS)) {
+                assertTrue("Sending all requests is timed out", false);
             }
-            assertEquals(0, latch.getCount());
 
             if (options.closeInsteadOfFlush) {
                 fluency.get().close();

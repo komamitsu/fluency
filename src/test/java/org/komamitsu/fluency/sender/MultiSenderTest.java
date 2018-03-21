@@ -147,11 +147,13 @@ public class MultiSenderTest
                         Arrays.<Sender.Instantiator>asList(
                                 new SSLSender.Config()
                                         .setPort(server0.getLocalPort())
+                                        .setReadTimeoutMilli(500)
                                         .setHeartbeaterConfig(
                                                 new UDPHeartbeater.Config()
                                                         .setPort(server0.getLocalPort())),
                                 new SSLSender.Config()
                                         .setPort(server1.getLocalPort())
+                                        .setReadTimeoutMilli(500)
                                         .setHeartbeaterConfig(
                                                 new UDPHeartbeater.Config()
                                                         .setPort(server1.getLocalPort()))
@@ -199,12 +201,9 @@ public class MultiSenderTest
             });
         }
 
-        for (int i = 0; i < 60; i++) {
-            if (latch.await(1, TimeUnit.SECONDS)) {
-                break;
-            }
+        if (!latch.await(60, TimeUnit.SECONDS)) {
+            assertTrue("Sending all requests is timed out", false);
         }
-        assertEquals(0, latch.getCount());
 
         sender.close();
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -235,7 +234,8 @@ public class MultiSenderTest
         LOG.debug("recvLen={}", recvLen);
 
         assertEquals(2, connectCount);
-        assertTrue(((long)(concurency - 1) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
+        // This margin is heuristic value
+        assertTrue(((long)(concurency - (useSsl ? 2 : 1)) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
         assertEquals(2, closeCount);
     }
 }

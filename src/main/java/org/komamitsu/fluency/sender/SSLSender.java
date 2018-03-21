@@ -27,7 +27,7 @@ public class SSLSender
                 config.getHost(),
                 config.getPort(),
                 config.getConnectionTimeoutMilli(),
-                config.getConnectionTimeoutMilli());
+                config.getReadTimeoutMilli());
         this.config = config;
     }
 

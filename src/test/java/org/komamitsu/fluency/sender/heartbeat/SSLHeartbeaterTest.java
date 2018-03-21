@@ -84,7 +84,7 @@ public class SSLHeartbeaterTest
                 }
             });
             heartbeater.start();
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
             assertTrue(0 < pongCounter.get() && pongCounter.get() < 3);
             assertEquals(0, failureCounter.get());
         }
