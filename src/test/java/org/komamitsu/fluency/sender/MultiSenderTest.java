@@ -234,8 +234,9 @@ public class MultiSenderTest
         LOG.debug("recvLen={}", recvLen);
 
         assertEquals(2, connectCount);
-        // This margin is heuristic value
-        assertTrue(((long)(concurency - (useSsl ? 2 : 1)) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
+        // This test doesn't use actual PackedForward format so that it can simply test MultiSender itself.
+        // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here
+        assertTrue(((long)(concurency - (useSsl ? 4 : 1)) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
         assertEquals(2, closeCount);
     }
 }
