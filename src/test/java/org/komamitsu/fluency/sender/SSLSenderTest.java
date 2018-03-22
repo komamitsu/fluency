@@ -100,7 +100,9 @@ public class SSLSenderTest
             });
         }
 
-        assertTrue(latch.await(8, TimeUnit.SECONDS));
+        if (!latch.await(30, TimeUnit.SECONDS)) {
+            assertTrue("Sending all requests timed out", false);
+        }
         sender.close();
         TimeUnit.MILLISECONDS.sleep(500);
 
