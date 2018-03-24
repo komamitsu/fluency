@@ -104,7 +104,9 @@ public class SSLSenderTest
             assertTrue("Sending all requests timed out", false);
         }
         sender.close();
-        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Sleep to make sure the server receives all requests
+        TimeUnit.MILLISECONDS.sleep(5000);
 
         server.stop();
 
