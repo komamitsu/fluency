@@ -7,7 +7,11 @@ import org.komamitsu.fluency.sender.MockTCPSender;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class AsyncFlusherTest
@@ -40,7 +44,9 @@ public class AsyncFlusherTest
         assertEquals(0, buffer.getCloseCount().get());
         flusher.close();
         assertEquals(1, buffer.getCloseCount().get());
-        assertEquals(flushCount, buffer.getFlushCount().get());
-        assertEquals(forceFlushCount + 1, buffer.getForceFlushCount().get());
+        assertThat(buffer.getFlushCount().get(), is(greaterThanOrEqualTo(2)));
+        assertThat(buffer.getFlushCount().get(), is(lessThanOrEqualTo(3)));
+        assertThat(buffer.getForceFlushCount().get(), is(greaterThanOrEqualTo(2)));
+        assertThat(buffer.getForceFlushCount().get(), is(lessThanOrEqualTo(3)));
     }
 }
