@@ -136,7 +136,7 @@ public class MultiSenderTest
         server0.start();
         final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics(useSsl);
         server1.start();
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(2000);
 
         int concurency = 20;
         final int reqNum = 5000;
