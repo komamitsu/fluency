@@ -19,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.*;
 
 public class MultiSenderTest
@@ -236,7 +239,10 @@ public class MultiSenderTest
         assertEquals(2, connectCount);
         // This test doesn't use actual PackedForward format so that it can simply test MultiSender itself.
         // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here
-        assertTrue(((long)(concurency - (useSsl ? 4 : 1)) * reqNum) * 10 <= recvLen && recvLen <= ((long)concurency * reqNum) * 10);
+        long minExpectedRecvLen = ((long)(concurency - (useSsl ? 4 : 1)) * reqNum) * 10;
+        long maxExpectedRecvLen = ((long)concurency * reqNum) * 10;
+        assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
+        assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));
         assertEquals(2, closeCount);
     }
 }
