@@ -118,7 +118,7 @@ public abstract class AbstractFluentdServer
                             LOG.trace("Received a value: local.port={}, remote.port={}", acceptSocket.getLocalPort(), acceptSocket.getPort());
                         }
                         catch (Exception e) {
-                            LOG.debug("Fluentd accept task received IOException");
+                            LOG.debug("Fluentd accept task received IOException: {}", e.getMessage());
                             break;
                         }
                         assertEquals(ValueType.ARRAY, value.getValueType());
