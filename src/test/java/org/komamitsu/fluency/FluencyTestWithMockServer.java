@@ -522,9 +522,11 @@ public class FluencyTestWithMockServer
                 fluency.get().waitUntilAllBufferFlushed(20);
             }
 
+            fluentd.waitUntilEventsStop();
             fluentd.stop();
+
+            secondaryFluentd.waitUntilEventsStop();
             secondaryFluentd.stop();
-            TimeUnit.MILLISECONDS.sleep(1000);
 
             if (options.failover) {
                 assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));

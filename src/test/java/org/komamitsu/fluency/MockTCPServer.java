@@ -17,6 +17,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MockTCPServer
 {
@@ -24,6 +25,7 @@ public class MockTCPServer
     private ExecutorService executorService;
     private ServerTask serverTask;
     private final boolean useSsl;
+    private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
 
     public MockTCPServer(boolean useSsl)
     {
@@ -75,7 +77,7 @@ public class MockTCPServer
         }
 
         if (serverTask == null) {
-            serverTask = new ServerTask(executorService, getEventHandler(),
+            serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
                     useSsl ? new SSLTestServerSocketFactory().create() : new ServerSocket());
             executorService.execute(serverTask);
         }
@@ -88,6 +90,18 @@ public class MockTCPServer
             TimeUnit.MILLISECONDS.sleep(500);
         }
         throw new IllegalStateException("Local port open timeout");
+    }
+
+    public void waitUntilEventsStop()
+            throws InterruptedException
+    {
+        for (int i = 0; i < 20; i++) {
+            if (lastEventTimeStampMilli.get() + 2000 < System.currentTimeMillis()) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(500);
+        }
+        throw new IllegalStateException("Events didn't stop in the expected time");
     }
 
     @Override
@@ -130,11 +144,17 @@ public class MockTCPServer
         private final ServerSocket serverSocket;
         private final ExecutorService serverExecutorService;
         private final EventHandler eventHandler;
+        private final AtomicLong lastEventTimeStampMilli;
 
-        private ServerTask(ExecutorService executorService, EventHandler eventHandler, ServerSocket serverSocket)
+        private ServerTask(
+                ExecutorService executorService,
+                AtomicLong lastEventTimeStampMilli,
+                EventHandler eventHandler,
+                ServerSocket serverSocket)
                 throws IOException
         {
             this.serverExecutorService = executorService;
+            this.lastEventTimeStampMilli = lastEventTimeStampMilli;
             this.eventHandler = eventHandler;
             this.serverSocket = serverSocket;
             if (!serverSocket.isBound()) {
@@ -163,7 +183,8 @@ public class MockTCPServer
                     LOG.debug("ServerTask: accepting... this={}, local.port={}", this, getLocalPort());
                     Socket acceptSocket = serverSocket.accept();
                     LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), acceptSocket.getPort());
-                    serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, acceptSocket));
+                    serverExecutorService.execute(
+                            new AcceptTask(serverExecutorService, lastEventTimeStampMilli, eventHandler, acceptSocket));
                 }
                 catch (RejectedExecutionException e) {
                     LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
@@ -190,10 +211,12 @@ public class MockTCPServer
             private final Socket acceptSocket;
             private final EventHandler eventHandler;
             private final ExecutorService serverExecutorService;
+            private final AtomicLong lastEventTimeStampMilli;
 
-            private AcceptTask(ExecutorService serverExecutorService, EventHandler eventHandler, Socket acceptSocket)
+            private AcceptTask(ExecutorService serverExecutorService, AtomicLong lastEventTimeStampMilli, EventHandler eventHandler, Socket acceptSocket)
             {
                 this.serverExecutorService = serverExecutorService;
+                this.lastEventTimeStampMilli = lastEventTimeStampMilli;
                 this.eventHandler = eventHandler;
                 this.acceptSocket = acceptSocket;
             }
@@ -212,6 +235,7 @@ public class MockTCPServer
                             if (len <= 0) {
                                 LOG.debug("AcceptTask: closed. this={}, local={}, remote={}",
                                         this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                                eventHandler.onClose(acceptSocket);
                                 try {
                                     acceptSocket.close();
                                 }
@@ -222,17 +246,18 @@ public class MockTCPServer
                             }
                             else {
                                 eventHandler.onReceive(acceptSocket, len, byteBuf);
+                                lastEventTimeStampMilli.set(System.currentTimeMillis());
                             }
                         }
                         catch (IOException e) {
                             LOG.warn("AcceptTask: recv() failed: this={}, message={}, cause={}",
                                     this, e.getMessage(), e.getCause() == null ? "" : e.getCause().getMessage());
                             if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+                                eventHandler.onClose(acceptSocket);
                                 break;
                             }
                         }
                     }
-                    eventHandler.onClose(acceptSocket);
                 }
                 finally {
                     try {
