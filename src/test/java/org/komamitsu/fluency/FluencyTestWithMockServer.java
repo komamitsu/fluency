@@ -298,8 +298,6 @@ public class FluencyTestWithMockServer
         final MockFluentdServer secondaryFluentd = new MockFluentdServer(options.useSsl, fluentd);
         secondaryFluentd.start();
 
-        TimeUnit.MILLISECONDS.sleep(200);
-
         localPorts.add(fluentd.getLocalPort());
         localPorts.add(secondaryFluentd.getLocalPort());
 
@@ -401,7 +399,6 @@ public class FluencyTestWithMockServer
                                         try {
                                             fluentd.start();
                                             secondaryFluentd.start();
-                                            TimeUnit.MILLISECONDS.sleep(200);
                                             LOG.info("Restarting Fluency...");
                                             fluency.set(fluencyFactory.generate(Arrays.asList(fluentd.getLocalPort(), secondaryFluentd.getLocalPort())));
                                             TimeUnit.SECONDS.sleep(2);

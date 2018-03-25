@@ -79,6 +79,15 @@ public class MockTCPServer
                     useSsl ? new SSLTestServerSocketFactory().create() : new ServerSocket());
             executorService.execute(serverTask);
         }
+
+        for (int i = 0; i < 10; i++) {
+            int localPort = serverTask.getLocalPort();
+            if (localPort > 0) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(500);
+        }
+        throw new IllegalStateException("Local port open timeout");
     }
 
     @Override
