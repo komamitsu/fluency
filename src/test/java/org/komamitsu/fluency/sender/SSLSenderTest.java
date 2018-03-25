@@ -105,9 +105,7 @@ public class SSLSenderTest
         }
         sender.close();
 
-        // Sleep to make sure the server receives all requests
-        TimeUnit.MILLISECONDS.sleep(5000);
-
+        server.waitUntilEventsStop();
         server.stop();
 
         int connectCount = 0;

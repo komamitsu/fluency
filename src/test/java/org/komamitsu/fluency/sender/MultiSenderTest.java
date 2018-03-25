@@ -208,9 +208,9 @@ public class MultiSenderTest
         }
 
         sender.close();
-        TimeUnit.MILLISECONDS.sleep(1000);
+
+        server1.waitUntilEventsStop();
         server1.stop();
-        TimeUnit.MILLISECONDS.sleep(1000);
 
         int connectCount = 0;
         int closeCount = 0;
@@ -242,6 +242,6 @@ public class MultiSenderTest
         long maxExpectedRecvLen = ((long)concurency * reqNum) * 10;
         assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
         assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));
-        assertEquals(2, closeCount);
+        assertEquals(1, closeCount);
     }
 }

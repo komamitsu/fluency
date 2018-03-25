@@ -15,12 +15,10 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -102,8 +100,8 @@ public class TCPSenderTest
 
         assertTrue(latch.await(4, TimeUnit.SECONDS));
         sender.close();
-        TimeUnit.MILLISECONDS.sleep(500);
 
+        server.waitUntilEventsStop();
         server.stop();
 
         int connectCount = 0;
