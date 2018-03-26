@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-    extends TCPSender
+    extends NetworkSender
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
     private final SSLSocketBuilder socketBuilder;
@@ -22,7 +22,7 @@ public class SSLSender
 
     public SSLSender(Config config)
     {
-        super(config.tcpSenderConfig);
+        super(config.baseConfig);
         socketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),
@@ -81,20 +81,20 @@ public class SSLSender
     public String toString()
     {
         return "SSLSender{" +
-                "socketBuilder=" + socketBuilder +
-                ", config=" + config +
+                "config=" + config +
                 "} " + super.toString();
     }
 
     public static class Config
-        implements Instantiator
+            implements Instantiator
     {
-        private final Sender.Config baseConfig = new Sender.Config();
-        private final TCPSender.Config tcpSenderConfig = new TCPSender.Config();
+        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
 
-        /*
-         * Base config
-         */
+        public NetworkSender.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
         public SenderErrorHandler getSenderErrorHandler()
         {
             return baseConfig.getSenderErrorHandler();
@@ -106,94 +106,91 @@ public class SSLSender
             return this;
         }
 
-        /*
-         * TCP sender config
-         */
         public String getHost()
         {
-            return tcpSenderConfig.getHost();
+            return baseConfig.getHost();
         }
 
         public Config setHost(String host)
         {
-            tcpSenderConfig.setHost(host);
+            baseConfig.setHost(host);
             return this;
         }
 
         public int getPort()
         {
-            return tcpSenderConfig.getPort();
+            return baseConfig.getPort();
         }
 
         public Config setPort(int port)
         {
-            tcpSenderConfig.setPort(port);
+            baseConfig.setPort(port);
             return this;
         }
 
         public int getConnectionTimeoutMilli()
         {
-            return tcpSenderConfig.getConnectionTimeoutMilli();
+            return baseConfig.getConnectionTimeoutMilli();
         }
 
         public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
         {
-            tcpSenderConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
+            baseConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
             return this;
         }
 
         public int getReadTimeoutMilli()
         {
-            return tcpSenderConfig.getReadTimeoutMilli();
+            return baseConfig.getReadTimeoutMilli();
         }
 
         public Config setReadTimeoutMilli(int readTimeoutMilli)
         {
-            tcpSenderConfig.setReadTimeoutMilli(readTimeoutMilli);
+            baseConfig.setReadTimeoutMilli(readTimeoutMilli);
             return this;
         }
 
         public Heartbeater.Instantiator getHeartbeaterConfig()
         {
-            return tcpSenderConfig.getHeartbeaterConfig();
+            return baseConfig.getHeartbeaterConfig();
         }
 
         public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
         {
-            tcpSenderConfig.setHeartbeaterConfig(heartbeaterConfig);
+            baseConfig.setHeartbeaterConfig(heartbeaterConfig);
             return this;
         }
 
         public FailureDetector.Config getFailureDetectorConfig()
         {
-            return tcpSenderConfig.getFailureDetectorConfig();
+            return baseConfig.getFailureDetectorConfig();
         }
 
         public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
         {
-            tcpSenderConfig.setFailureDetectorConfig(failureDetectorConfig);
+            baseConfig.setFailureDetectorConfig(failureDetectorConfig);
             return this;
         }
 
         public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
         {
-            return tcpSenderConfig.getFailureDetectorStrategyConfig();
+            return baseConfig.getFailureDetectorStrategyConfig();
         }
 
         public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
         {
-            tcpSenderConfig.setFailureDetectorStrategyConfig(failureDetectorStrategyConfig);
+            baseConfig.setFailureDetectorStrategyConfig(failureDetectorStrategyConfig);
             return this;
         }
 
         public int getWaitBeforeCloseMilli()
         {
-            return tcpSenderConfig.getWaitBeforeCloseMilli();
+            return baseConfig.getWaitBeforeCloseMilli();
         }
 
         public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
         {
-            tcpSenderConfig.setWaitBeforeCloseMilli(waitBeforeCloseMilli);
+            baseConfig.setWaitBeforeCloseMilli(waitBeforeCloseMilli);
             return this;
         }
 
@@ -208,7 +205,6 @@ public class SSLSender
         {
             return "Config{" +
                     "baseConfig=" + baseConfig +
-                    ", tcpSenderConfig=" + tcpSenderConfig +
                     '}';
         }
     }

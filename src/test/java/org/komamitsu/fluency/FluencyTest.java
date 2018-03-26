@@ -14,6 +14,7 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
+import org.komamitsu.fluency.sender.NetworkSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
@@ -91,44 +92,28 @@ public class FluencyTest
         assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
     }
 
-    private void assertDefaultRetryableSender(RetryableSender sender)
+    private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
         ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) sender.getRetryStrategy();
         assertThat(retryStrategy.getMaxRetryCount(), is(7));
         assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
-        assertThat(sender.getBaseSender(), instanceOf(TCPSender.class));
+        assertThat(sender.getBaseSender(), instanceOf(expectedBaseClass));
     }
 
-    private void assertDefaultSenderForTCP(Sender sender, String expectedHost, int expectedPort)
+    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender, instanceOf(RetryableSender.class));
         RetryableSender retryableSender = (RetryableSender) sender;
-        assertDefaultRetryableSender(retryableSender);
+        assertDefaultRetryableSender(retryableSender, expectedBaseClass);
 
-        TCPSender tcpSender = (TCPSender) retryableSender.getBaseSender();
-        assertThat(tcpSender.getHost(), is(expectedHost));
-        assertThat(tcpSender.getPort(), is(expectedPort));
-        assertThat(tcpSender.getConnectionTimeoutMilli(), is(5000));
-        assertThat(tcpSender.getReadTimeoutMilli(), is(5000));
+        NetworkSender networkSender = (NetworkSender) retryableSender.getBaseSender();
+        assertThat(networkSender.getHost(), is(expectedHost));
+        assertThat(networkSender.getPort(), is(expectedPort));
+        assertThat(networkSender.getConnectionTimeoutMilli(), is(5000));
+        assertThat(networkSender.getReadTimeoutMilli(), is(5000));
 
-        FailureDetector failureDetector = tcpSender.getFailureDetector();
-        assertThat(failureDetector, is(nullValue()));
-    }
-
-    private void assertDefaultSenderForSSL(Sender sender, String expectedHost, int expectedPort)
-    {
-        assertThat(sender, instanceOf(RetryableSender.class));
-        RetryableSender retryableSender = (RetryableSender) sender;
-        assertDefaultRetryableSender(retryableSender);
-
-        SSLSender sslSender = (SSLSender) retryableSender.getBaseSender();
-        assertThat(sslSender.getHost(), is(expectedHost));
-        assertThat(sslSender.getPort(), is(expectedPort));
-        assertThat(sslSender.getConnectionTimeoutMilli(), is(5000));
-        assertThat(sslSender.getReadTimeoutMilli(), is(5000));
-
-        FailureDetector failureDetector = sslSender.getFailureDetector();
+        FailureDetector failureDetector = networkSender.getFailureDetector();
         assertThat(failureDetector, is(nullValue()));
     }
 
@@ -141,7 +126,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency();
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForTCP(fluency.getFlusher().getSender(), "127.0.0.1", 24224);
+            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -159,7 +144,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency(54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForTCP(fluency.getFlusher().getSender(), "127.0.0.1", 54321);
+            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -177,7 +162,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency("192.168.0.99", 54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForTCP(fluency.getFlusher().getSender(), "192.168.0.99", 54321);
+            assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -195,7 +180,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency(new Fluency.Config().setUseSsl(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForSSL(fluency.getFlusher().getSender(), "127.0.0.1", 24224);
+            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, SSLSender.class);
         }
         finally {
             if (fluency != null) {
@@ -213,7 +198,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency(54321, new Fluency.Config().setUseSsl(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForTCP(fluency.getFlusher().getSender(), "127.0.0.1", 54321);
+            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, SSLSender.class);
         }
         finally {
             if (fluency != null) {
@@ -231,7 +216,7 @@ public class FluencyTest
             fluency = Fluency.defaultFluency("192.168.0.99", 54321, new Fluency.Config().setUseSsl(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSenderForTCP(fluency.getFlusher().getSender(), "192.168.0.99", 54321);
+            assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, SSLSender.class);
         }
         finally {
             if (fluency != null) {

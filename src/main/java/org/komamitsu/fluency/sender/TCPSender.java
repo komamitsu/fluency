@@ -1,70 +1,28 @@
 package org.komamitsu.fluency.sender;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.format.Response;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.util.ExecutorServiceUtils;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends Sender
+    extends NetworkSender
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
-    private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
-    final byte[] optionBuffer = new byte[256];
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
-    private final FailureDetector failureDetector;
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
     TCPSender(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
-        FailureDetector failureDetector = null;
-        if (config.getHeartbeaterConfig() != null) {
-            try {
-                failureDetector = new FailureDetector(
-                        config.getFailureDetectorStrategyConfig(),
-                        config.getHeartbeaterConfig(),
-                        config.getFailureDetectorConfig());
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to instantiate FailureDetector. Disabling it", e);
-            }
-        }
-        this.failureDetector = failureDetector;
-    }
-
-    @Override
-    public boolean isAvailable()
-    {
-        return failureDetector == null || failureDetector.isAvailable();
     }
 
     private SocketChannel getOrOpenChannel()
@@ -93,66 +51,8 @@ public class TCPSender
         getOrOpenChannel().read(buffer);
     }
 
-    private void propagateFailure(Throwable e)
-    {
-        if (failureDetector != null) {
-            failureDetector.onFailure(e);
-        }
-    }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
-            throws IOException
-    {
-        try {
-            LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
-            sendBuffers(buffers);
-
-            if (ackToken == null) {
-                return;
-            }
-
-            // For ACK response mode
-            final ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
-
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
-                    recvResponse(byteBuffer);
-                    return null;
-                }
-            });
-
-            try {
-                future.get(config.getReadTimeoutMilli(), TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException e) {
-                throw new IOException("InterruptedException occurred", e);
-            }
-            catch (ExecutionException e) {
-                throw new IOException("ExecutionException occurred", e);
-            }
-            catch (TimeoutException e) {
-                throw new SocketTimeoutException("Socket read timeout");
-            }
-
-            Response response = objectMapper.readValue(optionBuffer, Response.class);
-            byte[] unpackedToken = response.getAck();
-            if (!Arrays.equals(ackToken, unpackedToken)) {
-                throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken, CHARSET_FOR_ERRORLOG) + ", got=" + new String(unpackedToken, CHARSET_FOR_ERRORLOG));
-            }
-        }
-        catch (IOException e) {
-            closeSocket();
-            propagateFailure(e);
-            throw e;
-        }
-    }
-
     protected void closeSocket()
             throws IOException
     {
@@ -164,91 +64,19 @@ public class TCPSender
     }
 
     @Override
-    public synchronized void close()
-            throws IOException
-    {
-        try {
-            // Wait to confirm unsent request is flushed
-            try {
-                TimeUnit.MILLISECONDS.sleep(config.getWaitBeforeCloseMilli());
-            }
-            catch (InterruptedException e) {
-                LOG.warn("Interrupted", e);
-                Thread.currentThread().interrupt();
-            }
-
-            closeSocket();
-        }
-        finally {
-            try {
-                if (failureDetector != null) {
-                    failureDetector.close();
-                }
-            }
-            finally {
-                ExecutorServiceUtils.finishExecutorService(executorService);
-            }
-        }
-    }
-
-    public static class UnmatchedAckException
-            extends IOException
-    {
-        public UnmatchedAckException(String message)
-        {
-            super(message);
-        }
-    }
-
-    public String getHost()
-    {
-        return config.getHost();
-    }
-
-    public int getPort()
-    {
-        return config.getPort();
-    }
-
-    public int getConnectionTimeoutMilli()
-    {
-        return config.getConnectionTimeoutMilli();
-    }
-
-    public int getReadTimeoutMilli()
-    {
-        return config.getReadTimeoutMilli();
-    }
-
-    public FailureDetector getFailureDetector()
-    {
-        return failureDetector;
-    }
-
-    @Override
     public String toString()
     {
         return "TCPSender{" +
-                "channel=" + channel +
-                ", config=" + config +
-                ", failureDetector=" + failureDetector +
+                "config=" + config +
                 "} " + super.toString();
     }
 
     public static class Config
             implements Instantiator
     {
-        private final Sender.Config baseConfig = new Sender.Config();
-        private String host = "127.0.0.1";
-        private int port = 24224;
-        private int connectionTimeoutMilli = 5000;
-        private int readTimeoutMilli = 5000;
-        private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
-        private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
-        private FailureDetectStrategy.Instantiator failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
-        private int waitBeforeCloseMilli = 1000;
+        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
 
-        public Sender.Config getBaseConfig()
+        public NetworkSender.Config getBaseConfig()
         {
             return baseConfig;
         }
@@ -266,89 +94,89 @@ public class TCPSender
 
         public String getHost()
         {
-            return host;
+            return baseConfig.getHost();
         }
 
         public Config setHost(String host)
         {
-            this.host = host;
+            baseConfig.setHost(host);
             return this;
         }
 
         public int getPort()
         {
-            return port;
+            return baseConfig.getPort();
         }
 
         public Config setPort(int port)
         {
-            this.port = port;
+            baseConfig.setPort(port);
             return this;
         }
 
         public int getConnectionTimeoutMilli()
         {
-            return connectionTimeoutMilli;
+            return baseConfig.getConnectionTimeoutMilli();
         }
 
         public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
         {
-            this.connectionTimeoutMilli = connectionTimeoutMilli;
+            baseConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
             return this;
         }
 
         public int getReadTimeoutMilli()
         {
-            return readTimeoutMilli;
+            return baseConfig.getReadTimeoutMilli();
         }
 
         public Config setReadTimeoutMilli(int readTimeoutMilli)
         {
-            this.readTimeoutMilli = readTimeoutMilli;
+            baseConfig.setReadTimeoutMilli(readTimeoutMilli);
             return this;
         }
 
         public Heartbeater.Instantiator getHeartbeaterConfig()
         {
-            return heartbeaterConfig;
+            return baseConfig.getHeartbeaterConfig();
         }
 
         public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
         {
-            this.heartbeaterConfig = heartbeaterConfig;
+            baseConfig.setHeartbeaterConfig(heartbeaterConfig);
             return this;
         }
 
         public FailureDetector.Config getFailureDetectorConfig()
         {
-            return failureDetectorConfig;
+            return baseConfig.getFailureDetectorConfig();
         }
 
         public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
         {
-            this.failureDetectorConfig = failureDetectorConfig;
+            baseConfig.setFailureDetectorConfig(failureDetectorConfig);
             return this;
         }
 
         public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
         {
-            return failureDetectorStrategyConfig;
+            return baseConfig.getFailureDetectorStrategyConfig();
         }
 
         public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
         {
-            this.failureDetectorStrategyConfig = failureDetectorStrategyConfig;
+            baseConfig.setFailureDetectorStrategyConfig(failureDetectorStrategyConfig);
             return this;
         }
 
         public int getWaitBeforeCloseMilli()
         {
-            return waitBeforeCloseMilli;
+            return baseConfig.getWaitBeforeCloseMilli();
         }
 
         public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
         {
-            this.waitBeforeCloseMilli = waitBeforeCloseMilli;
+            baseConfig.setWaitBeforeCloseMilli(waitBeforeCloseMilli);
             return this;
         }
 
@@ -363,14 +191,6 @@ public class TCPSender
         {
             return "Config{" +
                     "baseConfig=" + baseConfig +
-                    ", host='" + host + '\'' +
-                    ", port=" + port +
-                    ", connectionTimeoutMilli=" + connectionTimeoutMilli +
-                    ", readTimeoutMilli=" + readTimeoutMilli +
-                    ", heartbeaterConfig=" + heartbeaterConfig +
-                    ", failureDetectorConfig=" + failureDetectorConfig +
-                    ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
-                    ", waitBeforeCloseMilli=" + waitBeforeCloseMilli +
                     '}';
         }
     }
