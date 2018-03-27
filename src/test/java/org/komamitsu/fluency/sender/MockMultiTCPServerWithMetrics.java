@@ -22,14 +22,15 @@ public class MockMultiTCPServerWithMetrics
     private ExecutorService executorService;
     private DatagramChannel channel;
 
-    public MockMultiTCPServerWithMetrics()
+    public MockMultiTCPServerWithMetrics(boolean sslEnabled)
             throws IOException
     {
+        super(sslEnabled);
     }
 
     @Override
     public synchronized void start()
-            throws IOException
+            throws Exception
     {
         super.start();
 
