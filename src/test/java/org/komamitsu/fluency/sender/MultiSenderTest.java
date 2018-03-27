@@ -132,12 +132,12 @@ public class MultiSenderTest
         testSend(true);
     }
 
-    private void testSend(boolean useSsl)
+    private void testSend(boolean sslEnabled)
             throws Exception
     {
-        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics(useSsl);
+        final MockMultiTCPServerWithMetrics server0 = new MockMultiTCPServerWithMetrics(sslEnabled);
         server0.start();
-        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics(useSsl);
+        final MockMultiTCPServerWithMetrics server1 = new MockMultiTCPServerWithMetrics(sslEnabled);
         server1.start();
 
         int concurency = 20;
@@ -145,7 +145,7 @@ public class MultiSenderTest
         final CountDownLatch latch = new CountDownLatch(concurency);
 
         final MultiSender sender = new MultiSender.Config(
-                useSsl ?
+                sslEnabled ?
                         Arrays.<Sender.Instantiator>asList(
                                 new SSLSender.Config()
                                         .setPort(server0.getLocalPort())
@@ -238,7 +238,7 @@ public class MultiSenderTest
         assertEquals(2, connectCount);
         // This test doesn't use actual PackedForward format so that it can simply test MultiSender itself.
         // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here
-        long minExpectedRecvLen = ((long)(concurency - (useSsl ? 6 : 2)) * reqNum) * 10;
+        long minExpectedRecvLen = ((long)(concurency - (sslEnabled ? 6 : 2)) * reqNum) * 10;
         long maxExpectedRecvLen = ((long)concurency * reqNum) * 10;
         assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
         assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));

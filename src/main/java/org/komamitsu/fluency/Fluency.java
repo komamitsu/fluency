@@ -51,7 +51,7 @@ public class Fluency
             throw new IllegalArgumentException("`port` should be specified when using heartbeat");
         }
 
-        if (config != null && config.useSsl) {
+        if (config != null && config.sslEnabled) {
             SSLSender.Config senderConfig = new SSLSender.Config();
             if (host != null) {
                 senderConfig.setHost(host);
@@ -468,7 +468,7 @@ public class Fluency
 
         private SenderErrorHandler senderErrorHandler;
 
-        private boolean useSsl;
+        private boolean sslEnabled;
 
         public Long getMaxBufferSize()
         {
@@ -591,14 +591,14 @@ public class Fluency
             return this;
         }
 
-        public boolean getUseSsl()
+        public boolean isSslEnabled()
         {
-            return useSsl;
+            return sslEnabled;
         }
 
-        public Config setUseSsl(boolean useSsl)
+        public Config setSslEnabled(boolean sslEnabled)
         {
-            this.useSsl = useSsl;
+            this.sslEnabled = sslEnabled;
             return this;
         }
 
@@ -617,7 +617,7 @@ public class Fluency
                     ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                     ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     ", senderErrorHandler=" + senderErrorHandler +
-                    ", useSsl =" + useSsl +
+                    ", sslEnabled =" + sslEnabled +
                     '}';
         }
     }

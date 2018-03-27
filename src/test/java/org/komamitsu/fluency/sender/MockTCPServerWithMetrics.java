@@ -3,7 +3,6 @@ package org.komamitsu.fluency.sender;
 import org.komamitsu.fluency.MockTCPServer;
 import org.komamitsu.fluency.util.Tuple;
 
-import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,9 +31,9 @@ public class MockTCPServerWithMetrics
         }
     };
 
-    public MockTCPServerWithMetrics(boolean useSsl)
+    public MockTCPServerWithMetrics(boolean sslEnabled)
     {
-        super(useSsl);
+        super(sslEnabled);
     }
 
     @Override

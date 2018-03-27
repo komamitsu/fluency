@@ -177,7 +177,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(new Fluency.Config().setUseSsl(true));
+            fluency = Fluency.defaultFluency(new Fluency.Config().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, SSLSender.class);
@@ -195,7 +195,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(54321, new Fluency.Config().setUseSsl(true));
+            fluency = Fluency.defaultFluency(54321, new Fluency.Config().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, SSLSender.class);
@@ -213,7 +213,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency("192.168.0.99", 54321, new Fluency.Config().setUseSsl(true));
+            fluency = Fluency.defaultFluency("192.168.0.99", 54321, new Fluency.Config().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, SSLSender.class);
@@ -334,7 +334,7 @@ public class FluencyTest
 
             Fluency.Config config =
                     new Fluency.Config()
-                            .setUseSsl(true)
+                            .setSslEnabled(true)
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
                             .setBufferChunkInitialSize(7 * 1024 * 1024)

@@ -103,7 +103,7 @@ public class FluencyTestWithMockServer
         private final boolean closeInsteadOfFlush;
         private final boolean ackResponse;
         private final boolean smallBuffer;
-        private final boolean useSsl;
+        private final boolean sslEnabled;
         private final EmitType emitType;
 
         Options(
@@ -112,9 +112,9 @@ public class FluencyTestWithMockServer
                 boolean closeInsteadOfFlush,
                 boolean ackResponse,
                 boolean smallBuffer,
-                boolean useSsl)
+                boolean sslEnabled)
         {
-            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, useSsl, EmitType.MAP);
+            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, sslEnabled, EmitType.MAP);
         }
 
         Options(
@@ -123,7 +123,7 @@ public class FluencyTestWithMockServer
                 boolean closeInsteadOfFlush,
                 boolean ackResponse,
                 boolean smallBuffer,
-                boolean useSsl,
+                boolean sslEnabled,
                 EmitType emitType)
         {
             this.failover = failover;
@@ -131,7 +131,7 @@ public class FluencyTestWithMockServer
             this.closeInsteadOfFlush = closeInsteadOfFlush;
             this.ackResponse = ackResponse;
             this.smallBuffer = smallBuffer;
-            this.useSsl = useSsl;
+            this.sslEnabled = sslEnabled;
             this.emitType = emitType;
         }
 
@@ -162,7 +162,7 @@ public class FluencyTestWithMockServer
             if (smallBuffer != options.smallBuffer) {
                 return false;
             }
-            if (useSsl != options.useSsl) {
+            if (sslEnabled != options.sslEnabled) {
                 return false;
             }
             return emitType == options.emitType;
@@ -176,7 +176,7 @@ public class FluencyTestWithMockServer
             result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
             result = 31 * result + (ackResponse ? 1 : 0);
             result = 31 * result + (smallBuffer ? 1 : 0);
-            result = 31 * result + (useSsl ? 1 : 0);
+            result = 31 * result + (sslEnabled ? 1 : 0);
             result = 31 * result + (emitType != null ? emitType.hashCode() : 0);
             return result;
         }
@@ -190,7 +190,7 @@ public class FluencyTestWithMockServer
                     ", closeInsteadOfFlush=" + closeInsteadOfFlush +
                     ", ackResponse=" + ackResponse +
                     ", smallBuffer=" + smallBuffer +
-                    ", useSsl=" + useSsl +
+                    ", sslEnabled=" + sslEnabled +
                     ", emitType=" + emitType +
                     '}';
         }
@@ -252,7 +252,7 @@ public class FluencyTestWithMockServer
                 int fluentdPort = localPorts.get(0);
                 if (options.failover) {
                     int secondaryFluentdPort = localPorts.get(1);
-                    if (options.useSsl) {
+                    if (options.sslEnabled) {
                         sender = getDoubleSSLSender(fluentdPort, secondaryFluentdPort);
                     }
                     else {
@@ -260,7 +260,7 @@ public class FluencyTestWithMockServer
                     }
                 }
                 else {
-                    if (options.useSsl) {
+                    if (options.sslEnabled) {
                         sender = getSingleSSLSender(fluentdPort);
                     }
                     else {
@@ -292,10 +292,10 @@ public class FluencyTestWithMockServer
 
         final ArrayList<Integer> localPorts = new ArrayList<Integer>();
 
-        final MockFluentdServer fluentd = new MockFluentdServer(options.useSsl);
+        final MockFluentdServer fluentd = new MockFluentdServer(options.sslEnabled);
         fluentd.start();
 
-        final MockFluentdServer secondaryFluentd = new MockFluentdServer(options.useSsl, fluentd);
+        final MockFluentdServer secondaryFluentd = new MockFluentdServer(options.sslEnabled, fluentd);
         secondaryFluentd.start();
 
         localPorts.add(fluentd.getLocalPort());

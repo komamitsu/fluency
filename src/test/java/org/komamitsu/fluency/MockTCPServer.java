@@ -24,12 +24,12 @@ public class MockTCPServer
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
     private ExecutorService executorService;
     private ServerTask serverTask;
-    private final boolean useSsl;
+    private final boolean sslEnabled;
     private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
 
-    public MockTCPServer(boolean useSsl)
+    public MockTCPServer(boolean sslEnabled)
     {
-        this.useSsl = useSsl;
+        this.sslEnabled = sslEnabled;
     }
 
     public interface EventHandler
@@ -78,7 +78,7 @@ public class MockTCPServer
 
         if (serverTask == null) {
             serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
-                    useSsl ? new SSLTestServerSocketFactory().create() : new ServerSocket());
+                    sslEnabled ? new SSLTestServerSocketFactory().create() : new ServerSocket());
             executorService.execute(serverTask);
         }
 
@@ -109,7 +109,7 @@ public class MockTCPServer
     {
         return "MockTCPServer{" +
                 "serverTask=" + serverTask +
-                ", useSsl=" + useSsl +
+                ", sslEnabled=" + sslEnabled +
                 '}';
     }
 

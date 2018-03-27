@@ -241,10 +241,10 @@ public abstract class AbstractFluentdServer
         }
     }
 
-    public AbstractFluentdServer(boolean useSsl)
+    public AbstractFluentdServer(boolean sslEnabled)
             throws Exception
     {
-        super(useSsl);
+        super(sslEnabled);
     }
 
     @Override
