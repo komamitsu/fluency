@@ -23,8 +23,8 @@ public class SSLHeartbeater
         sslSocketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),
-                // TODO: Make these configurable
-                5000, 5000);
+                config.connectionTimeoutMilli,
+                config.readTimeoutMilli);
     }
 
     @Override
@@ -59,6 +59,8 @@ public class SSLHeartbeater
             implements Instantiator
     {
         private final Heartbeater.Config baseConfig = new Heartbeater.Config();
+        private int connectionTimeoutMilli = 5000;
+        private int readTimeoutMilli = 5000;
 
         public Heartbeater.Config getBaseConfig()
         {
@@ -95,6 +97,28 @@ public class SSLHeartbeater
         public Config setIntervalMillis(int intervalMillis)
         {
             baseConfig.setIntervalMillis(intervalMillis);
+            return this;
+        }
+
+        public int getConnectionTimeoutMilli()
+        {
+            return connectionTimeoutMilli;
+        }
+
+        public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
+        {
+            this.connectionTimeoutMilli = connectionTimeoutMilli;
+            return this;
+        }
+
+        public int getReadTimeoutMilli()
+        {
+            return readTimeoutMilli;
+        }
+
+        public Config setReadTimeoutMilli(int readTimeoutMilli)
+        {
+            this.readTimeoutMilli = readTimeoutMilli;
             return this;
         }
 
