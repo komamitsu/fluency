@@ -1,70 +1,116 @@
 package org.komamitsu.fluency;
 
+import org.komamitsu.fluency.sender.SSLTestServerSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLHandshakeException;
+
+import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
     private ExecutorService executorService;
     private ServerTask serverTask;
+    private final boolean sslEnabled;
+    private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
+
+    public MockTCPServer(boolean sslEnabled)
+    {
+        this.sslEnabled = sslEnabled;
+    }
 
     public interface EventHandler
     {
-        void onConnect(SocketChannel acceptSocketChannel);
+        void onConnect(Socket acceptSocket);
 
-        void onReceive(SocketChannel acceptSocketChannel, ByteBuffer data);
+        void onReceive(Socket acceptSocket, int len, byte[] data);
 
-        void onClose(SocketChannel acceptSocketChannel);
-    }
-
-    public MockTCPServer()
-            throws IOException
-    {
+        void onClose(Socket acceptSocket);
     }
 
     protected EventHandler getEventHandler()
     {
         return new EventHandler() {
             @Override
-            public void onConnect(SocketChannel acceptSocketChannel)
+            public void onConnect(Socket acceptSocket)
             {
             }
 
             @Override
-            public void onReceive(SocketChannel acceptSocketChannel, ByteBuffer data)
+            public void onReceive(Socket acceptSocket, int len, byte[] data)
             {
             }
 
             @Override
-            public void onClose(SocketChannel acceptSocketChannel)
+            public void onClose(Socket acceptSocket)
             {
             }
         };
     }
 
+    private final AtomicInteger threadSeqNum = new AtomicInteger();
+
     public synchronized void start()
-            throws IOException
+            throws Exception
     {
         if (executorService == null) {
-            this.executorService = Executors.newCachedThreadPool();
+            this.executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return new Thread(r, String.format("accepted-socket-worker-%d", threadSeqNum.getAndAdd(1)));
+                }
+            });
         }
 
         if (serverTask == null) {
-            serverTask = new ServerTask(executorService, getEventHandler());
+            serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
+                    sslEnabled ? new SSLTestServerSocketFactory().create() : new ServerSocket());
             executorService.execute(serverTask);
         }
+
+        for (int i = 0; i < 10; i++) {
+            int localPort = serverTask.getLocalPort();
+            if (localPort > 0) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(500);
+        }
+        throw new IllegalStateException("Local port open timeout");
+    }
+
+    public void waitUntilEventsStop()
+            throws InterruptedException
+    {
+        for (int i = 0; i < 20; i++) {
+            if (lastEventTimeStampMilli.get() + 2000 < System.currentTimeMillis()) {
+                return;
+            }
+            TimeUnit.MILLISECONDS.sleep(500);
+        }
+        throw new IllegalStateException("Events didn't stop in the expected time");
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MockTCPServer{" +
+                "serverTask=" + serverTask +
+                ", sslEnabled=" + sslEnabled +
+                '}';
     }
 
     public int getLocalPort()
@@ -78,40 +124,56 @@ public class MockTCPServer
         if (executorService == null) {
             return;
         }
-        LOG.debug("Stopping MockTCPServer...");
+        LOG.debug("Stopping MockTCPServer... {}", this);
         executorService.shutdown();
         try {
-            executorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
+            if (!executorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                executorService.shutdownNow();
+            }
         }
         catch (InterruptedException e) {
-            LOG.warn("ExecutorService.shutdown() was interrupted: this=" + this, e);
+            LOG.warn("ExecutorService.shutdown() was failed: {}", this, e);
+            Thread.currentThread().interrupt();
         }
-        executorService.shutdownNow();
-
         executorService = null;
         serverTask = null;
     }
 
     private static class ServerTask implements Runnable
     {
-        private final ServerSocketChannel serverSocketChannel;
+        private final ServerSocket serverSocket;
         private final ExecutorService serverExecutorService;
         private final EventHandler eventHandler;
+        private final AtomicLong lastEventTimeStampMilli;
 
-        private ServerTask(ExecutorService executorService, EventHandler eventHandler)
+        private ServerTask(
+                ExecutorService executorService,
+                AtomicLong lastEventTimeStampMilli,
+                EventHandler eventHandler,
+                ServerSocket serverSocket)
                 throws IOException
         {
             this.serverExecutorService = executorService;
+            this.lastEventTimeStampMilli = lastEventTimeStampMilli;
             this.eventHandler = eventHandler;
-            serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.socket().bind(null);
+            this.serverSocket = serverSocket;
+            if (!serverSocket.isBound()) {
+                serverSocket.bind(null);
+            }
         }
 
         public int getLocalPort()
         {
-            return serverSocketChannel.socket().getLocalPort();
+            return serverSocket.getLocalPort();
         }
 
+        @Override
+        public String toString()
+        {
+            return "ServerTask{" +
+                    "serverSocket=" + serverSocket +
+                    '}';
+        }
 
         @Override
         public void run()
@@ -119,82 +181,89 @@ public class MockTCPServer
             while (!serverExecutorService.isShutdown()) {
                 try {
                     LOG.debug("ServerTask: accepting... this={}, local.port={}", this, getLocalPort());
-                    SocketChannel accept = serverSocketChannel.accept();
-                    LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), accept.socket().getPort());
-                    serverExecutorService.execute(new AcceptTask(serverExecutorService, eventHandler, accept));
+                    Socket acceptSocket = serverSocket.accept();
+                    LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), acceptSocket.getPort());
+                    serverExecutorService.execute(
+                            new AcceptTask(serverExecutorService, lastEventTimeStampMilli, eventHandler, acceptSocket));
                 }
                 catch (RejectedExecutionException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (ClosedByInterruptException e) {
-                    LOG.debug("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (IOException e) {
-                    LOG.warn("ServerSocketChannel.accept() failed[{}]: this={}", e.getMessage(), this);
+                    LOG.warn("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
             }
             try {
-                serverSocketChannel.close();
+                serverSocket.close();
             }
             catch (IOException e) {
-                LOG.warn("ServerSocketChannel.close() failed", e);
+                LOG.warn("ServerTask: ServerSocketChannel.close() failed", e);
             }
-            LOG.info("Finishing ServerTask...: this={}", this);
+            LOG.info("ServerTask: Finishing ServerTask...: this={}", this);
         }
 
         private static class AcceptTask
                 implements Runnable
         {
-            private final ExecutorService parentExecutorService;
-            private final SocketChannel accept;
+            private final Socket acceptSocket;
             private final EventHandler eventHandler;
+            private final ExecutorService serverExecutorService;
+            private final AtomicLong lastEventTimeStampMilli;
 
-            private AcceptTask(ExecutorService parentExecutorService, EventHandler eventHandler, SocketChannel accept)
+            private AcceptTask(ExecutorService serverExecutorService, AtomicLong lastEventTimeStampMilli, EventHandler eventHandler, Socket acceptSocket)
             {
-                this.parentExecutorService = parentExecutorService;
+                this.serverExecutorService = serverExecutorService;
+                this.lastEventTimeStampMilli = lastEventTimeStampMilli;
                 this.eventHandler = eventHandler;
-                this.accept = accept;
+                this.acceptSocket = acceptSocket;
             }
 
             @Override
             public void run()
             {
-                LOG.debug("AcceptTask: connected. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
+                LOG.debug("AcceptTask: connected. this={}, local={}, remote={}",
+                        this, acceptSocket.getLocalPort(), acceptSocket.getPort());
                 try {
-                    eventHandler.onConnect(accept);
-                    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(512 * 1024);
-                    while (accept.isOpen()) {
+                    eventHandler.onConnect(acceptSocket);
+                    byte[] byteBuf = new byte[512 * 1024];
+                    while (!serverExecutorService.isShutdown()) {
                         try {
-                            byteBuffer.clear();
-                            int len = accept.read(byteBuffer);
-                            if (len < 0) {
-                                LOG.debug("AcceptTask: closed. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
-                                eventHandler.onClose(accept);
+                            int len = acceptSocket.getInputStream().read(byteBuf);
+                            if (len <= 0) {
+                                LOG.debug("AcceptTask: closed. this={}, local={}, remote={}",
+                                        this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                                eventHandler.onClose(acceptSocket);
                                 try {
-                                    accept.close();
+                                    acceptSocket.close();
                                 }
                                 catch (IOException e) {
-                                    LOG.warn("AcceptTask: close() failed: this=" + this, e);
+                                    LOG.warn("AcceptTask: close() failed: this={}", this, e);
                                 }
+                                break;
                             }
                             else {
-                                eventHandler.onReceive(accept, byteBuffer);
+                                eventHandler.onReceive(acceptSocket, len, byteBuf);
+                                lastEventTimeStampMilli.set(System.currentTimeMillis());
                             }
                         }
-                        catch (ClosedChannelException e) {
-                            LOG.debug("AcceptTask: channel is closed. this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
-
-                            eventHandler.onClose(accept);
-                        }
                         catch (IOException e) {
-                            LOG.warn("AcceptTask: recv() failed: this=" + this, e);
+                            LOG.warn("AcceptTask: recv() failed: this={}, message={}, cause={}",
+                                    this, e.getMessage(), e.getCause() == null ? "" : e.getCause().getMessage());
+                            if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+                                eventHandler.onClose(acceptSocket);
+                                break;
+                            }
                         }
                     }
                 }
                 finally {
                     try {
-                        LOG.debug("AcceptTask: Finished. Closing... this={}, local={}, remote={}", this, accept.socket().getLocalPort(), accept.socket().getPort());
-                        accept.close();
+                        LOG.debug("AcceptTask: Finished. Closing... this={}, local={}, remote={}",
+                                this, acceptSocket.getLocalPort(), acceptSocket.getPort());
+                        acceptSocket.close();
                     }
                     catch (IOException e) {
                         LOG.warn("AcceptTask: close() failed", e);

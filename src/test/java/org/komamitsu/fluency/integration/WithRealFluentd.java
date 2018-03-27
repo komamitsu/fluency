@@ -81,6 +81,8 @@ public class WithRealFluentd
         public final int concurrency;
         @JsonProperty("wait_seconds")
         public final int waitSeconds;
+        @JsonProperty("ssl_enabled")
+        public final boolean sslEnabled;
 
         public Config(
                 @JsonProperty("host")
@@ -98,7 +100,10 @@ public class WithRealFluentd
                 @JsonProperty("concurrency")
                         Integer concurrency,
                 @JsonProperty("wait_seconds")
-                        Integer waitSeconds)
+                        Integer waitSeconds,
+                @JsonProperty("ssl_enabled")
+                        Boolean sslEnabled
+                )
         {
             this.host = host == null ? "127.0.0.1" : host;
             this.port = port == null ? Integer.valueOf(24224) : port;
@@ -111,6 +116,7 @@ public class WithRealFluentd
             this.requests = requests == null ? 1000000 : requests;
             this.concurrency = concurrency == null ? 4 : concurrency;
             this.waitSeconds = waitSeconds == null ? 60 : waitSeconds;
+            this.sslEnabled = sslEnabled == null ? false : sslEnabled;
         }
     }
 
@@ -132,7 +138,11 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = Fluency.defaultFluency();
+        Fluency fluency = Fluency.defaultFluency(
+                config.port,
+                new Fluency.Config()
+                        .setSslEnabled(config.sslEnabled)
+        );
 
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
@@ -169,7 +179,7 @@ public class WithRealFluentd
         */
         Fluency fluency = Fluency.defaultFluency(
                 Arrays.asList(new InetSocketAddress(config.port), new InetSocketAddress(config.anotherPort)),
-                new Fluency.Config().setAckResponseMode(true));
+                new Fluency.Config().setSslEnabled(config.sslEnabled).setAckResponseMode(true));
 
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
@@ -198,9 +208,11 @@ public class WithRealFluentd
         assumeNotNull(config);
 
         Fluency fluency = Fluency.defaultFluency(
+                config.port,
                 new Fluency.Config()
                         // Fluency might use a lot of buffer for loaded backup files.
                         // So it'd better increase max buffer size
+                        .setSslEnabled(config.sslEnabled)
                         .setMaxBufferSize(512 * 1024 * 1024L)
                         .setFileBackupDir(System.getProperty("java.io.tmpdir")));
         Map<String, Object> data = new HashMap<String, Object>();

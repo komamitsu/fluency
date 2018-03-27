@@ -3,7 +3,7 @@ package org.komamitsu.fluency.sender;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.komamitsu.fluency.MockTCPServer;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,26 +23,28 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-public class TCPSenderTest
+public class SSLSenderTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TCPSenderTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
 
-    interface TCPSenderConfigurator
+    interface SSLSenderConfigurator
     {
-        TCPSender.Config config(int port);
+        SSLSender.Config config(int port);
     }
 
     @Test
     public void testSend()
             throws Exception
     {
-        testSendBase(new TCPSenderConfigurator() {
+        testSendBase(new SSLSenderConfigurator() {
             @Override
-            public TCPSender.Config config(int port)
+            public SSLSender.Config config(int port)
             {
-                return new TCPSender.Config().setPort(port);
+                return new SSLSender.Config().setPort(port);
             }
         }, is(1), is(1));
     }
@@ -51,27 +53,27 @@ public class TCPSenderTest
     public void testSendWithHeartbeart()
             throws Exception
     {
-        testSendBase(new TCPSenderConfigurator() {
+        testSendBase(new SSLSenderConfigurator() {
             @Override
-            public TCPSender.Config config(int port)
+            public SSLSender.Config config(int port)
             {
-                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
-                return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
+                SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config().setPort(port).setIntervalMillis(400);
+                return new SSLSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
             }
         }, greaterThan(1), greaterThan(1));
     }
 
-    private void testSendBase(TCPSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
+    private void testSendBase(SSLSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
             throws Exception
     {
-        MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(false);
+        MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(true);
         server.start();
 
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
-        TCPSender.Config config = configurator.config(server.getLocalPort());
-        final TCPSender sender = config.createInstance();
+        SSLSender.Config config = configurator.config(server.getLocalPort());
+        final SSLSender sender = config.createInstance();
 
         // To receive heartbeat at least once
         TimeUnit.MILLISECONDS.sleep(500);
@@ -98,7 +100,9 @@ public class TCPSenderTest
             });
         }
 
-        assertTrue(latch.await(4, TimeUnit.SECONDS));
+        if (!latch.await(30, TimeUnit.SECONDS)) {
+            assertTrue("Sending all requests timed out", false);
+        }
         sender.close();
 
         server.waitUntilEventsStop();
@@ -139,7 +143,7 @@ public class TCPSenderTest
             @Override
             public void run()
             {
-                TCPSender sender = new TCPSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
+                SSLSender sender = new SSLSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
                 try {
                     sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
                 }
@@ -157,7 +161,7 @@ public class TCPSenderTest
     public void testReadTimeout()
             throws Exception
     {
-        final MockTCPServer server = new MockTCPServer(false);
+        final MockTCPServer server = new MockTCPServer(true);
         server.start();
 
         try {
@@ -168,7 +172,7 @@ public class TCPSenderTest
                 @Override
                 public void run()
                 {
-                    TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
+                    SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
                     try {
                         sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
                     }
@@ -190,7 +194,7 @@ public class TCPSenderTest
     public void testClose()
             throws Exception
     {
-        final MockTCPServer server = new MockTCPServer(false);
+        final MockTCPServer server = new MockTCPServer(true);
         server.start();
 
         try {
@@ -202,7 +206,7 @@ public class TCPSenderTest
                 public Void call()
                         throws Exception
                 {
-                    TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
+                    SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
                     long start;
                     try {
                         sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
@@ -228,7 +232,7 @@ public class TCPSenderTest
     @Test
     public void testConfig()
     {
-        TCPSender.Config config = new TCPSender.Config();
+        SSLSender.Config config = new SSLSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
         // TODO: Add others later
     }

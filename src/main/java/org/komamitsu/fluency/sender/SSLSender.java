@@ -3,70 +3,84 @@ package org.komamitsu.fluency.sender;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLSocket;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TCPSender
+public class SSLSender
     extends NetworkSender
 {
-    private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
+    private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
+    private final SSLSocketBuilder socketBuilder;
     private final Config config;
 
-    TCPSender(Config config)
+    public SSLSender(Config config)
     {
-        super(config.getBaseConfig());
+        super(config.baseConfig);
+        socketBuilder = new SSLSocketBuilder(
+                config.getHost(),
+                config.getPort(),
+                config.getConnectionTimeoutMilli(),
+                config.getReadTimeoutMilli());
         this.config = config;
     }
 
-    private SocketChannel getOrOpenChannel()
+    private SSLSocket getOrOpenSSLSocket()
             throws IOException
     {
-        if (channel.get() == null) {
-            SocketChannel socketChannel = SocketChannel.open();
-            socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
-            socketChannel.socket().setTcpNoDelay(true);
-            socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
-
-            channel.set(socketChannel);
+        if (socket.get() == null) {
+            socket.set(socketBuilder.build());
         }
-        return channel.get();
+        return socket.get();
     }
 
+    @Override
     protected synchronized void sendBuffers(List<ByteBuffer> buffers)
             throws IOException
     {
-        getOrOpenChannel().write(buffers.toArray(new ByteBuffer[buffers.size()]));
+        for (ByteBuffer buffer : buffers) {
+            OutputStream outputStream = getOrOpenSSLSocket().getOutputStream();
+            if (buffer.isDirect()) {
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                outputStream.write(bytes);
+            }
+            else {
+                outputStream.write(buffer.array());
+            }
+        }
     }
 
+    @Override
     protected void recvResponse(ByteBuffer buffer)
             throws IOException
     {
-        getOrOpenChannel().read(buffer);
+        InputStream inputStream = getOrOpenSSLSocket().getInputStream();
+        // TODO: a bit naive implementation
+        int read = inputStream.read(optionBuffer);
+        buffer.put(optionBuffer, 0, read);
     }
-
 
     @Override
     protected void closeSocket()
             throws IOException
     {
-        SocketChannel socketChannel;
-        if ((socketChannel = channel.getAndSet(null)) != null) {
-            socketChannel.close();
-            channel.set(null);
+        if (socket.get() != null) {
+            getOrOpenSSLSocket().close();
+            socket.set(null);
         }
     }
 
     @Override
     public String toString()
     {
-        return "TCPSender{" +
+        return "SSLSender{" +
                 "config=" + config +
                 "} " + super.toString();
     }
@@ -181,9 +195,9 @@ public class TCPSender
         }
 
         @Override
-        public TCPSender createInstance()
+        public SSLSender createInstance()
         {
-            return new TCPSender(this);
+            return new SSLSender(this);
         }
 
         @Override
