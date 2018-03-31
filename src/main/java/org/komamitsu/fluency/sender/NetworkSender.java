@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
@@ -26,12 +25,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class NetworkSender
+public abstract class NetworkSender<T>
     extends Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
-    final byte[] optionBuffer = new byte[256];
+    private final byte[] optionBuffer = new byte[256];
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
     private final FailureDetector failureDetector;
@@ -62,10 +61,19 @@ public abstract class NetworkSender
         return failureDetector == null || failureDetector.isAvailable();
     }
 
-    abstract void sendBuffers(List<ByteBuffer> buffers)
+    abstract T getOrCreateSocketInternal()
+        throws IOException;
+
+    private synchronized T getOrCreateSocket()
+            throws IOException
+    {
+        return getOrCreateSocketInternal();
+    }
+
+    abstract void sendBuffers(T socket, List<ByteBuffer> buffers)
             throws IOException;
 
-    abstract void recvResponse(ByteBuffer buffer)
+    abstract void recvResponse(T socket, ByteBuffer buffer)
             throws IOException;
 
     private void propagateFailure(Throwable e)
@@ -81,7 +89,8 @@ public abstract class NetworkSender
     {
         try {
             LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
-            sendBuffers(buffers);
+            final T socket = getOrCreateSocket();
+            sendBuffers(socket, buffers);
 
             if (ackToken == null) {
                 return;
@@ -97,7 +106,7 @@ public abstract class NetworkSender
                         throws Exception
                 {
                     LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
-                    recvResponse(byteBuffer);
+                    recvResponse(socket, byteBuffer);
                     return null;
                 }
             });

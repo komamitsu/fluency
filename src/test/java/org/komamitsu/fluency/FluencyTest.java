@@ -6,6 +6,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.buffer.TestableBuffer;
@@ -37,8 +41,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,11 +65,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Theories.class)
 public class FluencyTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
     private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
+
+    @DataPoints
+    public static final boolean[] SSL_ENABLED = { false, true };
 
     private void assertDefaultBuffer(Buffer buffer)
     {
@@ -540,17 +548,17 @@ public class FluencyTest
         assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
 
-    @Test
-    public void testWithoutAckResponse()
+    @Theory
+    public void testWithoutAckResponse(final boolean sslEnabled)
             throws Throwable
     {
-        Exception exception = new ConfigurableTestServer().run(
+        Exception exception = new ConfigurableTestServer(sslEnabled).run(
                 new ConfigurableTestServer.WithClientSocket() {
                     @Override
-                    public void run(SocketChannel clientSocketChannel)
+                    public void run(Socket clientSocket)
                             throws Exception
                     {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getChannel());
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
                         assertEquals(3, unpacker.unpackArrayHeader());
                         assertEquals("foo.bar", unpacker.unpackString());
                         ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
@@ -566,7 +574,9 @@ public class FluencyTest
                     public void run(int serverPort)
                             throws Exception
                     {
-                        Fluency fluency = Fluency.defaultFluency(serverPort);
+                        Fluency fluency =
+                                Fluency.defaultFluency(serverPort,
+                                        new Fluency.Config().setSslEnabled(sslEnabled));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -574,17 +584,17 @@ public class FluencyTest
         assertNull(exception);
     }
 
-    @Test
-    public void testWithAckResponseButNotReceiveToken()
+    @Theory
+    public void testWithAckResponseButNotReceiveToken(final boolean sslEnabled)
             throws Throwable
     {
-        Exception exception = new ConfigurableTestServer().run(
+        Exception exception = new ConfigurableTestServer(sslEnabled).run(
                 new ConfigurableTestServer.WithClientSocket() {
                     @Override
-                    public void run(SocketChannel clientSocketChannel)
+                    public void run(Socket clientSocket)
                             throws Exception
                     {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getChannel());
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
                         assertEquals(3, unpacker.unpackArrayHeader());
                         assertEquals("foo.bar", unpacker.unpackString());
                         ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
@@ -601,7 +611,9 @@ public class FluencyTest
                     public void run(int serverPort)
                             throws Exception
                     {
-                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        Fluency fluency =
+                                Fluency.defaultFluency(serverPort,
+                                        new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -609,17 +621,17 @@ public class FluencyTest
         assertEquals(exception.getClass(), TimeoutException.class);
     }
 
-    @Test
-    public void testWithAckResponseButWrongReceiveToken()
+    @Theory
+    public void testWithAckResponseButWrongReceiveToken(final boolean sslEnabled)
             throws Throwable
     {
-        Exception exception = new ConfigurableTestServer().run(
+        Exception exception = new ConfigurableTestServer(sslEnabled).run(
                 new ConfigurableTestServer.WithClientSocket() {
                     @Override
-                    public void run(SocketChannel clientSocketChannel)
+                    public void run(Socket clientSocket)
                             throws Exception
                     {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getInputStream());
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
                         assertEquals(3, unpacker.unpackArrayHeader());
                         assertEquals("foo.bar", unpacker.unpackString());
                         ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
@@ -628,7 +640,7 @@ public class FluencyTest
                         assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
                         assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
 
-                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocketChannel.socket().getOutputStream());
+                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
                         packer.packMapHeader(1)
                                 .packString("ack").packString(UUID.randomUUID().toString())
                                 .close();
@@ -643,7 +655,9 @@ public class FluencyTest
                     public void run(int serverPort)
                             throws Exception
                     {
-                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        Fluency fluency =
+                                Fluency.defaultFluency(serverPort,
+                                        new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -651,17 +665,17 @@ public class FluencyTest
         assertEquals(exception.getClass(), TimeoutException.class);
     }
 
-    @Test
-    public void testWithAckResponseWithProperToken()
+    @Theory
+    public void testWithAckResponseWithProperToken(final boolean sslEnabled)
             throws Throwable
     {
-        Exception exception = new ConfigurableTestServer().run(
+        Exception exception = new ConfigurableTestServer(sslEnabled).run(
                 new ConfigurableTestServer.WithClientSocket() {
                     @Override
-                    public void run(SocketChannel clientSocketChannel)
+                    public void run(Socket clientSocket)
                             throws Exception
                     {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocketChannel.socket().getInputStream());
+                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
                         assertEquals(3, unpacker.unpackArrayHeader());
                         assertEquals("foo.bar", unpacker.unpackString());
                         ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
@@ -671,7 +685,7 @@ public class FluencyTest
                         String ackResponseToken = map.get(KEY_OPTION_CHUNK).asRawValue().asString();
                         assertNotNull(ackResponseToken);
 
-                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocketChannel.socket().getOutputStream());
+                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
                         packer.packMapHeader(1)
                                 .packString("ack").packString(ackResponseToken)
                                 .close();
@@ -686,7 +700,8 @@ public class FluencyTest
                     public void run(int serverPort)
                             throws Exception
                     {
-                        Fluency fluency = Fluency.defaultFluency(serverPort, new Fluency.Config().setAckResponseMode(true));
+                        Fluency fluency = Fluency.defaultFluency(serverPort,
+                                new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
