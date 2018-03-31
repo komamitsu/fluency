@@ -1,19 +1,28 @@
 package org.komamitsu.fluency;
 
-import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import org.komamitsu.fluency.sender.SSLTestServerSocketFactory;
+
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurableTestServer
 {
+    private final boolean sslEnabled;
+
+    public ConfigurableTestServer(boolean sslEnabled)
+    {
+        this.sslEnabled = sslEnabled;
+    }
+
     interface WithClientSocket
     {
-        void run(SocketChannel clientSocketChannel)
+        void run(Socket clientSocket)
                 throws Exception;
     }
 
@@ -27,10 +36,17 @@ public class ConfigurableTestServer
             throws Throwable
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
-        final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        final AtomicReference<ServerSocket> serverSocket = new AtomicReference<ServerSocket>();
+
         try {
-            serverSocketChannel.socket().bind(new InetSocketAddress(0));
-            final int serverPort = serverSocketChannel.socket().getLocalPort();
+            if (sslEnabled) {
+                serverSocket.set(new SSLTestServerSocketFactory().create());
+            }
+            else {
+                serverSocket.set(new ServerSocket(0));
+            }
+
+            final int serverPort = serverSocket.get().getLocalPort();
 
             Future<Void> serverSideFuture = executorService.submit(new Callable<Void>()
             {
@@ -38,12 +54,12 @@ public class ConfigurableTestServer
                 public Void call()
                         throws Exception
                 {
-                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    Socket acceptSocket = serverSocket.get().accept();
                     try {
-                        withClientSocket.run(socketChannel);
+                        withClientSocket.run(acceptSocket);
                     }
                     finally {
-                        socketChannel.close();
+                        acceptSocket.close();
                     }
                     return null;
                 }
@@ -72,7 +88,9 @@ public class ConfigurableTestServer
         }
         finally {
             executorService.shutdownNow();
-            serverSocketChannel.close();
+            if (serverSocket.get() != null) {
+                serverSocket.get().close();
+            }
         }
         return null;
     }

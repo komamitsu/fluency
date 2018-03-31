@@ -14,8 +14,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends NetworkSender
+    extends NetworkSender<SocketChannel>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final Config config;
 
@@ -25,7 +26,8 @@ public class TCPSender
         this.config = config;
     }
 
-    private SocketChannel getOrOpenChannel()
+    @Override
+    protected SocketChannel getOrCreateSocketInternal()
             throws IOException
     {
         if (channel.get() == null) {
@@ -33,33 +35,32 @@ public class TCPSender
             socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
             socketChannel.socket().setTcpNoDelay(true);
             socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
-
             channel.set(socketChannel);
         }
         return channel.get();
     }
 
-    protected synchronized void sendBuffers(List<ByteBuffer> buffers)
+    @Override
+    protected void sendBuffers(SocketChannel socketChannel, List<ByteBuffer> buffers)
             throws IOException
     {
-        getOrOpenChannel().write(buffers.toArray(new ByteBuffer[buffers.size()]));
+        socketChannel.write(buffers.toArray(new ByteBuffer[buffers.size()]));
     }
 
-    protected void recvResponse(ByteBuffer buffer)
+    @Override
+    protected void recvResponse(SocketChannel socketChannel, ByteBuffer buffer)
             throws IOException
     {
-        getOrOpenChannel().read(buffer);
+        socketChannel.read(buffer);
     }
-
 
     @Override
     protected void closeSocket()
             throws IOException
     {
-        SocketChannel socketChannel;
-        if ((socketChannel = channel.getAndSet(null)) != null) {
-            socketChannel.close();
-            channel.set(null);
+        SocketChannel existingSocketChannel;
+        if ((existingSocketChannel = channel.getAndSet(null)) != null) {
+            existingSocketChannel.close();
         }
     }
 

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-    extends NetworkSender
+    extends NetworkSender<SSLSocket>
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
     private final SSLSocketBuilder socketBuilder;
@@ -31,7 +31,8 @@ public class SSLSender
         this.config = config;
     }
 
-    private SSLSocket getOrOpenSSLSocket()
+    @Override
+    protected SSLSocket getOrCreateSocketInternal()
             throws IOException
     {
         if (socket.get() == null) {
@@ -41,11 +42,11 @@ public class SSLSender
     }
 
     @Override
-    protected synchronized void sendBuffers(List<ByteBuffer> buffers)
+    protected void sendBuffers(SSLSocket sslSocket, List<ByteBuffer> buffers)
             throws IOException
     {
         for (ByteBuffer buffer : buffers) {
-            OutputStream outputStream = getOrOpenSSLSocket().getOutputStream();
+            OutputStream outputStream = sslSocket.getOutputStream();
             if (buffer.isDirect()) {
                 byte[] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
@@ -58,22 +59,22 @@ public class SSLSender
     }
 
     @Override
-    protected void recvResponse(ByteBuffer buffer)
+    protected void recvResponse(SSLSocket sslSocket, ByteBuffer buffer)
             throws IOException
     {
-        InputStream inputStream = getOrOpenSSLSocket().getInputStream();
-        // TODO: a bit naive implementation
-        int read = inputStream.read(optionBuffer);
-        buffer.put(optionBuffer, 0, read);
+        InputStream inputStream = sslSocket.getInputStream();
+        byte[] tempBuf = new byte[buffer.remaining()];
+        int read = inputStream.read(tempBuf);
+        buffer.put(tempBuf, 0, read);
     }
 
     @Override
     protected void closeSocket()
             throws IOException
     {
-        if (socket.get() != null) {
-            getOrOpenSSLSocket().close();
-            socket.set(null);
+        SSLSocket existingSocket;
+        if ((existingSocket = socket.getAndSet(null)) != null) {
+            existingSocket.close();
         }
     }
 
