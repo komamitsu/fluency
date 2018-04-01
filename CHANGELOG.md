@@ -1,3 +1,10 @@
+## 1.8.0 (2018-04-01)
+
+Features:
+
+- Support SSL/TLS
+- Update dependencies
+
 ## 1.7.0 (2018-01-05)
 
 Features:
