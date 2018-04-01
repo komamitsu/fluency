@@ -10,7 +10,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 group = 'org.komamitsu'
 archivesBaseName = 'fluency'
-version = '1.8.0'
+version = '1.9.0-SNAPSHOT'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
