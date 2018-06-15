@@ -35,7 +35,6 @@ public class Fluency
     private final Emitter emitter = new Emitter();
 
     public static Fluency defaultFluency(String host, int port, Config config)
-            throws IOException
     {
         return buildDefaultFluency(createBaseSenderConfig(config, host, port), config);
     }
@@ -149,19 +148,16 @@ public class Fluency
     }
 
     public static Fluency defaultFluency(int port, Config config)
-            throws IOException
     {
         return buildDefaultFluency(createBaseSenderConfig(config, null, port), config);
     }
 
     public static Fluency defaultFluency(Config config)
-            throws IOException
     {
         return buildDefaultFluency(createBaseSenderConfig(config, null, null), config);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
-            throws IOException
     {
         List<Sender.Instantiator> senderConfigs = new ArrayList<Sender.Instantiator>();
         for (InetSocketAddress server : servers) {
@@ -171,25 +167,21 @@ public class Fluency
     }
 
     public static Fluency defaultFluency(String host, int port)
-            throws IOException
     {
         return defaultFluency(host, port, null);
     }
 
     public static Fluency defaultFluency(int port)
-            throws IOException
     {
         return defaultFluency(port, null);
     }
 
     public static Fluency defaultFluency()
-            throws IOException
     {
         return buildDefaultFluency(createBaseSenderConfig(null, null, null), null);
     }
 
     public static Fluency defaultFluency(List<InetSocketAddress> servers)
-            throws IOException
     {
         return defaultFluency(servers, null);
     }
