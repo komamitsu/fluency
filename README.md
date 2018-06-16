@@ -46,7 +46,7 @@ dependencies {
 //   - Flush interval is 600ms (by default)
 //   - Initial chunk buffer size is 1MB (by default)
 //   - Threshold chunk buffer size to flush is 4MB (by default)
-//   - Max total buffer size is 16MB (by default)
+//   - Max total buffer size is 512MB (by default)
 //   - Use off heap memory for buffer pool (by default)
 //   - Max retry of sending events is 8 (by default)
 //   - Max wait until all buffers are flushed is 10 seconds (by default)
