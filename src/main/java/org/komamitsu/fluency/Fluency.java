@@ -357,7 +357,7 @@ public class Fluency
         int intervalMilli = 500;
         for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
             long bufferedDataSize = getBufferedDataSize();
-            LOG.info("Waiting for flushing all buffer: {}", bufferedDataSize);
+            LOG.debug("Waiting for flushing all buffer: {}", bufferedDataSize);
             if (getBufferedDataSize() == 0) {
                 return true;
             }
@@ -373,7 +373,7 @@ public class Fluency
         int intervalMilli = 500;
         for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
             boolean terminated = isTerminated();
-            LOG.info("Waiting until the flusher is terminated: {}", terminated);
+            LOG.debug("Waiting until the flusher is terminated: {}", terminated);
             if (terminated) {
                 return true;
             }

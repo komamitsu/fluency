@@ -50,7 +50,7 @@ public abstract class Buffer
                     @Override
                     public void process(List<String> params, FileChannel channel)
                     {
-                        LOG.info("Loading buffer: params={}, buffer={}", params, channel);
+                        LOG.debug("Loading buffer: params={}, buffer={}", params, channel);
                         loadBufferFromFile(params, channel);
                     }
                 });
@@ -86,7 +86,7 @@ public abstract class Buffer
         if (fileBackup == null) {
             return;
         }
-        LOG.info("Saving buffer: params={}, buffer={}", params, buffer);
+        LOG.debug("Saving buffer: params={}, buffer={}", params, buffer);
         fileBackup.saveBuffer(params, buffer);
     }
 
@@ -105,13 +105,13 @@ public abstract class Buffer
     public void close()
     {
         try {
-            LOG.info("Saving all buffers");
+            LOG.debug("Saving all buffers");
             saveAllBuffersToFile();
         }
         catch (Exception e) {
             LOG.warn("Failed to save all buffers", e);
         }
-        LOG.info("Closing buffers");
+        LOG.debug("Closing buffers");
         closeInternal();
     }
 
