@@ -50,7 +50,7 @@ public abstract class Buffer
                     @Override
                     public void process(List<String> params, FileChannel channel)
                     {
-                        LOG.debug("Loading buffer: params={}, buffer={}", params, channel);
+                        LOG.info("Loading buffer: params={}, buffer={}", params, channel);
                         loadBufferFromFile(params, channel);
                     }
                 });
@@ -86,7 +86,7 @@ public abstract class Buffer
         if (fileBackup == null) {
             return;
         }
-        LOG.debug("Saving buffer: params={}, buffer={}", params, buffer);
+        LOG.info("Saving buffer: params={}, buffer={}", params, buffer);
         fileBackup.saveBuffer(params, buffer);
     }
 
