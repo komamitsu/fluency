@@ -105,13 +105,13 @@ public abstract class Buffer
     public void close()
     {
         try {
-            LOG.info("Saving all buffers");
+            LOG.debug("Saving all buffers");
             saveAllBuffersToFile();
         }
         catch (Exception e) {
             LOG.warn("Failed to save all buffers", e);
         }
-        LOG.info("Closing buffers");
+        LOG.debug("Closing buffers");
         closeInternal();
     }
 
