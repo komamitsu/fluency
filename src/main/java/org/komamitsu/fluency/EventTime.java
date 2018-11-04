@@ -25,41 +25,48 @@ import org.msgpack.jackson.dataformat.MessagePackGenerator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 @JsonSerialize(using = EventTime.Serializer.class)
 public class EventTime
 {
-    private final int seconds;
-    private final int nanoSeconds;
+    private final long seconds;
+    private final long nanoSeconds;
 
-    public static EventTime fromEpoch(int epochSeconds)
+    public static EventTime fromEpoch(long epochSeconds)
     {
         return new EventTime(epochSeconds, 0);
     }
 
-    public static EventTime fromEpoch(int epochSeconds, int nanoSeconds)
+    public static EventTime fromEpoch(long epochSeconds, long nanoSeconds)
     {
         return new EventTime(epochSeconds, nanoSeconds);
     }
 
     public static EventTime fromEpochMilli(long epochMilliSecond)
     {
-        return new EventTime((int) (epochMilliSecond/ 1000), (int) ((epochMilliSecond % 1000) * 1000000));
+        return new EventTime(epochMilliSecond/ 1000, (epochMilliSecond % 1000) * 1000000);
     }
 
-    public EventTime(int seconds, int nanoSeconds)
+    public EventTime(long seconds, long nanoSeconds)
     {
+        if (seconds >> 32 != 0) {
+            throw new IllegalArgumentException("`seconds` should be a uint32 value");
+        }
+
+        if (nanoSeconds >> 32 != 0) {
+            throw new IllegalArgumentException("`nanoSeconds` should be a uint32 value");
+        }
+
         this.seconds = seconds;
         this.nanoSeconds = nanoSeconds;
     }
 
-    public int getSeconds()
+    public long getSeconds()
     {
         return seconds;
     }
 
-    public int getNanoSeconds()
+    public long getNanoSeconds()
     {
         return nanoSeconds;
     }
@@ -85,8 +92,8 @@ public class EventTime
     @Override
     public int hashCode()
     {
-        int result = seconds;
-        result = 31 * result + nanoSeconds;
+        int result = (int) (seconds ^ (seconds >>> 32));
+        result = 31 * result + (int) (nanoSeconds ^ (nanoSeconds >>> 32));
         return result;
     }
 
@@ -133,7 +140,7 @@ public class EventTime
             // |fixext8|type| 32bits integer BE | 32bits integer BE |
             // +-------+----+----+----+----+----+----+----+----+----+
             ByteBuffer buffer = ByteBuffer.allocate(8);
-            buffer.putInt(value.seconds).putInt(value.nanoSeconds);
+            buffer.putInt((int) value.seconds).putInt((int) value.nanoSeconds);
             messagePackGenerator.writeExtensionType(new MessagePackExtensionType((byte)0x0, buffer.array()));
         }
     }
