@@ -25,6 +25,7 @@ import org.msgpack.jackson.dataformat.MessagePackGenerator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @JsonSerialize(using = EventTime.Serializer.class)
 public class EventTime

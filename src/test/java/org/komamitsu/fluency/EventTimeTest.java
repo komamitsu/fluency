@@ -95,9 +95,16 @@ public class EventTimeTest
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
             assertThat(byteBuffer.get(), is((byte) 0xD7));
             assertThat(byteBuffer.get(), is((byte) 0x00));
-            assertThat(byteBuffer.getInt(), is(0xFFEEDDCC));
-            assertThat(byteBuffer.getInt(), is(0xFEDCBA98));
+
+            assertThat(byteBuffer.get(), is((byte) 0xFF));
+            assertThat(byteBuffer.get(), is((byte) 0xEE));
+            assertThat(byteBuffer.get(), is((byte) 0xDD));
+            assertThat(byteBuffer.get(), is((byte) 0xCC));
+
+            assertThat(byteBuffer.get(), is((byte) 0xFE));
+            assertThat(byteBuffer.get(), is((byte) 0xDC));
+            assertThat(byteBuffer.get(), is((byte) 0xBA));
+            assertThat(byteBuffer.get(), is((byte) 0x98));
         }
     }
-
 }
