@@ -46,22 +46,22 @@ public class EventTime
      * Constructs an <code>EventTime</code>.
      *
      * @param epochSeconds the epoch seconds. This should be a 32-bit value.
-     * @param nanoSeconds the nanoseconds. This should be a 32-bit value.
+     * @param nanoseconds the nanoseconds. This should be a 32-bit value.
      */
-    public static EventTime fromEpoch(long epochSeconds, long nanoSeconds)
+    public static EventTime fromEpoch(long epochSeconds, long nanoseconds)
     {
-        return new EventTime(epochSeconds, nanoSeconds);
+        return new EventTime(epochSeconds, nanoseconds);
     }
 
     /**
      * Constructs an <code>EventTime</code>.
      *
-     * @param epochMilliSecond the epoch milliseconds.
+     * @param epochMillisecond the epoch milli seconds.
      *        This should be a 32-bit value.
      */
-    public static EventTime fromEpochMilli(long epochMilliSecond)
+    public static EventTime fromEpochMilli(long epochMillisecond)
     {
-        return new EventTime(epochMilliSecond/ 1000, (epochMilliSecond % 1000) * 1000000);
+        return new EventTime(epochMillisecond/ 1000, (epochMillisecond % 1000) * 1000000);
     }
 
     /**
