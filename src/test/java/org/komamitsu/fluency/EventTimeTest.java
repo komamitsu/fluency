@@ -36,27 +36,27 @@ public class EventTimeTest
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpoch(now / 1000);
             assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoSeconds(), is(0L));
+            assertThat(eventTime.getNanoseconds(), is(0L));
         }
 
         {
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpoch(now / 1000, 999999999L);
             assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoSeconds(), is(999999999L));
+            assertThat(eventTime.getNanoseconds(), is(999999999L));
         }
 
         {
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpochMilli(now);
             assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoSeconds(), Matchers.is(now % 1000 * 1000000));
+            assertThat(eventTime.getNanoseconds(), Matchers.is(now % 1000 * 1000000));
         }
 
         {
             EventTime eventTime = EventTime.fromEpoch(0xFFFFFFFFL, 0xFFFFFFFFL);
             assertThat(eventTime.getSeconds(), is(0xFFFFFFFFL));
-            assertThat(eventTime.getNanoSeconds(), is(0xFFFFFFFFL));
+            assertThat(eventTime.getNanoseconds(), is(0xFFFFFFFFL));
         }
     }
 

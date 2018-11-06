@@ -25,41 +25,63 @@ import org.msgpack.jackson.dataformat.MessagePackGenerator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 @JsonSerialize(using = EventTime.Serializer.class)
 public class EventTime
 {
     private final long seconds;
-    private final long nanoSeconds;
+    private final long nanoseconds;
 
+    /**
+     * Constructs an <code>EventTime</code>.
+     *
+     * @param epochSeconds the epoch seconds. This should be a 32-bit value.
+     */
     public static EventTime fromEpoch(long epochSeconds)
     {
         return new EventTime(epochSeconds, 0);
     }
 
+    /**
+     * Constructs an <code>EventTime</code>.
+     *
+     * @param epochSeconds the epoch seconds. This should be a 32-bit value.
+     * @param nanoSeconds the nanoseconds. This should be a 32-bit value.
+     */
     public static EventTime fromEpoch(long epochSeconds, long nanoSeconds)
     {
         return new EventTime(epochSeconds, nanoSeconds);
     }
 
+    /**
+     * Constructs an <code>EventTime</code>.
+     *
+     * @param epochMilliSecond the epoch milliseconds.
+     *        This should be a 32-bit value.
+     */
     public static EventTime fromEpochMilli(long epochMilliSecond)
     {
         return new EventTime(epochMilliSecond/ 1000, (epochMilliSecond % 1000) * 1000000);
     }
 
-    public EventTime(long seconds, long nanoSeconds)
+    /**
+     * Constructs an <code>EventTime</code>.
+     *
+     * @param seconds the epoch seconds. This should be a 32-bit value.
+     * @param nanoseconds the nanoseconds. This should be a 32-bit value.
+     */
+    public EventTime(long seconds, long nanoseconds)
     {
         if (seconds >> 32 != 0) {
-            throw new IllegalArgumentException("`seconds` should be a uint32 value");
+            throw new IllegalArgumentException("`seconds` should be a 32-bit value");
         }
 
-        if (nanoSeconds >> 32 != 0) {
-            throw new IllegalArgumentException("`nanoSeconds` should be a uint32 value");
+        if (nanoseconds >> 32 != 0) {
+            throw new IllegalArgumentException("`nanoseconds` should be a 32-bit value");
         }
 
         this.seconds = seconds;
-        this.nanoSeconds = nanoSeconds;
+        this.nanoseconds = nanoseconds;
     }
 
     public long getSeconds()
@@ -67,9 +89,18 @@ public class EventTime
         return seconds;
     }
 
+    public long getNanoseconds()
+    {
+        return nanoseconds;
+    }
+
+    /**
+     * @deprecated  As of release 1.9, replaced by {@link #getNanoseconds()}
+     */
+    @Deprecated
     public long getNanoSeconds()
     {
-        return nanoSeconds;
+        return nanoseconds;
     }
 
     @Override
@@ -87,14 +118,14 @@ public class EventTime
         if (seconds != eventTime.seconds) {
             return false;
         }
-        return nanoSeconds == eventTime.nanoSeconds;
+        return nanoseconds == eventTime.nanoseconds;
     }
 
     @Override
     public int hashCode()
     {
         int result = (int) (seconds ^ (seconds >>> 32));
-        result = 31 * result + (int) (nanoSeconds ^ (nanoSeconds >>> 32));
+        result = 31 * result + (int) (nanoseconds ^ (nanoseconds >>> 32));
         return result;
     }
 
@@ -103,7 +134,7 @@ public class EventTime
     {
         return "EventTime{" +
                 "seconds=" + seconds +
-                ", nanoSeconds=" + nanoSeconds +
+                ", nanoseconds=" + nanoseconds +
                 '}';
     }
 
@@ -141,7 +172,7 @@ public class EventTime
             // |fixext8|type| 32bits integer BE | 32bits integer BE |
             // +-------+----+----+----+----+----+----+----+----+----+
             ByteBuffer buffer = ByteBuffer.allocate(8);
-            buffer.putInt((int) value.seconds).putInt((int) value.nanoSeconds);
+            buffer.putInt((int) value.seconds).putInt((int) value.nanoseconds);
             messagePackGenerator.writeExtensionType(new MessagePackExtensionType((byte)0x0, buffer.array()));
         }
     }

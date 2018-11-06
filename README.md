@@ -191,9 +191,9 @@ If you want to use [EventTime](https://github.com/fluent/fluentd/wiki/Forward-Pr
 
 ```java
 int epochSeconds;
-int nanoSeconds;
+int nanoseconds;
     :
-EventTime eventTime = EventTime.fromEpoch(epochSeconds, nanoSeconds);
+EventTime eventTime = EventTime.fromEpoch(epochSeconds, nanoseconds);
 
 // You can also create an EventTime object like this
 // EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
