@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.transporter.Transporter;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +39,9 @@ public class SyncFlusher
     private final AtomicLong lastFlushTimeMillis = new AtomicLong();
     private final Config config;
 
-    private SyncFlusher(Buffer buffer, Sender sender, Config config)
+    private SyncFlusher(Config config, Buffer buffer, Transporter transporter)
     {
-        super(buffer, sender, config.getBaseConfig());
+        super(config.getBaseConfig(), buffer, transporter);
         this.config = config;
         lastFlushTimeMillis.set(System.currentTimeMillis());
     }
@@ -54,7 +54,7 @@ public class SyncFlusher
         if (force ||
                 now > lastFlushTimeMillis.get() + config.getFlushIntervalMillis() ||
                 buffer.getBufferUsage() > config.getBufferOccupancyThreshold()) {
-            buffer.flush(sender, force);
+            buffer.flush(transporter, force);
             lastFlushTimeMillis.set(now);
         }
     }
@@ -172,9 +172,9 @@ public class SyncFlusher
         }
 
         @Override
-        public SyncFlusher createInstance(Buffer buffer, Sender sender)
+        public SyncFlusher createInstance(Buffer buffer, Transporter transporter)
         {
-            return new SyncFlusher(buffer, sender, this);
+            return new SyncFlusher(this, buffer, transporter);
         }
     }
 }

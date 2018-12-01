@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.FluencyConfig;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -157,7 +158,7 @@ public class WithRealFluentd
         Fluency fluency = Fluency.defaultFluency(
                 config.host,
                 config.port,
-                new Fluency.Config()
+                new FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
         );
 
@@ -196,7 +197,7 @@ public class WithRealFluentd
         */
         Fluency fluency = Fluency.defaultFluency(
                 Arrays.asList(new InetSocketAddress(config.host, config.port), new InetSocketAddress(config.host, config.anotherPort)),
-                new Fluency.Config().setSslEnabled(config.sslEnabled).setAckResponseMode(true));
+                new FluencyConfig().setSslEnabled(config.sslEnabled).setAckResponseMode(true));
 
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("name", "komamitsu");
@@ -227,7 +228,7 @@ public class WithRealFluentd
         Fluency fluency = Fluency.defaultFluency(
                 config.host,
                 config.port,
-                new Fluency.Config()
+                new FluencyConfig()
                         // Fluency might use a lot of buffer for loaded backup files.
                         // So it'd better increase max buffer size
                         .setSslEnabled(config.sslEnabled)

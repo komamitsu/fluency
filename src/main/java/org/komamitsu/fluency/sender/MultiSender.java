@@ -25,16 +25,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MultiSender
-        extends Sender
+public class MultiSender<T extends Sender>
+        extends Sender<T>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
-    private final List<Sender> senders = new ArrayList<Sender>();
+    private final List<Sender> senders = new ArrayList<>();
 
     protected MultiSender(Config config)
     {
         super(config.getBaseConfig());
-        for (Instantiator senderConfig : config.getSenderConfigs()) {
+        for (Instantiator<T> senderConfig : config.getSenderConfigs()) {
             senders.add(senderConfig.createInstance());
         }
     }
@@ -112,11 +112,11 @@ public class MultiSender
                 "} " + super.toString();
     }
 
-    public static class Config
+    public static class Config<T extends Sender>
             implements Instantiator
     {
         private final Sender.Config baseConfig = new Sender.Config();
-        private final List<Instantiator> senderConfigs;
+        private final List<Instantiator<T>> senderConfigs;
 
         public Sender.Config getBaseConfig()
         {
@@ -134,12 +134,12 @@ public class MultiSender
             return this;
         }
 
-        public Config(List<Instantiator> senderConfigs)
+        public Config(List<Instantiator<T>> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
         }
 
-        public List<Instantiator> getSenderConfigs()
+        public List<Instantiator<T>> getSenderConfigs()
         {
             return senderConfigs;
         }
@@ -153,9 +153,9 @@ public class MultiSender
         }
 
         @Override
-        public MultiSender createInstance()
+        public MultiSender<T> createInstance()
         {
-            return new MultiSender(this);
+            return new MultiSender<T>(this);
         }
     }
 }

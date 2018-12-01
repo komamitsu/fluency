@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RetryableSender
-        extends Sender
+public class RetryableSender<T extends Sender>
+        extends Sender<T>
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;

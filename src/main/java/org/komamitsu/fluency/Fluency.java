@@ -17,11 +17,9 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.sender.SSLSender;
-import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.Sender;
@@ -50,17 +48,17 @@ public class Fluency
     private final Flusher flusher;
     private final Emitter emitter = new Emitter();
 
-    public static Fluency defaultFluency(String host, int port, Config config)
+    public static Fluency defaultFluency(String host, int port, FluencyConfig config)
     {
         return buildDefaultFluency(createBaseSenderConfig(config, host, port), config);
     }
 
-    private static Sender.Instantiator createBaseSenderConfig(Config config, String host, Integer port)
+    private static Sender.Instantiator createBaseSenderConfig(FluencyConfig config, String host, Integer port)
     {
         return createBaseSenderConfig(config, host, port, false);
     }
 
-    private static Sender.Instantiator createBaseSenderConfig(Config config, String host, Integer port, boolean withHeartBeater)
+    private static Sender.Instantiator createBaseSenderConfig(FluencyConfig config, String host, Integer port, boolean withHeartBeater)
     {
         if (withHeartBeater && port == null) {
             throw new IllegalArgumentException("`port` should be specified when using heartbeat");
@@ -100,7 +98,7 @@ public class Fluency
         }
     }
 
-    private static Fluency buildDefaultFluency(Sender.Instantiator baseSenderConfig, Config config)
+    private static Fluency buildDefaultFluency(Sender.Instantiator baseSenderConfig, FluencyConfig config)
     {
         PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
@@ -163,17 +161,17 @@ public class Fluency
                 .build();
     }
 
-    public static Fluency defaultFluency(int port, Config config)
+    public static Fluency defaultFluency(int port, FluencyConfig config)
     {
         return buildDefaultFluency(createBaseSenderConfig(config, null, port), config);
     }
 
-    public static Fluency defaultFluency(Config config)
+    public static Fluency defaultFluency(FluencyConfig config)
     {
         return buildDefaultFluency(createBaseSenderConfig(config, null, null), config);
     }
 
-    public static Fluency defaultFluency(List<InetSocketAddress> servers, Config config)
+    public static Fluency defaultFluency(List<InetSocketAddress> servers, FluencyConfig config)
     {
         List<Sender.Instantiator> senderConfigs = new ArrayList<Sender.Instantiator>();
         for (InetSocketAddress server : servers) {
@@ -202,7 +200,7 @@ public class Fluency
         return defaultFluency(servers, null);
     }
 
-    private Fluency(Buffer buffer, Flusher flusher)
+    Fluency(Buffer buffer, Flusher flusher)
     {
         this.buffer = buffer;
         this.flusher = flusher;
@@ -449,184 +447,6 @@ public class Fluency
             Flusher flusher = flusherConfig.createInstance(buffer, sender);
 
             return new Fluency(buffer, flusher);
-        }
-    }
-
-    public static class Config
-    {
-        private Long maxBufferSize;
-
-        private Integer bufferChunkInitialSize;
-
-        private Integer bufferChunkRetentionSize;
-
-        private Integer flushIntervalMillis;
-
-        private Integer senderMaxRetryCount;
-
-        private boolean ackResponseMode;
-
-        private String fileBackupDir;
-
-        private Integer waitUntilBufferFlushed;
-
-        private Integer waitUntilFlusherTerminated;
-
-        private Boolean jvmHeapBufferMode;
-
-        private SenderErrorHandler senderErrorHandler;
-
-        private boolean sslEnabled;
-
-        public Long getMaxBufferSize()
-        {
-            return maxBufferSize;
-        }
-
-        public Config setMaxBufferSize(Long maxBufferSize)
-        {
-            this.maxBufferSize = maxBufferSize;
-            return this;
-        }
-
-        public Integer getBufferChunkInitialSize()
-        {
-            return bufferChunkInitialSize;
-        }
-
-        public Config setBufferChunkInitialSize(Integer bufferChunkInitialSize)
-        {
-            this.bufferChunkInitialSize = bufferChunkInitialSize;
-            return this;
-        }
-
-        public Integer getBufferChunkRetentionSize()
-        {
-            return bufferChunkRetentionSize;
-        }
-
-        public Config setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
-        {
-            this.bufferChunkRetentionSize = bufferChunkRetentionSize;
-            return this;
-        }
-
-        public Integer getFlushIntervalMillis()
-        {
-            return flushIntervalMillis;
-        }
-
-        public Config setFlushIntervalMillis(Integer flushIntervalMillis)
-        {
-            this.flushIntervalMillis = flushIntervalMillis;
-            return this;
-        }
-
-        public Integer getSenderMaxRetryCount()
-        {
-            return senderMaxRetryCount;
-        }
-
-        public Config setSenderMaxRetryCount(Integer senderMaxRetryCount)
-        {
-            this.senderMaxRetryCount = senderMaxRetryCount;
-            return this;
-        }
-
-        public boolean isAckResponseMode()
-        {
-            return ackResponseMode;
-        }
-
-        public Config setAckResponseMode(boolean ackResponseMode)
-        {
-            this.ackResponseMode = ackResponseMode;
-            return this;
-        }
-
-        public String getFileBackupDir()
-        {
-            return fileBackupDir;
-        }
-
-        public Config setFileBackupDir(String fileBackupDir)
-        {
-            this.fileBackupDir = fileBackupDir;
-            return this;
-        }
-
-        public Integer getWaitUntilBufferFlushed()
-        {
-            return waitUntilBufferFlushed;
-        }
-
-        public Config setWaitUntilBufferFlushed(Integer wait)
-        {
-            this.waitUntilBufferFlushed = wait;
-            return this;
-        }
-
-        public Integer getWaitUntilFlusherTerminated()
-        {
-            return waitUntilFlusherTerminated;
-        }
-
-        public Config setWaitUntilFlusherTerminated(Integer wait)
-        {
-            this.waitUntilFlusherTerminated = wait;
-            return this;
-        }
-
-        public Boolean getJvmHeapBufferMode()
-        {
-            return jvmHeapBufferMode;
-        }
-
-        public Config setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
-        {
-            this.jvmHeapBufferMode = jvmHeapBufferMode;
-            return this;
-        }
-
-        public SenderErrorHandler getSenderErrorHandler()
-        {
-            return senderErrorHandler;
-        }
-
-        public Config setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
-        {
-            this.senderErrorHandler = senderErrorHandler;
-            return this;
-        }
-
-        public boolean isSslEnabled()
-        {
-            return sslEnabled;
-        }
-
-        public Config setSslEnabled(boolean sslEnabled)
-        {
-            this.sslEnabled = sslEnabled;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "maxBufferSize=" + maxBufferSize +
-                    ", bufferChunkInitialSize=" + bufferChunkInitialSize +
-                    ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
-                    ", flushIntervalMillis=" + flushIntervalMillis +
-                    ", senderMaxRetryCount=" + senderMaxRetryCount +
-                    ", ackResponseMode=" + ackResponseMode +
-                    ", fileBackupDir='" + fileBackupDir + '\'' +
-                    ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
-                    ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
-                    ", jvmHeapBufferMode=" + jvmHeapBufferMode +
-                    ", senderErrorHandler=" + senderErrorHandler +
-                    ", sslEnabled =" + sslEnabled +
-                    '}';
         }
     }
 }

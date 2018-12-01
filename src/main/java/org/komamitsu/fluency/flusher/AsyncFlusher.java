@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.transporter.Transporter;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class AsyncFlusher
                     try {
                         wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                         boolean force = wakeup != null;
-                        buffer.flush(sender, force);
+                        buffer.flush(transporter, force);
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -62,7 +62,7 @@ public class AsyncFlusher
                     // In these cases, remaining buffers wont't be flushed.
                     // So force buffer flush is executed here just in case
                     try {
-                        buffer.flush(sender, true);
+                        buffer.flush(transporter, true);
                     }
                     catch (IOException e) {
                         LOG.error("Failed to flush", e);
@@ -71,9 +71,9 @@ public class AsyncFlusher
             }
         };
 
-    private AsyncFlusher(final Buffer buffer, final Sender sender, final Config config)
+    private AsyncFlusher(final Config config, final Buffer buffer, final Transporter transporter)
     {
-        super(buffer, sender, config.getBaseConfig());
+        super(config.getBaseConfig(), buffer, transporter);
         this.config = config;
         executorService.execute(task);
     }
@@ -169,9 +169,9 @@ public class AsyncFlusher
         }
 
         @Override
-        public AsyncFlusher createInstance(Buffer buffer, Sender sender)
+        public AsyncFlusher createInstance(Buffer buffer, Transporter transporter)
         {
-            return new AsyncFlusher(buffer, sender, this);
+            return new AsyncFlusher(this, buffer, transporter);
         }
     }
 }

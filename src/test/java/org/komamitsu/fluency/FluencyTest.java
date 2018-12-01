@@ -34,7 +34,7 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.NetworkSender;
+import org.komamitsu.fluency.sender.FluentdSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
@@ -116,7 +116,7 @@ public class FluencyTest
         assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
     }
 
-    private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends NetworkSender> expectedBaseClass)
+    private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends FluentdSender> expectedBaseClass)
     {
         assertThat(sender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
         ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) sender.getRetryStrategy();
@@ -125,19 +125,19 @@ public class FluencyTest
         assertThat(sender.getBaseSender(), instanceOf(expectedBaseClass));
     }
 
-    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
+    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends FluentdSender> expectedBaseClass)
     {
         assertThat(sender, instanceOf(RetryableSender.class));
         RetryableSender retryableSender = (RetryableSender) sender;
         assertDefaultRetryableSender(retryableSender, expectedBaseClass);
 
-        NetworkSender networkSender = (NetworkSender) retryableSender.getBaseSender();
-        assertThat(networkSender.getHost(), is(expectedHost));
-        assertThat(networkSender.getPort(), is(expectedPort));
-        assertThat(networkSender.getConnectionTimeoutMilli(), is(5000));
-        assertThat(networkSender.getReadTimeoutMilli(), is(5000));
+        FluentdSender fluentdSender = (FluentdSender) retryableSender.getBaseSender();
+        assertThat(fluentdSender.getHost(), is(expectedHost));
+        assertThat(fluentdSender.getPort(), is(expectedPort));
+        assertThat(fluentdSender.getConnectionTimeoutMilli(), is(5000));
+        assertThat(fluentdSender.getReadTimeoutMilli(), is(5000));
 
-        FailureDetector failureDetector = networkSender.getFailureDetector();
+        FailureDetector failureDetector = fluentdSender.getFailureDetector();
         assertThat(failureDetector, is(nullValue()));
     }
 
@@ -201,7 +201,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(new Fluency.Config().setSslEnabled(true));
+            fluency = Fluency.defaultFluency(new FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, SSLSender.class);
@@ -219,7 +219,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(54321, new Fluency.Config().setSslEnabled(true));
+            fluency = Fluency.defaultFluency(54321, new FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, SSLSender.class);
@@ -237,7 +237,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency("192.168.0.99", 54321, new Fluency.Config().setSslEnabled(true));
+            fluency = Fluency.defaultFluency("192.168.0.99", 54321, new FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, SSLSender.class);
@@ -258,8 +258,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            Fluency.Config config =
-                    new Fluency.Config()
+            FluencyConfig config =
+                    new FluencyConfig()
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
                             .setBufferChunkInitialSize(7 * 1024 * 1024)
@@ -356,8 +356,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            Fluency.Config config =
-                    new Fluency.Config()
+            FluencyConfig config =
+                    new FluencyConfig()
                             .setSslEnabled(true)
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
@@ -541,7 +541,7 @@ public class FluencyTest
         final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
 
         Fluency fluency = Fluency.defaultFluency(Integer.MAX_VALUE,
-                new Fluency.Config()
+                new FluencyConfig()
                         .setSenderMaxRetryCount(1)
                         .setSenderErrorHandler(new SenderErrorHandler()
                         {
@@ -592,7 +592,7 @@ public class FluencyTest
                     {
                         Fluency fluency =
                                 Fluency.defaultFluency(serverPort,
-                                        new Fluency.Config().setSslEnabled(sslEnabled));
+                                        new FluencyConfig().setSslEnabled(sslEnabled));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -629,7 +629,7 @@ public class FluencyTest
                     {
                         Fluency fluency =
                                 Fluency.defaultFluency(serverPort,
-                                        new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                                        new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -673,7 +673,7 @@ public class FluencyTest
                     {
                         Fluency fluency =
                                 Fluency.defaultFluency(serverPort,
-                                        new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                                        new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }
@@ -717,7 +717,7 @@ public class FluencyTest
                             throws Exception
                     {
                         Fluency fluency = Fluency.defaultFluency(serverPort,
-                                new Fluency.Config().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                                new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                         fluency.emit("foo.bar", new HashMap<String, Object>());
                         fluency.close();
                     }

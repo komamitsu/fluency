@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends NetworkSender<SocketChannel>
+    extends FluentdSender<SocketChannel>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
@@ -91,9 +91,9 @@ public class TCPSender
     public static class Config
             implements Instantiator
     {
-        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
+        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
 
-        public NetworkSender.Config getBaseConfig()
+        public FluentdSender.Config getBaseConfig()
         {
             return baseConfig;
         }

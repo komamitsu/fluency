@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-    extends NetworkSender<SSLSocket>
+    extends FluentdSender<SSLSocket>
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
     private final SSLSocketBuilder socketBuilder;
@@ -105,9 +105,9 @@ public class SSLSender
     public static class Config
             implements Instantiator
     {
-        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
+        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
 
-        public NetworkSender.Config getBaseConfig()
+        public FluentdSender.Config getBaseConfig()
         {
             return baseConfig;
         }

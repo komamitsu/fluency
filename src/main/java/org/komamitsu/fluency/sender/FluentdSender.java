@@ -41,10 +41,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class NetworkSender<T>
-    extends Sender
+public abstract class FluentdSender<T>
+    extends Sender<FluentdSender<T>>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FluentdSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final byte[] optionBuffer = new byte[256];
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -52,7 +52,7 @@ public abstract class NetworkSender<T>
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    NetworkSender(Config config)
+    FluentdSender(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;

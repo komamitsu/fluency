@@ -12,8 +12,8 @@ group = 'org.komamitsu'
 archivesBaseName = 'fluency'
 version = '1.9.0-SNAPSHOT'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
 def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
