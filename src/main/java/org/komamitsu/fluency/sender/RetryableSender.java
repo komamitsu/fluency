@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetryableSender<T extends Sender>
-        extends Sender<T>
+        extends Sender<RetryableSender<T>>
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;
@@ -130,7 +130,7 @@ public class RetryableSender<T extends Sender>
     }
 
     public static class Config
-            implements Instantiator
+            implements Instantiator<RetryableSender<? extends Sender>>
     {
         private final Sender.Config baseConfig = new Sender.Config();
         private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
@@ -185,9 +185,9 @@ public class RetryableSender<T extends Sender>
         }
 
         @Override
-        public RetryableSender createInstance()
+        public RetryableSender<? extends Sender> createInstance()
         {
-            return new RetryableSender(this);
+            return new RetryableSender<>(this);
         }
     }
 }

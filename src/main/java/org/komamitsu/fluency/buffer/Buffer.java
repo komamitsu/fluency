@@ -368,10 +368,6 @@ public class Buffer
         }
     }
 
-    public String bufferFormatType() {
-        return bufferFormatter.formatTypeName();
-    }
-
     public void flushInternal(Transporter transporter, boolean force)
             throws IOException
     {

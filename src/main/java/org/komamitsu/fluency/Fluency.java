@@ -33,10 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -47,158 +44,6 @@ public class Fluency
     private final Buffer buffer;
     private final Flusher flusher;
     private final Emitter emitter = new Emitter();
-
-    public static Fluency defaultFluency(String host, int port, FluencyConfig config)
-    {
-        return buildDefaultFluency(createBaseSenderConfig(config, host, port), config);
-    }
-
-    private static Sender.Instantiator createBaseSenderConfig(FluencyConfig config, String host, Integer port)
-    {
-        return createBaseSenderConfig(config, host, port, false);
-    }
-
-    private static Sender.Instantiator createBaseSenderConfig(FluencyConfig config, String host, Integer port, boolean withHeartBeater)
-    {
-        if (withHeartBeater && port == null) {
-            throw new IllegalArgumentException("`port` should be specified when using heartbeat");
-        }
-
-        if (config != null && config.sslEnabled) {
-            SSLSender.Config senderConfig = new SSLSender.Config();
-            if (host != null) {
-                senderConfig.setHost(host);
-            }
-            if (port != null) {
-                senderConfig.setPort(port);
-            }
-            if (withHeartBeater) {
-                senderConfig.setHeartbeaterConfig(
-                        new SSLHeartbeater.Config()
-                                .setHost(host)
-                                .setPort(port));
-            }
-            return senderConfig;
-        }
-        else {
-            TCPSender.Config senderConfig = new TCPSender.Config();
-            if (host != null) {
-                senderConfig.setHost(host);
-            }
-            if (port != null) {
-                senderConfig.setPort(port);
-            }
-            if (withHeartBeater) {
-                senderConfig.setHeartbeaterConfig(
-                        new TCPHeartbeater.Config()
-                                .setHost(host)
-                                .setPort(port));
-            }
-            return senderConfig;
-        }
-    }
-
-    private static Fluency buildDefaultFluency(Sender.Instantiator baseSenderConfig, FluencyConfig config)
-    {
-        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
-
-        if (config != null) {
-            if (config.getMaxBufferSize() != null) {
-                bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
-            }
-
-            if (config.getBufferChunkInitialSize() != null) {
-                bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
-            }
-
-            if (config.getBufferChunkRetentionSize() != null) {
-                bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
-            }
-
-            bufferConfig.setAckResponseMode(config.isAckResponseMode());
-
-            if (config.getFileBackupDir() != null) {
-                bufferConfig.setFileBackupDir(config.getFileBackupDir());
-            }
-
-            if (config.getJvmHeapBufferMode() != null) {
-                bufferConfig.setJvmHeapBufferMode(config.jvmHeapBufferMode);
-            }
-
-            if (config.getFlushIntervalMillis() != null) {
-                flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
-            }
-
-            if (config.getWaitUntilBufferFlushed() != null) {
-                flusherConfig.setWaitUntilBufferFlushed(config.getWaitUntilBufferFlushed());
-            }
-
-            if (config.getWaitUntilFlusherTerminated() != null) {
-                flusherConfig.setWaitUntilTerminated(config.getWaitUntilFlusherTerminated());
-            }
-
-            if (config.getSenderMaxRetryCount() != null) {
-                retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
-            }
-        }
-
-        RetryableSender.Config senderConfig = new RetryableSender.Config(baseSenderConfig)
-                .setRetryStrategyConfig(retryStrategyConfig);
-
-        if (config != null) {
-            if (config.getSenderErrorHandler() != null) {
-                senderConfig.setSenderErrorHandler(config.getSenderErrorHandler());
-            }
-        }
-
-        RetryableSender retryableSender = senderConfig.createInstance();
-
-        return new Fluency.Builder(retryableSender)
-                .setBufferConfig(bufferConfig)
-                .setFlusherConfig(flusherConfig)
-                .build();
-    }
-
-    public static Fluency defaultFluency(int port, FluencyConfig config)
-    {
-        return buildDefaultFluency(createBaseSenderConfig(config, null, port), config);
-    }
-
-    public static Fluency defaultFluency(FluencyConfig config)
-    {
-        return buildDefaultFluency(createBaseSenderConfig(config, null, null), config);
-    }
-
-    public static Fluency defaultFluency(List<InetSocketAddress> servers, FluencyConfig config)
-    {
-        List<Sender.Instantiator> senderConfigs = new ArrayList<Sender.Instantiator>();
-        for (InetSocketAddress server : servers) {
-            senderConfigs.add(createBaseSenderConfig(config, server.getHostName(), server.getPort(), true));
-        }
-        return buildDefaultFluency(new MultiSender.Config(senderConfigs), config);
-    }
-
-    public static Fluency defaultFluency(String host, int port)
-    {
-        return defaultFluency(host, port, null);
-    }
-
-    public static Fluency defaultFluency(int port)
-    {
-        return defaultFluency(port, null);
-    }
-
-    public static Fluency defaultFluency()
-    {
-        return buildDefaultFluency(createBaseSenderConfig(null, null, null), null);
-    }
-
-    public static Fluency defaultFluency(List<InetSocketAddress> servers)
-    {
-        return defaultFluency(servers, null);
-    }
 
     Fluency(Buffer buffer, Flusher flusher)
     {
@@ -232,15 +77,7 @@ public class Fluency
     public void emit(final String tag, final long timestamp, final Map<String, Object> data)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.append(tag, timestamp, data);
-            }
-        });
+        emitter.emit(() -> buffer.append(tag, timestamp, data));
     }
 
     public void emit(String tag, Map<String, Object> data)
@@ -252,29 +89,13 @@ public class Fluency
     public void emit(final String tag, final EventTime eventTime, final Map<String, Object> data)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.append(tag, eventTime, data);
-            }
-        });
+        emitter.emit(() -> buffer.append(tag, eventTime, data));
     }
 
     public void emit(final String tag, final long timestamp, final byte[] mapValue, final int offset, final int len)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.appendMessagePackMapValue(tag, timestamp, mapValue, offset, len);
-            }
-        });
+        emitter.emit(() -> buffer.appendMessagePackMapValue(tag, timestamp, mapValue, offset, len));
     }
 
     public void emit(String tag, byte[] mapValue, int offset, int len)
@@ -286,29 +107,13 @@ public class Fluency
     public void emit(final String tag, final EventTime eventTime, final byte[] mapValue, final int offset, final int len)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.appendMessagePackMapValue(tag, eventTime, mapValue, offset, len);
-            }
-        });
+        emitter.emit(() -> buffer.appendMessagePackMapValue(tag, eventTime, mapValue, offset, len));
     }
 
     public void emit(final String tag, final long timestamp, final ByteBuffer mapValue)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.appendMessagePackMapValue(tag, timestamp, mapValue);
-            }
-        });
+        emitter.emit(() -> buffer.appendMessagePackMapValue(tag, timestamp, mapValue));
     }
 
     public void emit(String tag, ByteBuffer mapValue)
@@ -320,15 +125,7 @@ public class Fluency
     public void emit(final String tag, final EventTime eventTime, final ByteBuffer mapValue)
             throws IOException
     {
-        emitter.emit(new Append()
-        {
-            @Override
-            public void append()
-                    throws IOException
-            {
-                buffer.appendMessagePackMapValue(tag, eventTime, mapValue);
-            }
-        });
+        emitter.emit(() -> buffer.appendMessagePackMapValue(tag, eventTime, mapValue));
     }
 
     @Override
@@ -414,39 +211,5 @@ public class Fluency
                 "buffer=" + buffer +
                 ", flusher=" + flusher +
                 '}';
-    }
-
-    public static class Builder
-    {
-        private final Sender sender;
-        private Buffer.Instantiator bufferConfig;
-        private Flusher.Instantiator flusherConfig;
-
-        public Builder(Sender sender)
-        {
-            this.sender = sender;
-        }
-
-        public Builder setBufferConfig(Buffer.Instantiator bufferConfig)
-        {
-            this.bufferConfig = bufferConfig;
-            return this;
-        }
-
-        public Builder setFlusherConfig(Flusher.Instantiator flusherConfig)
-        {
-            this.flusherConfig = flusherConfig;
-            return this;
-        }
-
-        public Fluency build()
-        {
-            Buffer.Instantiator bufferConfig = this.bufferConfig != null ? this.bufferConfig : new PackedForwardBuffer.Config();
-            Buffer buffer = bufferConfig.createInstance();
-            Flusher.Instantiator flusherConfig = this.flusherConfig != null ? this.flusherConfig : new AsyncFlusher.Config();
-            Flusher flusher = flusherConfig.createInstance(buffer, sender);
-
-            return new Fluency(buffer, flusher);
-        }
     }
 }

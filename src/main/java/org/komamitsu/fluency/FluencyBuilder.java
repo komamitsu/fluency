@@ -73,7 +73,7 @@ public class FluencyBuilder
 
         public static Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
         {
-            List<Sender.Instantiator> senderConfigs = new ArrayList<Sender.Instantiator>();
+            List<Sender.Instantiator<? extends Sender>> senderConfigs = new ArrayList<>();
             for (InetSocketAddress server : servers) {
                 senderConfigs.add(createBaseSenderConfig(config, server.getHostName(), server.getPort(), true));
             }
@@ -100,7 +100,7 @@ public class FluencyBuilder
             return build(servers, null);
         }
 
-        private static Sender.Instantiator<FluentdSender> createBaseSenderConfig(
+        private static Sender.Instantiator<? extends Sender> createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port)
@@ -108,7 +108,7 @@ public class FluencyBuilder
             return createBaseSenderConfig(config, host, port, false);
         }
 
-        private static Sender.Instantiator<FluentdSender> createBaseSenderConfig(
+        private static Sender.Instantiator<? extends FluentdSender> createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port,
@@ -153,7 +153,7 @@ public class FluencyBuilder
         }
 
         private static Fluency buildInternal(
-                Sender.Instantiator<FluentdSender> baseSenderConfig,
+                Sender.Instantiator<? extends Sender> baseSenderConfig,
                 FluencyConfig config)
         {
             Buffer.Config bufferConfig = new Buffer.Config();

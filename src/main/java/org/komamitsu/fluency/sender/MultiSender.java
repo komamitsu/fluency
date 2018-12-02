@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class MultiSender<T extends Sender>
-        extends Sender<T>
+        extends Sender<MultiSender<T>>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     private final List<Sender> senders = new ArrayList<>();
@@ -34,7 +34,7 @@ public class MultiSender<T extends Sender>
     protected MultiSender(Config config)
     {
         super(config.getBaseConfig());
-        for (Instantiator<T> senderConfig : config.getSenderConfigs()) {
+        for (Instantiator<? extends Sender> senderConfig : config.getSenderConfigs()) {
             senders.add(senderConfig.createInstance());
         }
     }
@@ -112,11 +112,11 @@ public class MultiSender<T extends Sender>
                 "} " + super.toString();
     }
 
-    public static class Config<T extends Sender>
-            implements Instantiator
+    public static class Config
+            implements Instantiator<MultiSender<? extends Sender>>
     {
         private final Sender.Config baseConfig = new Sender.Config();
-        private final List<Instantiator<T>> senderConfigs;
+        private final List<Instantiator<? extends Sender>> senderConfigs;
 
         public Sender.Config getBaseConfig()
         {
@@ -134,12 +134,12 @@ public class MultiSender<T extends Sender>
             return this;
         }
 
-        public Config(List<Instantiator<T>> senderConfigs)
+        public Config(List<Instantiator<? extends Sender>> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
         }
 
-        public List<Instantiator<T>> getSenderConfigs()
+        public List<Instantiator<? extends Sender>> getSenderConfigs()
         {
             return senderConfigs;
         }
@@ -153,9 +153,9 @@ public class MultiSender<T extends Sender>
         }
 
         @Override
-        public MultiSender<T> createInstance()
+        public MultiSender<? extends Sender> createInstance()
         {
-            return new MultiSender<T>(this);
+            return new MultiSender<>(this);
         }
     }
 }

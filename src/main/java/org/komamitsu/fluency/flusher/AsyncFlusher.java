@@ -36,40 +36,36 @@ public class AsyncFlusher
     private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<Boolean>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
-    private final Runnable task = new Runnable() {
-            @Override
-            public void run()
-            {
-                Boolean wakeup = null;
-                do {
-                    try {
-                        wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
-                        boolean force = wakeup != null;
-                        buffer.flush(transporter, force);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    catch (IOException e) {
-                        LOG.error("Failed to flush", e);
-                    }
-                } while (!executorService.isShutdown());
-
-                if (wakeup == null) {
-                    // The above run loop can quit without force buffer flush in the following cases
-                    // - close() is called right after the repeated non-force buffer flush executed in the run loop
-                    //
-                    // In these cases, remaining buffers wont't be flushed.
-                    // So force buffer flush is executed here just in case
-                    try {
-                        buffer.flush(transporter, true);
-                    }
-                    catch (IOException e) {
-                        LOG.error("Failed to flush", e);
-                    }
-                }
+    private final Runnable task = () -> {
+        Boolean wakeup = null;
+        do {
+            try {
+                wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                boolean force = wakeup != null;
+                buffer.flush(transporter, force);
             }
-        };
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            catch (IOException e) {
+                LOG.error("Failed to flush", e);
+            }
+        } while (!executorService.isShutdown());
+
+        if (wakeup == null) {
+            // The above run loop can quit without force buffer flush in the following cases
+            // - close() is called right after the repeated non-force buffer flush executed in the run loop
+            //
+            // In these cases, remaining buffers wont't be flushed.
+            // So force buffer flush is executed here just in case
+            try {
+                buffer.flush(transporter, true);
+            }
+            catch (IOException e) {
+                LOG.error("Failed to flush", e);
+            }
+        }
+    };
 
     private AsyncFlusher(final Config config, final Buffer buffer, final Transporter transporter)
     {
