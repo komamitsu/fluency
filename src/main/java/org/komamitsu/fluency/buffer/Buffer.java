@@ -467,6 +467,12 @@ public class Buffer
         return bufferPool.getJvmHeapBufferMode();
     }
 
+    public String bufferFormatType()
+    {
+        // To keep backward compatibility
+        return "packed_forward";
+    }
+
     private static class RetentionBuffer
     {
         private final AtomicLong createdTimeMillis = new AtomicLong();
