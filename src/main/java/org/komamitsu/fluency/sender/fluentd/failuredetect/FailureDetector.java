@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.failuredetect;
+package org.komamitsu.fluency.sender.fluentd.failuredetect;
 
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.Heartbeater;
 
 import java.io.Closeable;
 import java.io.IOException;

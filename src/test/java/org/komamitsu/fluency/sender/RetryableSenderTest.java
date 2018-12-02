@@ -18,7 +18,7 @@ package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
 import org.komamitsu.fluency.StubSender;
-import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

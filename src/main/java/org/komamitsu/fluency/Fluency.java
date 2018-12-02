@@ -17,16 +17,7 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.sender.SSLSender;
-import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.RetryableSender;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

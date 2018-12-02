@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.retry;
+package org.komamitsu.fluency.sender.fluentd.retry;
 
-public class ConstantRetryStrategy
+public class ExponentialBackOffRetryStrategy
     extends RetryStrategy
 {
     private final Config config;
 
-    protected ConstantRetryStrategy(Config config)
+    protected ExponentialBackOffRetryStrategy(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;
@@ -30,22 +30,37 @@ public class ConstantRetryStrategy
     @Override
     public int getNextIntervalMillis(int retryCount)
     {
-        return config.getRetryIntervalMillis();
+        int interval = config.getBaseIntervalMillis() * ((int) Math.pow(2.0, (double) retryCount));
+        if (interval > config.getMaxIntervalMillis()) {
+            return config.getMaxIntervalMillis();
+        }
+        return interval;
+    }
+
+    public int getBaseIntervalMillis()
+    {
+        return config.getBaseIntervalMillis();
+    }
+
+    public int getMaxIntervalMillis()
+    {
+        return config.getMaxIntervalMillis();
     }
 
     @Override
     public String toString()
     {
-        return "ConstantRetryStrategy{" +
+        return "ExponentialBackOffRetryStrategy{" +
                 "config=" + config +
                 "} " + super.toString();
     }
 
     public static class Config
-        implements Instantiator
+            implements Instantiator
     {
         private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
-        private int retryIntervalMillis = 2000;
+        private int baseIntervalMillis = 400;
+        private int maxIntervalMillis = 30 * 1000;
 
         public RetryStrategy.Config getBaseConfig()
         {
@@ -63,14 +78,25 @@ public class ConstantRetryStrategy
             return this;
         }
 
-        public int getRetryIntervalMillis()
+        public int getBaseIntervalMillis()
         {
-            return retryIntervalMillis;
+            return baseIntervalMillis;
         }
 
-        public Config setRetryIntervalMillis(int retryIntervalMillis)
+        public Config setBaseIntervalMillis(int baseIntervalMillis)
         {
-            this.retryIntervalMillis = retryIntervalMillis;
+            this.baseIntervalMillis = baseIntervalMillis;
+            return this;
+        }
+
+        public int getMaxIntervalMillis()
+        {
+            return maxIntervalMillis;
+        }
+
+        public Config setMaxIntervalMillis(int maxIntervalMillis)
+        {
+            this.maxIntervalMillis = maxIntervalMillis;
             return this;
         }
 
@@ -79,14 +105,15 @@ public class ConstantRetryStrategy
         {
             return "Config{" +
                     "baseConfig=" + baseConfig +
-                    ", retryIntervalMillis=" + retryIntervalMillis +
+                    ", baseIntervalMillis=" + baseIntervalMillis +
+                    ", maxIntervalMillis=" + maxIntervalMillis +
                     '}';
         }
 
         @Override
-        public ConstantRetryStrategy createInstance()
+        public ExponentialBackOffRetryStrategy createInstance()
         {
-            return new ConstantRetryStrategy(this);
+            return new ExponentialBackOffRetryStrategy(this);
         }
     }
 }

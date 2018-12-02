@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;

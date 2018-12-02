@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.transporter;
+package org.komamitsu.fluency.sender.fluentd.failuredetect;
 
-import org.komamitsu.fluency.sender.Sender;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-public interface Transporter
-    extends Closeable
+public abstract class FailureDetectStrategy
 {
-    void transport(String tag, ByteBuffer dataBuffer)
-            throws IOException;
+    protected final Config config;
 
-    public interface Config
-    {}
-
-    public interface Instantiator<T extends Sender>
+    protected FailureDetectStrategy(Config config)
     {
-        Transporter createInstance(T sender);
+        this.config = config;
+    }
+
+    public abstract void heartbeat(long now);
+
+    public abstract boolean isAvailable();
+
+    public static class Config
+    {
+    }
+
+    public interface Instantiator
+    {
+        FailureDetectStrategy createInstance();
     }
 }

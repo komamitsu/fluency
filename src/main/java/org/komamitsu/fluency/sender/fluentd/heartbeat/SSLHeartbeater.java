@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.heartbeat;
+package org.komamitsu.fluency.sender.fluentd.heartbeat;
 
-import org.komamitsu.fluency.sender.SSLSocketBuilder;
+import org.komamitsu.fluency.sender.fluentd.SSLSocketBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.failuredetect;
+package org.komamitsu.fluency.sender.fluentd.failuredetect;
 
 import org.junit.Test;
-import org.komamitsu.failuredetector.PhiAccuralFailureDetector;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

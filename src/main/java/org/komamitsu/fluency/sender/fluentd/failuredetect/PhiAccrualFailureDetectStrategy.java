@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.failuredetect;
+package org.komamitsu.fluency.sender.fluentd.failuredetect;
 
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector;
 

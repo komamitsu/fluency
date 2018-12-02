@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
-import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetectStrategy;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 
 import javax.net.ssl.SSLSocket;
 
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-    extends FluentdSender<SSLSocket>
+    extends NetworkSender<SSLSocket>
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
     private final SSLSocketBuilder socketBuilder;
@@ -105,9 +106,9 @@ public class SSLSender
     public static class Config
             implements Instantiator
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
+        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
 
-        public FluentdSender.Config getBaseConfig()
+        public NetworkSender.Config getBaseConfig()
         {
             return baseConfig;
         }

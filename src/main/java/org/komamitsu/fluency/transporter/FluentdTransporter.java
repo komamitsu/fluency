@@ -18,8 +18,7 @@ package org.komamitsu.fluency.transporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.format.RequestOption;
-import org.komamitsu.fluency.sender.FluentdSender;
-import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.sender.fluentd.FluentdSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -40,10 +39,10 @@ public class FluentdTransporter
     private static final Logger LOG = LoggerFactory.getLogger(FluentdTransporter.class);
     private static final Charset CHARSET = Charset.forName("ASCII");
     private final Config config;
-    private final Sender<? extends FluentdSender> sender;
+    private final FluentdSender sender;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    public FluentdTransporter(Config config, Sender<? extends FluentdSender> sender)
+    public FluentdTransporter(Config config, FluentdSender sender)
     {
         this.config = config;
         this.sender = sender;
@@ -111,7 +110,7 @@ public class FluentdTransporter
         }
 
         @Override
-        public Transporter createInstance(Sender<FluentdSender> sender)
+        public Transporter createInstance(FluentdSender sender)
         {
             return new FluentdTransporter(this, sender);
         }

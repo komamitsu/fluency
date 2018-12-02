@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.retry;
+package org.komamitsu.fluency.sender.fluentd.retry;
 
 public abstract class RetryStrategy
 {

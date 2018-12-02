@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.format.Response;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetectStrategy;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -41,10 +43,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class FluentdSender<T>
-    extends Sender<FluentdSender<T>>
+public abstract class NetworkSender<T>
+    extends FluentdSender
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FluentdSender.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final byte[] optionBuffer = new byte[256];
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -52,7 +54,7 @@ public abstract class FluentdSender<T>
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    FluentdSender(Config config)
+    NetworkSender(Config config)
     {
         super(config.getBaseConfig());
         this.config = config;

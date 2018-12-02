@@ -17,9 +17,9 @@
 package org.komamitsu.fluency.sender;
 
 import org.junit.Test;
-import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.heartbeat.UDPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.UDPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

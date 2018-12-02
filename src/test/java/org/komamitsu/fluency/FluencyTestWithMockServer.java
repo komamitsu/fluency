@@ -28,7 +28,7 @@ import org.komamitsu.fluency.sender.MultiSender;
 import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;

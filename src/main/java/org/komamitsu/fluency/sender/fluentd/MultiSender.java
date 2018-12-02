@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
+import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +27,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MultiSender<T extends Sender>
-        extends Sender<MultiSender<T>>
+public class MultiSender
+        extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     private final List<Sender> senders = new ArrayList<>();
@@ -34,7 +36,7 @@ public class MultiSender<T extends Sender>
     protected MultiSender(Config config)
     {
         super(config.getBaseConfig());
-        for (Instantiator<? extends Sender> senderConfig : config.getSenderConfigs()) {
+        for (Instantiator senderConfig : config.getSenderConfigs()) {
             senders.add(senderConfig.createInstance());
         }
     }
@@ -113,10 +115,10 @@ public class MultiSender<T extends Sender>
     }
 
     public static class Config
-            implements Instantiator<MultiSender<? extends Sender>>
+            implements Instantiator
     {
         private final Sender.Config baseConfig = new Sender.Config();
-        private final List<Instantiator<? extends Sender>> senderConfigs;
+        private final List<Instantiator> senderConfigs;
 
         public Sender.Config getBaseConfig()
         {
@@ -134,12 +136,12 @@ public class MultiSender<T extends Sender>
             return this;
         }
 
-        public Config(List<Instantiator<? extends Sender>> senderConfigs)
+        public Config(List<Instantiator> senderConfigs)
         {
             this.senderConfigs = senderConfigs;
         }
 
-        public List<Instantiator<? extends Sender>> getSenderConfigs()
+        public List<Instantiator> getSenderConfigs()
         {
             return senderConfigs;
         }
@@ -153,9 +155,9 @@ public class MultiSender<T extends Sender>
         }
 
         @Override
-        public MultiSender<? extends Sender> createInstance()
+        public MultiSender createInstance()
         {
-            return new MultiSender<>(this);
+            return new MultiSender(this);
         }
     }
 }

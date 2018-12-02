@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class Sender<T extends Sender>
+public abstract class Sender
     implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Sender.class);
@@ -118,8 +118,8 @@ public abstract class Sender<T extends Sender>
         }
     }
 
-    public interface Instantiator<T extends Sender>
+    public interface Instantiator
     {
-        Sender<T> createInstance();
+        Sender createInstance();
     }
 }

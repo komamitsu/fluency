@@ -34,17 +34,17 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.sender.MockTCPSender;
 import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.FluentdSender;
+import org.komamitsu.fluency.sender.NetworkSender;
 import org.komamitsu.fluency.sender.RetryableSender;
 import org.komamitsu.fluency.sender.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -116,7 +116,7 @@ public class FluencyTest
         assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
     }
 
-    private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends FluentdSender> expectedBaseClass)
+    private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
         ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) sender.getRetryStrategy();
@@ -125,19 +125,19 @@ public class FluencyTest
         assertThat(sender.getBaseSender(), instanceOf(expectedBaseClass));
     }
 
-    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends FluentdSender> expectedBaseClass)
+    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender, instanceOf(RetryableSender.class));
         RetryableSender retryableSender = (RetryableSender) sender;
         assertDefaultRetryableSender(retryableSender, expectedBaseClass);
 
-        FluentdSender fluentdSender = (FluentdSender) retryableSender.getBaseSender();
-        assertThat(fluentdSender.getHost(), is(expectedHost));
-        assertThat(fluentdSender.getPort(), is(expectedPort));
-        assertThat(fluentdSender.getConnectionTimeoutMilli(), is(5000));
-        assertThat(fluentdSender.getReadTimeoutMilli(), is(5000));
+        NetworkSender networkSender = (NetworkSender) retryableSender.getBaseSender();
+        assertThat(networkSender.getHost(), is(expectedHost));
+        assertThat(networkSender.getPort(), is(expectedPort));
+        assertThat(networkSender.getConnectionTimeoutMilli(), is(5000));
+        assertThat(networkSender.getReadTimeoutMilli(), is(5000));
 
-        FailureDetector failureDetector = fluentdSender.getFailureDetector();
+        FailureDetector failureDetector = networkSender.getFailureDetector();
         assertThat(failureDetector, is(nullValue()));
     }
 

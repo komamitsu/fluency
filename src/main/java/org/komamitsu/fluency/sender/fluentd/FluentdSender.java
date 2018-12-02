@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender.failuredetect;
+package org.komamitsu.fluency.sender.fluentd;
 
-public abstract class FailureDetectStrategy
+import org.komamitsu.fluency.sender.Sender;
+
+
+public abstract class FluentdSender
+    extends Sender
 {
-    protected final Config config;
-
-    protected FailureDetectStrategy(Config config)
+    protected FluentdSender(Config config)
     {
-        this.config = config;
-    }
-
-    public abstract void heartbeat(long now);
-
-    public abstract boolean isAvailable();
-
-    public static class Config
-    {
-    }
-
-    public interface Instantiator
-    {
-        FailureDetectStrategy createInstance();
+        super(config);
     }
 }

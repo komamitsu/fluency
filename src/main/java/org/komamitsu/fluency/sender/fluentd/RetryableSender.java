@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
-import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.sender.retry.RetryStrategy;
+import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.sender.fluentd.retry.RetryStrategy;
+import org.komamitsu.fluency.sender.Sender;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,8 +29,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RetryableSender<T extends Sender>
-        extends Sender<RetryableSender<T>>
+public class RetryableSender
+        extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final Sender baseSender;
@@ -130,7 +132,7 @@ public class RetryableSender<T extends Sender>
     }
 
     public static class Config
-            implements Instantiator<RetryableSender<? extends Sender>>
+            implements Instantiator
     {
         private final Sender.Config baseConfig = new Sender.Config();
         private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
@@ -185,9 +187,9 @@ public class RetryableSender<T extends Sender>
         }
 
         @Override
-        public RetryableSender<? extends Sender> createInstance()
+        public RetryableSender createInstance()
         {
-            return new RetryableSender<>(this);
+            return new RetryableSender(this);
         }
     }
 }

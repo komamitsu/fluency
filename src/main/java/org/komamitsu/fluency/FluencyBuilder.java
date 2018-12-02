@@ -19,16 +19,16 @@ package org.komamitsu.fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.sender.FluentdSender;
-import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.RetryableSender;
-import org.komamitsu.fluency.sender.SSLSender;
+import org.komamitsu.fluency.sender.fluentd.NetworkSender;
+import org.komamitsu.fluency.sender.fluentd.MultiSender;
+import org.komamitsu.fluency.sender.fluentd.RetryableSender;
+import org.komamitsu.fluency.sender.fluentd.SSLSender;
 import org.komamitsu.fluency.sender.Sender;
 import org.komamitsu.fluency.sender.SenderErrorHandler;
-import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.sender.fluentd.TCPSender;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.transporter.FluentdTransporter;
 import org.komamitsu.fluency.transporter.Transporter;
 
@@ -73,7 +73,7 @@ public class FluencyBuilder
 
         public static Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
         {
-            List<Sender.Instantiator<? extends Sender>> senderConfigs = new ArrayList<>();
+            List<Sender.Instantiator> senderConfigs = new ArrayList<>();
             for (InetSocketAddress server : servers) {
                 senderConfigs.add(createBaseSenderConfig(config, server.getHostName(), server.getPort(), true));
             }
@@ -100,7 +100,7 @@ public class FluencyBuilder
             return build(servers, null);
         }
 
-        private static Sender.Instantiator<? extends Sender> createBaseSenderConfig(
+        private static Sender.Instantiator createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port)
@@ -108,7 +108,7 @@ public class FluencyBuilder
             return createBaseSenderConfig(config, host, port, false);
         }
 
-        private static Sender.Instantiator<? extends FluentdSender> createBaseSenderConfig(
+        private static Sender.Instantiator createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port,
@@ -153,7 +153,7 @@ public class FluencyBuilder
         }
 
         private static Fluency buildInternal(
-                Sender.Instantiator<? extends Sender> baseSenderConfig,
+                Sender.Instantiator baseSenderConfig,
                 FluencyConfig config)
         {
             Buffer.Config bufferConfig = new Buffer.Config();

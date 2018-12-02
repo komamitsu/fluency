@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.sender;
+package org.komamitsu.fluency.sender.fluentd;
 
-import org.komamitsu.fluency.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetectStrategy;
+import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetector;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.Heartbeater;
+import org.komamitsu.fluency.sender.SenderErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends FluentdSender<SocketChannel>
+    extends NetworkSender<SocketChannel>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
@@ -91,9 +92,9 @@ public class TCPSender
     public static class Config
             implements Instantiator
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
+        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
 
-        public FluentdSender.Config getBaseConfig()
+        public NetworkSender.Config getBaseConfig()
         {
             return baseConfig;
         }

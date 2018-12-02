@@ -19,7 +19,7 @@ package org.komamitsu.fluency.sender;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.komamitsu.fluency.MockTCPServer;
-import org.komamitsu.fluency.sender.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
