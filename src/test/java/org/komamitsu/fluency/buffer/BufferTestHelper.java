@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.CoreMatchers;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.MockTCPSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;

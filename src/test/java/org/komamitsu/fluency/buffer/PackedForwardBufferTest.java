@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.buffer;
 
 import org.junit.Test;
-import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.MockTCPSender;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -14,37 +14,27 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.ingester.fluentdsender.failuredetect;
 
-import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
-
-public class StubSender
-        extends FluentdSender
+public abstract class FailureDetectStrategy
 {
-    public StubSender()
+    protected final Config config;
+
+    protected FailureDetectStrategy(Config config)
     {
-        super(new FluentdSender.Config());
+        this.config = config;
     }
 
-    @Override
-    public boolean isAvailable()
-    {
-        return true;
-    }
+    public abstract void heartbeat(long now);
 
-    @Override
-    protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
-            throws IOException
+    public abstract boolean isAvailable();
+
+    public static class Config
     {
     }
 
-    @Override
-    public void close()
-            throws IOException
+    public interface Instantiator
     {
+        FailureDetectStrategy createInstance();
     }
 }

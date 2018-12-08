@@ -19,18 +19,19 @@ package org.komamitsu.fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.sender.fluentd.NetworkSender;
-import org.komamitsu.fluency.sender.fluentd.MultiSender;
-import org.komamitsu.fluency.sender.fluentd.RetryableSender;
-import org.komamitsu.fluency.sender.fluentd.SSLSender;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.sender.SenderErrorHandler;
-import org.komamitsu.fluency.sender.fluentd.TCPSender;
-import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.transporter.FluentdTransporter;
-import org.komamitsu.fluency.transporter.Transporter;
+import org.komamitsu.fluency.ingester.TreasureDataIngester;
+import org.komamitsu.fluency.ingester.fluentdsender.MultiSender;
+import org.komamitsu.fluency.ingester.fluentdsender.RetryableSender;
+import org.komamitsu.fluency.ingester.fluentdsender.SSLSender;
+import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.fluentdsender.TCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.ingester.fluentdsender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.ingester.FluentdIngester;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.ingester.sender.Sender;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class FluencyBuilder
     private static Fluency buildFromConfigs(
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
-            Transporter transporter)
+            Ingester ingester)
     {
         Buffer buffer =
                 (bufferConfig != null ? bufferConfig : new Buffer.Config()).
@@ -49,7 +50,7 @@ public class FluencyBuilder
 
         Flusher flusher =
                 (flusherConfig != null ? flusherConfig : new AsyncFlusher.Config()).
-                        createInstance(buffer, transporter);
+                        createInstance(buffer, ingester);
 
         return new Fluency(buffer, flusher);
     }
@@ -73,7 +74,7 @@ public class FluencyBuilder
 
         public static Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
         {
-            List<Sender.Instantiator> senderConfigs = new ArrayList<>();
+            List<FluentdSender.Instantiator> senderConfigs = new ArrayList<>();
             for (InetSocketAddress server : servers) {
                 senderConfigs.add(createBaseSenderConfig(config, server.getHostName(), server.getPort(), true));
             }
@@ -100,7 +101,7 @@ public class FluencyBuilder
             return build(servers, null);
         }
 
-        private static Sender.Instantiator createBaseSenderConfig(
+        private static FluentdSender.Instantiator createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port)
@@ -108,7 +109,7 @@ public class FluencyBuilder
             return createBaseSenderConfig(config, host, port, false);
         }
 
-        private static Sender.Instantiator createBaseSenderConfig(
+        private static FluentdSender.Instantiator createBaseSenderConfig(
                 FluencyConfig config,
                 String host,
                 Integer port,
@@ -153,13 +154,13 @@ public class FluencyBuilder
         }
 
         private static Fluency buildInternal(
-                Sender.Instantiator baseSenderConfig,
+                FluentdSender.Instantiator baseSenderConfig,
                 FluencyConfig config)
         {
             Buffer.Config bufferConfig = new Buffer.Config();
             ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
-            FluentdTransporter.Config transporterConfig = new FluentdTransporter.Config();
+            FluentdIngester.Config transporterConfig = new FluentdIngester.Config();
 
             if (config != null) {
                 if (config.getMaxBufferSize() != null) {
@@ -205,8 +206,8 @@ public class FluencyBuilder
                     .setRetryStrategyConfig(retryStrategyConfig);
 
             if (config != null) {
-                if (config.getSenderErrorHandler() != null) {
-                    senderConfig.setSenderErrorHandler(config.getSenderErrorHandler());
+                if (config.getErrorHandler() != null) {
+                    senderConfig.setSenderErrorHandler(config.getErrorHandler());
                 }
             }
 
@@ -242,7 +243,7 @@ public class FluencyBuilder
 
             private Boolean jvmHeapBufferMode;
 
-            private SenderErrorHandler senderErrorHandler;
+            private ErrorHandler errorHandler;
 
             private boolean sslEnabled;
 
@@ -356,14 +357,14 @@ public class FluencyBuilder
                 return this;
             }
 
-            public SenderErrorHandler getSenderErrorHandler()
+            public ErrorHandler getErrorHandler()
             {
-                return senderErrorHandler;
+                return errorHandler;
             }
 
-            public FluencyConfig setSenderErrorHandler(SenderErrorHandler senderErrorHandler)
+            public FluencyConfig setErrorHandler(ErrorHandler errorHandler)
             {
-                this.senderErrorHandler = senderErrorHandler;
+                this.errorHandler = errorHandler;
                 return this;
             }
 
@@ -392,8 +393,249 @@ public class FluencyBuilder
                         ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                         ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                         ", jvmHeapBufferMode=" + jvmHeapBufferMode +
-                        ", senderErrorHandler=" + senderErrorHandler +
+                        ", senderErrorHandler=" + errorHandler +
                         ", sslEnabled =" + sslEnabled +
+                        '}';
+            }
+        }
+    }
+
+    public static class ForTreasureData
+    {
+        public static Fluency build(String apikey, FluencyConfig config)
+        {
+            return buildInternal(createSenderConfig(config, null, apikey), config);
+        }
+
+        private static TreasureDataIngester.TreasureDataSender.Config createSenderConfig(
+                FluencyConfig config,
+                String endpoint,
+                String apikey)
+        {
+            if (apikey == null) {
+                throw new IllegalArgumentException("`apikey` should be set");
+            }
+
+            TreasureDataIngester.TreasureDataSender.Config senderConfig = new TreasureDataIngester.TreasureDataSender.Config();
+            senderConfig.setApikey(apikey);
+
+            if (endpoint != null) {
+                senderConfig.setEndpoint(endpoint);
+            }
+
+            return senderConfig;
+        }
+
+        private static Fluency buildInternal(
+                TreasureDataIngester.TreasureDataSender.Config senderConfig,
+                FluencyConfig config)
+        {
+            Buffer.Config bufferConfig = new Buffer.Config();
+            ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+            TreasureDataIngester.Config transporterConfig = new TreasureDataIngester.Config();
+
+            if (config != null) {
+                if (config.getMaxBufferSize() != null) {
+                    bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
+                }
+
+                if (config.getBufferChunkInitialSize() != null) {
+                    bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
+                }
+
+                if (config.getBufferChunkRetentionSize() != null) {
+                    bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
+                }
+
+                if (config.getFileBackupDir() != null) {
+                    bufferConfig.setFileBackupDir(config.getFileBackupDir());
+                }
+
+                if (config.getJvmHeapBufferMode() != null) {
+                    bufferConfig.setJvmHeapBufferMode(config.jvmHeapBufferMode);
+                }
+
+                if (config.getFlushIntervalMillis() != null) {
+                    flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
+                }
+
+                if (config.getWaitUntilBufferFlushed() != null) {
+                    flusherConfig.setWaitUntilBufferFlushed(config.getWaitUntilBufferFlushed());
+                }
+
+                if (config.getWaitUntilFlusherTerminated() != null) {
+                    flusherConfig.setWaitUntilTerminated(config.getWaitUntilFlusherTerminated());
+                }
+
+                if (config.getSenderMaxRetryCount() != null) {
+                    retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
+                }
+            }
+
+            if (config != null) {
+                if (config.getErrorHandler() != null) {
+                    // FIXME
+                    //    senderConfig.setSenderErrorHandler(config.getErrorHandler());
+                }
+            }
+
+            TreasureDataIngester.TreasureDataSender sender = senderConfig.createInstance();
+
+            return buildFromConfigs(
+                    bufferConfig,
+                    flusherConfig,
+                    transporterConfig.createInstance(sender)
+            );
+        }
+
+
+        class FluencyConfig
+        {
+            private Long maxBufferSize;
+
+            private Integer bufferChunkInitialSize;
+
+            private Integer bufferChunkRetentionSize;
+
+            private Integer flushIntervalMillis;
+
+            private Integer senderMaxRetryCount;
+
+            private String fileBackupDir;
+
+            private Integer waitUntilBufferFlushed;
+
+            private Integer waitUntilFlusherTerminated;
+
+            private Boolean jvmHeapBufferMode;
+
+            private ErrorHandler errorHandler;
+
+            public Long getMaxBufferSize()
+            {
+                return maxBufferSize;
+            }
+
+            public FluencyConfig setMaxBufferSize(Long maxBufferSize)
+            {
+                this.maxBufferSize = maxBufferSize;
+                return this;
+            }
+
+            public Integer getBufferChunkInitialSize()
+            {
+                return bufferChunkInitialSize;
+            }
+
+            public FluencyConfig setBufferChunkInitialSize(Integer bufferChunkInitialSize)
+            {
+                this.bufferChunkInitialSize = bufferChunkInitialSize;
+                return this;
+            }
+
+            public Integer getBufferChunkRetentionSize()
+            {
+                return bufferChunkRetentionSize;
+            }
+
+            public FluencyConfig setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
+            {
+                this.bufferChunkRetentionSize = bufferChunkRetentionSize;
+                return this;
+            }
+
+            public Integer getFlushIntervalMillis()
+            {
+                return flushIntervalMillis;
+            }
+
+            public FluencyConfig setFlushIntervalMillis(Integer flushIntervalMillis)
+            {
+                this.flushIntervalMillis = flushIntervalMillis;
+                return this;
+            }
+
+            public Integer getSenderMaxRetryCount()
+            {
+                return senderMaxRetryCount;
+            }
+
+            public FluencyConfig setSenderMaxRetryCount(Integer senderMaxRetryCount)
+            {
+                this.senderMaxRetryCount = senderMaxRetryCount;
+                return this;
+            }
+
+            public String getFileBackupDir()
+            {
+                return fileBackupDir;
+            }
+
+            public FluencyConfig setFileBackupDir(String fileBackupDir)
+            {
+                this.fileBackupDir = fileBackupDir;
+                return this;
+            }
+
+            public Integer getWaitUntilBufferFlushed()
+            {
+                return waitUntilBufferFlushed;
+            }
+
+            public FluencyConfig setWaitUntilBufferFlushed(Integer wait)
+            {
+                this.waitUntilBufferFlushed = wait;
+                return this;
+            }
+
+            public Integer getWaitUntilFlusherTerminated()
+            {
+                return waitUntilFlusherTerminated;
+            }
+
+            public FluencyConfig setWaitUntilFlusherTerminated(Integer wait)
+            {
+                this.waitUntilFlusherTerminated = wait;
+                return this;
+            }
+
+            public Boolean getJvmHeapBufferMode()
+            {
+                return jvmHeapBufferMode;
+            }
+
+            public FluencyConfig setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
+            {
+                this.jvmHeapBufferMode = jvmHeapBufferMode;
+                return this;
+            }
+
+            public ErrorHandler getErrorHandler()
+            {
+                return errorHandler;
+            }
+
+            public FluencyConfig setErrorHandler(ErrorHandler errorHandler)
+            {
+                this.errorHandler = errorHandler;
+                return this;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Config{" +
+                        "maxBufferSize=" + maxBufferSize +
+                        ", bufferChunkInitialSize=" + bufferChunkInitialSize +
+                        ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
+                        ", flushIntervalMillis=" + flushIntervalMillis +
+                        ", senderMaxRetryCount=" + senderMaxRetryCount +
+                        ", fileBackupDir='" + fileBackupDir + '\'' +
+                        ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
+                        ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
+                        ", jvmHeapBufferMode=" + jvmHeapBufferMode +
+                        ", senderErrorHandler=" + errorHandler +
                         '}';
             }
         }

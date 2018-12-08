@@ -14,37 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.ingester;
 
-import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
-
-public class StubSender
-        extends FluentdSender
+public interface ErrorHandler
 {
-    public StubSender()
-    {
-        super(new FluentdSender.Config());
-    }
-
-    @Override
-    public boolean isAvailable()
-    {
-        return true;
-    }
-
-    @Override
-    protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
-            throws IOException
-    {
-    }
-
-    @Override
-    public void close()
-            throws IOException
-    {
-    }
+    void handle(Throwable e);
 }

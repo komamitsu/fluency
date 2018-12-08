@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.transporter.Transporter;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class AsyncFlusher
             try {
                 wakeup = eventQueue.poll(AsyncFlusher.this.config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
                 boolean force = wakeup != null;
-                buffer.flush(transporter, force);
+                buffer.flush(ingester, force);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -59,7 +59,7 @@ public class AsyncFlusher
             // In these cases, remaining buffers wont't be flushed.
             // So force buffer flush is executed here just in case
             try {
-                buffer.flush(transporter, true);
+                buffer.flush(ingester, true);
             }
             catch (IOException e) {
                 LOG.error("Failed to flush", e);
@@ -67,9 +67,9 @@ public class AsyncFlusher
         }
     };
 
-    private AsyncFlusher(final Config config, final Buffer buffer, final Transporter transporter)
+    private AsyncFlusher(final Config config, final Buffer buffer, final Ingester ingester)
     {
-        super(config.getBaseConfig(), buffer, transporter);
+        super(config.getBaseConfig(), buffer, ingester);
         this.config = config;
         executorService.execute(task);
     }
@@ -165,9 +165,9 @@ public class AsyncFlusher
         }
 
         @Override
-        public AsyncFlusher createInstance(Buffer buffer, Transporter transporter)
+        public AsyncFlusher createInstance(Buffer buffer, Ingester ingester)
         {
-            return new AsyncFlusher(this, buffer, transporter);
+            return new AsyncFlusher(this, buffer, ingester);
         }
     }
 }

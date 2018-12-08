@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,37 +14,26 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.ingester;
 
 import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.sender.Sender;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 
-public class StubSender
-        extends FluentdSender
+public interface Ingester
+    extends Closeable
 {
-    public StubSender()
-    {
-        super(new FluentdSender.Config());
-    }
+    void ingest(String tag, ByteBuffer dataBuffer)
+            throws IOException;
 
-    @Override
-    public boolean isAvailable()
-    {
-        return true;
-    }
+    interface Config
+    {}
 
-    @Override
-    protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
-            throws IOException
+    interface Instantiator<T extends Sender>
     {
-    }
-
-    @Override
-    public void close()
-            throws IOException
-    {
+        Ingester createInstance(T sender);
     }
 }

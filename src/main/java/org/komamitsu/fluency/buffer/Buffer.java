@@ -20,8 +20,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.transporter.Transporter;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,11 +103,11 @@ public class Buffer
         fileBackup.saveBuffer(params, buffer);
     }
 
-    public void flush(Transporter transporter, boolean force)
+    public void flush(Ingester ingester, boolean force)
             throws IOException
     {
         LOG.trace("flush(): force={}, bufferUsage={}", force, getBufferUsage());
-        flushInternal(transporter, force);
+        flushInternal(ingester, force);
     }
 
     public void close()
@@ -363,7 +362,7 @@ public class Buffer
         }
     }
 
-    public void flushInternal(Transporter transporter, boolean force)
+    public void flushInternal(Ingester ingester, boolean force)
             throws IOException
     {
         moveRetentionBuffersToFlushable(force);
@@ -376,7 +375,7 @@ public class Buffer
                 LOG.trace("flushInternal(): bufferUsage={}, flushableBuffer={}", getBufferUsage(), flushableBuffer);
                 String tag = flushableBuffer.getTag();
                 ByteBuffer dataBuffer = flushableBuffer.getByteBuffer();
-                transporter.transport(tag, dataBuffer);
+                ingester.ingest(tag, dataBuffer);
                 /*
                 int dataLength = dataBuffer.limit();
                 messagePacker.packArrayHeader(3);

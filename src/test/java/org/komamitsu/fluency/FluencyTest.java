@@ -32,19 +32,19 @@ import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
-import org.komamitsu.fluency.sender.MockTCPSender;
-import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.NetworkSender;
-import org.komamitsu.fluency.sender.RetryableSender;
-import org.komamitsu.fluency.sender.SSLSender;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.sender.SenderErrorHandler;
-import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.fluentd.failuredetect.FailureDetector;
-import org.komamitsu.fluency.sender.fluentd.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.sender.fluentd.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.ingester.fluentdsender.MockTCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.MultiSender;
+import org.komamitsu.fluency.ingester.fluentdsender.NetworkSender;
+import org.komamitsu.fluency.ingester.fluentdsender.RetryableSender;
+import org.komamitsu.fluency.ingester.fluentdsender.SSLSender;
+import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.fluentdsender.TCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.ingester.fluentdsender.retry.ExponentialBackOffRetryStrategy;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -125,7 +125,7 @@ public class FluencyTest
         assertThat(sender.getBaseSender(), instanceOf(expectedBaseClass));
     }
 
-    private void assertDefaultSender(Sender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
+    private void assertDefaultSender(FluentdSender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender, instanceOf(RetryableSender.class));
         RetryableSender retryableSender = (RetryableSender) sender;
@@ -431,7 +431,7 @@ public class FluencyTest
     public void testIsTerminated()
             throws IOException, InterruptedException
     {
-        Sender sender = new MockTCPSender(24224);
+        FluentdSender sender = new MockTCPSender(24224);
         TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
@@ -474,7 +474,7 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         {
-            Sender sender = new MockTCPSender(24224);
+            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -484,7 +484,7 @@ public class FluencyTest
         }
 
         {
-            Sender sender = new MockTCPSender(24224);
+            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
             Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
@@ -499,7 +499,7 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         {
-            Sender sender = new MockTCPSender(24224);
+            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
@@ -516,7 +516,7 @@ public class FluencyTest
         }
 
         {
-            Sender sender = new MockTCPSender(24224);
+            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
@@ -543,7 +543,7 @@ public class FluencyTest
         Fluency fluency = Fluency.defaultFluency(Integer.MAX_VALUE,
                 new FluencyConfig()
                         .setSenderMaxRetryCount(1)
-                        .setSenderErrorHandler(new SenderErrorHandler()
+                        .setSenderErrorHandler(new ErrorHandler()
                         {
                             @Override
                             public void handle(Throwable e)
@@ -759,7 +759,7 @@ public class FluencyTest
             throws IOException
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        Sender stuckSender = new StuckSender(latch);
+        FluentdSender stuckSender = new StuckSender(latch);
 
         try {
             PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);

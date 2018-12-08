@@ -24,11 +24,11 @@ import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.sender.MultiSender;
-import org.komamitsu.fluency.sender.SSLSender;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.sender.TCPSender;
-import org.komamitsu.fluency.sender.fluentd.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.ingester.fluentdsender.MultiSender;
+import org.komamitsu.fluency.ingester.fluentdsender.SSLSender;
+import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.fluentdsender.TCPSender;
+import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.TCPHeartbeater;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
@@ -218,15 +218,15 @@ public class FluencyTestWithMockServer
                 throws IOException;
     }
 
-    private Sender getSingleTCPSender(int port)
+    private FluentdSender getSingleTCPSender(int port)
     {
         return new TCPSender.Config().setPort(port).createInstance();
     }
 
-    private Sender getDoubleTCPSender(int firstPort, int secondPort)
+    private FluentdSender getDoubleTCPSender(int firstPort, int secondPort)
     {
         return new MultiSender.Config(
-                Arrays.<Sender.Instantiator>asList(
+                Arrays.<FluentdSender.Instantiator>asList(
                     new TCPSender.Config()
                             .setPort(firstPort)
                             .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
@@ -236,15 +236,15 @@ public class FluencyTestWithMockServer
                 )).createInstance();
     }
 
-    private Sender getSingleSSLSender(int port)
+    private FluentdSender getSingleSSLSender(int port)
     {
         return new SSLSender.Config().setPort(port).createInstance();
     }
 
-    private Sender getDoubleSSLSender(int firstPort, int secondPort)
+    private FluentdSender getDoubleSSLSender(int firstPort, int secondPort)
     {
         return new MultiSender.Config(
-                Arrays.<Sender.Instantiator>asList(
+                Arrays.<FluentdSender.Instantiator>asList(
                     new SSLSender.Config()
                             .setPort(firstPort)
                             .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
@@ -264,7 +264,7 @@ public class FluencyTestWithMockServer
             public Fluency generate(List<Integer> localPorts)
                     throws IOException
             {
-                Sender sender;
+                FluentdSender sender;
                 int fluentdPort = localPorts.get(0);
                 if (options.failover) {
                     int secondaryFluentdPort = localPorts.get(1);
