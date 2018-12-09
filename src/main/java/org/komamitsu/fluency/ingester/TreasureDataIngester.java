@@ -93,15 +93,17 @@ public class TreasureDataIngester
         public class HttpResponseError
             extends RuntimeException
         {
+            private final String request;
             private final int statusCode;
             private final String reasonPhrase;
 
-            public HttpResponseError(int statusCode, String reasonPhrase)
+            public HttpResponseError(String request, int statusCode, String reasonPhrase)
             {
                 super(String.format(
                         "HTTP response error: statusCode=%d, reasonPhrase=%s",
                         statusCode, reasonPhrase));
 
+                this.request = request;
                 this.statusCode = statusCode;
                 this.reasonPhrase = reasonPhrase;
             }
@@ -110,7 +112,8 @@ public class TreasureDataIngester
             public String toString()
             {
                 return "HttpResponseError{" +
-                        "statusCode=" + statusCode +
+                        "request='" + request + '\'' +
+                        ", statusCode=" + statusCode +
                         ", reasonPhrase='" + reasonPhrase + '\'' +
                         "} " + super.toString();
             }
@@ -167,7 +170,11 @@ public class TreasureDataIngester
                             }
                             else {
                                 if (errorHandler != null) {
-                                    errorHandler.handle(new HttpResponseError(response.statusCode, response.reasonPhrase));
+                                    errorHandler.handle(
+                                            new HttpResponseError(
+                                                    response.request,
+                                                    response.statusCode,
+                                                    response.reasonPhrase));
                                 }
                                 return response.getStatusCode() / 100 == 5;
                             }
@@ -245,6 +252,7 @@ public class TreasureDataIngester
     {
         private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+        private final String endpoint;
         private final String apikey;
 
         private final Service service;
@@ -262,15 +270,22 @@ public class TreasureDataIngester
 
         static class Response<T>
         {
+            private final String request;
             private final int statusCode;
             private final String reasonPhrase;
             private final T content;
 
-            Response(int statusCode, String reasonPhrase, T content)
+            Response(String request, int statusCode, String reasonPhrase, T content)
             {
+                this.request = request;
                 this.statusCode = statusCode;
                 this.reasonPhrase = reasonPhrase;
                 this.content = content;
+            }
+
+            public String getRequest()
+            {
+                return request;
             }
 
             int getStatusCode()
@@ -291,6 +306,7 @@ public class TreasureDataIngester
 
         TreasureDataClient(String endpoint, String apikey)
         {
+            this.endpoint = endpoint;
             this.apikey = apikey;
 
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
@@ -314,7 +330,11 @@ public class TreasureDataIngester
             String auth = "TD1 " + apikey;
             RequestBody requestBody = RequestBody.create(null, msgpackGzipped);
             retrofit2.Response<Void> response = service.importToTable(auth, database, table, uniqueId, requestBody).execute();
-            return new Response<>(response.code(), response.message(), null);
+            return new Response<>(
+                    String.format(
+                            "PUT %s/v3/table/import_with_id/%s/%s/%s/msgpack.gz",
+                            endpoint, database, table, uniqueId),
+                    response.code(), response.message(), null);
         }
     }
 }
