@@ -20,9 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import net.jodah.failsafe.function.CheckedRunnable;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.komamitsu.fluency.NonRetryableException;
+import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
@@ -89,6 +92,7 @@ public class TreasureDataIngester
     {
         private final Config config;
         private final TreasureDataClient client;
+        private final RetryPolicy retryPolicy;
 
         public class HttpResponseError
             extends RuntimeException
@@ -123,6 +127,43 @@ public class TreasureDataIngester
         {
             this.config = config;
             this.client = new TreasureDataClient(config.getEndpoint(), config.getApikey());
+            this.retryPolicy =
+                    new RetryPolicy().
+                            <Throwable>retryIf(ex -> {
+                                if (ex == null) {
+                                    // Success. Shouldn't retry.
+                                    return false;
+                                }
+
+                                ErrorHandler errorHandler = config.getErrorHandler();
+
+                                if (errorHandler != null) {
+                                    errorHandler.handle(ex);
+                                }
+
+                                if (ex instanceof InterruptedException || ex instanceof NonRetryableException) {
+                                    return false;
+                                }
+
+                                return true;
+                            }).
+                            // TODO: Make these configurable
+                            withBackoff(1000, 30000, TimeUnit.MILLISECONDS, 2.0).
+                            withMaxRetries(12);
+        }
+
+        private void copyStreams(InputStream in, OutputStream out)
+                throws IOException
+        {
+            // TODO: Make it configurable
+            byte[] buf = new byte[8192];
+            while (true) {
+                int readLen = in.read(buf);
+                if (readLen < 0) {
+                    break;
+                }
+                out.write(buf, 0, readLen);
+            }
         }
 
         public void send(String dbAndTableTag, ByteBuffer dataBuffer)
@@ -141,51 +182,27 @@ public class TreasureDataIngester
                                         file.toPath(),
                                         StandardOpenOption.WRITE))) {
 
-                    // TODO: Make it configurable
-                    byte[] buf = new byte[8192];
-                    while (true) {
-                        int readLen = in.read(buf);
-                        if (readLen < 0) {
-                            break;
-                        }
-                        out.write(buf, 0, readLen);
-                    }
+                    copyStreams(in, out);
                 }
+
                 String uniqueId = UUID.randomUUID().toString();
-                Failsafe.with(new RetryPolicy().
-                        // TODO: Report error to a handler if set & Create database and table if not exists
-                        <TreasureDataClient.Response>retryIf((response, ex) -> {
-                            if (ex == null && response.getStatusCode() / 100 == 2) {
-                                // Success. Shouldn't retry.
-                                return false;
-                            }
+                Failsafe.with(retryPolicy)
+                        .run(() -> {
+                                    LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
+                                            database, table, uniqueId, file.length());
 
-                            ErrorHandler errorHandler = config.getErrorHandler();
+                                    TreasureDataClient.Response<Void> response =
+                                            client.importToTable(database, table, uniqueId, file);
 
-                            if (ex != null) {
-                                if (errorHandler != null) {
-                                    errorHandler.handle(ex);
+                                    // TODO: Report error to a handler if set & Create database and table if not exists
+                                    if (!response.success) {
+                                        throw new HttpResponseError(
+                                                response.request,
+                                                response.statusCode,
+                                                response.reasonPhrase);
+                                    }
                                 }
-                                return ex instanceof InterruptedException;
-                            }
-                            else {
-                                if (errorHandler != null) {
-                                    errorHandler.handle(
-                                            new HttpResponseError(
-                                                    response.request,
-                                                    response.statusCode,
-                                                    response.reasonPhrase));
-                                }
-                                return response.getStatusCode() / 100 == 5;
-                            }
-                        }).
-                        withBackoff(1000, 30000, TimeUnit.MILLISECONDS, 2.0).
-                        withMaxRetries(12)).
-                        get(() -> {
-                            LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
-                                    database, table, uniqueId, file.length());
-                            return client.importToTable(database, table, uniqueId, file);
-                        });
+                        );
             }
             finally {
                 if (!file.delete()) {
@@ -271,13 +288,15 @@ public class TreasureDataIngester
         static class Response<T>
         {
             private final String request;
+            private final boolean success;
             private final int statusCode;
             private final String reasonPhrase;
             private final T content;
 
-            Response(String request, int statusCode, String reasonPhrase, T content)
+            Response(String request, boolean success, int statusCode, String reasonPhrase, T content)
             {
                 this.request = request;
+                this.success = success;
                 this.statusCode = statusCode;
                 this.reasonPhrase = reasonPhrase;
                 this.content = content;
@@ -286,6 +305,11 @@ public class TreasureDataIngester
             public String getRequest()
             {
                 return request;
+            }
+
+            public boolean isSuccess()
+            {
+                return success;
             }
 
             int getStatusCode()
@@ -325,16 +349,22 @@ public class TreasureDataIngester
         }
 
         Response<Void> importToTable(String database, String table, String uniqueId, File msgpackGzipped)
-                throws IOException
         {
             String auth = "TD1 " + apikey;
             RequestBody requestBody = RequestBody.create(null, msgpackGzipped);
-            retrofit2.Response<Void> response = service.importToTable(auth, database, table, uniqueId, requestBody).execute();
+            retrofit2.Response<Void> response = null;
+            try {
+                response = service.importToTable(auth, database, table, uniqueId, requestBody).execute();
+            }
+            catch (IOException e) {
+                throw new RetryableException("Failed to import data to TD", e);
+            }
+
             return new Response<>(
                     String.format(
                             "PUT %s/v3/table/import_with_id/%s/%s/%s/msgpack.gz",
                             endpoint, database, table, uniqueId),
-                    response.code(), response.message(), null);
+                    response.isSuccessful(), response.code(), response.message(), null);
         }
     }
 }
