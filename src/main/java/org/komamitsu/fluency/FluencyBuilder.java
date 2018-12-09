@@ -32,6 +32,9 @@ import org.komamitsu.fluency.ingester.fluentdsender.retry.ExponentialBackOffRetr
 import org.komamitsu.fluency.ingester.FluentdIngester;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
+import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.komamitsu.fluency.recordformat.TreasureDataRecordFormatter;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -40,13 +43,14 @@ import java.util.List;
 public class FluencyBuilder
 {
     private static Fluency buildFromConfigs(
+            RecordFormatter recordFormatter,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
             Ingester ingester)
     {
         Buffer buffer =
                 (bufferConfig != null ? bufferConfig : new Buffer.Config()).
-                        createInstance();
+                        createInstance(recordFormatter);
 
         Flusher flusher =
                 (flusherConfig != null ? flusherConfig : new AsyncFlusher.Config()).
@@ -214,6 +218,7 @@ public class FluencyBuilder
             RetryableSender retryableSender = senderConfig.createInstance();
 
             return buildFromConfigs(
+                    new FluentdRecordFormatter(),
                     bufferConfig,
                     flusherConfig,
                     transporterConfig.createInstance(retryableSender)
@@ -483,6 +488,7 @@ public class FluencyBuilder
             TreasureDataIngester.TreasureDataSender sender = senderConfig.createInstance();
 
             return buildFromConfigs(
+                    new TreasureDataRecordFormatter(),
                     bufferConfig,
                     flusherConfig,
                     transporterConfig.createInstance(sender)
@@ -490,7 +496,7 @@ public class FluencyBuilder
         }
 
 
-        class FluencyConfig
+        public static class FluencyConfig
         {
             private Long maxBufferSize;
 

@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.buffer;
+package org.komamitsu.fluency.recordformat;
 
-public interface BufferFormatter
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import java.util.Map;
+
+public interface RecordFormatter
 {
-    String formatTypeName();
+    byte[] format(String tag, Object timestamp, Map<String, Object> data)
+            throws JsonProcessingException;
 }

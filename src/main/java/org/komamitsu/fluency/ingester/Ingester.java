@@ -16,12 +16,14 @@
 
 package org.komamitsu.fluency.ingester;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
 import org.komamitsu.fluency.ingester.sender.Sender;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 public interface Ingester
     extends Closeable

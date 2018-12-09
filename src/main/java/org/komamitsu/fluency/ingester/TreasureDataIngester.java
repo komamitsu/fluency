@@ -24,7 +24,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.komamitsu.fluency.ingester.sender.Sender;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -33,7 +32,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.Headers;
-import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 
 import java.io.Closeable;
@@ -97,7 +96,7 @@ public class TreasureDataIngester
         public void send(String dbAndTableTag, ByteBuffer dataBuffer)
                 throws IOException
         {
-            String[] dbAndTable = dbAndTableTag.split(".");
+            String[] dbAndTable = dbAndTableTag.split("\\.");
             // TODO: Validation
             String database = dbAndTable[0];
             String table = dbAndTable[1];
@@ -108,7 +107,6 @@ public class TreasureDataIngester
                         OutputStream out = new GZIPOutputStream(
                                 Files.newOutputStream(
                                         file.toPath(),
-                                        StandardOpenOption.CREATE_NEW,
                                         StandardOpenOption.WRITE))) {
 
                     // TODO: Make it configurable
@@ -127,7 +125,11 @@ public class TreasureDataIngester
                         <TreasureDataClient.Response>retryIf(response -> response.getStatusCode() / 100 == 5).
                         withBackoff(1000, 30000, TimeUnit.MILLISECONDS, 2.0).
                         withMaxRetries(12)).
-                        run(() -> client.importToTable(database, table, uniqueId, file));
+                        get(() -> {
+                            LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
+                                    database, table, uniqueId, file.length());
+                            return client.importToTable(database, table, uniqueId, file);
+                        });
             }
             finally {
                 if (!file.delete()) {
@@ -145,7 +147,7 @@ public class TreasureDataIngester
         public static class Config
                 implements Sender.Instantiator<TreasureDataSender>
         {
-            private String endpoint;
+            private String endpoint = "https://api-import.treasuredata.com";
             private String apikey;
 
             public String getEndpoint()
@@ -187,8 +189,8 @@ public class TreasureDataIngester
         private final Service service;
 
         interface Service {
-            @POST("/v3/table/import_with_id/{database}/{table}/{unique_id}/msgpack.gz")
-            @Headers("Content-Type: application/x-msgpack+gzip")
+            @PUT("/v3/table/import_with_id/{database}/{table}/{unique_id}/msgpack.gz")
+            @Headers("Content-Type: application/binary")
             Call<Void> importToTable(
                     @Header("Authorization") String authHeader,
                     @Path("database") String database,

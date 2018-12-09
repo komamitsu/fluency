@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +46,7 @@ public class Buffer
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     private final ObjectMapper objectMapper;
     private final FileBackup fileBackup;
+    private final RecordFormatter recordFormatter;
     private final Config config;
 
     private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
@@ -53,7 +54,7 @@ public class Buffer
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
     private final BufferPool bufferPool;
 
-    protected Buffer(final Config config)
+    protected Buffer(final Config config, RecordFormatter recordFormatter)
     {
         this.config = config;
 
@@ -64,6 +65,9 @@ public class Buffer
             fileBackup = null;
         }
 
+        this.recordFormatter = recordFormatter;
+
+        // TODO: Move this to RecordFormatter
         objectMapper = new ObjectMapper(new MessagePackFactory());
         List<Module> jacksonModules = config.getJacksonModules();
         for (Module module : jacksonModules) {
@@ -250,16 +254,13 @@ public class Buffer
     private void appendMapInternal(String tag, Object timestamp, Map<String, Object> data)
             throws IOException
     {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        objectMapper.writeValue(outputStream, Arrays.asList(timestamp, data));
-        outputStream.close();
-
-        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(recordFormatter.format(tag, timestamp, data)));
     }
 
     private void appendMessagePackMapValueInternal(String tag, Object timestamp, byte[] mapValue, int offset, int len)
             throws IOException
     {
+        // TODO: Move this to RecordFormatter
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         // 2 items array
         outputStream.write(0x92);
@@ -273,6 +274,7 @@ public class Buffer
     private void appendMessagePackMapValueInternal(String tag, Object timestamp, ByteBuffer mapValue)
             throws IOException
     {
+        // TODO: Move this to RecordFormatter
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         // 2 items array
         outputStream.write(0x92);
@@ -691,14 +693,14 @@ public class Buffer
         }
 
         @Override
-        public Buffer createInstance()
+        public Buffer createInstance(RecordFormatter recordFormatter)
         {
-            return new Buffer(this);
+            return new Buffer(this, recordFormatter);
         }
     }
 
     public interface Instantiator
     {
-        Buffer createInstance();
+        Buffer createInstance(RecordFormatter recordFormatter);
     }
 }
