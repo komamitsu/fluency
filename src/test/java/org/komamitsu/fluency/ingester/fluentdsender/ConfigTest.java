@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.ingester.fluentdsender;
 
 import org.junit.Test;
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

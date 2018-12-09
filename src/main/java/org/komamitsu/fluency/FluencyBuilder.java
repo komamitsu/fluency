@@ -24,7 +24,7 @@ import org.komamitsu.fluency.ingester.fluentdsender.MultiSender;
 import org.komamitsu.fluency.ingester.fluentdsender.RetryableSender;
 import org.komamitsu.fluency.ingester.fluentdsender.SSLSender;
 import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.fluentdsender.TCPSender;
 import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.TCPHeartbeater;
@@ -210,7 +210,7 @@ public class FluencyBuilder
 
             if (config != null) {
                 if (config.getErrorHandler() != null) {
-                    senderConfig.setSenderErrorHandler(config.getErrorHandler());
+                    senderConfig.setErrorHandler(config.getErrorHandler());
                 }
             }
 
@@ -479,8 +479,7 @@ public class FluencyBuilder
 
             if (config != null) {
                 if (config.getErrorHandler() != null) {
-                    // FIXME
-                    //    senderConfig.setSenderErrorHandler(config.getErrorHandler());
+                    senderConfig.setErrorHandler(config.getErrorHandler());
                 }
             }
 

@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.ingester.fluentdsender;
 
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,12 +74,13 @@ public abstract class FluentdSender
                 buffers.get(i).position(positions.get(i));
             }
 
-            if (config.errorHandler != null) {
+            ErrorHandler errorHandler = config.getErrorHandler();
+            if (errorHandler != null) {
                 try {
-                    config.errorHandler.handle(e);
+                    errorHandler.handle(e);
                 }
                 catch (Exception ex) {
-                    LOG.warn("Failed to handle an error in the error handler {}", config.errorHandler, ex);
+                    LOG.warn("Failed to handle an error in the error handler {}", errorHandler, ex);
                 }
             }
 
@@ -98,25 +99,23 @@ public abstract class FluentdSender
 
     public static class Config
     {
-        private ErrorHandler errorHandler;
+        private Sender.Config baseConfig = new Sender.Config();
 
         public ErrorHandler getErrorHandler()
         {
-            return errorHandler;
+            return baseConfig.getErrorHandler();
         }
 
         public Config setErrorHandler(ErrorHandler errorHandler)
         {
-            this.errorHandler = errorHandler;
+            baseConfig.setErrorHandler(errorHandler);
             return this;
         }
 
         @Override
         public String toString()
         {
-            return "Config{" +
-                    "senderErrorHandler=" + errorHandler +
-                    '}';
+            return baseConfig.toString();
         }
     }
 

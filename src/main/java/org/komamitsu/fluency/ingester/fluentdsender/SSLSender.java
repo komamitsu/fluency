@@ -19,7 +19,7 @@ package org.komamitsu.fluency.ingester.fluentdsender;
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 
 import javax.net.ssl.SSLSocket;
 
@@ -113,14 +113,14 @@ public class SSLSender
             return baseConfig;
         }
 
-        public ErrorHandler getSenderErrorHandler()
+        public ErrorHandler getErrorHandler()
         {
-            return baseConfig.getSenderErrorHandler();
+            return baseConfig.getErrorHandler();
         }
 
-        public Config setSenderErrorHandler(ErrorHandler errorHandler)
+        public Config setErrorHandler(ErrorHandler errorHandler)
         {
-            baseConfig.setSenderErrorHandler(errorHandler);
+            baseConfig.setErrorHandler(errorHandler);
             return this;
         }
 

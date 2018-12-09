@@ -22,7 +22,7 @@ import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetectS
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -245,12 +245,12 @@ public abstract class NetworkSender<T>
             return baseConfig;
         }
 
-        public ErrorHandler getSenderErrorHandler()
+        public ErrorHandler getErrorHandler()
         {
             return baseConfig.getErrorHandler();
         }
 
-        public Config setSenderErrorHandler(ErrorHandler errorHandler)
+        public Config setErrorHandler(ErrorHandler errorHandler)
         {
             baseConfig.setErrorHandler(errorHandler);
             return this;

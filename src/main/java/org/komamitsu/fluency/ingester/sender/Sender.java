@@ -18,6 +18,30 @@ package org.komamitsu.fluency.ingester.sender;
 
 public interface Sender
 {
+    class Config
+    {
+        private ErrorHandler errorHandler;
+
+        public ErrorHandler getErrorHandler()
+        {
+            return errorHandler;
+        }
+
+        public Config setErrorHandler(ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "senderErrorHandler=" + errorHandler +
+                    '}';
+        }
+    }
+
     interface Instantiator<T extends Sender>
     {
         T createInstance();

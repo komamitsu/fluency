@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.ingester.fluentdsender;
 
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,12 +124,12 @@ public class MultiSender
             return baseConfig;
         }
 
-        public ErrorHandler getSenderErrorHandler()
+        public ErrorHandler getErrorHandler()
         {
             return baseConfig.getErrorHandler();
         }
 
-        public Config setSenderErrorHandler(ErrorHandler errorHandler)
+        public Config setErrorHandler(ErrorHandler errorHandler)
         {
             baseConfig.setErrorHandler(errorHandler);
             return this;

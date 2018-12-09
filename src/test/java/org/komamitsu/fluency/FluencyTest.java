@@ -38,7 +38,7 @@ import org.komamitsu.fluency.ingester.fluentdsender.NetworkSender;
 import org.komamitsu.fluency.ingester.fluentdsender.RetryableSender;
 import org.komamitsu.fluency.ingester.fluentdsender.SSLSender;
 import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
-import org.komamitsu.fluency.ingester.ErrorHandler;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.fluentdsender.TCPSender;
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.ingester.fluentdsender.failuredetect.PhiAccrualFailureDetectStrategy;

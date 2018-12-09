@@ -23,6 +23,7 @@ import net.jodah.failsafe.RetryPolicy;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,11 +87,39 @@ public class TreasureDataIngester
     public static class TreasureDataSender
             implements Closeable, Sender
     {
+        private final Config config;
         private final TreasureDataClient client;
 
-        public TreasureDataSender(String endpoint, String apikey)
+        public class HttpResponseError
+            extends RuntimeException
         {
-            this.client = new TreasureDataClient(endpoint, apikey);
+            private final int statusCode;
+            private final String reasonPhrase;
+
+            public HttpResponseError(int statusCode, String reasonPhrase)
+            {
+                super(String.format(
+                        "HTTP response error: statusCode=%d, reasonPhrase=%s",
+                        statusCode, reasonPhrase));
+
+                this.statusCode = statusCode;
+                this.reasonPhrase = reasonPhrase;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "HttpResponseError{" +
+                        "statusCode=" + statusCode +
+                        ", reasonPhrase='" + reasonPhrase + '\'' +
+                        "} " + super.toString();
+            }
+        }
+
+        public TreasureDataSender(Config config)
+        {
+            this.config = config;
+            this.client = new TreasureDataClient(config.getEndpoint(), config.getApikey());
         }
 
         public void send(String dbAndTableTag, ByteBuffer dataBuffer)
@@ -122,7 +151,27 @@ public class TreasureDataIngester
                 String uniqueId = UUID.randomUUID().toString();
                 Failsafe.with(new RetryPolicy().
                         // TODO: Report error to a handler if set & Create database and table if not exists
-                        <TreasureDataClient.Response>retryIf(response -> response.getStatusCode() / 100 == 5).
+                        <TreasureDataClient.Response>retryIf((response, ex) -> {
+                            if (ex == null && response.getStatusCode() / 100 == 2) {
+                                // Success. Shouldn't retry.
+                                return false;
+                            }
+
+                            ErrorHandler errorHandler = config.getErrorHandler();
+
+                            if (ex != null) {
+                                if (errorHandler != null) {
+                                    errorHandler.handle(ex);
+                                }
+                                return ex instanceof InterruptedException;
+                            }
+                            else {
+                                if (errorHandler != null) {
+                                    errorHandler.handle(new HttpResponseError(response.statusCode, response.reasonPhrase));
+                                }
+                                return response.getStatusCode() / 100 == 5;
+                            }
+                        }).
                         withBackoff(1000, 30000, TimeUnit.MILLISECONDS, 2.0).
                         withMaxRetries(12)).
                         get(() -> {
@@ -147,6 +196,7 @@ public class TreasureDataIngester
         public static class Config
                 implements Sender.Instantiator<TreasureDataSender>
         {
+            private Sender.Config baseConfig = new Sender.Config();
             private String endpoint = "https://api-import.treasuredata.com";
             private String apikey;
 
@@ -172,10 +222,21 @@ public class TreasureDataIngester
                 return this;
             }
 
+            public ErrorHandler getErrorHandler()
+            {
+                return baseConfig.getErrorHandler();
+            }
+
+            public Config setErrorHandler(ErrorHandler errorHandler)
+            {
+                baseConfig.setErrorHandler(errorHandler);
+                return this;
+            }
+
             @Override
             public TreasureDataSender createInstance()
             {
-                return new TreasureDataSender(endpoint, apikey);
+                return new TreasureDataSender(this);
             }
         }
     }
@@ -202,13 +263,13 @@ public class TreasureDataIngester
         static class Response<T>
         {
             private final int statusCode;
-            private final String message;
+            private final String reasonPhrase;
             private final T content;
 
-            Response(int statusCode, String message, T content)
+            Response(int statusCode, String reasonPhrase, T content)
             {
                 this.statusCode = statusCode;
-                this.message = message;
+                this.reasonPhrase = reasonPhrase;
                 this.content = content;
             }
 
@@ -217,9 +278,9 @@ public class TreasureDataIngester
                 return statusCode;
             }
 
-            String getMessage()
+            String getReasonPhrase()
             {
-                return message;
+                return reasonPhrase;
             }
 
             T getContent()

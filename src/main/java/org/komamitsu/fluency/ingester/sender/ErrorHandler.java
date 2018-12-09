@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.ingester;
+package org.komamitsu.fluency.ingester.sender;
 
 public interface ErrorHandler
 {
