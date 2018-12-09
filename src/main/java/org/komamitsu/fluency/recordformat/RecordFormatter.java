@@ -17,11 +17,53 @@
 package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-public interface RecordFormatter
+public abstract class RecordFormatter
 {
-    byte[] format(String tag, Object timestamp, Map<String, Object> data)
-            throws JsonProcessingException;
+    protected final Config config;
+
+    public RecordFormatter(Config config)
+    {
+        this.config = config;
+    }
+
+    protected void registerObjectMapperModules(ObjectMapper objectMapper)
+    {
+        List<Module> jacksonModules = config.getJacksonModules();
+        for (Module module : jacksonModules) {
+            objectMapper.registerModule(module);
+        }
+    }
+
+    public abstract byte[] format(String tag, Object timestamp, Map<String, Object> data);
+
+    public abstract byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len);
+
+    public abstract byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
+
+    public static abstract class Config<T extends RecordFormatter>
+    {
+        private List<Module> jacksonModules = Collections.emptyList();
+
+        public List<Module> getJacksonModules()
+        {
+            return jacksonModules;
+        }
+
+        public Config setJacksonModules(List<Module> jacksonModules)
+        {
+            this.jacksonModules = jacksonModules;
+            return this;
+        }
+
+        public abstract T createInstance();
+    }
 }

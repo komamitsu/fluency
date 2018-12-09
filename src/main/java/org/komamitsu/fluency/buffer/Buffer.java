@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
-    private final ObjectMapper objectMapper;
     private final FileBackup fileBackup;
     private final RecordFormatter recordFormatter;
     private final Config config;
@@ -66,13 +65,6 @@ public class Buffer
         }
 
         this.recordFormatter = recordFormatter;
-
-        // TODO: Move this to RecordFormatter
-        objectMapper = new ObjectMapper(new MessagePackFactory());
-        List<Module> jacksonModules = config.getJacksonModules();
-        for (Module module : jacksonModules) {
-            objectMapper.registerModule(module);
-        }
 
         if (config.getChunkInitialSize() > config.getChunkRetentionSize()) {
             LOG.warn("Initial Buffer Chunk Size ({}) shouldn't be more than Buffer Chunk Retention Size ({}) for better performance.",
@@ -159,11 +151,6 @@ public class Buffer
     public String getFileBackupDir()
     {
         return config.getFileBackupDir();
-    }
-
-    public List<Module> getJacksonModules()
-    {
-        return Collections.unmodifiableList(config.getJacksonModules());
     }
 
     private RetentionBuffer prepareBuffer(String tag, int writeSize)
@@ -254,38 +241,22 @@ public class Buffer
     private void appendMapInternal(String tag, Object timestamp, Map<String, Object> data)
             throws IOException
     {
-        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(recordFormatter.format(tag, timestamp, data)));
+        loadDataToRetentionBuffers(tag,
+                ByteBuffer.wrap(recordFormatter.format(tag, timestamp, data)));
     }
 
     private void appendMessagePackMapValueInternal(String tag, Object timestamp, byte[] mapValue, int offset, int len)
             throws IOException
     {
-        // TODO: Move this to RecordFormatter
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        // 2 items array
-        outputStream.write(0x92);
-        objectMapper.writeValue(outputStream, timestamp);
-        outputStream.write(mapValue, offset, len);
-        outputStream.close();
-
-        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+        loadDataToRetentionBuffers(tag,
+                ByteBuffer.wrap(recordFormatter.formatFromMessagePack(tag, timestamp, mapValue, offset, len)));
     }
 
     private void appendMessagePackMapValueInternal(String tag, Object timestamp, ByteBuffer mapValue)
             throws IOException
     {
-        // TODO: Move this to RecordFormatter
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        // 2 items array
-        outputStream.write(0x92);
-        objectMapper.writeValue(outputStream, timestamp);
-        // TODO: Optimize
-        while (mapValue.hasRemaining()) {
-            outputStream.write(mapValue.get());
-        }
-        outputStream.close();
-
-        loadDataToRetentionBuffers(tag, ByteBuffer.wrap(outputStream.toByteArray()));
+        loadDataToRetentionBuffers(tag,
+                ByteBuffer.wrap(recordFormatter.formatFromMessagePack(tag, timestamp, mapValue)));
     }
 
     public void append(String tag, long timestamp, Map<String, Object> data)
@@ -568,7 +539,6 @@ public class Buffer
         private long maxBufferSize = 512 * 1024 * 1024;
         private String fileBackupDir;
         private String fileBackupPrefix;  // Mainly for testing
-        private List<Module> jacksonModules = Collections.emptyList();
 
         private int chunkInitialSize = 1024 * 1024;
         private float chunkExpandRatio = 2.0f;
@@ -610,18 +580,7 @@ public class Buffer
         }
 
 
-        public List<Module> getJacksonModules()
-        {
-            return jacksonModules;
-        }
-
-        public Config setJacksonModules(List<Module> jacksonModules)
-        {
-            this.jacksonModules = jacksonModules;
-            return this;
-        }
-
-                public int getChunkInitialSize()
+        public int getChunkInitialSize()
         {
             return chunkInitialSize;
         }
@@ -683,7 +642,6 @@ public class Buffer
                     "maxBufferSize=" + maxBufferSize +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
                     ", fileBackupPrefix='" + fileBackupPrefix + '\'' +
-                    ", jacksonModules=" + jacksonModules +
                     ", chunkInitialSize=" + chunkInitialSize +
                     ", chunkExpandRatio=" + chunkExpandRatio +
                     ", chunkRetentionSize=" + chunkRetentionSize +

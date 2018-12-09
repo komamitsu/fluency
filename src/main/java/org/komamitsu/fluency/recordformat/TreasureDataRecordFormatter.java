@@ -19,34 +19,55 @@ package org.komamitsu.fluency.recordformat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.EventTime;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ImmutableValue;
+import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TreasureDataRecordFormatter
-        implements RecordFormatter
+        extends RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreasureDataRecordFormatter.class);
+    private final Config config;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    public TreasureDataRecordFormatter(Config config)
+    {
+        super(config);
+        this.config = config;
+        registerObjectMapperModules(objectMapper);
+    }
+
+    private long getEpoch(Object timestamp)
+    {
+        if (timestamp instanceof EventTime) {
+            return ((EventTime) timestamp).getSeconds();
+        }
+        else if (timestamp instanceof Number) {
+            return ((Number) timestamp).longValue();
+        }
+        else {
+            LOG.warn("Invalid timestamp. Using current time: timestamp={}", timestamp);
+            return System.currentTimeMillis() / 1000;
+        }
+    }
 
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
         HashMap<Object, Object> record = new HashMap<>(data);
-        long epoch;
-        if (timestamp instanceof EventTime) {
-            epoch = ((EventTime) timestamp).getSeconds();
-        }
-        else if (timestamp instanceof Number) {
-            epoch = ((Number) timestamp).longValue();
-        }
-        else {
-            LOG.warn("Invalid timestamp. Using current time: timestamp={}", timestamp);
-            epoch = System.currentTimeMillis() / 1000;
-        }
+        long epoch = getEpoch(timestamp);
         record.put("time", epoch);
 
         try {
@@ -55,10 +76,70 @@ public class TreasureDataRecordFormatter
         catch (JsonProcessingException e) {
             throw new IllegalArgumentException(
                     String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, timestamp=%s, data=%s",
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
                             e.getMessage(),
-                            timestamp, data)
+                            tag, timestamp, data.size())
             );
+        }
+    }
+
+    private byte[] addTimeColumnToMsgpackRecord(String tag, MessageUnpacker unpacker, long timestamp, int mapValueLen)
+            throws IOException
+    {
+        // TODO: Optimization
+        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+        map.put(ValueFactory.newString("time"), ValueFactory.newInteger(timestamp));
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream(mapValueLen + 16);
+        MessagePacker packer = MessagePack.newDefaultPacker(output);
+
+        ValueFactory.newMap(map).writeTo(packer);
+        packer.close();
+
+        return output.toByteArray();
+    }
+
+    @Override
+    public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
+    {
+        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue, offset, len)) {
+            return addTimeColumnToMsgpackRecord(tag, unpacker, getEpoch(timestamp), len);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+                            e.getMessage(),
+                            tag, timestamp, len)
+            );
+        }
+    }
+
+    @Override
+    public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
+    {
+        // TODO: Optimization
+        int mapValueLen = mapValue.remaining();
+        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue)) {
+            return addTimeColumnToMsgpackRecord(tag, unpacker, getEpoch(timestamp), mapValueLen);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+                            e.getMessage(),
+                            tag, timestamp, mapValueLen)
+            );
+        }
+    }
+
+    public static class Config
+            extends RecordFormatter.Config<TreasureDataRecordFormatter>
+    {
+        @Override
+        public TreasureDataRecordFormatter createInstance()
+        {
+            return new TreasureDataRecordFormatter(this);
         }
     }
 }

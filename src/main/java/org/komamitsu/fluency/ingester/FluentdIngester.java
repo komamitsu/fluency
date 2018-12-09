@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.ingester;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.format.RequestOption;
 import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
@@ -32,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class FluentdIngester

@@ -22,16 +22,27 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 
 public class FluentdRecordFormatter
-        implements RecordFormatter
+        extends RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
     private static final Charset CHARSET = Charset.forName("ASCII");
+    private final Config config;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    public FluentdRecordFormatter(Config config)
+    {
+        super(config);
+        this.config = config;
+        registerObjectMapperModules(objectMapper);
+    }
 
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
@@ -42,10 +53,69 @@ public class FluentdRecordFormatter
         catch (JsonProcessingException e) {
             throw new IllegalArgumentException(
                     String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, timestamp=%s, data=%s",
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
                             e.getMessage(),
-                            timestamp, data)
+                            tag, timestamp, data.size())
             );
+        }
+    }
+
+    @Override
+    public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
+    {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            // 2 items array
+            outputStream.write(0x92);
+            objectMapper.writeValue(outputStream, timestamp);
+            outputStream.write(mapValue, offset, len);
+            outputStream.close();
+
+            return outputStream.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+                            e.getMessage(),
+                            tag, timestamp, mapValue.length)
+            );
+        }
+    }
+
+    @Override
+    public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
+    {
+        int mapValueLen = mapValue.remaining();
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            // 2 items array
+            outputStream.write(0x92);
+            objectMapper.writeValue(outputStream, timestamp);
+            while (mapValue.hasRemaining()) {
+                outputStream.write(mapValue.get());
+            }
+            outputStream.close();
+
+            return outputStream.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+                            e.getMessage(),
+                            tag, timestamp, mapValueLen)
+            );
+        }
+    }
+
+    public static class Config
+            extends RecordFormatter.Config<FluentdRecordFormatter>
+    {
+        @Override
+        public FluentdRecordFormatter createInstance()
+        {
+            return new FluentdRecordFormatter(this);
         }
     }
 }

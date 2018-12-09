@@ -43,14 +43,14 @@ import java.util.List;
 public class FluencyBuilder
 {
     private static Fluency buildFromConfigs(
-            RecordFormatter recordFormatter,
+            RecordFormatter.Config recordFormatter,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
             Ingester ingester)
     {
         Buffer buffer =
                 (bufferConfig != null ? bufferConfig : new Buffer.Config()).
-                        createInstance(recordFormatter);
+                        createInstance(recordFormatter.createInstance());
 
         Flusher flusher =
                 (flusherConfig != null ? flusherConfig : new AsyncFlusher.Config()).
@@ -218,7 +218,7 @@ public class FluencyBuilder
             RetryableSender retryableSender = senderConfig.createInstance();
 
             return buildFromConfigs(
-                    new FluentdRecordFormatter(),
+                    new FluentdRecordFormatter.Config(),
                     bufferConfig,
                     flusherConfig,
                     transporterConfig.createInstance(retryableSender)
@@ -488,13 +488,12 @@ public class FluencyBuilder
             TreasureDataIngester.TreasureDataSender sender = senderConfig.createInstance();
 
             return buildFromConfigs(
-                    new TreasureDataRecordFormatter(),
+                    new TreasureDataRecordFormatter.Config(),
                     bufferConfig,
                     flusherConfig,
                     transporterConfig.createInstance(sender)
             );
         }
-
 
         public static class FluencyConfig
         {
