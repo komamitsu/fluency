@@ -16,10 +16,8 @@
 
 package org.komamitsu.fluency.recordformat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -49,7 +47,7 @@ public abstract class RecordFormatter
 
     public abstract byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
 
-    public static abstract class Config<T extends RecordFormatter>
+    public static class Config
     {
         private List<Module> jacksonModules = Collections.emptyList();
 
@@ -63,7 +61,10 @@ public abstract class RecordFormatter
             this.jacksonModules = jacksonModules;
             return this;
         }
+    }
 
-        public abstract T createInstance();
+    public interface Instantiator<T extends RecordFormatter>
+    {
+        T createInstance();
     }
 }

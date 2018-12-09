@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.EventTime;
 import org.msgpack.core.MessagePack;
@@ -33,6 +34,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TreasureDataRecordFormatter
@@ -44,7 +46,7 @@ public class TreasureDataRecordFormatter
 
     public TreasureDataRecordFormatter(Config config)
     {
-        super(config);
+        super(config.baseConfig);
         this.config = config;
         registerObjectMapperModules(objectMapper);
     }
@@ -134,8 +136,21 @@ public class TreasureDataRecordFormatter
     }
 
     public static class Config
-            extends RecordFormatter.Config<TreasureDataRecordFormatter>
+            implements RecordFormatter.Instantiator<TreasureDataRecordFormatter>
     {
+        RecordFormatter.Config baseConfig = new RecordFormatter.Config();
+
+        public List<Module> getJacksonModules()
+        {
+            return baseConfig.getJacksonModules();
+        }
+
+        public Config setJacksonModules(List<Module> jacksonModules)
+        {
+            baseConfig.setJacksonModules(jacksonModules);
+            return this;
+        }
+
         @Override
         public TreasureDataRecordFormatter createInstance()
         {

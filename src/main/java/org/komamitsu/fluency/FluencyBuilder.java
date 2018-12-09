@@ -31,7 +31,6 @@ import org.komamitsu.fluency.ingester.fluentdsender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.ingester.fluentdsender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.ingester.FluentdIngester;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.ingester.sender.Sender;
 import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.recordformat.TreasureDataRecordFormatter;
@@ -43,7 +42,7 @@ import java.util.List;
 public class FluencyBuilder
 {
     private static Fluency buildFromConfigs(
-            RecordFormatter.Config recordFormatter,
+            RecordFormatter.Instantiator recordFormatter,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
             Ingester ingester)

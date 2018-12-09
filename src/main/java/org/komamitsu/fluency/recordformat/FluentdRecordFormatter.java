@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class FluentdRecordFormatter
@@ -39,7 +41,7 @@ public class FluentdRecordFormatter
 
     public FluentdRecordFormatter(Config config)
     {
-        super(config);
+        super(config.baseConfig);
         this.config = config;
         registerObjectMapperModules(objectMapper);
     }
@@ -110,8 +112,21 @@ public class FluentdRecordFormatter
     }
 
     public static class Config
-            extends RecordFormatter.Config<FluentdRecordFormatter>
+            implements RecordFormatter.Instantiator<FluentdRecordFormatter>
     {
+        RecordFormatter.Config baseConfig = new RecordFormatter.Config();
+
+        public List<Module> getJacksonModules()
+        {
+            return baseConfig.getJacksonModules();
+        }
+
+        public Config setJacksonModules(List<Module> jacksonModules)
+        {
+            baseConfig.setJacksonModules(jacksonModules);
+            return this;
+        }
+
         @Override
         public FluentdRecordFormatter createInstance()
         {
