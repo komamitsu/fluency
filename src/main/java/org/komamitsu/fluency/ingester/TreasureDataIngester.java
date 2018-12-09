@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
-import net.jodah.failsafe.function.CheckedRunnable;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -36,6 +35,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.Headers;
+import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 
@@ -283,6 +283,19 @@ public class TreasureDataIngester
                     @Path("table") String table,
                     @Path("unique_id") String uniqueId,
                     @Body RequestBody messagePackGzip);
+
+            @POST("/v3/database/create/{database}")
+            @Headers("Content-Type: application/json")
+            Call<Void> createDatabase(
+                    @Header("Authorization") String authHeader,
+                    @Path("database") String database);
+
+            @POST("/v3/table/create/{database}/{table}/log")
+            @Headers("Content-Type: application/json")
+            Call<Void> createTable(
+                    @Header("Authorization") String authHeader,
+                    @Path("database") String database,
+                    @Path("table") String table);
         }
 
         static class Response<T>
@@ -348,13 +361,51 @@ public class TreasureDataIngester
             service = retrofit.create(Service.class);
         }
 
+        private String getAuthorizationHeader()
+        {
+            return "TD1 " + apikey;
+        }
+
+        Response<Void> createDatabase(String database)
+        {
+            retrofit2.Response<Void> response;
+            try {
+                response = service.createDatabase(getAuthorizationHeader(), database).execute();
+            }
+            catch (IOException e) {
+                throw new RetryableException(
+                        String.format("Failed to create the database: %s", database), e);
+            }
+
+            return new Response<>(
+                    String.format("POST %s/v3/database/create/%s", endpoint, database),
+                    response.isSuccessful(), response.code(), response.message(), null);
+        }
+
+        Response<Void> createTable(String database, String table)
+        {
+            retrofit2.Response<Void> response;
+            try {
+                response = service.createTable(getAuthorizationHeader(), database, table).execute();
+            }
+            catch (IOException e) {
+                throw new RetryableException(
+                        String.format("Failed to create the table: %s.%s", database, table), e);
+            }
+
+            return new Response<>(
+                    String.format("POST %s/v3/table/create/%s/%s/log", endpoint, database, table),
+                    response.isSuccessful(), response.code(), response.message(), null);
+        }
+
         Response<Void> importToTable(String database, String table, String uniqueId, File msgpackGzipped)
         {
-            String auth = "TD1 " + apikey;
             RequestBody requestBody = RequestBody.create(null, msgpackGzipped);
-            retrofit2.Response<Void> response = null;
+            retrofit2.Response<Void> response;
             try {
-                response = service.importToTable(auth, database, table, uniqueId, requestBody).execute();
+                response = service.importToTable(
+                        getAuthorizationHeader(),
+                        database, table, uniqueId, requestBody).execute();
             }
             catch (IOException e) {
                 throw new RetryableException("Failed to import data to TD", e);
