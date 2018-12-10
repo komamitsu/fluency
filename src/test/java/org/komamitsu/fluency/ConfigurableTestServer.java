@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency;
 
-import org.komamitsu.fluency.ingester.fluentdsender.SSLTestServerSocketFactory;
+import org.komamitsu.fluency.ingester.sender.fluentd.SSLTestServerSocketFactory;
 
 import java.net.ServerSocket;
 import java.net.Socket;

@@ -20,7 +20,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.CoreMatchers;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.ingester.fluentdsender.MockTCPSender;
+import org.komamitsu.fluency.ingester.FluentdIngester;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.ingester.sender.fluentd.MockTCPSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -42,7 +44,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
-public class BufferTestHelper
+class BufferTestHelper
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferTestHelper.class);
     private final String longStr;
@@ -53,14 +55,14 @@ public class BufferTestHelper
     private int maxAge;
     private int longCommentCount;
 
-    public BufferTestHelper()
+    BufferTestHelper()
     {
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < 300; i++) {
             stringBuilder.append("xxxxxxxxxx");
         }
         longStr = stringBuilder.toString();
-        tagCounts = new HashMap<String, Integer>();
+        tagCounts = new HashMap<>();
         minName = "zzzzzzzzzzzzzzzzzzzz";
         maxName = "";
         minAge = Integer.MAX_VALUE;
@@ -79,53 +81,44 @@ public class BufferTestHelper
         final CountDownLatch latch = new CountDownLatch(concurrency);
 
         final MockTCPSender sender = new MockTCPSender(24229);
+        Ingester ingester = new FluentdIngester.Config().createInstance(sender);
 
-        Runnable emitTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    for (int i = 0; i < loopCount; i++) {
-                        HashMap<String, Object> data = new HashMap<String, Object>();
-                        data.put("name", String.format("komamitsu%06d", i));
-                        data.put("age", i);
-                        data.put("comment", i % 31 == 0 ? longStr : "hello");
-                        String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
-                        if (eventTime) {
-                            buffer.append(tag, new EventTime((int) (System.currentTimeMillis() / 1000), 999999999), data);
-                        }
-                        else {
-                            buffer.append(tag, System.currentTimeMillis(), data);
-                        }
+        Runnable emitTask = () -> {
+            try {
+                for (int i = 0; i < loopCount; i++) {
+                    HashMap<String, Object> data = new HashMap<>();
+                    data.put("name", String.format("komamitsu%06d", i));
+                    data.put("age", i);
+                    data.put("comment", i % 31 == 0 ? longStr : "hello");
+                    String tag = multiTags ? String.format("foodb%d.bartbl%d", i % 4, i % 4) : "foodb.bartbl";
+                    if (eventTime) {
+                        buffer.append(tag, new EventTime((int) (System.currentTimeMillis() / 1000), 999999999), data);
                     }
-                    latch.countDown();
+                    else {
+                        buffer.append(tag, System.currentTimeMillis(), data);
+                    }
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+                latch.countDown();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
             }
         };
 
         final ExecutorService flushService = Executors.newSingleThreadExecutor();
         if (!syncFlush) {
-            flushService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    while (!flushService.isShutdown()) {
-                        try {
-                            TimeUnit.MILLISECONDS.sleep(100L);
-                            buffer.flush(sender, false);
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        catch (IOException e) {
-                            e.printStackTrace();
-                            return;
-                        }
+            flushService.execute(() -> {
+                while (!flushService.isShutdown()) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(100L);
+                        buffer.flush(ingester, false);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                        return;
                     }
                 }
             });
@@ -141,7 +134,7 @@ public class BufferTestHelper
         assertThat(buffer.getAllocatedSize(), is(greaterThan(0L)));
         assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
 
-        buffer.flush(sender, true);
+        buffer.flush(ingester, true);
         buffer.close();
         long end = System.currentTimeMillis();
 
@@ -181,7 +174,7 @@ public class BufferTestHelper
 
                 int size = messageUnpacker.unpackMapHeader();
                 assertEquals(3, size);
-                Map<String, Object> data = new HashMap<String, Object>();
+                Map<String, Object> data = new HashMap<>();
                 for (int i = 0; i < size; i++) {
                     String key = messageUnpacker.unpackString();
                     ImmutableValue value = messageUnpacker.unpackValue();

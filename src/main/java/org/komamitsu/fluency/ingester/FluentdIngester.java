@@ -18,7 +18,7 @@ package org.komamitsu.fluency.ingester;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.format.RequestOption;
-import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;

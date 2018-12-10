@@ -18,7 +18,7 @@ package org.komamitsu.fluency.flusher;
 
 import org.junit.Test;
 import org.komamitsu.fluency.buffer.TestableBuffer;
-import org.komamitsu.fluency.ingester.fluentdsender.MockTCPSender;
+import org.komamitsu.fluency.ingester.sender.fluentd.MockTCPSender;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

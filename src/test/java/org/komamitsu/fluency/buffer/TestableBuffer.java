@@ -18,7 +18,7 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.ingester.fluentdsender.FluentdSender;
+import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
 import org.komamitsu.fluency.util.Tuple;
 import org.komamitsu.fluency.util.Tuple3;
 import org.slf4j.Logger;
