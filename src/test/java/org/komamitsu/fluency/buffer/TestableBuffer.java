@@ -18,7 +18,8 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.databind.Module;
 import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
 import org.komamitsu.fluency.util.Tuple3;
 import org.slf4j.Logger;
@@ -34,6 +35,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.mockito.Mockito.mock;
+
+// TODO: Maybe this test isn't needed
 public class TestableBuffer
         extends Buffer
 {
@@ -52,46 +56,41 @@ public class TestableBuffer
 
     private TestableBuffer(Config config)
     {
-        super(config.getBaseConfig());
+        super(config.getBaseConfig(), mock(RecordFormatter.class));
         this.config = config;
     }
 
     public void setSavableBuffer(List<String> params, ByteBuffer buffer)
     {
-        savableBuffers.add(new Tuple<List<String>, ByteBuffer>(params, buffer));
+        savableBuffers.add(new Tuple<>(params, buffer));
     }
 
     @Override
     public void append(String tag, EventTime timestamp, Map<String, Object> data)
-            throws IOException
     {
         throw new IllegalStateException("Shouldn't be called");
     }
 
     @Override
     public void appendMessagePackMapValue(String tag, long timestamp, byte[] mapValue, int offset, int len)
-            throws IOException
     {
         throw new IllegalStateException("Shouldn't be called");
     }
 
     @Override
     public void appendMessagePackMapValue(String tag, EventTime timestamp, byte[] mapValue, int offset, int len)
-            throws IOException
     {
         throw new IllegalStateException("Shouldn't be called");
     }
 
     @Override
     public void appendMessagePackMapValue(String tag, long timestamp, ByteBuffer mapValue)
-            throws IOException
     {
         throw new IllegalStateException("Shouldn't be called");
     }
 
     @Override
     public void appendMessagePackMapValue(String tag, EventTime timestamp, ByteBuffer mapValue)
-            throws IOException
     {
         throw new IllegalStateException("Shouldn't be called");
     }
@@ -101,7 +100,7 @@ public class TestableBuffer
     {
         try {
             MappedByteBuffer buffer = channel.map(FileChannel.MapMode.PRIVATE, 0, channel.size());
-            loadedBuffers.add(new Tuple<List<String>, ByteBuffer>(params, buffer));
+            loadedBuffers.add(new Tuple<>(params, buffer));
         }
         catch (IOException e) {
             LOG.warn("Failed to map the FileChannel: channel=" + channel, e);
@@ -110,7 +109,6 @@ public class TestableBuffer
 
     @Override
     protected void saveAllBuffersToFile()
-            throws IOException
     {
         for (Tuple<List<String>, ByteBuffer> savableBuffer : savableBuffers) {
             saveBuffer(savableBuffer.getFirst(), savableBuffer.getSecond());
@@ -119,7 +117,6 @@ public class TestableBuffer
 
     @Override
     public void append(String tag, long timestamp, Map data)
-            throws IOException
     {
         events.add(new Tuple3<String, Long, Map<String, Object>>(tag, timestamp, data));
         allocatedSize.addAndGet(ALLOC_SIZE);
@@ -127,8 +124,7 @@ public class TestableBuffer
     }
 
     @Override
-    public void flushInternal(FluentdSender sender, boolean force)
-            throws IOException
+    public void flushInternal(Ingester ingester, boolean force)
     {
         if (force) {
             forceFlushCount.incrementAndGet();
@@ -240,22 +236,6 @@ public class TestableBuffer
             return this;
         }
 
-        public Config setAckResponseMode(boolean ackResponseMode)
-        {
-            baseConfig.setAckResponseMode(ackResponseMode);
-            return this;
-        }
-
-        public boolean isAckResponseMode()
-        {
-            return baseConfig.isAckResponseMode();
-        }
-
-        public List<Module> getJacksonModules()
-        {
-            return baseConfig.getJacksonModules();
-        }
-
         public String getFileBackupPrefix()
         {
             return baseConfig.getFileBackupPrefix();
@@ -264,11 +244,6 @@ public class TestableBuffer
         public String getFileBackupDir()
         {
             return baseConfig.getFileBackupDir();
-        }
-
-        public Buffer.Config setJacksonModules(List<Module> jacksonModules)
-        {
-            return baseConfig.setJacksonModules(jacksonModules);
         }
 
         public int getWaitBeforeCloseMillis()
@@ -283,7 +258,7 @@ public class TestableBuffer
         }
 
         @Override
-        public TestableBuffer createInstance()
+        public TestableBuffer createInstance(RecordFormatter recordFormatter)
         {
             TestableBuffer buffer = new TestableBuffer(this);
             buffer.init();

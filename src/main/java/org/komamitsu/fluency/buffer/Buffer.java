@@ -48,9 +48,9 @@ public class Buffer
     private final RecordFormatter recordFormatter;
     private final Config config;
 
-    private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<String, RetentionBuffer>();
-    private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<TaggableBuffer>();
-    private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<TaggableBuffer>();
+    private final Map<String, RetentionBuffer> retentionBuffers = new HashMap<>();
+    private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<>();
+    private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<>();
     private final BufferPool bufferPool;
 
     protected Buffer(final Config config, RecordFormatter recordFormatter)
@@ -78,13 +78,9 @@ public class Buffer
     {
         if (fileBackup != null) {
             for (FileBackup.SavedBuffer savedBuffer : fileBackup.getSavedFiles()) {
-                savedBuffer.open(new FileBackup.SavedBuffer.Callback() {
-                    @Override
-                    public void process(List<String> params, FileChannel channel)
-                    {
-                        LOG.info("Loading buffer: params={}, buffer={}", params, channel);
-                        loadBufferFromFile(params, channel);
-                    }
+                savedBuffer.open((params, channel) -> {
+                    LOG.info("Loading buffer: params={}, buffer={}", params, channel);
+                    loadBufferFromFile(params, channel);
                 });
             }
         }

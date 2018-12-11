@@ -20,6 +20,7 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.TreasureDataIngester;
+import org.komamitsu.fluency.ingester.sender.treasuredata.TreasureDataSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.MultiSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.RetryableSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.SSLSender;
@@ -411,7 +412,7 @@ public class FluencyBuilder
             return buildInternal(createSenderConfig(config, null, apikey), config);
         }
 
-        private static TreasureDataIngester.TreasureDataSender.Config createSenderConfig(
+        private static TreasureDataSender.Config createSenderConfig(
                 FluencyConfig config,
                 String endpoint,
                 String apikey)
@@ -420,7 +421,7 @@ public class FluencyBuilder
                 throw new IllegalArgumentException("`apikey` should be set");
             }
 
-            TreasureDataIngester.TreasureDataSender.Config senderConfig = new TreasureDataIngester.TreasureDataSender.Config();
+            TreasureDataSender.Config senderConfig = new TreasureDataSender.Config();
             senderConfig.setApikey(apikey);
 
             if (endpoint != null) {
@@ -431,7 +432,7 @@ public class FluencyBuilder
         }
 
         private static Fluency buildInternal(
-                TreasureDataIngester.TreasureDataSender.Config senderConfig,
+                TreasureDataSender.Config senderConfig,
                 FluencyConfig config)
         {
             Buffer.Config bufferConfig = new Buffer.Config();
@@ -483,7 +484,7 @@ public class FluencyBuilder
                 }
             }
 
-            TreasureDataIngester.TreasureDataSender sender = senderConfig.createInstance();
+            TreasureDataSender sender = senderConfig.createInstance();
 
             return buildFromConfigs(
                     new TreasureDataRecordFormatter.Config(),

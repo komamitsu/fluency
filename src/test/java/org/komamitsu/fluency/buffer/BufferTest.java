@@ -19,8 +19,8 @@ package org.komamitsu.fluency.buffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.ingester.sender.fluentd.MockTCPSender;
 import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +47,13 @@ public class BufferTest
     private static final Logger LOG = LoggerFactory.getLogger(BufferTest.class);
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private final FluentdRecordFormatter fluentdRecordFormatter = new FluentdRecordFormatter.Config().createInstance();
+    private RecordFormatter recordFormatter;
     private Ingester ingester;
 
     @Before
     public void setUp()
     {
+        recordFormatter = mock(RecordFormatter.class);
         ingester = mock(Ingester.class);
     }
 
@@ -59,7 +61,7 @@ public class BufferTest
     public void testBuffer()
             throws IOException
     {
-        TestableBuffer buffer = new TestableBuffer.Config().setMaxBufferSize(10000).createInstance();
+        TestableBuffer buffer = new TestableBuffer.Config().setMaxBufferSize(10000).createInstance(recordFormatter);
         Map<String, Object> data = new HashMap<>();
         data.put("name", "komamitsu");
         for (int i = 0; i < 10; i++) {
@@ -89,9 +91,9 @@ public class BufferTest
                 setFileBackupPrefix("FileBackupTest");
 
         // Just for cleaning backup files
-        config.createInstance().clearBackupFiles();
+        config.createInstance(recordFormatter).clearBackupFiles();
 
-        TestableBuffer buffer = config.createInstance();
+        TestableBuffer buffer = config.createInstance(recordFormatter);
         buffer.close();
         assertEquals(0, buffer.getLoadedBuffers().size());
         buffer.clearBackupFiles();
@@ -101,13 +103,13 @@ public class BufferTest
         List<String> paramOfSecondBuf = Arrays.asList("01234567");
         ByteBuffer bufOfSecondBuf = ByteBuffer.wrap(new byte[] {0x00, (byte)0xff});
 
-        buffer = config.createInstance();
+        buffer = config.createInstance(recordFormatter);
         buffer.setSavableBuffer(paramOfFirstBuf, bufOfFirstBuf);
         buffer.setSavableBuffer(paramOfSecondBuf, bufOfSecondBuf);
         buffer.close();
         assertEquals(0, buffer.getLoadedBuffers().size());
 
-        buffer = config.createInstance();
+        buffer = config.createInstance(recordFormatter);
         buffer.close();
         assertEquals(2, buffer.getLoadedBuffers().size());
 
@@ -144,7 +146,7 @@ public class BufferTest
         TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDirFile.getAbsolutePath());
 
         try {
-            config.createInstance();
+            config.createInstance(recordFormatter);
             assertTrue(false);
         }
         catch (IllegalArgumentException e) {
@@ -166,7 +168,7 @@ public class BufferTest
         TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
 
         try {
-            config.createInstance();
+            config.createInstance(recordFormatter);
             assertTrue(false);
         }
         catch (IllegalArgumentException e) {
@@ -188,7 +190,7 @@ public class BufferTest
         TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
 
         try {
-            config.createInstance();
+            config.createInstance(recordFormatter);
             assertTrue(false);
         }
         catch (IllegalArgumentException e) {
