@@ -21,6 +21,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.komamitsu.fluency.RetryableException;
+import org.komamitsu.fluency.ingester.sender.Sender;
 import org.komamitsu.fluency.ingester.sender.treasuredata.TreasureDataSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,12 @@ public class TreasureDataIngester
             throws IOException
     {
         sender.send(tag, dataBuffer);
+    }
+
+    @Override
+    public Sender getSender()
+    {
+        return sender;
     }
 
     @Override

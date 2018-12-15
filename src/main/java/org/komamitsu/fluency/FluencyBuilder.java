@@ -42,7 +42,8 @@ import java.util.List;
 
 public class FluencyBuilder
 {
-    private static Fluency buildFromConfigs(
+    // TODO: This method should be private
+    public static Fluency buildFromConfigs(
             RecordFormatter.Instantiator recordFormatter,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
@@ -226,7 +227,7 @@ public class FluencyBuilder
         }
 
 
-        class FluencyConfig
+        static class FluencyConfig
         {
             private Long maxBufferSize;
 

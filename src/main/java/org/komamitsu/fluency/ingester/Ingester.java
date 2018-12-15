@@ -28,6 +28,8 @@ public interface Ingester
     void ingest(String tag, ByteBuffer dataBuffer)
             throws IOException;
 
+    Sender getSender();
+
     interface Config
     {}
 

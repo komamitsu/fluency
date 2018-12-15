@@ -21,30 +21,31 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.PackedForwardBuffer;
 import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
-import org.komamitsu.fluency.ingester.sender.fluentd.MockTCPSender;
+import org.komamitsu.fluency.ingester.FluentdIngester;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.fluentd.MultiSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.NetworkSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.RetryableSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.SSLSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.fluentd.TCPSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.failuredetect.FailureDetector;
 import org.komamitsu.fluency.ingester.sender.fluentd.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.ingester.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -57,8 +58,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,6 +81,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 @RunWith(Theories.class)
 public class FluencyTest
@@ -87,23 +89,30 @@ public class FluencyTest
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
     private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
+    private final FluentdRecordFormatter.Instantiator fluentdRecordFormatterConfig =
+            new FluentdRecordFormatter.Config();
+    private Ingester ingester;
 
     @DataPoints
     public static final boolean[] SSL_ENABLED = { false, true };
 
+    @Before
+    public void setUp()
+    {
+        ingester = mock(Ingester.class);
+    }
+
     private void assertDefaultBuffer(Buffer buffer)
     {
-        assertThat(buffer, instanceOf(PackedForwardBuffer.class));
-        PackedForwardBuffer packedForwardBuffer = (PackedForwardBuffer) buffer;
-        assertThat(packedForwardBuffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
-        assertThat(packedForwardBuffer.getFileBackupDir(), is(nullValue()));
-        assertThat(packedForwardBuffer.bufferFormatType(), is("packed_forward"));
-        assertThat(packedForwardBuffer.getChunkExpandRatio(), is(2f));
-        assertThat(packedForwardBuffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
-        assertThat(packedForwardBuffer.getChunkInitialSize(), is(1 * 1024 * 1024));
-        assertThat(packedForwardBuffer.getChunkRetentionTimeMillis(), is(1000));
-        assertThat(packedForwardBuffer.getJvmHeapBufferMode(), is(false));
-        assertThat(packedForwardBuffer.isAckResponseMode(), is(false));
+        assertThat(buffer, instanceOf(Buffer.class));
+        assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
+        assertThat(buffer.getFileBackupDir(), is(nullValue()));
+        assertThat(buffer.bufferFormatType(), is("packed_forward"));
+        assertThat(buffer.getChunkExpandRatio(), is(2f));
+        assertThat(buffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
+        assertThat(buffer.getChunkInitialSize(), is(1 * 1024 * 1024));
+        assertThat(buffer.getChunkRetentionTimeMillis(), is(1000));
+        assertThat(buffer.getJvmHeapBufferMode(), is(false));
     }
 
     private void assertDefaultFlusher(Flusher flusher)
@@ -125,7 +134,7 @@ public class FluencyTest
         assertThat(sender.getBaseSender(), instanceOf(expectedBaseClass));
     }
 
-    private void assertDefaultSender(FluentdSender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
+    private void assertDefaultFluentdSender(FluentdSender sender, String expectedHost, int expectedPort, Class<? extends NetworkSender> expectedBaseClass)
     {
         assertThat(sender, instanceOf(RetryableSender.class));
         RetryableSender retryableSender = (RetryableSender) sender;
@@ -147,10 +156,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency();
+            fluency = FluencyBuilder.ForFluentd.build();
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, TCPSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "127.0.0.1",
+                    24224,
+                    TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -165,10 +178,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(54321);
+            fluency = FluencyBuilder.ForFluentd.build(54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, TCPSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "127.0.0.1",
+                    54321,
+                    TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -183,10 +200,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency("192.168.0.99", 54321);
+            fluency = FluencyBuilder.ForFluentd.build("192.168.0.99", 54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, TCPSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "192.168.0.99",
+                    54321,
+                    TCPSender.class);
         }
         finally {
             if (fluency != null) {
@@ -201,10 +222,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(new FluencyConfig().setSslEnabled(true));
+            fluency = FluencyBuilder.ForFluentd.build(new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 24224, SSLSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "127.0.0.1",
+                    24224,
+                    SSLSender.class);
         }
         finally {
             if (fluency != null) {
@@ -219,10 +244,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency(54321, new FluencyConfig().setSslEnabled(true));
+            fluency = FluencyBuilder.ForFluentd.build(54321, new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "127.0.0.1", 54321, SSLSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "127.0.0.1",
+                    54321,
+                    SSLSender.class);
         }
         finally {
             if (fluency != null) {
@@ -237,10 +266,14 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = Fluency.defaultFluency("192.168.0.99", 54321, new FluencyConfig().setSslEnabled(true));
+            fluency = FluencyBuilder.ForFluentd.build("192.168.0.99", 54321, new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
-            assertDefaultSender(fluency.getFlusher().getSender(), "192.168.0.99", 54321, SSLSender.class);
+            assertDefaultFluentdSender(
+                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
+                    "192.168.0.99",
+                    54321,
+                    SSLSender.class);
         }
         finally {
             if (fluency != null) {
@@ -258,8 +291,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            FluencyConfig config =
-                    new FluencyConfig()
+            FluencyBuilder.ForFluentd.FluencyConfig config =
+                    new FluencyBuilder.ForFluentd.FluencyConfig()
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
                             .setBufferChunkInitialSize(7 * 1024 * 1024)
@@ -271,13 +304,13 @@ public class FluencyTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = Fluency.defaultFluency(
+            fluency = FluencyBuilder.ForFluentd.build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);
 
-            assertThat(fluency.getBuffer(), instanceOf(PackedForwardBuffer.class));
-            PackedForwardBuffer buffer = (PackedForwardBuffer) fluency.getBuffer();
+            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
+            Buffer buffer = fluency.getBuffer();
             assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
             assertThat(buffer.getFileBackupDir(), is(tmpdir));
             assertThat(buffer.bufferFormatType(), is("packed_forward"));
@@ -286,7 +319,6 @@ public class FluencyTest
             assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
             assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
             assertThat(buffer.getJvmHeapBufferMode(), is(true));
-            assertThat(buffer.isAckResponseMode(), is(true));
 
             assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
             AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
@@ -295,8 +327,8 @@ public class FluencyTest
             assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
             assertThat(flusher.getWaitUntilTerminated(), is(24));
 
-            assertThat(flusher.getSender(), instanceOf(RetryableSender.class));
-            RetryableSender retryableSender = (RetryableSender) flusher.getSender();
+            assertThat(flusher.getIngester().getSender(), instanceOf(RetryableSender.class));
+            RetryableSender retryableSender = (RetryableSender) flusher.getIngester().getSender();
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
@@ -356,8 +388,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            FluencyConfig config =
-                    new FluencyConfig()
+            FluencyBuilder.ForFluentd.FluencyConfig config =
+                    new FluencyBuilder.ForFluentd.FluencyConfig()
                             .setSslEnabled(true)
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
@@ -370,13 +402,13 @@ public class FluencyTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = Fluency.defaultFluency(
+            fluency = FluencyBuilder.ForFluentd.build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);
 
-            assertThat(fluency.getFlusher().getSender(), instanceOf(RetryableSender.class));
-            RetryableSender retryableSender = (RetryableSender) fluency.getFlusher().getSender();
+            assertThat(fluency.getFlusher().getIngester().getSender(), instanceOf(RetryableSender.class));
+            RetryableSender retryableSender = (RetryableSender) fluency.getFlusher().getIngester().getSender();
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
@@ -431,11 +463,14 @@ public class FluencyTest
     public void testIsTerminated()
             throws IOException, InterruptedException
     {
-        FluentdSender sender = new MockTCPSender(24224);
         TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterConfig,
+                    bufferConfig,
+                    flusherConfig,
+                    ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
@@ -444,7 +479,11 @@ public class FluencyTest
 
         {
             Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
+            Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterConfig,
+                    bufferConfig,
+                    flusherConfig,
+                    ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
@@ -456,12 +495,13 @@ public class FluencyTest
     public void testGetAllocatedBufferSize()
             throws IOException
     {
-        Fluency fluency = new Fluency.Builder(new MockTCPSender(24224)).
-                setBufferConfig(new TestableBuffer.Config()).
-                setFlusherConfig(new AsyncFlusher.Config()).
-                build();
+        Fluency fluency = FluencyBuilder.buildFromConfigs(
+                fluentdRecordFormatterConfig,
+                new TestableBuffer.Config(),
+                new AsyncFlusher.Config(),
+                ingester);
         assertThat(fluency.getAllocatedBufferSize(), is(0L));
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("comment", "hello world");
         for (int i = 0; i < 10000; i++) {
             fluency.emit("foodb.bartbl", map);
@@ -474,21 +514,27 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         {
-            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            fluency.emit("foo.bar", new HashMap<String, Object>());
+            Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterConfig,
+                    bufferConfig,
+                    flusherConfig,
+                    ingester);
+            fluency.emit("foo.bar", new HashMap<>());
             fluency.close();
             assertThat(fluency.waitUntilFlusherTerminated(1), is(false));
         }
 
         {
-            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-            fluency.emit("foo.bar", new HashMap<String, Object>());
+            Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterConfig,
+                    bufferConfig,
+                    flusherConfig,
+                    ingester);
+            fluency.emit("foo.bar", new HashMap<>());
             fluency.close();
             assertThat(fluency.waitUntilFlusherTerminated(3), is(true));
         }
@@ -499,13 +545,16 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         {
-            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-                fluency.emit("foo.bar", new HashMap<String, Object>());
+                fluency = FluencyBuilder.buildFromConfigs(
+                        fluentdRecordFormatterConfig,
+                        bufferConfig,
+                        flusherConfig,
+                        ingester);
+                fluency.emit("foo.bar", new HashMap<>());
                 assertThat(fluency.waitUntilAllBufferFlushed(3), is(true));
             }
             finally {
@@ -516,13 +565,16 @@ public class FluencyTest
         }
 
         {
-            FluentdSender sender = new MockTCPSender(24224);
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-                fluency.emit("foo.bar", new HashMap<String, Object>());
+                fluency = FluencyBuilder.buildFromConfigs(
+                        fluentdRecordFormatterConfig,
+                        bufferConfig,
+                        flusherConfig,
+                        ingester);
+                fluency.emit("foo.bar", new HashMap<>());
                 assertThat(fluency.waitUntilAllBufferFlushed(1), is(false));
             }
             finally {
@@ -540,20 +592,15 @@ public class FluencyTest
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
 
-        Fluency fluency = Fluency.defaultFluency(Integer.MAX_VALUE,
-                new FluencyConfig()
+        Fluency fluency = FluencyBuilder.ForFluentd.build(Integer.MAX_VALUE,
+                new FluencyBuilder.ForFluentd.FluencyConfig()
                         .setSenderMaxRetryCount(1)
-                        .setSenderErrorHandler(new ErrorHandler()
-                        {
-                            @Override
-                            public void handle(Throwable e)
-                            {
-                                errorContainer.set(e);
-                                countDownLatch.countDown();
-                            }
+                        .setErrorHandler(e -> {
+                            errorContainer.set(e);
+                            countDownLatch.countDown();
                         }));
 
-        HashMap<String, Object> event = new HashMap<String, Object>();
+        HashMap<String, Object> event = new HashMap<>();
         event.put("name", "foo");
         fluency.emit("tag", event);
 
@@ -569,33 +616,22 @@ public class FluencyTest
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
-                new ConfigurableTestServer.WithClientSocket() {
-                    @Override
-                    public void run(Socket clientSocket)
-                            throws Exception
-                    {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
-                        assertEquals(3, unpacker.unpackArrayHeader());
-                        assertEquals("foo.bar", unpacker.unpackString());
-                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
-                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-                        assertEquals(1, map.size());
-                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
-                        unpacker.close();
-                    }
+                clientSocket -> {
+                    MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
+                    assertEquals(3, unpacker.unpackArrayHeader());
+                    assertEquals("foo.bar", unpacker.unpackString());
+                    ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                    Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                    assertEquals(1, map.size());
+                    assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                    unpacker.close();
                 },
-                new ConfigurableTestServer.WithServerPort()
-                {
-                    @Override
-                    public void run(int serverPort)
-                            throws Exception
-                    {
-                        Fluency fluency =
-                                Fluency.defaultFluency(serverPort,
-                                        new FluencyConfig().setSslEnabled(sslEnabled));
-                        fluency.emit("foo.bar", new HashMap<String, Object>());
-                        fluency.close();
-                    }
+                serverPort -> {
+                    Fluency fluency =
+                            FluencyBuilder.ForFluentd.build(serverPort,
+                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled));
+                    fluency.emit("foo.bar", new HashMap<>());
+                    fluency.close();
                 }, 5000);
         assertNull(exception);
     }
@@ -605,34 +641,23 @@ public class FluencyTest
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
-                new ConfigurableTestServer.WithClientSocket() {
-                    @Override
-                    public void run(Socket clientSocket)
-                            throws Exception
-                    {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
-                        assertEquals(3, unpacker.unpackArrayHeader());
-                        assertEquals("foo.bar", unpacker.unpackString());
-                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
-                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-                        assertEquals(2, map.size());
-                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
-                        assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
-                        unpacker.close();
-                    }
+                clientSocket -> {
+                    MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
+                    assertEquals(3, unpacker.unpackArrayHeader());
+                    assertEquals("foo.bar", unpacker.unpackString());
+                    ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                    Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                    assertEquals(2, map.size());
+                    assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                    assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
+                    unpacker.close();
                 },
-                new ConfigurableTestServer.WithServerPort()
-                {
-                    @Override
-                    public void run(int serverPort)
-                            throws Exception
-                    {
-                        Fluency fluency =
-                                Fluency.defaultFluency(serverPort,
-                                        new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                        fluency.emit("foo.bar", new HashMap<String, Object>());
-                        fluency.close();
-                    }
+                serverPort -> {
+                    Fluency fluency =
+                            FluencyBuilder.ForFluentd.build(serverPort,
+                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                    fluency.emit("foo.bar", new HashMap<>());
+                    fluency.close();
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -642,41 +667,30 @@ public class FluencyTest
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
-                new ConfigurableTestServer.WithClientSocket() {
-                    @Override
-                    public void run(Socket clientSocket)
-                            throws Exception
-                    {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
-                        assertEquals(3, unpacker.unpackArrayHeader());
-                        assertEquals("foo.bar", unpacker.unpackString());
-                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
-                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-                        assertEquals(2, map.size());
-                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
-                        assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
+                clientSocket -> {
+                    MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
+                    assertEquals(3, unpacker.unpackArrayHeader());
+                    assertEquals("foo.bar", unpacker.unpackString());
+                    ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                    Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                    assertEquals(2, map.size());
+                    assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                    assertNotNull(map.get(KEY_OPTION_CHUNK).asRawValue().asString());
 
-                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
-                        packer.packMapHeader(1)
-                                .packString("ack").packString(UUID.randomUUID().toString())
-                                .close();
+                    MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
+                    packer.packMapHeader(1)
+                            .packString("ack").packString(UUID.randomUUID().toString())
+                            .close();
 
-                        // Close the input stream after closing the output stream to avoid closing a socket too early
-                        unpacker.close();
-                    }
+                    // Close the input stream after closing the output stream to avoid closing a socket too early
+                    unpacker.close();
                 },
-                new ConfigurableTestServer.WithServerPort()
-                {
-                    @Override
-                    public void run(int serverPort)
-                            throws Exception
-                    {
-                        Fluency fluency =
-                                Fluency.defaultFluency(serverPort,
-                                        new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                        fluency.emit("foo.bar", new HashMap<String, Object>());
-                        fluency.close();
-                    }
+                serverPort -> {
+                    Fluency fluency =
+                            FluencyBuilder.ForFluentd.build(serverPort,
+                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                    fluency.emit("foo.bar", new HashMap<>());
+                    fluency.close();
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -686,41 +700,30 @@ public class FluencyTest
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
-                new ConfigurableTestServer.WithClientSocket() {
-                    @Override
-                    public void run(Socket clientSocket)
-                            throws Exception
-                    {
-                        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
-                        assertEquals(3, unpacker.unpackArrayHeader());
-                        assertEquals("foo.bar", unpacker.unpackString());
-                        ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
-                        Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-                        assertEquals(2, map.size());
-                        assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
-                        String ackResponseToken = map.get(KEY_OPTION_CHUNK).asRawValue().asString();
-                        assertNotNull(ackResponseToken);
+                clientSocket -> {
+                    MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(clientSocket.getInputStream());
+                    assertEquals(3, unpacker.unpackArrayHeader());
+                    assertEquals("foo.bar", unpacker.unpackString());
+                    ImmutableRawValue rawValue = unpacker.unpackValue().asRawValue();
+                    Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
+                    assertEquals(2, map.size());
+                    assertEquals(rawValue.asByteArray().length, map.get(KEY_OPTION_SIZE).asIntegerValue().asInt());
+                    String ackResponseToken = map.get(KEY_OPTION_CHUNK).asRawValue().asString();
+                    assertNotNull(ackResponseToken);
 
-                        MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
-                        packer.packMapHeader(1)
-                                .packString("ack").packString(ackResponseToken)
-                                .close();
+                    MessagePacker packer = MessagePack.newDefaultPacker(clientSocket.getOutputStream());
+                    packer.packMapHeader(1)
+                            .packString("ack").packString(ackResponseToken)
+                            .close();
 
-                        // Close the input stream after closing the output stream to avoid closing a socket too early
-                        unpacker.close();
-                    }
+                    // Close the input stream after closing the output stream to avoid closing a socket too early
+                    unpacker.close();
                 },
-                new ConfigurableTestServer.WithServerPort()
-                {
-                    @Override
-                    public void run(int serverPort)
-                            throws Exception
-                    {
-                        Fluency fluency = Fluency.defaultFluency(serverPort,
-                                new FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                        fluency.emit("foo.bar", new HashMap<String, Object>());
-                        fluency.close();
-                    }
+                serverPort -> {
+                    Fluency fluency = FluencyBuilder.ForFluentd.build(serverPort,
+                            new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                    fluency.emit("foo.bar", new HashMap<>());
+                    fluency.close();
                 }, 5000);
         assertNull(exception);
     }
@@ -737,7 +740,6 @@ public class FluencyTest
 
         @Override
         public void send(ByteBuffer buffer)
-                throws IOException
         {
             try {
                 latch.await();
@@ -754,17 +756,44 @@ public class FluencyTest
         }
     }
 
+    class StuckIngester
+        extends FluentdIngester
+    {
+        private final CountDownLatch latch;
+
+        StuckIngester(CountDownLatch latch)
+        {
+            super(new FluentdIngester.Config(), mock(FluentdSender.class));
+            this.latch = latch;
+        }
+
+        @Override
+        public void ingest(String tag, ByteBuffer dataBuffer)
+        {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                FluencyTest.LOG.warn("Interrupted in send()", e);
+            }
+        }
+    }
+
     @Test
     public void testBufferFullException()
             throws IOException
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        FluentdSender stuckSender = new StuckSender(latch);
+        FluentdIngester stuckIngester = new StuckIngester(latch);
 
         try {
-            PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
-            Fluency fluency = new Fluency.Builder(stuckSender).setBufferConfig(bufferConfig).build();
-            Map<String, Object> event = new HashMap<String, Object>();
+            Buffer.Config bufferConfig = new Buffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
+            Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterConfig,
+                    bufferConfig,
+                    new AsyncFlusher.Config(),
+                    stuckIngester);
+            Map<String, Object> event = new HashMap<>();
             event.put("name", "xxxx");
             for (int i = 0; i < 7; i++) {
                 fluency.emit("tag", event);
@@ -817,18 +846,21 @@ public class FluencyTest
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
 
-        PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer
+        Buffer.Config bufferConfig = new Buffer
                 .Config()
                 .setChunkInitialSize(64)
-                .setMaxBufferSize(256)
-                .setJacksonModules(Collections.<Module>singletonList(simpleModule));
+                .setMaxBufferSize(256);
 
-        Fluency fluency = new Fluency.Builder(new TCPSender.Config()
-                .createInstance())
-                .setBufferConfig(bufferConfig)
-                .build();
+        FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
+                new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
 
-        Map<String, Object> event = new HashMap<String, Object>();
+        Fluency fluency = FluencyBuilder.buildFromConfigs(
+                    fluentdRecordFormatterWithModuleConfig,
+                    bufferConfig,
+                    new AsyncFlusher.Config(),
+                    ingester);
+
+        Map<String, Object> event = new HashMap<>();
         Foo foo = new Foo();
         foo.s = "Hello";
         event.put("foo", foo);

@@ -21,14 +21,16 @@ import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.buffer.PackedForwardBuffer;
+import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.ingester.FluentdIngester;
 import org.komamitsu.fluency.ingester.sender.fluentd.MultiSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.SSLSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.TCPSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
@@ -226,7 +228,7 @@ public class FluencyTestWithMockServer
     private FluentdSender getDoubleTCPSender(int firstPort, int secondPort)
     {
         return new MultiSender.Config(
-                Arrays.<FluentdSender.Instantiator>asList(
+                Arrays.asList(
                     new TCPSender.Config()
                             .setPort(firstPort)
                             .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
@@ -244,7 +246,7 @@ public class FluencyTestWithMockServer
     private FluentdSender getDoubleSSLSender(int firstPort, int secondPort)
     {
         return new MultiSender.Config(
-                Arrays.<FluentdSender.Instantiator>asList(
+                Arrays.asList(
                     new SSLSender.Config()
                             .setPort(firstPort)
                             .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
@@ -258,46 +260,48 @@ public class FluencyTestWithMockServer
     public void testFluencyUsingAsyncFlusher(final Options options)
             throws Exception
     {
-        testFluencyBase(new FluencyFactory()
-        {
-            @Override
-            public Fluency generate(List<Integer> localPorts)
-                    throws IOException
-            {
-                FluentdSender sender;
-                int fluentdPort = localPorts.get(0);
-                if (options.failover) {
-                    int secondaryFluentdPort = localPorts.get(1);
-                    if (options.sslEnabled) {
-                        sender = getDoubleSSLSender(fluentdPort, secondaryFluentdPort);
-                    }
-                    else {
-                        sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
-                    }
+        testFluencyBase(localPorts -> {
+            FluentdSender sender;
+            int fluentdPort = localPorts.get(0);
+            if (options.failover) {
+                int secondaryFluentdPort = localPorts.get(1);
+                if (options.sslEnabled) {
+                    sender = getDoubleSSLSender(fluentdPort, secondaryFluentdPort);
                 }
                 else {
-                    if (options.sslEnabled) {
-                        sender = getSingleSSLSender(fluentdPort);
-                    }
-                    else {
-                        sender = getSingleTCPSender(fluentdPort);
-                    }
+                    sender = getDoubleTCPSender(fluentdPort, secondaryFluentdPort);
                 }
-                PackedForwardBuffer.Config bufferConfig = new PackedForwardBuffer.Config();
-                if (options.ackResponse) {
-                    bufferConfig.setAckResponseMode(true);
-                }
-                if (options.smallBuffer) {
-                    bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
-                }
-                if (options.fileBackup) {
-                    bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
-                }
-                Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
-                        .setWaitUntilBufferFlushed(10)
-                        .setWaitUntilTerminated(10);
-                return new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
             }
+            else {
+                if (options.sslEnabled) {
+                    sender = getSingleSSLSender(fluentdPort);
+                }
+                else {
+                    sender = getSingleTCPSender(fluentdPort);
+                }
+            }
+
+            FluentdIngester.Config ingesterConfig = new FluentdIngester.Config();
+            if (options.ackResponse) {
+                ingesterConfig.setAckResponseMode(true);
+            }
+
+            Buffer.Config bufferConfig = new Buffer.Config();
+            if (options.smallBuffer) {
+                bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
+            }
+            if (options.fileBackup) {
+                bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
+            }
+            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
+                    .setWaitUntilBufferFlushed(10)
+                    .setWaitUntilTerminated(10);
+
+            return FluencyBuilder.buildFromConfigs(
+                    new FluentdRecordFormatter.Config(),
+                    bufferConfig,
+                    flusherConfig,
+                    ingesterConfig.createInstance(sender));
         }, options);
     }
 
@@ -306,7 +310,7 @@ public class FluencyTestWithMockServer
     {
         LOG.info("testFluencyBase starts: options={}", options);
 
-        final ArrayList<Integer> localPorts = new ArrayList<Integer>();
+        final ArrayList<Integer> localPorts = new ArrayList<>();
 
         final MockFluentdServer fluentd = new MockFluentdServer(options.sslEnabled);
         fluentd.start();
@@ -317,7 +321,7 @@ public class FluencyTestWithMockServer
         localPorts.add(fluentd.getLocalPort());
         localPorts.add(secondaryFluentd.getLocalPort());
 
-        final AtomicReference<Fluency> fluency = new AtomicReference<Fluency>(fluencyFactory.generate(localPorts));
+        final AtomicReference<Fluency> fluency = new AtomicReference<>(fluencyFactory.generate(localPorts));
         if (options.fileBackup) {
             fluency.get().clearBackupFiles();
         }
@@ -325,7 +329,7 @@ public class FluencyTestWithMockServer
         final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
         final int maxNameLen = 200;
-        final HashMap<Integer, String> nameLenTable = new HashMap<Integer, String>(maxNameLen);
+        final HashMap<Integer, String> nameLenTable = new HashMap<>(maxNameLen);
         for (int i = 1; i <= maxNameLen; i++) {
             StringBuilder stringBuilder = new StringBuilder();
             for (int j = 0; j < i; j++) {
@@ -356,173 +360,168 @@ public class FluencyTestWithMockServer
 
             ExecutorService es = Executors.newCachedThreadPool();
             for (int i = 0; i < concurrency; i++) {
-                es.execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        for (int i = 0; i < reqNum; i++) {
-                            if (Thread.currentThread().isInterrupted()) {
-                                LOG.info("Interrupted...");
-                                break;
-                            }
+                es.execute(() -> {
+                    for (int i1 = 0; i1 < reqNum; i1++) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            LOG.info("Interrupted...");
+                            break;
+                        }
 
-                            if (options.failover) {
-                                if (i == reqNum / 2) {
-                                    if (shouldFailOver.getAndSet(false)) {
-                                        LOG.info("Failing over...");
-                                        try {
-                                            secondaryFluentd.stop();
-                                        }
-                                        catch (IOException e) {
-                                            LOG.warn("Failed to stop secondary fluentd", e);
-                                        }
-                                    }
-                                }
-                            }
-                            else if (options.fileBackup) {
-                                if (i == reqNum / 2) {
-                                    if (shouldStopFluentd.getAndSet(false)) {
-                                        LOG.info("Stopping Fluentd...");
-                                        try {
-                                            fluentd.stop();
-                                            secondaryFluentd.stop();
-                                        }
-                                        catch (IOException e) {
-                                            LOG.warn("Failed to stop Fluentd", e);
-                                        }
-                                    }
-
-                                    fluentdCloseWaitLatch.countDown();
+                        if (options.failover) {
+                            if (i1 == reqNum / 2) {
+                                if (shouldFailOver.getAndSet(false)) {
+                                    LOG.info("Failing over...");
                                     try {
-                                        assertTrue(fluentdCloseWaitLatch.await(20, TimeUnit.SECONDS));
+                                        secondaryFluentd.stop();
                                     }
-                                    catch (InterruptedException e) {
-                                        LOG.warn("Interrupted", e);
-                                    }
-
-                                    if (shouldStopFluency.getAndSet(false)) {
-                                        LOG.info("Stopping Fluency...");
-                                        try {
-                                            fluency.get().close();
-                                            TimeUnit.SECONDS.sleep(2);
-                                        }
-                                        catch (Exception e) {
-                                            LOG.warn("Failed to stop Fluency", e);
-                                        }
-
-                                        LOG.info("Restarting Fluentd...");
-                                        try {
-                                            fluentd.start();
-                                            secondaryFluentd.start();
-                                            LOG.info("Restarting Fluency...");
-                                            fluency.set(fluencyFactory.generate(Arrays.asList(fluentd.getLocalPort(), secondaryFluentd.getLocalPort())));
-                                            TimeUnit.SECONDS.sleep(2);
-                                        }
-                                        catch (Exception e) {
-                                            LOG.warn("Failed to restart Fluentd", e);
-                                        }
-                                    }
-
-                                    fluencyCloseWaitLatch.countDown();
-                                    try {
-                                        assertTrue(fluencyCloseWaitLatch.await(20, TimeUnit.SECONDS));
-                                    }
-                                    catch (InterruptedException e) {
-                                        LOG.warn("Interrupted", e);
+                                    catch (IOException e) {
+                                        LOG.warn("Failed to stop secondary fluentd", e);
                                     }
                                 }
-                            }
-                            int tagNum = i % 4;
-                            final String tag = String.format("foodb%d.bartbl%d", tagNum, tagNum);
-                            switch (tagNum) {
-                                case 0:
-                                    tag0EventsCounter.incrementAndGet();
-                                    break;
-                                case 1:
-                                    tag1EventsCounter.incrementAndGet();
-                                    break;
-                                case 2:
-                                    tag2EventsCounter.incrementAndGet();
-                                    break;
-                                case 3:
-                                    tag3EventsCounter.incrementAndGet();
-                                    break;
-                                default:
-                                    throw new RuntimeException("Never reach here");
-                            }
-
-                            int rand = random.nextInt(maxNameLen);
-                            final Map<String, Object> hashMap = new HashMap<String, Object>();
-                            String name = nameLenTable.get(rand + 1);
-                            nameEventsLength.addAndGet(name.length());
-                            hashMap.put("name", name);
-                            rand = random.nextInt(100);
-                            int age = rand;
-                            ageEventsSum.addAndGet(age);
-                            hashMap.put("age", age);
-                            hashMap.put("comment", "hello, world");
-                            hashMap.put("rate", 1.23);
-
-                            try {
-                                Exception exception = null;
-                                for (int retry = 0; retry < 10; retry++) {
-                                    try {
-                                        switch (options.emitType) {
-                                            case MAP: {
-                                                fluency.get().emit(tag, hashMap);
-                                                break;
-                                            }
-                                            case MAP_WITH_EVENT_TIME: {
-                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
-                                                fluency.get().emit(tag, eventTime, hashMap);
-                                                break;
-                                            }
-                                            case MSGPACK_MAP_VALUE_BYTES: {
-                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
-                                                fluency.get().emit(tag, bytes, 0, bytes.length);
-                                                break;
-                                            }
-                                            case MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME: {
-                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
-                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
-                                                fluency.get().emit(tag, eventTime, bytes, 0, bytes.length);
-                                                break;
-                                            }
-                                            case MSGPACK_MAP_VALUE_BYTEBUFFER: {
-                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
-                                                fluency.get().emit(tag, ByteBuffer.wrap(bytes));
-                                                break;
-                                            }
-                                            case MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME: {
-                                                EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
-                                                byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
-                                                fluency.get().emit(tag, eventTime, ByteBuffer.wrap(bytes));
-                                                break;
-                                            }
-                                        }
-                                        exception = null;
-                                        break;
-                                    }
-                                    catch (Exception e) {
-                                        exception = e;
-                                        try {
-                                            TimeUnit.SECONDS.sleep(1);
-                                        }
-                                        catch (InterruptedException e1) {
-                                        }
-                                    }
-                                }
-                                if (exception != null) {
-                                    throw exception;
-                                }
-                            }
-                            catch (Exception e) {
-                                LOG.warn("Exception occurred", e);
                             }
                         }
-                        latch.countDown();
+                        else if (options.fileBackup) {
+                            if (i1 == reqNum / 2) {
+                                if (shouldStopFluentd.getAndSet(false)) {
+                                    LOG.info("Stopping Fluentd...");
+                                    try {
+                                        fluentd.stop();
+                                        secondaryFluentd.stop();
+                                    }
+                                    catch (IOException e) {
+                                        LOG.warn("Failed to stop Fluentd", e);
+                                    }
+                                }
+
+                                fluentdCloseWaitLatch.countDown();
+                                try {
+                                    assertTrue(fluentdCloseWaitLatch.await(20, TimeUnit.SECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    LOG.warn("Interrupted", e);
+                                }
+
+                                if (shouldStopFluency.getAndSet(false)) {
+                                    LOG.info("Stopping Fluency...");
+                                    try {
+                                        fluency.get().close();
+                                        TimeUnit.SECONDS.sleep(2);
+                                    }
+                                    catch (Exception e) {
+                                        LOG.warn("Failed to stop Fluency", e);
+                                    }
+
+                                    LOG.info("Restarting Fluentd...");
+                                    try {
+                                        fluentd.start();
+                                        secondaryFluentd.start();
+                                        LOG.info("Restarting Fluency...");
+                                        fluency.set(fluencyFactory.generate(Arrays.asList(fluentd.getLocalPort(), secondaryFluentd.getLocalPort())));
+                                        TimeUnit.SECONDS.sleep(2);
+                                    }
+                                    catch (Exception e) {
+                                        LOG.warn("Failed to restart Fluentd", e);
+                                    }
+                                }
+
+                                fluencyCloseWaitLatch.countDown();
+                                try {
+                                    assertTrue(fluencyCloseWaitLatch.await(20, TimeUnit.SECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    LOG.warn("Interrupted", e);
+                                }
+                            }
+                        }
+                        int tagNum = i1 % 4;
+                        final String tag = String.format("foodb%d.bartbl%d", tagNum, tagNum);
+                        switch (tagNum) {
+                            case 0:
+                                tag0EventsCounter.incrementAndGet();
+                                break;
+                            case 1:
+                                tag1EventsCounter.incrementAndGet();
+                                break;
+                            case 2:
+                                tag2EventsCounter.incrementAndGet();
+                                break;
+                            case 3:
+                                tag3EventsCounter.incrementAndGet();
+                                break;
+                            default:
+                                throw new RuntimeException("Never reach here");
+                        }
+
+                        int rand = random.nextInt(maxNameLen);
+                        final Map<String, Object> hashMap = new HashMap<String, Object>();
+                        String name = nameLenTable.get(rand + 1);
+                        nameEventsLength.addAndGet(name.length());
+                        hashMap.put("name", name);
+                        rand = random.nextInt(100);
+                        int age = rand;
+                        ageEventsSum.addAndGet(age);
+                        hashMap.put("age", age);
+                        hashMap.put("comment", "hello, world");
+                        hashMap.put("rate", 1.23);
+
+                        try {
+                            Exception exception = null;
+                            for (int retry = 0; retry < 10; retry++) {
+                                try {
+                                    switch (options.emitType) {
+                                        case MAP: {
+                                            fluency.get().emit(tag, hashMap);
+                                            break;
+                                        }
+                                        case MAP_WITH_EVENT_TIME: {
+                                            EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                            fluency.get().emit(tag, eventTime, hashMap);
+                                            break;
+                                        }
+                                        case MSGPACK_MAP_VALUE_BYTES: {
+                                            byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                            fluency.get().emit(tag, bytes, 0, bytes.length);
+                                            break;
+                                        }
+                                        case MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME: {
+                                            EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                            byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                            fluency.get().emit(tag, eventTime, bytes, 0, bytes.length);
+                                            break;
+                                        }
+                                        case MSGPACK_MAP_VALUE_BYTEBUFFER: {
+                                            byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                            fluency.get().emit(tag, ByteBuffer.wrap(bytes));
+                                            break;
+                                        }
+                                        case MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME: {
+                                            EventTime eventTime = EventTime.fromEpochMilli(System.currentTimeMillis());
+                                            byte[] bytes = objectMapper.writeValueAsBytes(hashMap);
+                                            fluency.get().emit(tag, eventTime, ByteBuffer.wrap(bytes));
+                                            break;
+                                        }
+                                    }
+                                    exception = null;
+                                    break;
+                                }
+                                catch (Exception e) {
+                                    exception = e;
+                                    try {
+                                        TimeUnit.SECONDS.sleep(1);
+                                    }
+                                    catch (InterruptedException e1) {
+                                    }
+                                }
+                            }
+                            if (exception != null) {
+                                throw exception;
+                            }
+                        }
+                        catch (Exception e) {
+                            LOG.warn("Exception occurred", e);
+                        }
                     }
+                    latch.countDown();
                 });
             }
 
