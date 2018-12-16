@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.FluencyConfig;
+import org.komamitsu.fluency.FluencyBuilder;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -155,10 +155,10 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = Fluency.defaultFluency(
+        Fluency fluency = FluencyBuilder.ForFluentd.build(
                 config.host,
                 config.port,
-                new FluencyConfig()
+                new FluencyBuilder.ForFluentd.FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
         );
 
@@ -189,22 +189,20 @@ public class WithRealFluentd
         assumeNotNull(config);
         assumeNotNull(config.anotherPort);
 
-        /*
-        MultiSender sender = new MultiSender(Arrays.asList(new TCPSender(24224), new TCPSender(24225)));
-        Buffer.Config bufferConfig = new PackedForwardBuffer.Config().setMaxBufferSize(128 * 1024 * 1024).setAckResponseMode(true);
-        Flusher.Config flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(200);
-        Fluency fluency = new Fluency.Builder(sender).setBufferConfig(bufferConfig).setFlusherConfig(flusherConfig).build();
-        */
-        Fluency fluency = Fluency.defaultFluency(
-                Arrays.asList(new InetSocketAddress(config.host, config.port), new InetSocketAddress(config.host, config.anotherPort)),
-                new FluencyConfig().setSslEnabled(config.sslEnabled).setAckResponseMode(true));
+        Fluency fluency = FluencyBuilder.ForFluentd.build(
+                Arrays.asList(
+                        new InetSocketAddress(config.host, config.port),
+                        new InetSocketAddress(config.host, config.anotherPort)),
+                new FluencyBuilder.ForFluentd.FluencyConfig()
+                        .setSslEnabled(config.sslEnabled)
+                        .setAckResponseMode(true));
 
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
         data.put("name", "komamitsu");
         data.put("age", 42);
         data.put("comment", "hello, world");
         ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        List<Future<Void>> futures = new ArrayList<>();
         try {
             for (int i = 0; i < config.concurrency; i++) {
                 futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
@@ -225,22 +223,23 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = Fluency.defaultFluency(
+        Fluency fluency = FluencyBuilder.ForFluentd.build(
                 config.host,
                 config.port,
-                new FluencyConfig()
+                new FluencyBuilder.ForFluentd.FluencyConfig()
                         // Fluency might use a lot of buffer for loaded backup files.
                         // So it'd better increase max buffer size
                         .setSslEnabled(config.sslEnabled)
                         .setMaxBufferSize(512 * 1024 * 1024L)
                         .setFileBackupDir(System.getProperty("java.io.tmpdir")));
-        Map<String, Object> data = new HashMap<String, Object>();
+
+        Map<String, Object> data = new HashMap<>();
         data.put("name", "komamitsu");
         data.put("age", 42);
         data.put("comment", "hello, world");
 
         ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
+        List<Future<Void>> futures = new ArrayList<>();
         try {
             for (int i = 0; i < config.concurrency; i++) {
                 futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));

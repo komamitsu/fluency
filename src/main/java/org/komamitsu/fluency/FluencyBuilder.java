@@ -227,7 +227,7 @@ public class FluencyBuilder
         }
 
 
-        static class FluencyConfig
+        public static class FluencyConfig
         {
             private Long maxBufferSize;
 
