@@ -649,7 +649,9 @@ public class Buffer
         @Override
         public Buffer createInstance(RecordFormatter recordFormatter)
         {
-            return new Buffer(this, recordFormatter);
+            Buffer buffer = new Buffer(this, recordFormatter);
+            buffer.init();
+            return buffer;
         }
     }
 
