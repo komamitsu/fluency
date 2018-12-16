@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 public abstract class NetworkSender<T>
     extends FluentdSender
@@ -104,8 +105,11 @@ public abstract class NetworkSender<T>
     protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
+        long totalDataSize = buffers.stream().mapToInt(ByteBuffer::remaining).sum();
+
         try {
-            LOG.trace("send(): sender.host={}, sender.port={}", getHost(), getPort());
+            LOG.trace("send(): sender.host={}, sender.port={}, totalDataSize={}",
+                    getHost(), getPort(), totalDataSize);
             final T socket = getOrCreateSocket();
             sendBuffers(socket, buffers);
 
@@ -148,6 +152,7 @@ public abstract class NetworkSender<T>
             }
         }
         catch (IOException e) {
+            LOG.error("Failed to send {} bytes data", totalDataSize);
             closeSocket();
             propagateFailure(e);
             throw e;

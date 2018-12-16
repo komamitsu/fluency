@@ -79,7 +79,12 @@ public class Buffer
         if (fileBackup != null) {
             for (FileBackup.SavedBuffer savedBuffer : fileBackup.getSavedFiles()) {
                 savedBuffer.open((params, channel) -> {
-                    LOG.info("Loading buffer: params={}, buffer={}", params, channel);
+                    try {
+                        LOG.info("Loading buffer: params={}, buffer.size={}", params, channel.size());
+                    }
+                    catch (IOException e) {
+                        LOG.error("Failed to access the backup file: params={}", params, e);
+                    }
                     loadBufferFromFile(params, channel);
                 });
             }
@@ -345,39 +350,11 @@ public class Buffer
                 String tag = flushableBuffer.getTag();
                 ByteBuffer dataBuffer = flushableBuffer.getByteBuffer();
                 ingester.ingest(tag, dataBuffer);
-                /*
-                int dataLength = dataBuffer.limit();
-                messagePacker.packArrayHeader(3);
-                messagePacker.packString(tag);
-                messagePacker.packRawStringHeader(dataLength);
-                messagePacker.flush();
-
-                ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
-
-                try {
-                    if (config.isAckResponseMode()) {
-                        byte[] uuidBytes = UUID.randomUUID().toString().getBytes(CHARSET);
-                        ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, uuidBytes)));
-                        List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
-
-                        synchronized (sender) {
-                            sender.sendWithAck(buffers, uuidBytes);
-                        }
-                    } else {
-                        ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, null)));
-                        List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
-
-                        synchronized (sender) {
-                            sender.send(buffers);
-                        }
-                    }
-                }
-                catch (IOException e) {
-                    LOG.warn("Failed to send data. The data is going to be saved into the buffer again: data={}", flushableBuffer);
-                    keepBuffer = true;
-                    throw e;
-                }
-                */
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to send data. The data is going to be saved into the buffer again: data={}", flushableBuffer);
+                keepBuffer = true;
+                throw e;
             }
             finally {
                 if (keepBuffer) {
