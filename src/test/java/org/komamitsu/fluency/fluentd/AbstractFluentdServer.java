@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.fluentd;
 
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;

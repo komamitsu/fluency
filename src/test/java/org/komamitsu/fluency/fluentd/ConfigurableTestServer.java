@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.fluentd;
 
 import org.komamitsu.fluency.ingester.sender.fluentd.SSLTestServerSocketFactory;
 

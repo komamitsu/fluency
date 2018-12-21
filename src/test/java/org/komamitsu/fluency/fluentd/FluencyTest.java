@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -27,6 +26,9 @@ import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.komamitsu.fluency.BufferFullException;
+import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.FluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
@@ -59,7 +61,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -726,34 +727,6 @@ public class FluencyTest
                     fluency.close();
                 }, 5000);
         assertNull(exception);
-    }
-
-    private static class StuckSender
-            extends StubSender
-    {
-        private final CountDownLatch latch;
-
-        StuckSender(CountDownLatch latch)
-        {
-            this.latch = latch;
-        }
-
-        @Override
-        public void send(ByteBuffer buffer)
-        {
-            try {
-                latch.await();
-            }
-            catch (InterruptedException e) {
-                FluencyTest.LOG.warn("Interrupted in send()", e);
-            }
-        }
-
-        @Override
-        public boolean isAvailable()
-        {
-            return true;
-        }
     }
 
     class StuckIngester

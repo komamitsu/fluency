@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.komamitsu.fluency.EventTime;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.nio.ByteBuffer;

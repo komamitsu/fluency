@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency;
+package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.komamitsu.fluency.EventTime;
+import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.FluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;

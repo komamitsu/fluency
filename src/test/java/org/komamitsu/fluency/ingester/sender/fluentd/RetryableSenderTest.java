@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.ingester.sender.fluentd;
 
 import org.junit.Test;
-import org.komamitsu.fluency.StubSender;
 import org.komamitsu.fluency.ingester.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
 
 import java.io.IOException;
@@ -30,14 +29,21 @@ import static org.hamcrest.Matchers.is;
 public class RetryableSenderTest
 {
     static class FailurableSender
-        extends StubSender
+        extends FluentdSender
     {
         private final int maxFailures;
         private int retry;
 
         public FailurableSender(int maxFailures)
         {
+            super(new FluentdSender.Config());
             this.maxFailures = maxFailures;
+        }
+
+        @Override
+        public boolean isAvailable()
+        {
+            return true;
         }
 
         @Override
@@ -53,6 +59,12 @@ public class RetryableSenderTest
         public int getRetry()
         {
             return retry;
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
         }
 
         static class Config
