@@ -46,14 +46,14 @@ public class TreasureDataSender
     private final TreasureDataClient client;
     private final RetryPolicy retryPolicy;
 
-    public class HttpResponseError
+    public static class HttpResponseError
         extends RuntimeException
     {
         private final String request;
         private final int statusCode;
         private final String reasonPhrase;
 
-        public HttpResponseError(String request, int statusCode, String reasonPhrase)
+        HttpResponseError(String request, int statusCode, String reasonPhrase)
         {
             super(String.format(
                     "HTTP response error: statusCode=%d, reasonPhrase=%s",

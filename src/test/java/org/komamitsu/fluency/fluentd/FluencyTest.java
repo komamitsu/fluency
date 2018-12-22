@@ -729,7 +729,7 @@ public class FluencyTest
         assertNull(exception);
     }
 
-    class StuckIngester
+    static class StuckIngester
         extends FluentdIngester
     {
         private final CountDownLatch latch;

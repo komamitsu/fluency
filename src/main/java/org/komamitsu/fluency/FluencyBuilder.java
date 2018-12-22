@@ -437,7 +437,6 @@ public class FluencyBuilder
                 FluencyConfig config)
         {
             Buffer.Config bufferConfig = new Buffer.Config();
-            ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
             TreasureDataIngester.Config transporterConfig = new TreasureDataIngester.Config();
 
@@ -472,10 +471,6 @@ public class FluencyBuilder
 
                 if (config.getWaitUntilFlusherTerminated() != null) {
                     flusherConfig.setWaitUntilTerminated(config.getWaitUntilFlusherTerminated());
-                }
-
-                if (config.getSenderMaxRetryCount() != null) {
-                    retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
                 }
             }
 
