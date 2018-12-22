@@ -18,9 +18,8 @@ package org.komamitsu.fluency.flusher;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.komamitsu.fluency.buffer.TestableBuffer;
+import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.ingester.sender.fluentd.MockTCPSender;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.io.IOException;

@@ -18,6 +18,7 @@ package org.komamitsu.fluency.buffer;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -195,30 +196,6 @@ public class BufferTest
         }
         catch (IllegalArgumentException e) {
             assertTrue(true);
-        }
-    }
-
-    @Test
-    public void withFluentdFormat()
-            throws IOException, InterruptedException
-    {
-        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
-            new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
         }
     }
 

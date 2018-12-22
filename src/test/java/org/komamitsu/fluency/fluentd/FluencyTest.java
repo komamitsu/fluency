@@ -30,7 +30,7 @@ import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.FluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.buffer.TestableBuffer;
+import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;

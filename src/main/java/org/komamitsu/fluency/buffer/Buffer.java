@@ -16,17 +16,13 @@
 
 package org.komamitsu.fluency.buffer;
 
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -74,7 +70,7 @@ public class Buffer
                 config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
     }
 
-    void init()
+    protected void init()
     {
         if (fileBackup != null) {
             for (FileBackup.SavedBuffer savedBuffer : fileBackup.getSavedFiles()) {
@@ -91,7 +87,7 @@ public class Buffer
         }
     }
 
-    void saveBuffer(List<String> params, ByteBuffer buffer)
+    protected void saveBuffer(List<String> params, ByteBuffer buffer)
     {
         if (fileBackup == null) {
             return;

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.buffer;
+package org.komamitsu.fluency;
 
-import com.fasterxml.jackson.databind.Module;
-import org.komamitsu.fluency.EventTime;
+import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
@@ -37,21 +36,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.mock;
 
-// TODO: Maybe this test isn't needed
 public class TestableBuffer
         extends Buffer
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestableBuffer.class);
     public static final int RECORD_DATA_SIZE = 100;
     public static final int ALLOC_SIZE = 128;
-    private final List<Tuple3<String, Long, Map<String, Object>>> events = new ArrayList<Tuple3<String, Long, Map<String, Object>>>();
+    private final List<Tuple3<String, Long, Map<String, Object>>> events = new ArrayList<>();
     private final AtomicInteger flushCount = new AtomicInteger();
     private final AtomicInteger forceFlushCount = new AtomicInteger();
     private final AtomicInteger closeCount = new AtomicInteger();
     private final AtomicInteger bufferedDataSize = new AtomicInteger();
     private final AtomicInteger allocatedSize = new AtomicInteger();
-    private final List<Tuple<List<String>, ByteBuffer>> savableBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
-    private final List<Tuple<List<String>, ByteBuffer>> loadedBuffers = new ArrayList<Tuple<List<String>, ByteBuffer>>();
+    private final List<Tuple<List<String>, ByteBuffer>> savableBuffers = new ArrayList<>();
+    private final List<Tuple<List<String>, ByteBuffer>> loadedBuffers = new ArrayList<>();
     private final Config config;
 
     private TestableBuffer(Config config)
