@@ -50,8 +50,9 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class FluentdIngesterTest
 {
+    private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
-    private static final byte[] DATA = "hello, world".getBytes(Charset.forName("UTF-8"));
+    private static final byte[] DATA = "hello, world".getBytes(CHARSET);
     private FluentdSender fluentdSender;
 
     @Before
@@ -92,7 +93,8 @@ public class FluentdIngesterTest
         assertArrayEquals(DATA, arrayValue.get(1).asRawValue().asByteArray());
         Map<Value, Value> options = arrayValue.get(2).asMapValue().map();
         assertEquals(1, options.size());
-        assertEquals(DATA.length, options.get(ValueFactory.newString("size")).asIntegerValue().asInt());
+        assertEquals(DATA.length,
+                options.get(ValueFactory.newString("size")).asIntegerValue().asInt());
     }
 
     @Test
@@ -122,7 +124,7 @@ public class FluentdIngesterTest
         List<byte[]> ackTokenArgumentCaptorAllValues = ackTokenArgumentCaptor.getAllValues();
         assertEquals(1, ackTokenArgumentCaptorAllValues.size());
         assertEquals(uuidFromAckToken,
-                UUID.fromString(new String(ackTokenArgumentCaptorAllValues.get(0))));
+                UUID.fromString(new String(ackTokenArgumentCaptorAllValues.get(0), CHARSET)));
     }
 
     @Test
