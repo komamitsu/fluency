@@ -98,16 +98,18 @@ public class TreasureDataSender
 
                             return true;
                         }).
-                        // TODO: Make these configurable
-                        withBackoff(1000, 30000, TimeUnit.MILLISECONDS, 2.0).
-                        withMaxRetries(12);
+                        withBackoff(
+                                config.retryIntervalMs,
+                                config.maxRetryIntervalMs,
+                                TimeUnit.MILLISECONDS,
+                                config.retryFactor).
+                        withMaxRetries(config.retryMax);
     }
 
     private void copyStreams(InputStream in, OutputStream out)
             throws IOException
     {
-        // TODO: Make it configurable
-        byte[] buf = new byte[8192];
+        byte[] buf = new byte[config.workBufSize];
         while (true) {
             int readLen = in.read(buf);
             if (readLen < 0) {
@@ -174,6 +176,11 @@ public class TreasureDataSender
         private Sender.Config baseConfig = new Sender.Config();
         private String endpoint = "https://api-import.treasuredata.com";
         private String apikey;
+        private long retryIntervalMs = 1000;
+        private long maxRetryIntervalMs = 30000;
+        private float retryFactor = 2;
+        private int retryMax = 10;
+        private int workBufSize = 8192;
 
         public String getEndpoint()
         {
@@ -194,6 +201,72 @@ public class TreasureDataSender
         public Config setApikey(String apikey)
         {
             this.apikey = apikey;
+            return this;
+        }
+
+        public Sender.Config getBaseConfig()
+        {
+            return baseConfig;
+        }
+
+        public Config setBaseConfig(Sender.Config baseConfig)
+        {
+            this.baseConfig = baseConfig;
+            return this;
+        }
+
+        public long getRetryIntervalMs()
+        {
+            return retryIntervalMs;
+        }
+
+        public Config setRetryIntervalMs(long retryIntervalMs)
+        {
+            this.retryIntervalMs = retryIntervalMs;
+            return this;
+        }
+
+        public long getMaxRetryIntervalMs()
+        {
+            return maxRetryIntervalMs;
+        }
+
+        public Config setMaxRetryIntervalMs(long maxRetryIntervalMs)
+        {
+            this.maxRetryIntervalMs = maxRetryIntervalMs;
+            return this;
+        }
+
+        public float getRetryFactor()
+        {
+            return retryFactor;
+        }
+
+        public Config setRetryFactor(float retryFactor)
+        {
+            this.retryFactor = retryFactor;
+            return this;
+        }
+
+        public int getRetryMax()
+        {
+            return retryMax;
+        }
+
+        public Config setRetryMax(int retryMax)
+        {
+            this.retryMax = retryMax;
+            return this;
+        }
+
+        public int getWorkBufSize()
+        {
+            return workBufSize;
+        }
+
+        public Config setWorkBufSize(int workBufSize)
+        {
+            this.workBufSize = workBufSize;
             return this;
         }
 
