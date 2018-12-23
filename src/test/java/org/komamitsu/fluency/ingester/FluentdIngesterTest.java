@@ -51,15 +51,15 @@ public class FluentdIngesterTest
     private static final byte[] DATA = "hello, world".getBytes(CHARSET);
     private FluentdSender fluentdSender;
 
+    @Captor
+    public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
+
     @Before
     public void setUp()
             throws Exception
     {
         fluentdSender = mock(FluentdSender.class);
     }
-
-    @Captor
-    public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
 
     private byte[] getIngestedData(List<ByteBuffer> byteBuffers)
             throws IOException

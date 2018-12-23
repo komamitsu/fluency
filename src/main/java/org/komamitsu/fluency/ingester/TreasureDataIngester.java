@@ -54,6 +54,7 @@ public class TreasureDataIngester
     public void close()
             throws IOException
     {
+        sender.close();
     }
 
     public static class Config
