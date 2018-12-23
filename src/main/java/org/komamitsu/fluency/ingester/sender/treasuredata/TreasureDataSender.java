@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.komamitsu.fluency.NonRetryableException;
-import org.komamitsu.fluency.ingester.TreasureDataIngester;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;

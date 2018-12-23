@@ -16,26 +16,11 @@
 
 package org.komamitsu.fluency.ingester;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
-import okhttp3.logging.HttpLoggingInterceptor;
-import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.komamitsu.fluency.ingester.sender.treasuredata.TreasureDataSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import retrofit2.Call;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.Body;
-import retrofit2.http.Header;
-import retrofit2.http.Headers;
-import retrofit2.http.POST;
-import retrofit2.http.PUT;
-import retrofit2.http.Path;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 

@@ -26,9 +26,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ImmutableArrayValue;
-import org.msgpack.value.ImmutableMapValue;
-import org.msgpack.value.ImmutableValue;
-import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
@@ -40,12 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.any;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FluentdIngesterTest
