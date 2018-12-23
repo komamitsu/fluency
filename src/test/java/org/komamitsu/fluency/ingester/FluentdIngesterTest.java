@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.any;
 import static org.junit.Assert.*;
@@ -51,34 +52,39 @@ public class FluentdIngesterTest
 {
     private static final String TAG = "foo.bar";
     private static final byte[] DATA = "hello, world".getBytes(Charset.forName("UTF-8"));
+    private FluentdSender fluentdSender;
 
     @Before
     public void setUp()
             throws Exception
     {
+        fluentdSender = mock(FluentdSender.class);
     }
 
     @Captor
     public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
 
-    @Test
-    public void ingest()
+    private byte[] getIngestedData(List<ByteBuffer> byteBuffers)
             throws IOException
     {
-        FluentdSender fluentdSender = mock(FluentdSender.class);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        for (ByteBuffer byteBuffer : byteBuffers) {
+            outputStream.write(byteBuffer.array());
+        }
+        return outputStream.toByteArray();
+    }
+
+    @Test
+    public void ingestWithoutAck()
+            throws IOException
+    {
         Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
         verify(fluentdSender, times(1)).send(byteBuffersArgumentCaptor.capture());
         List<ByteBuffer> byteBuffers = byteBuffersArgumentCaptor.getAllValues().get(0);
-        byte[] ingested;
-        {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            for (ByteBuffer byteBuffer : byteBuffers) {
-                outputStream.write(byteBuffer.array());
-            }
-            ingested = outputStream.toByteArray();
-        }
+        byte[] ingested = getIngestedData(byteBuffers);
+
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(ingested);
         ImmutableArrayValue arrayValue = unpacker.unpackValue().asArrayValue();
         assertEquals(3, arrayValue.size());
@@ -90,17 +96,48 @@ public class FluentdIngesterTest
     }
 
     @Test
-    public void getSender()
+    public void ingestWithAck()
+            throws IOException
     {
+        Ingester ingester = new FluentdIngester.Config().setAckResponseMode(true).createInstance(fluentdSender);
+        ingester.ingest(TAG, ByteBuffer.wrap(DATA));
+
+        ArgumentCaptor<byte[]> ackTokenArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
+        verify(fluentdSender, times(1))
+                .sendWithAck(byteBuffersArgumentCaptor.capture(), ackTokenArgumentCaptor.capture());
+        List<ByteBuffer> byteBuffers = byteBuffersArgumentCaptor.getAllValues().get(0);
+        byte[] ingested = getIngestedData(byteBuffers);
+
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(ingested);
+        ImmutableArrayValue arrayValue = unpacker.unpackValue().asArrayValue();
+        assertEquals(3, arrayValue.size());
+        assertEquals(TAG, arrayValue.get(0).asStringValue().asString());
+        assertArrayEquals(DATA, arrayValue.get(1).asRawValue().asByteArray());
+        Map<Value, Value> options = arrayValue.get(2).asMapValue().map();
+        assertEquals(2, options.size());
+        assertEquals(DATA.length, options.get(ValueFactory.newString("size")).asIntegerValue().asInt());
+        String ackToken = options.get(ValueFactory.newString("chunk")).asRawValue().asString();
+        UUID uuidFromAckToken = UUID.fromString(ackToken);
+
+        List<byte[]> ackTokenArgumentCaptorAllValues = ackTokenArgumentCaptor.getAllValues();
+        assertEquals(1, ackTokenArgumentCaptorAllValues.size());
+        assertEquals(uuidFromAckToken,
+                UUID.fromString(new String(ackTokenArgumentCaptorAllValues.get(0))));
     }
 
     @Test
-    public void isAckResponseMode()
+    public void getSender()
     {
+        assertEquals(fluentdSender, new FluentdIngester.Config().createInstance(fluentdSender).getSender());
     }
 
     @Test
     public void close()
+            throws IOException
     {
+        Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
+        ingester.close();
+
+        verify(fluentdSender, times(1)).close();
     }
 }
