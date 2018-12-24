@@ -332,7 +332,8 @@ public class Buffer
         }
     }
 
-    public void flushInternal(Ingester ingester, boolean force)
+    // TODO: Can't Buffer hold `intester` as an instance variable?
+    protected void flushInternal(Ingester ingester, boolean force)
             throws IOException
     {
         moveRetentionBuffersToFlushable(force);

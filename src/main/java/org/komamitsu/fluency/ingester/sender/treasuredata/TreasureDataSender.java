@@ -74,10 +74,10 @@ public class TreasureDataSender
         }
     }
 
-    public TreasureDataSender(Config config)
+    public TreasureDataSender(Config config, TreasureDataClient client)
     {
         this.config = config;
-        this.client = new TreasureDataClient(config.getEndpoint(), config.getApikey());
+        this.client = client;
         this.retryPolicy =
                 new RetryPolicy().
                         <Throwable>retryIf(ex -> {
@@ -284,7 +284,7 @@ public class TreasureDataSender
         @Override
         public TreasureDataSender createInstance()
         {
-            return new TreasureDataSender(this);
+            return new TreasureDataSender(this, new TreasureDataClient(endpoint, apikey));
         }
     }
 }
