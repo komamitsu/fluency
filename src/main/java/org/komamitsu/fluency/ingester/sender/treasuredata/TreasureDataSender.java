@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.komamitsu.fluency.NonRetryableException;
+import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
@@ -119,6 +120,83 @@ public class TreasureDataSender
         }
     }
 
+    // TODO: Take care of retry count/flag
+    private void createDatabase(String database, Runnable followingTask)
+    {
+        Response<Void> response = client.createDatabase(database);
+        if (response.isSuccess()) {
+            followingTask.run();
+            return;
+        }
+        switch (response.getStatusCode()) {
+            case 409:
+                return;
+            case 401:
+            case 403:
+            case 404:
+                throw new NonRetryableException(
+                        String.format(
+                                "Failed to create database. database=%s, response=%s",
+                                database, response));
+            default:
+                throw new RetryableException(
+                        String.format(
+                                "Failed to create database. database=%s, response=%s",
+                                database, response));
+        }
+    }
+
+    // TODO: Take care of retry count/flag
+    private void createTable(String database, String table, Runnable followingTask)
+    {
+        Response<Void> response = client.createTable(database, table);
+        if (response.isSuccess()) {
+            followingTask.run();
+            return;
+        }
+        switch (response.getStatusCode()) {
+            case 409:
+                return;
+            case 401:
+            case 403:
+                throw new NonRetryableException(
+                        String.format(
+                                "Failed to create table. database=%s, table=%s, response=%s",
+                                database, table, response));
+            case 404:
+                createDatabase(database,
+                        () -> createTable(database, table, followingTask));
+                return;
+            default:
+                throw new RetryableException(
+                        String.format(
+                                "Failed to create table. database=%s, table=%s, response=%s",
+                                database, table, response));
+        }
+    }
+
+    // TODO: Take care of retry count/flag
+    private void importData(String database, String table, String uniqueId, File file)
+    {
+        LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
+                database, table, uniqueId, file.length());
+
+        Response<Void> response =
+                client.importToTable(database, table, uniqueId, file);
+
+        if (!response.isSuccess()) {
+            if (response.getStatusCode() == 404) {
+                createTable(database, table, () -> importData(database, table, uniqueId, file));
+                return;
+            }
+
+            throw new HttpResponseError(
+                    response.getRequest(),
+                    response.getStatusCode(),
+                    response.getReasonPhrase());
+        }
+    }
+
     public void send(String dbAndTableTag, ByteBuffer dataBuffer)
             throws IOException
     {
@@ -140,22 +218,7 @@ public class TreasureDataSender
 
             String uniqueId = UUID.randomUUID().toString();
             Failsafe.with(retryPolicy)
-                    .run(() -> {
-                                LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
-                                        database, table, uniqueId, file.length());
-
-                                Response<Void> response =
-                                        client.importToTable(database, table, uniqueId, file);
-
-                                // TODO: Report error to a handler if set & Create database and table if not exists
-                                if (!response.isSuccess()) {
-                                    throw new HttpResponseError(
-                                            response.getRequest(),
-                                            response.getStatusCode(),
-                                            response.getReasonPhrase());
-                                }
-                            }
-                    );
+                    .run(() -> importData(database, table, uniqueId, file));
         }
         finally {
             if (!file.delete()) {
