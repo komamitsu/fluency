@@ -16,9 +16,11 @@
 
 package org.komamitsu.fluency.flusher;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.komamitsu.fluency.buffer.TestableBuffer;
-import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.TestableBuffer;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -29,18 +31,29 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class AsyncFlusherTest
 {
+    private Ingester ingester;
+    private RecordFormatter recordFormatter;
+
+    @Before
+    public void setUp()
+    {
+        ingester = mock(Ingester.class);
+        recordFormatter = mock(RecordFormatter.class);
+    }
+
     @Test
     public void testAsyncFlusher()
             throws IOException, InterruptedException
     {
-        TestableBuffer buffer = new TestableBuffer.Config().createInstance();
-        MockTCPSender sender = new MockTCPSender(24225);
+
+        TestableBuffer buffer = new TestableBuffer.Config().createInstance(recordFormatter);
         AsyncFlusher.Config config = new AsyncFlusher.Config();
         config.setFlushIntervalMillis(500);
-        Flusher flusher = config.createInstance(buffer, sender);
+        Flusher flusher = config.createInstance(buffer, ingester);
         assertEquals(0, buffer.getFlushCount().get());
 
         flusher.onUpdate();

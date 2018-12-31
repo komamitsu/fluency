@@ -17,8 +17,7 @@
 package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.sender.Sender;
-import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,14 +39,14 @@ public abstract class Flusher
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     protected final Buffer buffer;
-    protected final Sender sender;
+    protected final Ingester ingester;
     private final Config config;
 
-    protected Flusher(Buffer buffer, Sender sender, Config config)
+    protected Flusher(Config config, Buffer buffer, Ingester ingester)
     {
-        this.buffer = buffer;
-        this.sender = sender;
         this.config = config;
+        this.buffer = buffer;
+        this.ingester = ingester;
     }
 
     public Buffer getBuffer()
@@ -118,7 +117,7 @@ public abstract class Flusher
                 finally {
                     try {
                         // Close the socket at the end to prevent the server from failing to read from the connection
-                        sender.close();
+                        ingester.close();
                     }
                     catch (Exception e) {
                         LOG.error("Failed to close the sender", e);
@@ -140,9 +139,9 @@ public abstract class Flusher
         buffer.close();
     }
 
-    public Sender getSender()
+    public Ingester getIngester()
     {
-        return sender;
+        return ingester;
     }
 
     public int getFlushIntervalMillis()
@@ -166,7 +165,7 @@ public abstract class Flusher
         return "Flusher{" +
                 "isTerminated=" + isTerminated +
                 ", buffer=" + buffer +
-                ", sender=" + sender +
+                ", transporter=" + ingester +
                 ", config=" + config +
                 '}';
     }
@@ -223,6 +222,6 @@ public abstract class Flusher
 
     public interface Instantiator
     {
-        Flusher createInstance(Buffer buffer, Sender sender);
+        Flusher createInstance(Buffer buffer, Ingester ingester);
     }
 }

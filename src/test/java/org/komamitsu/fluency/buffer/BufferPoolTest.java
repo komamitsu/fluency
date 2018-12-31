@@ -109,29 +109,24 @@ public class BufferPoolTest
         final int concurrency = 8;
         final BufferPool bufferPool = new BufferPool(1024, 512 * 1024);
         final CountDownLatch countDownLatch = new CountDownLatch(concurrency);
-        Runnable task = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                LinkedList<ByteBuffer> buffers = new LinkedList<ByteBuffer>();
-                for (int i = 0; i < 1000; i++) {
-                    if ((i / 10) % 2 == 0) {
-                        int size = ((i % 2) + 1) * 1024;
-                        ByteBuffer buffer = bufferPool.acquireBuffer(size);
-                        assertEquals(size, buffer.capacity());
-                        assertEquals(0, buffer.position());
-                        buffers.add(buffer);
-                    }
-                    else {
-                        ByteBuffer buffer = buffers.pollFirst();
-                        assertNotNull(buffer);
-                        bufferPool.returnBuffer(buffer);
-                    }
+        Runnable task = () -> {
+            LinkedList<ByteBuffer> buffers = new LinkedList<>();
+            for (int i = 0; i < 1000; i++) {
+                if ((i / 10) % 2 == 0) {
+                    int size = ((i % 2) + 1) * 1024;
+                    ByteBuffer buffer = bufferPool.acquireBuffer(size);
+                    assertEquals(size, buffer.capacity());
+                    assertEquals(0, buffer.position());
+                    buffers.add(buffer);
                 }
-                assertEquals(0, buffers.size());
-                countDownLatch.countDown();
+                else {
+                    ByteBuffer buffer = buffers.pollFirst();
+                    assertNotNull(buffer);
+                    bufferPool.returnBuffer(buffer);
+                }
             }
+            assertEquals(0, buffers.size());
+            countDownLatch.countDown();
         };
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < concurrency; i++) {

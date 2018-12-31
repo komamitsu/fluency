@@ -25,9 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -150,9 +148,11 @@ public class FileBackup
         File[] files = backupDir.listFiles();
         if (files == null) {
             LOG.warn("Failed to list the backup directory. {}", backupDir);
-            return new ArrayList<SavedBuffer>();
+            return new ArrayList<>();
         }
-        ArrayList<SavedBuffer> savedBuffers = new ArrayList<SavedBuffer>();
+
+        LOG.debug("Checking backup files. files.length={}", files.length);
+        ArrayList<SavedBuffer> savedBuffers = new ArrayList<>();
         for (File f : files) {
             Matcher matcher = pattern.matcher(f.getName());
             if (matcher.find()) {
@@ -162,11 +162,14 @@ public class FileBackup
                 else {
                     String concatParams = matcher.group(1);
                     String[] params = concatParams.split(PARAM_DELIM_IN_FILENAME);
-                    LinkedList<String> paramList = new LinkedList<String>(Arrays.asList(params));
+                    LinkedList<String> paramList = new LinkedList<>(Arrays.asList(params));
                     LOG.debug("Saved buffer params={}", paramList);
                     paramList.removeLast();
                     savedBuffers.add(new SavedBuffer(f, paramList));
                 }
+            }
+            else {
+                LOG.trace("Found a file in backup dir, but the file path doesn't match the pattern. file={}", f.getAbsolutePath());
             }
         }
         return savedBuffers;
@@ -174,7 +177,7 @@ public class FileBackup
 
     public void saveBuffer(List<String> params, ByteBuffer buffer)
     {
-        List<String> copiedParams = new ArrayList<String>(params);
+        List<String> copiedParams = new ArrayList<>(params);
         copiedParams.add(String.valueOf(System.nanoTime()));
 
         boolean isFirst = true;
@@ -191,6 +194,8 @@ public class FileBackup
         String filename = this.userBuffer.bufferFormatType() + prefix() + PARAM_DELIM_IN_FILENAME + sb.toString() + EXT_FILENAME;
 
         File file = new File(backupDir, filename);
+        LOG.debug("Backing up buffer: path={}, size={}", file.getAbsolutePath(), buffer.remaining());
+
         FileChannel channel = null;
         try {
             channel = new FileOutputStream(file).getChannel();

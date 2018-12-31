@@ -16,26 +16,38 @@
 
 package org.komamitsu.fluency.flusher;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.komamitsu.fluency.buffer.TestableBuffer;
-import org.komamitsu.fluency.sender.MockTCPSender;
+import org.komamitsu.fluency.TestableBuffer;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class SyncFlusherTest
 {
+    private Ingester ingester;
+    private RecordFormatter recordFormatter;
+
+    @Before
+    public void setUp()
+    {
+        ingester = mock(Ingester.class);
+        recordFormatter = mock(RecordFormatter.class);
+    }
+
     @Test
     public void testSyncFlusher()
             throws IOException, InterruptedException
     {
-        TestableBuffer buffer = new TestableBuffer.Config().createInstance();
-        MockTCPSender sender = new MockTCPSender(24225);
+        TestableBuffer buffer = new TestableBuffer.Config().createInstance(recordFormatter);
         SyncFlusher.Config config = new SyncFlusher.Config();
         assertEquals(600, config.getFlushIntervalMillis());
-        Flusher flusher = config.createInstance(buffer, sender);
+        Flusher flusher = config.createInstance(buffer, ingester);
 
         flusher.flush();
         flusher.flush();

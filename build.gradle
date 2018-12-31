@@ -12,8 +12,8 @@ group = 'org.komamitsu'
 archivesBaseName = 'fluency'
 version = '1.9.0-SNAPSHOT'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
 def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
@@ -27,9 +27,15 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'ch.qos.logback:logback-classic:1.2.3'
     testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.mockito:mockito-core:2.23.4'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.msgpack:jackson-dataformat-msgpack:0.8.15'
     compile 'org.komamitsu:phi-accural-failure-detector:0.0.4'
+    implementation 'com.squareup.okhttp3:okhttp:3.8.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.8.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
+    implementation 'net.jodah:failsafe:1.0.4'
 }
 
 findbugs {
