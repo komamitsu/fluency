@@ -17,7 +17,10 @@
 package org.komamitsu.fluency.ingester.sender.treasuredata;
 
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
-import net.jodah.failsafe.Failsafe;
+import com.treasuredata.client.TDClient;
+import com.treasuredata.client.TDClientBuilder;
+import com.treasuredata.client.TDClientHttpException;
+import com.treasuredata.client.TDClientHttpNotFoundException;
 import net.jodah.failsafe.RetryPolicy;
 import org.komamitsu.fluency.NonRetryableException;
 import org.komamitsu.fluency.RetryableException;
@@ -42,40 +45,13 @@ public class TreasureDataSender
         implements Closeable, Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreasureDataSender.class);
+    private static final int RETRY_COUNT_FOR_DB_CREATE_DELETE_CONFLICT = 4;
+    private static final int RETRY_INTERVAL_MS_FOR_DB_CREATE_DELETE_CONFLICT = 1000;
     private final Config config;
-    private final TreasureDataClient client;
+    private final TDClient client;
     private final RetryPolicy retryPolicy;
 
-    public static class HttpResponseError
-        extends RuntimeException
-    {
-        private final String request;
-        private final int statusCode;
-        private final String reasonPhrase;
-
-        HttpResponseError(String request, int statusCode, String reasonPhrase)
-        {
-            super(String.format(
-                    "HTTP response error: statusCode=%d, reasonPhrase=%s",
-                    statusCode, reasonPhrase));
-
-            this.request = request;
-            this.statusCode = statusCode;
-            this.reasonPhrase = reasonPhrase;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "HttpResponseError{" +
-                    "request='" + request + '\'' +
-                    ", statusCode=" + statusCode +
-                    ", reasonPhrase='" + reasonPhrase + '\'' +
-                    "} " + super.toString();
-        }
-    }
-
-    public TreasureDataSender(Config config, TreasureDataClient client)
+    public TreasureDataSender(Config config, TDClient client)
     {
         this.config = config;
         this.client = client;
@@ -120,80 +96,109 @@ public class TreasureDataSender
         }
     }
 
-    // TODO: Take care of retry count/flag
-    private void createDatabase(String database, Runnable followingTask)
+    private boolean checkDatabaseAndWaitIfNeeded(String database)
     {
-        Response<Void> response = client.createDatabase(database);
-        if (response.isSuccess()) {
-            followingTask.run();
-            return;
+        if (client.existsDatabase(database)) {
+            return true;
         }
-        switch (response.getStatusCode()) {
-            case 409:
+
+        LOG.warn("The database could be just removed or invisible. Retrying.... database={}", database);
+
+        try {
+            TimeUnit.MILLISECONDS.sleep(RETRY_INTERVAL_MS_FOR_DB_CREATE_DELETE_CONFLICT);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new NonRetryableException(
+                    String.format("Failed to create database. database=%s", database), e);
+        }
+
+        return false;
+    }
+
+    private void createDatabase(String database)
+    {
+        for (int i = 0; i < RETRY_COUNT_FOR_DB_CREATE_DELETE_CONFLICT; i++) {
+            try {
+                client.createDatabase(database);
+                LOG.info("Created database. database={}", database);
                 return;
-            case 401:
-            case 403:
-            case 404:
-                throw new NonRetryableException(
-                        String.format(
-                                "Failed to create database. database=%s, response=%s",
-                                database, response));
-            default:
+            }
+            catch (TDClientHttpException e) {
+                switch (e.getStatusCode()) {
+                    case 409:
+                        LOG.info("The database already exists. database={}", database);
+                        if (checkDatabaseAndWaitIfNeeded(database)) {
+                            return;
+                        }
+                        // Retrying...
+                        break;
+                    case 401:
+                    case 403:
+                    case 404:
+                        throw new NonRetryableException(
+                                String.format("Failed to create database. database=%s", database), e);
+                }
+            }
+            catch (Throwable e) {
                 throw new RetryableException(
-                        String.format(
-                                "Failed to create database. database=%s, response=%s",
-                                database, response));
+                        String.format("Failed to create database. database=%s", database), e);
+            }
+        }
+
+        // Retry over
+        throw new NonRetryableException(
+                String.format("It seems you don't have a proper permission on the database. database=%s", database));
+    }
+
+    private void createTable(String database, String table)
+    {
+        while (true) {
+            try {
+                client.createTable(database, table);
+                LOG.info("Created table. database={}, table={}", database, table);
+                return;
+            }
+            catch (TDClientHttpException e) {
+                switch (e.getStatusCode()) {
+                    case 409:
+                        LOG.info("The table already exists. database={}, table={}", database, table);
+                        return;
+                    case 401:
+                    case 403:
+                        throw new NonRetryableException(
+                                String.format("Failed to create table. database=%s, table=%s", database, table), e);
+                    case 404:
+                        createDatabase(database);
+                        // Retry to create the table
+                        break;
+                }
+            }
+            catch (Throwable e) {
+                throw new RetryableException(
+                        String.format("Failed to create table. database=%s, table=%s", database, table), e);
+            }
         }
     }
 
-    // TODO: Take care of retry count/flag
-    private void createTable(String database, String table, Runnable followingTask)
-    {
-        Response<Void> response = client.createTable(database, table);
-        if (response.isSuccess()) {
-            followingTask.run();
-            return;
-        }
-        switch (response.getStatusCode()) {
-            case 409:
-                return;
-            case 401:
-            case 403:
-                throw new NonRetryableException(
-                        String.format(
-                                "Failed to create table. database=%s, table=%s, response=%s",
-                                database, table, response));
-            case 404:
-                createDatabase(database,
-                        () -> createTable(database, table, followingTask));
-                return;
-            default:
-                throw new RetryableException(
-                        String.format(
-                                "Failed to create table. database=%s, table=%s, response=%s",
-                                database, table, response));
-        }
-    }
-
-    // TODO: Take care of retry count/flag
     private void importData(String database, String table, String uniqueId, File file)
     {
         LOG.debug("Importing data to TD table: database={}, table={}, uniqueId={}, fileSize={}",
                 database, table, uniqueId, file.length());
 
-        Response<Void> response =
-                client.importToTable(database, table, uniqueId, file);
-
-        if (!response.isSuccess()) {
-            if (response.getStatusCode() == 404) {
-                createTable(database, table, () -> importData(database, table, uniqueId, file));
+        while (true) {
+            try {
+                client.importFile(database, table, file, uniqueId);
                 return;
             }
-
-            throw new HttpResponseError(
-                    response.getRequest(),
-                    response.getStatusCode(),
-                    response.getReasonPhrase());
+            catch (TDClientHttpNotFoundException e) {
+                createTable(database, table);
+                // Retry to create the table
+            }
+            catch (Throwable e) {
+                throw new RetryableException(
+                        String.format("Failed to import data. database=%s, table=%s", database, table), e);
+            }
         }
     }
 
@@ -217,8 +222,7 @@ public class TreasureDataSender
             }
 
             String uniqueId = UUID.randomUUID().toString();
-            Failsafe.with(retryPolicy)
-                    .run(() -> importData(database, table, uniqueId, file));
+            importData(database, table, uniqueId, file);
         }
         finally {
             if (!file.delete()) {
@@ -347,7 +351,16 @@ public class TreasureDataSender
         @Override
         public TreasureDataSender createInstance()
         {
-            return new TreasureDataSender(this, new TreasureDataClient(endpoint, apikey));
+            TDClient client = new TDClientBuilder(false)
+                    .setEndpoint(endpoint)
+                    .setApiKey(apikey)
+                    .setRetryLimit(retryMax)
+                    .setRetryInitialIntervalMillis((int) retryIntervalMs)
+                    .setRetryMaxIntervalMillis((int) maxRetryIntervalMs)
+                    .setRetryMultiplier(retryFactor)
+                    .build();
+
+            return new TreasureDataSender(this, client);
         }
     }
 }
