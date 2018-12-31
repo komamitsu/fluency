@@ -35,6 +35,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -364,16 +366,31 @@ public class TreasureDataSender
         @Override
         public TreasureDataSender createInstance()
         {
-            TDClient client = new TDClientBuilder(false)
-                    .setEndpoint(endpoint)
+            URI uri;
+            try {
+                uri = new URI(endpoint);
+            }
+            catch (URISyntaxException e) {
+                throw new NonRetryableException(String.format("Invalid endpoint. %s", endpoint), e);
+            }
+
+            TDClientBuilder builder = new TDClientBuilder(false)
+                    .setEndpoint(uri.getHost())
                     .setApiKey(apikey)
                     .setRetryLimit(retryMax)
                     .setRetryInitialIntervalMillis((int) retryIntervalMs)
                     .setRetryMaxIntervalMillis((int) maxRetryIntervalMs)
-                    .setRetryMultiplier(retryFactor)
-                    .build();
+                    .setRetryMultiplier(retryFactor);
 
-            return new TreasureDataSender(this, client);
+            if (uri.getScheme() != null && uri.getScheme().equals("http")) {
+                builder.setUseSSL(false);
+            }
+
+            if (uri.getPort() > 0) {
+                builder.setPort(uri.getPort());
+            }
+
+            return new TreasureDataSender(this, builder.build());
         }
     }
 }
