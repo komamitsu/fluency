@@ -21,6 +21,7 @@ import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientBuilder;
 import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
+import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.komamitsu.fluency.NonRetryableException;
 import org.komamitsu.fluency.RetryableException;
@@ -57,7 +58,7 @@ public class TreasureDataSender
         this.client = client;
         this.retryPolicy =
                 new RetryPolicy().
-                        <Throwable>retryIf(ex -> {
+                        retryOn(ex -> {
                             if (ex == null) {
                                 // Success. Shouldn't retry.
                                 return false;
@@ -140,6 +141,9 @@ public class TreasureDataSender
                                 String.format("Failed to create database. database=%s", database), e);
                 }
             }
+            catch (NonRetryableException e) {
+                throw e;
+            }
             catch (Throwable e) {
                 throw new RetryableException(
                         String.format("Failed to create database. database=%s", database), e);
@@ -172,7 +176,13 @@ public class TreasureDataSender
                         createDatabase(database);
                         // Retry to create the table
                         break;
+                    default:
+                        throw new RetryableException(
+                                String.format("Failed to create table. database=%s, table=%s", database, table), e);
                 }
+            }
+            catch (NonRetryableException e) {
+                throw e;
             }
             catch (Throwable e) {
                 throw new RetryableException(
@@ -194,6 +204,9 @@ public class TreasureDataSender
             catch (TDClientHttpNotFoundException e) {
                 createTable(database, table);
                 // Retry to create the table
+            }
+            catch (NonRetryableException e) {
+                throw e;
             }
             catch (Throwable e) {
                 throw new RetryableException(
@@ -222,7 +235,7 @@ public class TreasureDataSender
             }
 
             String uniqueId = UUID.randomUUID().toString();
-            importData(database, table, uniqueId, file);
+            Failsafe.with(retryPolicy).run(() -> importData(database, table, uniqueId, file));
         }
         finally {
             if (!file.delete()) {
