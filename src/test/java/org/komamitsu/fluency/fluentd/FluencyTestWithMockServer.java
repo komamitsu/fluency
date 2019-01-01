@@ -23,17 +23,17 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.FluencyBuilder;
+import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
+import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.ingester.FluentdIngester;
-import org.komamitsu.fluency.ingester.sender.fluentd.MultiSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.SSLSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.TCPSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
@@ -300,7 +300,7 @@ public class FluencyTestWithMockServer
                     .setWaitUntilBufferFlushed(10)
                     .setWaitUntilTerminated(10);
 
-            return FluencyBuilder.buildFromConfigs(
+            return BaseFluencyBuilder.buildFromConfigs(
                     new FluentdRecordFormatter.Config(),
                     bufferConfig,
                     flusherConfig,

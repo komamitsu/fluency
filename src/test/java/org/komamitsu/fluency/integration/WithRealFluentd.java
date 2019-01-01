@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.FluencyBuilder;
+import org.komamitsu.fluency.fluentd.FluencyBuilder;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -155,10 +155,10 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = FluencyBuilder.ForFluentd.build(
+        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
                 config.host,
                 config.port,
-                new FluencyBuilder.ForFluentd.FluencyConfig()
+                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
         );
 
@@ -189,11 +189,11 @@ public class WithRealFluentd
         assumeNotNull(config);
         assumeNotNull(config.anotherPort);
 
-        Fluency fluency = FluencyBuilder.ForFluentd.build(
+        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
                 Arrays.asList(
                         new InetSocketAddress(config.host, config.port),
                         new InetSocketAddress(config.host, config.anotherPort)),
-                new FluencyBuilder.ForFluentd.FluencyConfig()
+                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
                         .setAckResponseMode(true));
 
@@ -223,10 +223,10 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = FluencyBuilder.ForFluentd.build(
+        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
                 config.host,
                 config.port,
-                new FluencyBuilder.ForFluentd.FluencyConfig()
+                new FluencyBuilder.FluencyConfig()
                         // Fluency might use a lot of buffer for loaded backup files.
                         // So it'd better increase max buffer size
                         .setSslEnabled(config.sslEnabled)

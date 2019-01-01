@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
