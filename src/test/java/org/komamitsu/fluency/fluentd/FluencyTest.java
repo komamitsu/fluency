@@ -28,26 +28,26 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.FluencyBuilder;
+import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.TestableBuffer;
+import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
+import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.flusher.SyncFlusher;
-import org.komamitsu.fluency.ingester.FluentdIngester;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.ingester.sender.fluentd.MultiSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.NetworkSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.RetryableSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.SSLSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.FluentdSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.TCPSender;
-import org.komamitsu.fluency.ingester.sender.fluentd.failuredetect.FailureDetector;
-import org.komamitsu.fluency.ingester.sender.fluentd.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.ingester.sender.fluentd.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.ingester.sender.fluentd.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.NetworkSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -157,7 +157,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build();
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build();
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -179,7 +179,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build(54321);
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -201,7 +201,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build("192.168.0.99", 54321);
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build("192.168.0.99", 54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -223,7 +223,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build(new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -245,7 +245,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build(54321, new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(54321, new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -267,7 +267,7 @@ public class FluencyTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.ForFluentd.build("192.168.0.99", 54321, new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(true));
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build("192.168.0.99", 54321, new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -292,8 +292,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            FluencyBuilder.ForFluentd.FluencyConfig config =
-                    new FluencyBuilder.ForFluentd.FluencyConfig()
+            org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig config =
+                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
                             .setBufferChunkInitialSize(7 * 1024 * 1024)
@@ -305,7 +305,7 @@ public class FluencyTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = FluencyBuilder.ForFluentd.build(
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);
@@ -389,8 +389,8 @@ public class FluencyTest
             String tmpdir = System.getProperty("java.io.tmpdir");
             assertThat(tmpdir, is(notNullValue()));
 
-            FluencyBuilder.ForFluentd.FluencyConfig config =
-                    new FluencyBuilder.ForFluentd.FluencyConfig()
+            org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig config =
+                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
                             .setSslEnabled(true)
                             .setFlushIntervalMillis(200)
                             .setMaxBufferSize(Long.MAX_VALUE)
@@ -403,7 +403,7 @@ public class FluencyTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = FluencyBuilder.ForFluentd.build(
+            fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);
@@ -467,7 +467,7 @@ public class FluencyTest
         TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
-            Fluency fluency = FluencyBuilder.buildFromConfigs(
+            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -480,7 +480,7 @@ public class FluencyTest
 
         {
             Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
-            Fluency fluency = FluencyBuilder.buildFromConfigs(
+            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -496,7 +496,7 @@ public class FluencyTest
     public void testGetAllocatedBufferSize()
             throws IOException
     {
-        Fluency fluency = FluencyBuilder.buildFromConfigs(
+        Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                 fluentdRecordFormatterConfig,
                 new TestableBuffer.Config(),
                 new AsyncFlusher.Config(),
@@ -517,7 +517,7 @@ public class FluencyTest
         {
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = FluencyBuilder.buildFromConfigs(
+            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -530,7 +530,7 @@ public class FluencyTest
         {
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = FluencyBuilder.buildFromConfigs(
+            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -550,7 +550,7 @@ public class FluencyTest
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = FluencyBuilder.buildFromConfigs(
+                fluency = BaseFluencyBuilder.buildFromConfigs(
                         fluentdRecordFormatterConfig,
                         bufferConfig,
                         flusherConfig,
@@ -570,7 +570,7 @@ public class FluencyTest
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = FluencyBuilder.buildFromConfigs(
+                fluency = BaseFluencyBuilder.buildFromConfigs(
                         fluentdRecordFormatterConfig,
                         bufferConfig,
                         flusherConfig,
@@ -593,8 +593,8 @@ public class FluencyTest
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
 
-        Fluency fluency = FluencyBuilder.ForFluentd.build(Integer.MAX_VALUE,
-                new FluencyBuilder.ForFluentd.FluencyConfig()
+        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(Integer.MAX_VALUE,
+                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
                         .setSenderMaxRetryCount(1)
                         .setErrorHandler(e -> {
                             errorContainer.set(e);
@@ -629,8 +629,8 @@ public class FluencyTest
                 },
                 serverPort -> {
                     Fluency fluency =
-                            FluencyBuilder.ForFluentd.build(serverPort,
-                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled));
+                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
+                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled));
                     fluency.emit("foo.bar", new HashMap<>());
                     fluency.close();
                 }, 5000);
@@ -655,8 +655,8 @@ public class FluencyTest
                 },
                 serverPort -> {
                     Fluency fluency =
-                            FluencyBuilder.ForFluentd.build(serverPort,
-                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
+                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                     fluency.emit("foo.bar", new HashMap<>());
                     fluency.close();
                 }, 5000);
@@ -688,8 +688,8 @@ public class FluencyTest
                 },
                 serverPort -> {
                     Fluency fluency =
-                            FluencyBuilder.ForFluentd.build(serverPort,
-                                    new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
+                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                     fluency.emit("foo.bar", new HashMap<>());
                     fluency.close();
                 }, 5000);
@@ -721,8 +721,8 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency = FluencyBuilder.ForFluentd.build(serverPort,
-                            new FluencyBuilder.ForFluentd.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
+                    Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
+                            new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
                     fluency.emit("foo.bar", new HashMap<>());
                     fluency.close();
                 }, 5000);
@@ -761,7 +761,7 @@ public class FluencyTest
 
         try {
             Buffer.Config bufferConfig = new Buffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
-            Fluency fluency = FluencyBuilder.buildFromConfigs(
+            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterConfig,
                     bufferConfig,
                     new AsyncFlusher.Config(),
@@ -827,7 +827,7 @@ public class FluencyTest
         FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
                 new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
 
-        Fluency fluency = FluencyBuilder.buildFromConfigs(
+        Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
                     fluentdRecordFormatterWithModuleConfig,
                     bufferConfig,
                     new AsyncFlusher.Config(),
