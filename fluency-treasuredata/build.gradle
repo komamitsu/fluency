@@ -1,3 +1,15 @@
 dependencies {
     implementation project(':fluency-core')
 }
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            pom.artifactId = 'fluency-treasuredata'
+            pom.project {
+                name 'fluency-treasuredata'
+                description "Yet another fluent logger: module for Treasure Data"
+            }
+        }
+    }
+}

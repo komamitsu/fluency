@@ -98,8 +98,6 @@ subprojects {
                 }
 
                 pom.project {
-                    name 'fluency'
-                    description "Yet another fluent logger"
                     packaging 'jar'
                     url 'https://github.com/komamitsu/fluency'
                     scm {
