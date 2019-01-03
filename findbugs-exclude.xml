@@ -1,10 +1,10 @@
 <FindBugsFilter>
   <Match>
-    <Class name="org.komamitsu.fluency.format.RequestOption" />
+    <Class name="org.komamitsu.fluency.fluentd.format.RequestOption" />
     <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2" />
   </Match>
   <Match>
-    <Class name="org.komamitsu.fluency.format.Response" />
+    <Class name="org.komamitsu.fluency.fluentd.format.Response" />
     <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2" />
   </Match>
 </FindBugsFilter>
