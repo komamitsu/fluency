@@ -4,14 +4,10 @@ dependencies {
     implementation 'com.treasuredata.client:td-client:0.8.9'
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            pom.artifactId = 'fluency-treasuredata'
-            pom.project {
-                name 'fluency-treasuredata'
-                description "Yet another fluent logger: module for Treasure Data"
-            }
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'fluency-treasuredata'
         }
     }
 }

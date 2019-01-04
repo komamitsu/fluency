@@ -4,14 +4,10 @@ dependencies {
     implementation project(':fluency-core')
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            pom.artifactId = 'fluency-fluentd'
-            pom.project {
-                name 'fluency-fluentd'
-                description "Yet another fluent logger: module for Fluentd"
-            }
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'fluency-fluentd'
         }
     }
 }

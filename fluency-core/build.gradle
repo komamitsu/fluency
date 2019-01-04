@@ -1,11 +1,7 @@
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            pom.artifactId = 'fluency-core'
-            pom.project {
-                name 'fluency-core'
-                description "Yet another fluent logger: core module"
-            }
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'fluency-core'
         }
     }
 }
