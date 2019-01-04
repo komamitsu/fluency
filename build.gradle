@@ -45,7 +45,6 @@ subprojects {
         implementation 'org.slf4j:slf4j-api:1.7.25'
         implementation 'org.msgpack:jackson-dataformat-msgpack:0.8.16'
         implementation 'org.komamitsu:phi-accural-failure-detector:0.0.4'
-        implementation 'com.treasuredata.client:td-client:0.8.9'
         implementation 'net.jodah:failsafe:1.1.1'
     }
 
