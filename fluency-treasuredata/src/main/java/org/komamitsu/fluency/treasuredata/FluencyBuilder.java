@@ -32,6 +32,11 @@ public class FluencyBuilder
         return config == null ? new FluencyConfig() : config;
     }
 
+    public static Fluency build(String apikey, String endpoint, FluencyConfig config)
+    {
+        return buildInternal(createSenderConfig(config, endpoint, apikey), ensuredConfig(config));
+    }
+
     public static Fluency build(String apikey, FluencyConfig config)
     {
         return buildInternal(createSenderConfig(config, null, apikey), ensuredConfig(config));
@@ -65,25 +70,57 @@ public class FluencyBuilder
         Buffer.Config bufferConfig = configs.getBufferConfig();
         AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
 
-        TreasureDataIngester.Config transporterConfig = new TreasureDataIngester.Config();
+        if (config.getSenderRetryMax() != null) {
+            senderConfig.setRetryMax(config.getSenderRetryMax());
+        }
+
+        if (config.getSenderRetryIntervalMillis() != null) {
+            senderConfig.setRetryIntervalMs(config.getSenderRetryIntervalMillis());
+        }
+
+        if (config.getSenderMaxRetryIntervalMillis() != null) {
+            senderConfig.setMaxRetryIntervalMs(config.getSenderMaxRetryIntervalMillis());
+        }
+
+        if (config.getSenderRetryFactor() != null) {
+            senderConfig.setRetryFactor(config.getSenderRetryFactor());
+        }
 
         if (config.getErrorHandler() != null) {
             senderConfig.setErrorHandler(config.getErrorHandler());
         }
 
+        if (config.getSenderWorkBufSize() != null) {
+            senderConfig.setWorkBufSize(config.getSenderWorkBufSize());
+        }
+
         TreasureDataSender sender = senderConfig.createInstance();
+
+        TreasureDataIngester.Config ingesterConfig = new TreasureDataIngester.Config();
 
         return BaseFluencyBuilder.buildFromConfigs(
                 new TreasureDataRecordFormatter.Config(),
                 bufferConfig,
                 flusherConfig,
-                transporterConfig.createInstance(sender)
+                ingesterConfig.createInstance(sender)
         );
     }
 
     public static class FluencyConfig
     {
-        private BaseFluencyBuilder.FluencyConfig baseConfig = new BaseFluencyBuilder.FluencyConfig();
+        private BaseFluencyBuilder.FluencyConfig baseConfig;
+        private Integer senderRetryMax;
+        private Long senderRetryIntervalMillis;
+        private long senderMaxRetryIntervalMillis;
+        private Float senderRetryFactor;
+        private Integer senderWorkBufSize;
+
+        public FluencyConfig()
+        {
+            // Treasure Data isn't good at handling a lot of small fragmented chunk files
+            this.baseConfig = new BaseFluencyBuilder.FluencyConfig()
+                    .setBufferChunkRetentionTimeMillis(30 * 1000);
+        }
 
         public Long getMaxBufferSize()
         {
@@ -115,6 +152,17 @@ public class FluencyBuilder
         public FluencyConfig setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
         {
             baseConfig.setBufferChunkRetentionSize(bufferChunkRetentionSize);
+            return this;
+        }
+
+        public Integer getBufferChunkRetentionTimeMillis()
+        {
+            return baseConfig.getBufferChunkRetentionTimeMillis();
+        }
+
+        public FluencyConfig setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
+        {
+            baseConfig.setBufferChunkRetentionTimeMillis(bufferChunkRetentionTimeMillis);
             return this;
         }
 
@@ -190,6 +238,61 @@ public class FluencyBuilder
             return "FluencyConfig{" +
                     "baseConfig=" + baseConfig +
                     '}';
+        }
+
+        public Integer getSenderRetryMax()
+        {
+            return senderRetryMax;
+        }
+
+        public FluencyConfig setSenderRetryMax(Integer senderRetryMax)
+        {
+            this.senderRetryMax = senderRetryMax;
+            return this;
+        }
+
+        public Long getSenderRetryIntervalMillis()
+        {
+            return senderRetryIntervalMillis;
+        }
+
+        public FluencyConfig setSenderRetryIntervalMillis(Long senderRetryIntervalMillis)
+        {
+            this.senderRetryIntervalMillis = senderRetryIntervalMillis;
+            return this;
+        }
+
+        public Long getSenderMaxRetryIntervalMillis()
+        {
+            return senderMaxRetryIntervalMillis;
+        }
+
+        public FluencyConfig setSenderMaxRetryIntervalMillis(Long senderMaxRetryIntervalMillis)
+        {
+            this.senderMaxRetryIntervalMillis = senderMaxRetryIntervalMillis;
+            return this;
+        }
+
+        public Float getSenderRetryFactor()
+        {
+            return senderRetryFactor;
+        }
+
+        public FluencyConfig setSenderRetryFactor(Float senderRetryFactor)
+        {
+            this.senderRetryFactor = senderRetryFactor;
+            return this;
+        }
+
+        public Integer getSenderWorkBufSize()
+        {
+            return senderWorkBufSize;
+        }
+
+        public FluencyConfig setSenderWorkBufSize(Integer senderWorkBufSize)
+        {
+            this.senderWorkBufSize = senderWorkBufSize;
+            return this;
         }
     }
 }

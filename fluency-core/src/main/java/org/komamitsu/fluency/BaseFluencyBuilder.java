@@ -50,6 +50,8 @@ public class BaseFluencyBuilder
 
         private Integer bufferChunkRetentionSize;
 
+        private Integer bufferChunkRetentionTimeMillis;
+
         private Integer flushIntervalMillis;
 
         private String fileBackupDir;
@@ -69,9 +71,10 @@ public class BaseFluencyBuilder
             return maxBufferSize;
         }
 
-        public void setMaxBufferSize(Long maxBufferSize)
+        public FluencyConfig setMaxBufferSize(Long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
+            return this;
         }
 
         public Integer getBufferChunkInitialSize()
@@ -79,9 +82,10 @@ public class BaseFluencyBuilder
             return bufferChunkInitialSize;
         }
 
-        public void setBufferChunkInitialSize(Integer bufferChunkInitialSize)
+        public FluencyConfig setBufferChunkInitialSize(Integer bufferChunkInitialSize)
         {
             this.bufferChunkInitialSize = bufferChunkInitialSize;
+            return this;
         }
 
         public Integer getBufferChunkRetentionSize()
@@ -89,9 +93,21 @@ public class BaseFluencyBuilder
             return bufferChunkRetentionSize;
         }
 
-        public void setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
+        public FluencyConfig setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
         {
             this.bufferChunkRetentionSize = bufferChunkRetentionSize;
+            return this;
+        }
+
+        public Integer getBufferChunkRetentionTimeMillis()
+        {
+            return bufferChunkRetentionTimeMillis;
+        }
+
+        public FluencyConfig setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
+        {
+            this.bufferChunkRetentionTimeMillis = bufferChunkRetentionTimeMillis;
+            return this;
         }
 
         public Integer getFlushIntervalMillis()
@@ -99,9 +115,10 @@ public class BaseFluencyBuilder
             return flushIntervalMillis;
         }
 
-        public void setFlushIntervalMillis(Integer flushIntervalMillis)
+        public FluencyConfig setFlushIntervalMillis(Integer flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
+            return this;
         }
 
         public String getFileBackupDir()
@@ -109,9 +126,10 @@ public class BaseFluencyBuilder
             return fileBackupDir;
         }
 
-        public void setFileBackupDir(String fileBackupDir)
+        public FluencyConfig setFileBackupDir(String fileBackupDir)
         {
             this.fileBackupDir = fileBackupDir;
+            return this;
         }
 
         public Integer getWaitUntilBufferFlushed()
@@ -119,9 +137,10 @@ public class BaseFluencyBuilder
             return waitUntilBufferFlushed;
         }
 
-        public void setWaitUntilBufferFlushed(Integer waitUntilBufferFlushed)
+        public FluencyConfig setWaitUntilBufferFlushed(Integer waitUntilBufferFlushed)
         {
             this.waitUntilBufferFlushed = waitUntilBufferFlushed;
+            return this;
         }
 
         public Integer getWaitUntilFlusherTerminated()
@@ -129,9 +148,10 @@ public class BaseFluencyBuilder
             return waitUntilFlusherTerminated;
         }
 
-        public void setWaitUntilFlusherTerminated(Integer waitUntilFlusherTerminated)
+        public FluencyConfig setWaitUntilFlusherTerminated(Integer waitUntilFlusherTerminated)
         {
             this.waitUntilFlusherTerminated = waitUntilFlusherTerminated;
+            return this;
         }
 
         public Boolean getJvmHeapBufferMode()
@@ -139,9 +159,10 @@ public class BaseFluencyBuilder
             return jvmHeapBufferMode;
         }
 
-        public void setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
+        public FluencyConfig setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
         {
             this.jvmHeapBufferMode = jvmHeapBufferMode;
+            return this;
         }
 
         public ErrorHandler getErrorHandler()
@@ -149,9 +170,10 @@ public class BaseFluencyBuilder
             return errorHandler;
         }
 
-        public void setErrorHandler(ErrorHandler errorHandler)
+        public FluencyConfig setErrorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
+            return this;
         }
 
         @Override
@@ -161,6 +183,7 @@ public class BaseFluencyBuilder
                     "maxBufferSize=" + maxBufferSize +
                     ", bufferChunkInitialSize=" + bufferChunkInitialSize +
                     ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
+                    ", bufferChunkRetentionTimeMillis=" + bufferChunkRetentionTimeMillis +
                     ", flushIntervalMillis=" + flushIntervalMillis +
                     ", fileBackupDir='" + fileBackupDir + '\'' +
                     ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
@@ -207,6 +230,10 @@ public class BaseFluencyBuilder
 
         if (config.getBufferChunkRetentionSize() != null) {
             bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
+        }
+
+        if (config.getBufferChunkRetentionTimeMillis() != null) {
+            bufferConfig.setChunkRetentionTimeMillis(config.getBufferChunkRetentionTimeMillis());
         }
 
         if (config.getFileBackupDir() != null) {
