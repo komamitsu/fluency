@@ -62,6 +62,13 @@ subprojects {
 
     def publishedProjects = subprojects.findAll()
 
+    jacocoTestReport {
+        reports {
+            xml.enabled = true // required by coveralls
+            html.enabled = true // human readable
+        }
+    }
+
     task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
         description = 'Generates an aggregate report from all subprojects'
 
@@ -77,8 +84,8 @@ subprojects {
         }
 
         reports {
-            html.enabled = true // human readable
             xml.enabled = true // required by coveralls
+            html.enabled = true // human readable
         }
     }
 
