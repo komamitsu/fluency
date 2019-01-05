@@ -11,30 +11,33 @@ plugins {
     id "com.github.johnrengelman.shadow" version "4.0.3"
 }
 
-subprojects {
+allprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'com.github.kt3k.coveralls'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
+subprojects {
     apply plugin: 'idea'
     apply plugin: "findbugs"
-    apply plugin: 'jacoco'
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
-    apply plugin: 'com.github.kt3k.coveralls'
     apply plugin: 'com.github.johnrengelman.shadow'
 
     group = 'org.komamitsu'
     archivesBaseName = 'fluency'
     version = '2.0.0-SNAPSHOT'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
     def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
     def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
-
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
 
     dependencies {
         testImplementation 'junit:junit:4.12'
@@ -56,13 +59,6 @@ subprojects {
     tasks.withType(FindBugs) {
         reports {
             xml.enabled = false
-            html.enabled = true
-        }
-    }
-
-    jacocoTestReport {
-        reports {
-            xml.enabled = true // coveralls plugin depends on xml format report
             html.enabled = true
         }
     }
@@ -132,3 +128,35 @@ subprojects {
         }
     }
 }
+
+def publishedProjects = subprojects.findAll()
+
+task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
+
+    dependsOn(publishedProjects.test)
+
+    additionalSourceDirs = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+    executionData = files(publishedProjects.jacocoTestReport.executionData)
+
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
+coveralls {
+    sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+}
+
+tasks.coveralls {
+    dependsOn jacocoRootReport
+}
+
