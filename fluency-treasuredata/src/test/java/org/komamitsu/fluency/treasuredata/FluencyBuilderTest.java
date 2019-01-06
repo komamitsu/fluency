@@ -70,8 +70,8 @@ public class FluencyBuilderTest
             String expectedApiKey)
             throws NoSuchFieldException, IllegalAccessException
     {
-        assertThat(sender.getRetryInternalMs(), is(1000L));
-        assertThat(sender.getMaxRetryInternalMs(), is(30000L));
+        assertThat(sender.getRetryInternalMs(), is(1000));
+        assertThat(sender.getMaxRetryInternalMs(), is(30000));
         assertThat(sender.getRetryFactor(), is(2.0f));
         assertThat(sender.getRetryMax(), is(10));
         assertThat(sender.getWorkBufSize(), is(8192));
