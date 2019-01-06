@@ -26,14 +26,14 @@ import org.komamitsu.fluency.recordformat.RecordFormatter;
 public class BaseFluencyBuilder
 {
     public static Fluency buildFromConfigs(
-            RecordFormatter.Instantiator recordFormatter,
+            RecordFormatter.Instantiator recordFormatterConfig,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
             Ingester ingester)
     {
         Buffer buffer =
                 (bufferConfig != null ? bufferConfig : new Buffer.Config()).
-                        createInstance(recordFormatter.createInstance());
+                        createInstance(recordFormatterConfig.createInstance());
 
         Flusher flusher =
                 (flusherConfig != null ? flusherConfig : new AsyncFlusher.Config()).

@@ -16,10 +16,9 @@
 
 package org.komamitsu.fluency.buffer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.komamitsu.fluency.JsonRecordFormatter;
 import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -38,14 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class BufferTest
 {
@@ -53,40 +49,6 @@ public class BufferTest
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private RecordFormatter recordFormatter;
     private Ingester ingester;
-
-    private static class JsonRecordFormatter
-        extends RecordFormatter
-    {
-        private ObjectMapper objectMapper = new ObjectMapper();
-
-        public JsonRecordFormatter()
-        {
-            super(new RecordFormatter.Config());
-        }
-
-        @Override
-        public byte[] format(String tag, Object timestamp, Map<String, Object> data)
-        {
-            try {
-                return objectMapper.writeValueAsBytes(data);
-            }
-            catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
-        {
-            throw new RuntimeException("Shouldn't be called");
-        }
-
-        @Override
-        public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
-        {
-            throw new RuntimeException("Shouldn't be called");
-        }
-    }
 
     @Before
     public void setUp()
