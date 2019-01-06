@@ -79,17 +79,47 @@ public class TreasureDataSender
                             return true;
                         }).
                         withBackoff(
-                                config.retryIntervalMs,
-                                config.maxRetryIntervalMs,
+                                getRetryInternalMs(),
+                                getMaxRetryInternalMs(),
                                 TimeUnit.MILLISECONDS,
-                                config.retryFactor).
-                        withMaxRetries(config.retryMax);
+                                getRetryFactor()).
+                        withMaxRetries(getRetryMax());
+    }
+
+    public TDClient getClient()
+    {
+        return client;
+    }
+
+    public long getRetryInternalMs()
+    {
+        return config.retryIntervalMs;
+    }
+
+    public long getMaxRetryInternalMs()
+    {
+        return config.maxRetryIntervalMs;
+    }
+
+    public float getRetryFactor()
+    {
+        return config.retryFactor;
+    }
+
+    public int getRetryMax()
+    {
+        return config.retryMax;
+    }
+
+    public int getWorkBufSize()
+    {
+        return config.workBufSize;
     }
 
     private void copyStreams(InputStream in, OutputStream out)
             throws IOException
     {
-        byte[] buf = new byte[config.workBufSize];
+        byte[] buf = new byte[getWorkBufSize()];
         while (true) {
             int readLen = in.read(buf);
             if (readLen < 0) {
