@@ -110,8 +110,8 @@ public class FluencyBuilder
     {
         private BaseFluencyBuilder.FluencyConfig baseConfig;
         private Integer senderRetryMax;
-        private Long senderRetryIntervalMillis;
-        private long senderMaxRetryIntervalMillis;
+        private Integer senderRetryIntervalMillis;
+        private Integer senderMaxRetryIntervalMillis;
         private Float senderRetryFactor;
         private Integer senderWorkBufSize;
 
@@ -251,23 +251,23 @@ public class FluencyBuilder
             return this;
         }
 
-        public Long getSenderRetryIntervalMillis()
+        public Integer getSenderRetryIntervalMillis()
         {
             return senderRetryIntervalMillis;
         }
 
-        public FluencyConfig setSenderRetryIntervalMillis(Long senderRetryIntervalMillis)
+        public FluencyConfig setSenderRetryIntervalMillis(Integer senderRetryIntervalMillis)
         {
             this.senderRetryIntervalMillis = senderRetryIntervalMillis;
             return this;
         }
 
-        public Long getSenderMaxRetryIntervalMillis()
+        public Integer getSenderMaxRetryIntervalMillis()
         {
             return senderMaxRetryIntervalMillis;
         }
 
-        public FluencyConfig setSenderMaxRetryIntervalMillis(Long senderMaxRetryIntervalMillis)
+        public FluencyConfig setSenderMaxRetryIntervalMillis(Integer senderMaxRetryIntervalMillis)
         {
             this.senderMaxRetryIntervalMillis = senderMaxRetryIntervalMillis;
             return this;
