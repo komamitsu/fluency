@@ -37,7 +37,6 @@ import static org.junit.Assert.assertThat;
 
 public class FluencyBuilderTest
 {
-    private static final String CUSTOM_ENDPOINT = "http://another.endpoint.org";
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
     private void assertDefaultBuffer(Buffer buffer)
@@ -63,23 +62,30 @@ public class FluencyBuilderTest
         assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
     }
 
-    private void assertDefaultFluentdSender(TreasureDataSender sender, String expectedEndpoint, String expectedApiKey)
+    private void assertDefaultFluentdSender(
+            TreasureDataSender sender,
+            String expectedEndpoint,
+            boolean expectedUseSsl,
+            String expectedApiKey)
             throws NoSuchFieldException, IllegalAccessException
     {
         assertThat(sender.getRetryInternalMs(), is(1000L));
         assertThat(sender.getMaxRetryInternalMs(), is(30000L));
-        assertThat(sender.getRetryFactor(), is(2.0));
+        assertThat(sender.getRetryFactor(), is(2.0f));
         assertThat(sender.getRetryMax(), is(10));
         assertThat(sender.getWorkBufSize(), is(8192));
 
         Field httpClientField = TDClient.class.getDeclaredField("httpClient");
+        httpClientField.setAccessible(true);
         TDHttpClient tdHttpClient = (TDHttpClient) httpClientField.get(sender.getClient());
 
         Field configField = TDHttpClient.class.getDeclaredField("config");
+        configField.setAccessible(true);
         TDClientConfig config = (TDClientConfig) configField.get(tdHttpClient);
 
-        assertThat(config.endpoint, is(expectedApiKey));
-        assertThat(config.apiKey, is(Optional.of(expectedApiKey)));
+        assertThat(config.endpoint, is(expectedEndpoint));
+        assertThat(config.useSSL, is(expectedUseSsl));
+        assertThat(config.apiKey.get(), is(expectedApiKey));
     }
 
     @Test
@@ -93,7 +99,67 @@ public class FluencyBuilderTest
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
-                    "api-import.treasuredata.com", APIKEY);
+                    "api-import.treasuredata.com", true, APIKEY);
+        }
+        finally {
+            if (fluency != null) {
+                fluency.close();
+            }
+        }
+    }
+
+    @Test
+    public void buildWithCustomHttpsEndpoint()
+            throws IOException, NoSuchFieldException, IllegalAccessException
+    {
+        Fluency fluency = null;
+        try {
+            fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            assertDefaultBuffer(fluency.getBuffer());
+            assertDefaultFlusher(fluency.getFlusher());
+            assertDefaultFluentdSender(
+                    (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
+                    "custom.endpoint.org", true, APIKEY);
+        }
+        finally {
+            if (fluency != null) {
+                fluency.close();
+            }
+        }
+    }
+
+    @Test
+    public void buildWithCustomHttpsEndpointWithoutScheme()
+            throws IOException, NoSuchFieldException, IllegalAccessException
+    {
+        Fluency fluency = null;
+        try {
+            fluency = FluencyBuilder.build(APIKEY, "custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            assertDefaultBuffer(fluency.getBuffer());
+            assertDefaultFlusher(fluency.getFlusher());
+            assertDefaultFluentdSender(
+                    (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
+                    "custom.endpoint.org", true, APIKEY);
+        }
+        finally {
+            if (fluency != null) {
+                fluency.close();
+            }
+        }
+    }
+
+    @Test
+    public void buildWithCustomHttpEndpoint()
+            throws IOException, NoSuchFieldException, IllegalAccessException
+    {
+        Fluency fluency = null;
+        try {
+            fluency = FluencyBuilder.build(APIKEY, "http://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            assertDefaultBuffer(fluency.getBuffer());
+            assertDefaultFlusher(fluency.getFlusher());
+            assertDefaultFluentdSender(
+                    (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
+                    "custom.endpoint.org", false, APIKEY);
         }
         finally {
             if (fluency != null) {

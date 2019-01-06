@@ -288,8 +288,8 @@ public class TreasureDataSender
         private Sender.Config baseConfig = new Sender.Config();
         private String endpoint = "https://api-import.treasuredata.com";
         private String apikey;
-        private long retryIntervalMs = 1000;
-        private long maxRetryIntervalMs = 30000;
+        private int retryIntervalMs = 1000;
+        private int maxRetryIntervalMs = 30000;
         private float retryFactor = 2;
         private int retryMax = 10;
         private int workBufSize = 8192;
@@ -327,23 +327,23 @@ public class TreasureDataSender
             return this;
         }
 
-        public long getRetryIntervalMs()
+        public int getRetryIntervalMs()
         {
             return retryIntervalMs;
         }
 
-        public Config setRetryIntervalMs(long retryIntervalMs)
+        public Config setRetryIntervalMs(int retryIntervalMs)
         {
             this.retryIntervalMs = retryIntervalMs;
             return this;
         }
 
-        public long getMaxRetryIntervalMs()
+        public int getMaxRetryIntervalMs()
         {
             return maxRetryIntervalMs;
         }
 
-        public Config setMaxRetryIntervalMs(long maxRetryIntervalMs)
+        public Config setMaxRetryIntervalMs(int maxRetryIntervalMs)
         {
             this.maxRetryIntervalMs = maxRetryIntervalMs;
             return this;
@@ -404,12 +404,14 @@ public class TreasureDataSender
                 throw new NonRetryableException(String.format("Invalid endpoint. %s", endpoint), e);
             }
 
+            String host = uri.getHost() != null ? uri.getHost() : endpoint;
+
             TDClientBuilder builder = new TDClientBuilder(false)
-                    .setEndpoint(uri.getHost())
+                    .setEndpoint(host)
                     .setApiKey(apikey)
                     .setRetryLimit(retryMax)
-                    .setRetryInitialIntervalMillis((int) retryIntervalMs)
-                    .setRetryMaxIntervalMillis((int) maxRetryIntervalMs)
+                    .setRetryInitialIntervalMillis(retryIntervalMs)
+                    .setRetryMaxIntervalMillis(maxRetryIntervalMs)
                     .setRetryMultiplier(retryFactor);
 
             if (uri.getScheme() != null && uri.getScheme().equals("http")) {
