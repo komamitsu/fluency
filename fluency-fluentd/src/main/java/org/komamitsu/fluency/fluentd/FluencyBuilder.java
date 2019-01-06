@@ -221,6 +221,17 @@ public class FluencyBuilder
             return this;
         }
 
+        public Integer getBufferChunkRetentionTimeMillis()
+        {
+            return baseConfig.getBufferChunkRetentionTimeMillis();
+        }
+
+        public FluencyConfig setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
+        {
+            baseConfig.setBufferChunkRetentionTimeMillis(bufferChunkRetentionTimeMillis);
+            return this;
+        }
+
         public Integer getFlushIntervalMillis()
         {
             return baseConfig.getFlushIntervalMillis();
