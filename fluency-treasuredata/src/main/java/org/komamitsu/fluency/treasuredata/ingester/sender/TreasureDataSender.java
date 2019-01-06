@@ -91,12 +91,12 @@ public class TreasureDataSender
         return client;
     }
 
-    public long getRetryInternalMs()
+    public int getRetryInternalMs()
     {
         return config.retryIntervalMs;
     }
 
-    public long getMaxRetryInternalMs()
+    public int getMaxRetryInternalMs()
     {
         return config.maxRetryIntervalMs;
     }

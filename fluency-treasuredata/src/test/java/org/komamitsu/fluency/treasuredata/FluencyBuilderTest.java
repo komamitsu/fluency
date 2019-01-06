@@ -33,6 +33,7 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public class FluencyBuilderTest
@@ -160,6 +161,67 @@ public class FluencyBuilderTest
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", false, APIKEY);
+        }
+        finally {
+            if (fluency != null) {
+                fluency.close();
+            }
+        }
+    }
+
+    @Test
+    public void buildWithAllCustomConfig()
+            throws IOException
+    {
+        String tmpdir = System.getProperty("java.io.tmpdir");
+        assertThat(tmpdir, is(notNullValue()));
+
+        Fluency fluency = null;
+        try {
+            FluencyBuilder.FluencyConfig config =
+                    new FluencyBuilder.FluencyConfig()
+                            .setFlushIntervalMillis(200)
+                            .setMaxBufferSize(Long.MAX_VALUE)
+                            .setBufferChunkInitialSize(7 * 1024 * 1024)
+                            .setBufferChunkRetentionSize(13 * 1024 * 1024)
+                            .setBufferChunkRetentionTimeMillis(19 * 1000)
+                            .setJvmHeapBufferMode(true)
+                            .setWaitUntilBufferFlushed(42)
+                            .setWaitUntilFlusherTerminated(24)
+                            .setFileBackupDir(tmpdir)
+                            .setSenderRetryIntervalMillis(1234)
+                            .setSenderMaxRetryIntervalMillis(345678)
+                            .setSenderRetryFactor(3.14f)
+                            .setSenderRetryMax(17)
+                            .setSenderWorkBufSize(123456);
+
+            fluency = FluencyBuilder.build(APIKEY, config);
+
+            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
+            Buffer buffer = fluency.getBuffer();
+            assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
+            assertThat(buffer.getFileBackupDir(), is(tmpdir));
+            assertThat(buffer.bufferFormatType(), is("packed_forward"));
+            assertThat(buffer.getChunkRetentionTimeMillis(), is(19 * 1000));
+            assertThat(buffer.getChunkExpandRatio(), is(2f));
+            assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
+            assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
+            assertThat(buffer.getJvmHeapBufferMode(), is(true));
+
+            assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
+            AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
+            assertThat(flusher.isTerminated(), is(false));
+            assertThat(flusher.getFlushIntervalMillis(), is(200));
+            assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
+            assertThat(flusher.getWaitUntilTerminated(), is(24));
+
+            assertThat(flusher.getIngester().getSender(), instanceOf(TreasureDataSender.class));
+            TreasureDataSender sender = (TreasureDataSender) flusher.getIngester().getSender();
+            assertThat(sender.getRetryInternalMs(), is(1234));
+            assertThat(sender.getMaxRetryInternalMs(), is(345678));
+            assertThat(sender.getRetryFactor(), is(3.14f));
+            assertThat(sender.getRetryMax(), is(17));
+            assertThat(sender.getWorkBufSize(), is(123456));
         }
         finally {
             if (fluency != null) {
