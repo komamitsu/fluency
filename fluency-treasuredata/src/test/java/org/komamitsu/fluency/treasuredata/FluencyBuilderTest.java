@@ -19,7 +19,9 @@ package org.komamitsu.fluency.treasuredata;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientConfig;
 import com.treasuredata.client.TDHttpClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
@@ -28,7 +30,6 @@ import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -89,13 +90,19 @@ public class FluencyBuilderTest
         assertThat(config.apiKey.get(), is(expectedApiKey));
     }
 
-    @Test
-    public void build()
+    @ParameterizedTest
+    @CsvSource({"true", "false"})
+    public void build(boolean useDefaultConfig)
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(APIKEY, new FluencyBuilder.FluencyConfig());
+            if (useDefaultConfig) {
+                fluency = FluencyBuilder.build(APIKEY);
+            }
+            else {
+                fluency = FluencyBuilder.build(APIKEY, new FluencyBuilder.FluencyConfig());
+            }
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -109,13 +116,20 @@ public class FluencyBuilderTest
         }
     }
 
-    @Test
-    public void buildWithCustomHttpsEndpoint()
+    @ParameterizedTest
+    @CsvSource({"true", "false"})
+    public void buildWithCustomHttpsEndpoint(boolean useDefaultConfig)
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            if (useDefaultConfig) {
+                fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org");
+            }
+            else {
+                fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+
+            }
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(

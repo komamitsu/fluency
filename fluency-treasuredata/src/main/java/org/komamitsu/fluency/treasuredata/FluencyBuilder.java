@@ -37,9 +37,19 @@ public class FluencyBuilder
         return buildInternal(createSenderConfig(config, endpoint, apikey), ensuredConfig(config));
     }
 
+    public static Fluency build(String apikey, String endpoint)
+    {
+        return buildInternal(createSenderConfig(null, endpoint, apikey), ensuredConfig(null));
+    }
+
     public static Fluency build(String apikey, FluencyConfig config)
     {
         return buildInternal(createSenderConfig(config, null, apikey), ensuredConfig(config));
+    }
+
+    public static Fluency build(String apikey)
+    {
+        return buildInternal(createSenderConfig(null, null, apikey), ensuredConfig(null));
     }
 
     private static TreasureDataSender.Config createSenderConfig(
