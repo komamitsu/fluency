@@ -155,10 +155,10 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
+        Fluency fluency = new FluencyBuilder().build(
                 config.host,
                 config.port,
-                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
+                new FluencyBuilder.FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
         );
 
@@ -189,11 +189,11 @@ public class WithRealFluentd
         assumeNotNull(config);
         assumeNotNull(config.anotherPort);
 
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
+        Fluency fluency = new FluencyBuilder().build(
                 Arrays.asList(
                         new InetSocketAddress(config.host, config.port),
                         new InetSocketAddress(config.host, config.anotherPort)),
-                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
+                new FluencyBuilder.FluencyConfig()
                         .setSslEnabled(config.sslEnabled)
                         .setAckResponseMode(true));
 
@@ -223,7 +223,7 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
+        Fluency fluency = new FluencyBuilder().build(
                 config.host,
                 config.port,
                 new FluencyBuilder.FluencyConfig()

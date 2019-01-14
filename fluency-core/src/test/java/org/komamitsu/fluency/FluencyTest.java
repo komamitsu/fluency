@@ -63,7 +63,7 @@ public class FluencyTest
         TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
         {
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+            Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                     recordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -76,7 +76,7 @@ public class FluencyTest
 
         {
             Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+            Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                     recordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -92,7 +92,7 @@ public class FluencyTest
     public void testGetAllocatedBufferSize()
             throws IOException
     {
-        Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+        Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                 recordFormatterConfig,
                 new TestableBuffer.Config(),
                 new AsyncFlusher.Config(),
@@ -113,7 +113,7 @@ public class FluencyTest
         {
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+            Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                     recordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -126,7 +126,7 @@ public class FluencyTest
         {
             TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
             AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+            Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                     recordFormatterConfig,
                     bufferConfig,
                     flusherConfig,
@@ -146,7 +146,7 @@ public class FluencyTest
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = BaseFluencyBuilder.buildFromConfigs(
+                fluency = new BaseFluencyBuilder().buildFromConfigs(
                         recordFormatterConfig,
                         bufferConfig,
                         flusherConfig,
@@ -166,7 +166,7 @@ public class FluencyTest
             Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
             Fluency fluency = null;
             try {
-                fluency = BaseFluencyBuilder.buildFromConfigs(
+                fluency = new BaseFluencyBuilder().buildFromConfigs(
                         recordFormatterConfig,
                         bufferConfig,
                         flusherConfig,
@@ -225,7 +225,7 @@ public class FluencyTest
 
         try {
             Buffer.Config bufferConfig = new Buffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
+            Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
                     recordFormatterConfig,
                     bufferConfig,
                     new AsyncFlusher.Config(),

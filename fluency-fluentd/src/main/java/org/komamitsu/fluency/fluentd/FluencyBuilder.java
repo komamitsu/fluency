@@ -37,28 +37,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FluencyBuilder
+    extends BaseFluencyBuilder
 {
-    private static FluencyConfig ensuredConfig(FluencyConfig config)
+    private FluencyConfig ensuredConfig(FluencyConfig config)
     {
         return config == null ? new FluencyConfig() : config;
     }
 
-    public static Fluency build(String host, int port, FluencyConfig config)
+    public Fluency build(String host, int port, FluencyConfig config)
     {
         return buildInternal(createBaseSenderConfig(config, host, port), ensuredConfig(config));
     }
 
-    public static Fluency build(int port, FluencyConfig config)
+    public Fluency build(int port, FluencyConfig config)
     {
         return buildInternal(createBaseSenderConfig(config, null , port), ensuredConfig(config));
     }
 
-    public static Fluency build(FluencyConfig config)
+    public Fluency build(FluencyConfig config)
     {
         return buildInternal(createBaseSenderConfig(config, null, null), ensuredConfig(config));
     }
 
-    public static Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
+    public Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
     {
         FluencyConfig ensuredConfig = ensuredConfig(config);
         List<FluentdSender.Instantiator> senderConfigs = new ArrayList<>();
@@ -68,27 +69,27 @@ public class FluencyBuilder
         return buildInternal(new MultiSender.Config(senderConfigs), ensuredConfig);
     }
 
-    public static Fluency build(String host, int port)
+    public Fluency build(String host, int port)
     {
         return build(host, port, null);
     }
 
-    public static Fluency build(int port)
+    public Fluency build(int port)
     {
         return build(port, null);
     }
 
-    public static Fluency build()
+    public Fluency build()
     {
         return buildInternal(createBaseSenderConfig(null, null, null), ensuredConfig(null));
     }
 
-    public static Fluency build(List<InetSocketAddress> servers)
+    public Fluency build(List<InetSocketAddress> servers)
     {
         return build(servers, null);
     }
 
-    private static FluentdSender.Instantiator createBaseSenderConfig(
+    private FluentdSender.Instantiator createBaseSenderConfig(
             FluencyConfig config,
             String host,
             Integer port)
@@ -96,7 +97,7 @@ public class FluencyBuilder
         return createBaseSenderConfig(config, host, port, false);
     }
 
-    private static FluentdSender.Instantiator createBaseSenderConfig(
+    private FluentdSender.Instantiator createBaseSenderConfig(
             FluencyConfig config,
             String host,
             Integer port,
@@ -140,11 +141,11 @@ public class FluencyBuilder
         }
     }
 
-    private static Fluency buildInternal(
+    private Fluency buildInternal(
             FluentdSender.Instantiator baseSenderConfig,
             FluencyConfig config)
     {
-        BaseFluencyBuilder.Configs configs = BaseFluencyBuilder.buildConfigs(config.baseConfig);
+        BaseFluencyBuilder.Configs configs = buildConfigs(config.baseConfig);
 
         Buffer.Config bufferConfig = configs.getBufferConfig();
         AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
@@ -170,7 +171,7 @@ public class FluencyBuilder
 
         RetryableSender retryableSender = senderConfig.createInstance();
 
-        return BaseFluencyBuilder.buildFromConfigs(
+        return buildFromConfigs(
                 new FluentdRecordFormatter.Config(),
                 bufferConfig,
                 flusherConfig,

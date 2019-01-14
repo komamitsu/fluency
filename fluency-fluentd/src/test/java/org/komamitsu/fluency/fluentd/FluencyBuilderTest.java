@@ -101,7 +101,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build();
+            fluency = new FluencyBuilder().build();
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -123,7 +123,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(54321);
+            fluency = new FluencyBuilder().build(54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -145,7 +145,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build("192.168.0.99", 54321);
+            fluency = new FluencyBuilder().build("192.168.0.99", 54321);
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -167,7 +167,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+            fluency = new FluencyBuilder().build(new FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -189,7 +189,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+            fluency = new FluencyBuilder().build(54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -211,7 +211,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build("192.168.0.99", 54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+            fluency = new FluencyBuilder().build("192.168.0.99", 54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -250,7 +250,7 @@ public class FluencyBuilderTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = FluencyBuilder.build(
+            fluency = new FluencyBuilder().build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);
@@ -348,7 +348,7 @@ public class FluencyBuilderTest
                             .setWaitUntilFlusherTerminated(24)
                             .setFileBackupDir(tmpdir);
 
-            fluency = FluencyBuilder.build(
+            fluency = new FluencyBuilder().build(
                     Arrays.asList(
                             new InetSocketAddress("333.333.333.333", 11111),
                             new InetSocketAddress("444.444.444.444", 22222)), config);

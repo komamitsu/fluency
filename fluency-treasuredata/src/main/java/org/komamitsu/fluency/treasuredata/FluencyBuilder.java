@@ -26,33 +26,34 @@ import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.komamitsu.fluency.treasuredata.recordformat.TreasureDataRecordFormatter;
 
 public class FluencyBuilder
+    extends BaseFluencyBuilder
 {
-    private static FluencyConfig ensuredConfig(FluencyConfig config)
+    private FluencyConfig ensuredConfig(FluencyConfig config)
     {
         return config == null ? new FluencyConfig() : config;
     }
 
-    public static Fluency build(String apikey, String endpoint, FluencyConfig config)
+    public Fluency build(String apikey, String endpoint, FluencyConfig config)
     {
         return buildInternal(createSenderConfig(config, endpoint, apikey), ensuredConfig(config));
     }
 
-    public static Fluency build(String apikey, String endpoint)
+    public Fluency build(String apikey, String endpoint)
     {
         return buildInternal(createSenderConfig(null, endpoint, apikey), ensuredConfig(null));
     }
 
-    public static Fluency build(String apikey, FluencyConfig config)
+    public Fluency build(String apikey, FluencyConfig config)
     {
         return buildInternal(createSenderConfig(config, null, apikey), ensuredConfig(config));
     }
 
-    public static Fluency build(String apikey)
+    public Fluency build(String apikey)
     {
         return buildInternal(createSenderConfig(null, null, apikey), ensuredConfig(null));
     }
 
-    private static TreasureDataSender.Config createSenderConfig(
+    private TreasureDataSender.Config createSenderConfig(
             FluencyConfig config,
             String endpoint,
             String apikey)
@@ -71,11 +72,11 @@ public class FluencyBuilder
         return senderConfig;
     }
 
-    private static Fluency buildInternal(
+    private Fluency buildInternal(
             TreasureDataSender.Config senderConfig,
             FluencyConfig config)
     {
-        BaseFluencyBuilder.Configs configs = BaseFluencyBuilder.buildConfigs(config.baseConfig);
+        BaseFluencyBuilder.Configs configs = buildConfigs(config.baseConfig);
 
         Buffer.Config bufferConfig = configs.getBufferConfig();
         AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
@@ -108,7 +109,7 @@ public class FluencyBuilder
 
         TreasureDataIngester.Config ingesterConfig = new TreasureDataIngester.Config();
 
-        return BaseFluencyBuilder.buildFromConfigs(
+        return buildFromConfigs(
                 new TreasureDataRecordFormatter.Config(),
                 bufferConfig,
                 flusherConfig,

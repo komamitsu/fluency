@@ -23,9 +23,10 @@ import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
+// TODO: This should be `abstract`
 public class BaseFluencyBuilder
 {
-    public static Fluency buildFromConfigs(
+    public Fluency buildFromConfigs(
             RecordFormatter.Instantiator recordFormatterConfig,
             Buffer.Instantiator bufferConfig,
             Flusher.Instantiator flusherConfig,
@@ -215,7 +216,7 @@ public class BaseFluencyBuilder
         }
     }
 
-    public static Configs buildConfigs(FluencyConfig config)
+    protected Configs buildConfigs(FluencyConfig config)
     {
         Buffer.Config bufferConfig = new Buffer.Config();
         AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();

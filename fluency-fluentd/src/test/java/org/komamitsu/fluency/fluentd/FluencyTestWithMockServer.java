@@ -300,7 +300,7 @@ public class FluencyTestWithMockServer
                     .setWaitUntilBufferFlushed(10)
                     .setWaitUntilTerminated(10);
 
-            return BaseFluencyBuilder.buildFromConfigs(
+            return new BaseFluencyBuilder().buildFromConfigs(
                     new FluentdRecordFormatter.Config(),
                     bufferConfig,
                     flusherConfig,

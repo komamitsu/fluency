@@ -98,10 +98,10 @@ public class FluencyBuilderTest
         Fluency fluency = null;
         try {
             if (useDefaultConfig) {
-                fluency = FluencyBuilder.build(APIKEY);
+                fluency = new FluencyBuilder().build(APIKEY);
             }
             else {
-                fluency = FluencyBuilder.build(APIKEY, new FluencyBuilder.FluencyConfig());
+                fluency = new FluencyBuilder().build(APIKEY, new FluencyBuilder.FluencyConfig());
             }
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
@@ -124,10 +124,10 @@ public class FluencyBuilderTest
         Fluency fluency = null;
         try {
             if (useDefaultConfig) {
-                fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org");
+                fluency = new FluencyBuilder().build(APIKEY, "https://custom.endpoint.org");
             }
             else {
-                fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+                fluency = new FluencyBuilder().build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
 
             }
             assertDefaultBuffer(fluency.getBuffer());
@@ -149,7 +149,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(APIKEY, "custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            fluency = new FluencyBuilder().build(APIKEY, "custom.endpoint.org", new FluencyBuilder.FluencyConfig());
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -169,7 +169,7 @@ public class FluencyBuilderTest
     {
         Fluency fluency = null;
         try {
-            fluency = FluencyBuilder.build(APIKEY, "http://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+            fluency = new FluencyBuilder().build(APIKEY, "http://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -209,7 +209,7 @@ public class FluencyBuilderTest
                             .setSenderRetryMax(17)
                             .setSenderWorkBufSize(123456);
 
-            fluency = FluencyBuilder.build(APIKEY, config);
+            fluency = new FluencyBuilder().build(APIKEY, config);
 
             assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
             Buffer buffer = fluency.getBuffer();
