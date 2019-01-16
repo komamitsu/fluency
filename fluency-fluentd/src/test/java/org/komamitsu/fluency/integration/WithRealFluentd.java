@@ -155,29 +155,22 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = new FluencyBuilder().build(
-                config.host,
-                config.port,
-                new FluencyBuilder.FluencyConfig()
-                        .setSslEnabled(config.sslEnabled)
-        );
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(config.sslEnabled);
 
-        Map<String, Object> data = new HashMap<String, Object>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
-        try {
+        try (Fluency fluency = builder.build(config.host, config.port)) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
             for (int i = 0; i < config.concurrency; i++) {
                 futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
             }
             for (Future<Void> future : futures) {
                 future.get(config.waitSeconds, TimeUnit.SECONDS);
             }
-        }
-        finally {
-            fluency.close();
         }
     }
 
@@ -189,30 +182,27 @@ public class WithRealFluentd
         assumeNotNull(config);
         assumeNotNull(config.anotherPort);
 
-        Fluency fluency = new FluencyBuilder().build(
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(config.sslEnabled);
+        builder.setAckResponseMode(true);
+
+        try (Fluency fluency = builder.build(
                 Arrays.asList(
                         new InetSocketAddress(config.host, config.port),
-                        new InetSocketAddress(config.host, config.anotherPort)),
-                new FluencyBuilder.FluencyConfig()
-                        .setSslEnabled(config.sslEnabled)
-                        .setAckResponseMode(true));
+                        new InetSocketAddress(config.host, config.anotherPort)))) {
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<>();
-        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
             for (int i = 0; i < config.concurrency; i++) {
                 futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
             }
             for (Future<Void> future : futures) {
                 future.get(config.waitSeconds, TimeUnit.SECONDS);
             }
-        }
-        finally {
-            fluency.close();
         }
     }
 
@@ -223,33 +213,26 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        Fluency fluency = new FluencyBuilder().build(
-                config.host,
-                config.port,
-                new FluencyBuilder.FluencyConfig()
-                        // Fluency might use a lot of buffer for loaded backup files.
-                        // So it'd better increase max buffer size
-                        .setSslEnabled(config.sslEnabled)
-                        .setMaxBufferSize(512 * 1024 * 1024L)
-                        .setFileBackupDir(System.getProperty("java.io.tmpdir")));
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(config.sslEnabled);
+        // Fluency might use a lot of buffer for loaded backup files.
+        // So it'd better increase max buffer size
+        builder.setMaxBufferSize(512 * 1024 * 1024L);
+        builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<>();
-        try {
+        try (Fluency fluency = new FluencyBuilder().build(config.host, config.port)) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
             for (int i = 0; i < config.concurrency; i++) {
                 futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
             }
             for (Future<Void> future : futures) {
                 future.get(config.waitSeconds, TimeUnit.SECONDS);
             }
-        }
-        finally {
-            fluency.close();
         }
     }
 }

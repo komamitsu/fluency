@@ -30,7 +30,6 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -39,75 +38,76 @@ import java.util.List;
 public class FluencyBuilder
     extends BaseFluencyBuilder
 {
-    private FluencyConfig ensuredConfig(FluencyConfig config)
+    private Integer senderMaxRetryCount;
+    private boolean ackResponseMode;
+    private boolean sslEnabled;
+
+    public Integer getSenderMaxRetryCount()
     {
-        return config == null ? new FluencyConfig() : config;
+        return senderMaxRetryCount;
     }
 
-    public Fluency build(String host, int port, FluencyConfig config)
+    public void setSenderMaxRetryCount(Integer senderMaxRetryCount)
     {
-        return buildInternal(createBaseSenderConfig(config, host, port), ensuredConfig(config));
+        this.senderMaxRetryCount = senderMaxRetryCount;
     }
 
-    public Fluency build(int port, FluencyConfig config)
+    public boolean isAckResponseMode()
     {
-        return buildInternal(createBaseSenderConfig(config, null , port), ensuredConfig(config));
+        return ackResponseMode;
     }
 
-    public Fluency build(FluencyConfig config)
+    public void setAckResponseMode(boolean ackResponseMode)
     {
-        return buildInternal(createBaseSenderConfig(config, null, null), ensuredConfig(config));
+        this.ackResponseMode = ackResponseMode;
     }
 
-    public Fluency build(List<InetSocketAddress> servers, FluencyConfig config)
+    public boolean isSslEnabled()
     {
-        FluencyConfig ensuredConfig = ensuredConfig(config);
-        List<FluentdSender.Instantiator> senderConfigs = new ArrayList<>();
-        for (InetSocketAddress server : servers) {
-            senderConfigs.add(createBaseSenderConfig(ensuredConfig, server.getHostName(), server.getPort(), true));
-        }
-        return buildInternal(new MultiSender.Config(senderConfigs), ensuredConfig);
+        return sslEnabled;
+    }
+
+    public void setSslEnabled(boolean sslEnabled)
+    {
+        this.sslEnabled = sslEnabled;
     }
 
     public Fluency build(String host, int port)
     {
-        return build(host, port, null);
+        return buildInternal(createBaseSenderConfig(host, port));
     }
 
     public Fluency build(int port)
     {
-        return build(port, null);
+        return buildInternal(createBaseSenderConfig(null , port));
     }
 
     public Fluency build()
     {
-        return buildInternal(createBaseSenderConfig(null, null, null), ensuredConfig(null));
+        return buildInternal(createBaseSenderConfig(null, null));
     }
 
     public Fluency build(List<InetSocketAddress> servers)
     {
-        return build(servers, null);
+        List<FluentdSender.Instantiator> senderConfigs = new ArrayList<>();
+        for (InetSocketAddress server : servers) {
+            senderConfigs.add(createBaseSenderConfig(server.getHostName(), server.getPort(), true));
+        }
+        return buildInternal(new MultiSender.Config(senderConfigs));
     }
 
-    private FluentdSender.Instantiator createBaseSenderConfig(
-            FluencyConfig config,
-            String host,
-            Integer port)
+    private FluentdSender.Instantiator createBaseSenderConfig(String host, Integer port)
     {
-        return createBaseSenderConfig(config, host, port, false);
+        return createBaseSenderConfig(host, port, false);
     }
 
-    private FluentdSender.Instantiator createBaseSenderConfig(
-            FluencyConfig config,
-            String host,
-            Integer port,
-            boolean withHeartBeater)
+    private FluentdSender.Instantiator createBaseSenderConfig(String host, Integer port, boolean withHeartBeater)
     {
         if (withHeartBeater && port == null) {
             throw new IllegalArgumentException("`port` should be specified when using heartbeat");
         }
 
-        if (config != null && config.sslEnabled) {
+        if (isSslEnabled()) {
             SSLSender.Config senderConfig = new SSLSender.Config();
             if (host != null) {
                 senderConfig.setHost(host);
@@ -141,32 +141,30 @@ public class FluencyBuilder
         }
     }
 
-    private Fluency buildInternal(
-            FluentdSender.Instantiator baseSenderConfig,
-            FluencyConfig config)
+    private Fluency buildInternal(FluentdSender.Instantiator baseSenderConfig)
     {
-        BaseFluencyBuilder.Configs configs = buildConfigs(config.baseConfig);
+        BaseFluencyBuilder.Configs configs = buildConfigs();
 
         Buffer.Config bufferConfig = configs.getBufferConfig();
         AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
 
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-        if (config.getSenderMaxRetryCount() != null) {
-            retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
+        if (getSenderMaxRetryCount() != null) {
+            retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
 
-        if (config.getSenderMaxRetryCount() != null) {
-            retryStrategyConfig.setMaxRetryCount(config.getSenderMaxRetryCount());
+        if (getSenderMaxRetryCount() != null) {
+            retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
 
         FluentdIngester.Config transporterConfig = new FluentdIngester.Config();
-            transporterConfig.setAckResponseMode(config.isAckResponseMode());
+            transporterConfig.setAckResponseMode(isAckResponseMode());
 
         RetryableSender.Config senderConfig = new RetryableSender.Config(baseSenderConfig)
                 .setRetryStrategyConfig(retryStrategyConfig);
 
-        if (config.getErrorHandler() != null) {
-            senderConfig.setErrorHandler(config.getErrorHandler());
+        if (getErrorHandler() != null) {
+            senderConfig.setErrorHandler(getErrorHandler());
         }
 
         RetryableSender retryableSender = senderConfig.createInstance();
@@ -179,168 +177,13 @@ public class FluencyBuilder
         );
     }
 
-    public static class FluencyConfig
+    @Override
+    public String toString()
     {
-        private BaseFluencyBuilder.FluencyConfig baseConfig = new BaseFluencyBuilder.FluencyConfig();
-
-        private Integer senderMaxRetryCount;
-
-        private boolean ackResponseMode;
-
-        private boolean sslEnabled;
-
-        public Long getMaxBufferSize()
-        {
-            return baseConfig.getMaxBufferSize();
-        }
-
-        public FluencyConfig setMaxBufferSize(Long maxBufferSize)
-        {
-            baseConfig.setMaxBufferSize(maxBufferSize);
-            return this;
-        }
-
-        public Integer getBufferChunkInitialSize()
-        {
-            return baseConfig.getBufferChunkInitialSize();
-        }
-
-        public FluencyConfig setBufferChunkInitialSize(Integer bufferChunkInitialSize)
-        {
-            baseConfig.setBufferChunkInitialSize(bufferChunkInitialSize);
-            return this;
-        }
-
-        public Integer getBufferChunkRetentionSize()
-        {
-            return baseConfig.getBufferChunkRetentionSize();
-        }
-
-        public FluencyConfig setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
-        {
-            baseConfig.setBufferChunkRetentionSize(bufferChunkRetentionSize);
-            return this;
-        }
-
-        public Integer getBufferChunkRetentionTimeMillis()
-        {
-            return baseConfig.getBufferChunkRetentionTimeMillis();
-        }
-
-        public FluencyConfig setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
-        {
-            baseConfig.setBufferChunkRetentionTimeMillis(bufferChunkRetentionTimeMillis);
-            return this;
-        }
-
-        public Integer getFlushIntervalMillis()
-        {
-            return baseConfig.getFlushIntervalMillis();
-        }
-
-        public FluencyConfig setFlushIntervalMillis(Integer flushIntervalMillis)
-        {
-            baseConfig.setFlushIntervalMillis(flushIntervalMillis);
-            return this;
-        }
-
-        public String getFileBackupDir()
-        {
-            return baseConfig.getFileBackupDir();
-        }
-
-        public FluencyConfig setFileBackupDir(String fileBackupDir)
-        {
-            baseConfig.setFileBackupDir(fileBackupDir);
-            return this;
-        }
-
-        public Integer getWaitUntilBufferFlushed()
-        {
-            return baseConfig.getWaitUntilBufferFlushed();
-        }
-
-        public FluencyConfig setWaitUntilBufferFlushed(Integer waitUntilBufferFlushed)
-        {
-            baseConfig.setWaitUntilBufferFlushed(waitUntilBufferFlushed);
-            return this;
-        }
-
-        public Integer getWaitUntilFlusherTerminated()
-        {
-            return baseConfig.getWaitUntilFlusherTerminated();
-        }
-
-        public FluencyConfig setWaitUntilFlusherTerminated(Integer waitUntilFlusherTerminated)
-        {
-            baseConfig.setWaitUntilFlusherTerminated(waitUntilFlusherTerminated);
-            return this;
-        }
-
-        public Boolean getJvmHeapBufferMode()
-        {
-            return baseConfig.getJvmHeapBufferMode();
-        }
-
-        public FluencyConfig setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
-        {
-            baseConfig.setJvmHeapBufferMode(jvmHeapBufferMode);
-            return this;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public FluencyConfig setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public Integer getSenderMaxRetryCount()
-        {
-            return senderMaxRetryCount;
-        }
-
-        public FluencyConfig setSenderMaxRetryCount(Integer senderMaxRetryCount)
-        {
-            this.senderMaxRetryCount = senderMaxRetryCount;
-            return this;
-        }
-
-        public boolean isAckResponseMode()
-        {
-            return ackResponseMode;
-        }
-
-        public FluencyConfig setAckResponseMode(boolean ackResponseMode)
-        {
-            this.ackResponseMode = ackResponseMode;
-            return this;
-        }
-
-        public boolean isSslEnabled()
-        {
-            return sslEnabled;
-        }
-
-        public FluencyConfig setSslEnabled(boolean sslEnabled)
-        {
-            this.sslEnabled = sslEnabled;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "FluencyConfig{" +
-                    "baseConfig=" + baseConfig +
-                    ", senderMaxRetryCount=" + senderMaxRetryCount +
-                    ", ackResponseMode=" + ackResponseMode +
-                    ", sslEnabled=" + sslEnabled +
-                    '}';
-        }
+        return "FluencyBuilder{" +
+                "senderMaxRetryCount=" + senderMaxRetryCount +
+                ", ackResponseMode=" + ackResponseMode +
+                ", sslEnabled=" + sslEnabled +
+                "} " + super.toString();
     }
 }

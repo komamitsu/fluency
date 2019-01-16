@@ -23,9 +23,138 @@ import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
-// TODO: This should be `abstract`
-public class BaseFluencyBuilder
+public abstract class BaseFluencyBuilder
 {
+    private Long maxBufferSize;
+    private Integer bufferChunkInitialSize;
+    private Integer bufferChunkRetentionSize;
+    private Integer bufferChunkRetentionTimeMillis;
+    private Integer flushIntervalMillis;
+    private String fileBackupDir;
+    private Integer waitUntilBufferFlushed;
+    private Integer waitUntilFlusherTerminated;
+    private Boolean jvmHeapBufferMode;
+    private ErrorHandler errorHandler;
+
+    // TODO: Contain sender's retry setting here?
+
+    public Long getMaxBufferSize()
+    {
+        return maxBufferSize;
+    }
+
+    public void setMaxBufferSize(Long maxBufferSize)
+    {
+        this.maxBufferSize = maxBufferSize;
+    }
+
+    public Integer getBufferChunkInitialSize()
+    {
+        return bufferChunkInitialSize;
+    }
+
+    public void setBufferChunkInitialSize(Integer bufferChunkInitialSize)
+    {
+        this.bufferChunkInitialSize = bufferChunkInitialSize;
+    }
+
+    public Integer getBufferChunkRetentionSize()
+    {
+        return bufferChunkRetentionSize;
+    }
+
+    public void setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
+    {
+        this.bufferChunkRetentionSize = bufferChunkRetentionSize;
+    }
+
+    public Integer getBufferChunkRetentionTimeMillis()
+    {
+        return bufferChunkRetentionTimeMillis;
+    }
+
+    public void setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
+    {
+        this.bufferChunkRetentionTimeMillis = bufferChunkRetentionTimeMillis;
+    }
+
+    public Integer getFlushIntervalMillis()
+    {
+        return flushIntervalMillis;
+    }
+
+    public void setFlushIntervalMillis(Integer flushIntervalMillis)
+    {
+        this.flushIntervalMillis = flushIntervalMillis;
+    }
+
+    public String getFileBackupDir()
+    {
+        return fileBackupDir;
+    }
+
+    public void setFileBackupDir(String fileBackupDir)
+    {
+        this.fileBackupDir = fileBackupDir;
+    }
+
+    public Integer getWaitUntilBufferFlushed()
+    {
+        return waitUntilBufferFlushed;
+    }
+
+    public void setWaitUntilBufferFlushed(Integer waitUntilBufferFlushed)
+    {
+        this.waitUntilBufferFlushed = waitUntilBufferFlushed;
+    }
+
+    public Integer getWaitUntilFlusherTerminated()
+    {
+        return waitUntilFlusherTerminated;
+    }
+
+    public void setWaitUntilFlusherTerminated(Integer waitUntilFlusherTerminated)
+    {
+        this.waitUntilFlusherTerminated = waitUntilFlusherTerminated;
+    }
+
+    public Boolean getJvmHeapBufferMode()
+    {
+        return jvmHeapBufferMode;
+    }
+
+    public void setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
+    {
+        this.jvmHeapBufferMode = jvmHeapBufferMode;
+    }
+
+    public ErrorHandler getErrorHandler()
+    {
+        return errorHandler;
+    }
+
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        this.errorHandler = errorHandler;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "BaseFluencyBuilder{" +
+                "maxBufferSize=" + maxBufferSize +
+                ", bufferChunkInitialSize=" + bufferChunkInitialSize +
+                ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
+                ", bufferChunkRetentionTimeMillis=" + bufferChunkRetentionTimeMillis +
+                ", flushIntervalMillis=" + flushIntervalMillis +
+                ", fileBackupDir='" + fileBackupDir + '\'' +
+                ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
+                ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
+                ", jvmHeapBufferMode=" + jvmHeapBufferMode +
+                ", errorHandler=" + errorHandler +
+                '}';
+    }
+
     public Fluency buildFromConfigs(
             RecordFormatter.Instantiator recordFormatterConfig,
             Buffer.Instantiator bufferConfig,
@@ -43,159 +172,8 @@ public class BaseFluencyBuilder
         return new Fluency(buffer, flusher);
     }
 
-    public static class FluencyConfig
+    public static class Configs
     {
-        private Long maxBufferSize;
-
-        private Integer bufferChunkInitialSize;
-
-        private Integer bufferChunkRetentionSize;
-
-        private Integer bufferChunkRetentionTimeMillis;
-
-        private Integer flushIntervalMillis;
-
-        private String fileBackupDir;
-
-        private Integer waitUntilBufferFlushed;
-
-        private Integer waitUntilFlusherTerminated;
-
-        private Boolean jvmHeapBufferMode;
-
-        private ErrorHandler errorHandler;
-
-        // TODO: Contain sender's retry setting here?
-
-        public Long getMaxBufferSize()
-        {
-            return maxBufferSize;
-        }
-
-        public FluencyConfig setMaxBufferSize(Long maxBufferSize)
-        {
-            this.maxBufferSize = maxBufferSize;
-            return this;
-        }
-
-        public Integer getBufferChunkInitialSize()
-        {
-            return bufferChunkInitialSize;
-        }
-
-        public FluencyConfig setBufferChunkInitialSize(Integer bufferChunkInitialSize)
-        {
-            this.bufferChunkInitialSize = bufferChunkInitialSize;
-            return this;
-        }
-
-        public Integer getBufferChunkRetentionSize()
-        {
-            return bufferChunkRetentionSize;
-        }
-
-        public FluencyConfig setBufferChunkRetentionSize(Integer bufferChunkRetentionSize)
-        {
-            this.bufferChunkRetentionSize = bufferChunkRetentionSize;
-            return this;
-        }
-
-        public Integer getBufferChunkRetentionTimeMillis()
-        {
-            return bufferChunkRetentionTimeMillis;
-        }
-
-        public FluencyConfig setBufferChunkRetentionTimeMillis(Integer bufferChunkRetentionTimeMillis)
-        {
-            this.bufferChunkRetentionTimeMillis = bufferChunkRetentionTimeMillis;
-            return this;
-        }
-
-        public Integer getFlushIntervalMillis()
-        {
-            return flushIntervalMillis;
-        }
-
-        public FluencyConfig setFlushIntervalMillis(Integer flushIntervalMillis)
-        {
-            this.flushIntervalMillis = flushIntervalMillis;
-            return this;
-        }
-
-        public String getFileBackupDir()
-        {
-            return fileBackupDir;
-        }
-
-        public FluencyConfig setFileBackupDir(String fileBackupDir)
-        {
-            this.fileBackupDir = fileBackupDir;
-            return this;
-        }
-
-        public Integer getWaitUntilBufferFlushed()
-        {
-            return waitUntilBufferFlushed;
-        }
-
-        public FluencyConfig setWaitUntilBufferFlushed(Integer waitUntilBufferFlushed)
-        {
-            this.waitUntilBufferFlushed = waitUntilBufferFlushed;
-            return this;
-        }
-
-        public Integer getWaitUntilFlusherTerminated()
-        {
-            return waitUntilFlusherTerminated;
-        }
-
-        public FluencyConfig setWaitUntilFlusherTerminated(Integer waitUntilFlusherTerminated)
-        {
-            this.waitUntilFlusherTerminated = waitUntilFlusherTerminated;
-            return this;
-        }
-
-        public Boolean getJvmHeapBufferMode()
-        {
-            return jvmHeapBufferMode;
-        }
-
-        public FluencyConfig setJvmHeapBufferMode(Boolean jvmHeapBufferMode)
-        {
-            this.jvmHeapBufferMode = jvmHeapBufferMode;
-            return this;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return errorHandler;
-        }
-
-        public FluencyConfig setErrorHandler(ErrorHandler errorHandler)
-        {
-            this.errorHandler = errorHandler;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "FluencyConfig{" +
-                    "maxBufferSize=" + maxBufferSize +
-                    ", bufferChunkInitialSize=" + bufferChunkInitialSize +
-                    ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
-                    ", bufferChunkRetentionTimeMillis=" + bufferChunkRetentionTimeMillis +
-                    ", flushIntervalMillis=" + flushIntervalMillis +
-                    ", fileBackupDir='" + fileBackupDir + '\'' +
-                    ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
-                    ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
-                    ", jvmHeapBufferMode=" + jvmHeapBufferMode +
-                    ", errorHandler=" + errorHandler +
-                    '}';
-        }
-    }
-
-    public static class Configs {
         private final Buffer.Config bufferConfig;
         private final AsyncFlusher.Config flusherConfig;
 
@@ -214,47 +192,48 @@ public class BaseFluencyBuilder
         {
             return flusherConfig;
         }
+
     }
 
-    protected Configs buildConfigs(FluencyConfig config)
+    protected Configs buildConfigs()
     {
         Buffer.Config bufferConfig = new Buffer.Config();
         AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
 
-        if (config.getMaxBufferSize() != null) {
-            bufferConfig.setMaxBufferSize(config.getMaxBufferSize());
+        if (getMaxBufferSize() != null) {
+            bufferConfig.setMaxBufferSize(getMaxBufferSize());
         }
 
-        if (config.getBufferChunkInitialSize() != null) {
-            bufferConfig.setChunkInitialSize(config.getBufferChunkInitialSize());
+        if (getBufferChunkInitialSize() != null) {
+            bufferConfig.setChunkInitialSize(getBufferChunkInitialSize());
         }
 
-        if (config.getBufferChunkRetentionSize() != null) {
-            bufferConfig.setChunkRetentionSize(config.getBufferChunkRetentionSize());
+        if (getBufferChunkRetentionSize() != null) {
+            bufferConfig.setChunkRetentionSize(getBufferChunkRetentionSize());
         }
 
-        if (config.getBufferChunkRetentionTimeMillis() != null) {
-            bufferConfig.setChunkRetentionTimeMillis(config.getBufferChunkRetentionTimeMillis());
+        if (getBufferChunkRetentionTimeMillis() != null) {
+            bufferConfig.setChunkRetentionTimeMillis(getBufferChunkRetentionTimeMillis());
         }
 
-        if (config.getFileBackupDir() != null) {
-            bufferConfig.setFileBackupDir(config.getFileBackupDir());
+        if (getFileBackupDir() != null) {
+            bufferConfig.setFileBackupDir(getFileBackupDir());
         }
 
-        if (config.getJvmHeapBufferMode() != null) {
-            bufferConfig.setJvmHeapBufferMode(config.jvmHeapBufferMode);
+        if (getJvmHeapBufferMode() != null) {
+            bufferConfig.setJvmHeapBufferMode(getJvmHeapBufferMode());
         }
 
-        if (config.getFlushIntervalMillis() != null) {
-            flusherConfig.setFlushIntervalMillis(config.getFlushIntervalMillis());
+        if (getFlushIntervalMillis() != null) {
+            flusherConfig.setFlushIntervalMillis(getFlushIntervalMillis());
         }
 
-        if (config.getWaitUntilBufferFlushed() != null) {
-            flusherConfig.setWaitUntilBufferFlushed(config.getWaitUntilBufferFlushed());
+        if (getWaitUntilBufferFlushed() != null) {
+            flusherConfig.setWaitUntilBufferFlushed(getWaitUntilBufferFlushed());
         }
 
-        if (config.getWaitUntilFlusherTerminated() != null) {
-            flusherConfig.setWaitUntilTerminated(config.getWaitUntilFlusherTerminated());
+        if (getWaitUntilFlusherTerminated() != null) {
+            flusherConfig.setWaitUntilTerminated(getWaitUntilFlusherTerminated());
         }
 
         return new Configs(bufferConfig, flusherConfig);

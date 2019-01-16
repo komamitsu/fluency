@@ -17,8 +17,6 @@
 package org.komamitsu.fluency.fluentd;
 
 import org.junit.Test;
-import org.junit.experimental.theories.Theories;
-import org.junit.runner.RunWith;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -99,9 +97,7 @@ public class FluencyBuilderTest
     public void build()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build();
+        try (Fluency fluency = new FluencyBuilder().build()) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -109,11 +105,6 @@ public class FluencyBuilderTest
                     "127.0.0.1",
                     24224,
                     TCPSender.class);
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 
@@ -121,9 +112,7 @@ public class FluencyBuilderTest
     public void buildWithCustomPort()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build(54321);
+        try (Fluency fluency = new FluencyBuilder().build(54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -132,20 +121,13 @@ public class FluencyBuilderTest
                     54321,
                     TCPSender.class);
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithCustomHostAndPort()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build("192.168.0.99", 54321);
+        try (Fluency fluency = new FluencyBuilder().build("192.168.0.99", 54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -154,20 +136,15 @@ public class FluencyBuilderTest
                     54321,
                     TCPSender.class);
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithSsl()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build(new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(true);
+        try (Fluency fluency = builder.build()) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -176,20 +153,15 @@ public class FluencyBuilderTest
                     24224,
                     SSLSender.class);
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithSslAndCustomPort()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build(54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(true);
+        try (Fluency fluency = builder.build(54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -198,20 +170,15 @@ public class FluencyBuilderTest
                     54321,
                     SSLSender.class);
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithSslAndCustomHostAndPort()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            fluency = new FluencyBuilder().build("192.168.0.99", 54321, new FluencyBuilder.FluencyConfig().setSslEnabled(true));
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(true);
+        try (Fluency fluency = builder.build("192.168.0.99", 54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -220,40 +187,32 @@ public class FluencyBuilderTest
                     54321,
                     SSLSender.class);
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithComplexConfig()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            String tmpdir = System.getProperty("java.io.tmpdir");
-            assertThat(tmpdir, is(notNullValue()));
+        String tmpdir = System.getProperty("java.io.tmpdir");
+        assertThat(tmpdir, is(notNullValue()));
 
-            FluencyBuilder.FluencyConfig config =
-                    new FluencyBuilder.FluencyConfig()
-                            .setFlushIntervalMillis(200)
-                            .setMaxBufferSize(Long.MAX_VALUE)
-                            .setBufferChunkInitialSize(7 * 1024 * 1024)
-                            .setBufferChunkRetentionSize(13 * 1024 * 1024)
-                            .setBufferChunkRetentionTimeMillis(19 * 1000)
-                            .setJvmHeapBufferMode(true)
-                            .setSenderMaxRetryCount(99)
-                            .setAckResponseMode(true)
-                            .setWaitUntilBufferFlushed(42)
-                            .setWaitUntilFlusherTerminated(24)
-                            .setFileBackupDir(tmpdir);
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setFlushIntervalMillis(200);
+        builder.setMaxBufferSize(Long.MAX_VALUE);
+        builder.setBufferChunkInitialSize(7 * 1024 * 1024);
+        builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
+        builder.setBufferChunkRetentionTimeMillis(19 * 1000);
+        builder.setJvmHeapBufferMode(true);
+        builder.setSenderMaxRetryCount(99);
+        builder.setAckResponseMode(true);
+        builder.setWaitUntilBufferFlushed(42);
+        builder.setWaitUntilFlusherTerminated(24);
+        builder.setFileBackupDir(tmpdir);
 
-            fluency = new FluencyBuilder().build(
-                    Arrays.asList(
-                            new InetSocketAddress("333.333.333.333", 11111),
-                            new InetSocketAddress("444.444.444.444", 22222)), config);
+        try (Fluency fluency = builder.build(
+                Arrays.asList(
+                        new InetSocketAddress("333.333.333.333", 11111),
+                        new InetSocketAddress("444.444.444.444", 22222)))) {
 
             assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
             Buffer buffer = fluency.getBuffer();
@@ -318,40 +277,32 @@ public class FluencyBuilderTest
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
         }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
-        }
     }
 
     @Test
     public void buildWithSslAndComplexConfig()
             throws IOException
     {
-        Fluency fluency = null;
-        try {
-            String tmpdir = System.getProperty("java.io.tmpdir");
-            assertThat(tmpdir, is(notNullValue()));
+        String tmpdir = System.getProperty("java.io.tmpdir");
+        assertThat(tmpdir, is(notNullValue()));
 
-            FluencyBuilder.FluencyConfig config =
-                    new FluencyBuilder.FluencyConfig()
-                            .setSslEnabled(true)
-                            .setFlushIntervalMillis(200)
-                            .setMaxBufferSize(Long.MAX_VALUE)
-                            .setBufferChunkInitialSize(7 * 1024 * 1024)
-                            .setBufferChunkRetentionSize(13 * 1024 * 1024)
-                            .setJvmHeapBufferMode(true)
-                            .setSenderMaxRetryCount(99)
-                            .setAckResponseMode(true)
-                            .setWaitUntilBufferFlushed(42)
-                            .setWaitUntilFlusherTerminated(24)
-                            .setFileBackupDir(tmpdir);
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSslEnabled(true);
+        builder.setFlushIntervalMillis(200);
+        builder.setMaxBufferSize(Long.MAX_VALUE);
+        builder.setBufferChunkInitialSize(7 * 1024 * 1024);
+        builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
+        builder.setJvmHeapBufferMode(true);
+        builder.setSenderMaxRetryCount(99);
+        builder.setAckResponseMode(true);
+        builder.setWaitUntilBufferFlushed(42);
+        builder.setWaitUntilFlusherTerminated(24);
+        builder.setFileBackupDir(tmpdir);
 
-            fluency = new FluencyBuilder().build(
-                    Arrays.asList(
-                            new InetSocketAddress("333.333.333.333", 11111),
-                            new InetSocketAddress("444.444.444.444", 22222)), config);
+        try (Fluency fluency = builder.build(
+                Arrays.asList(
+                        new InetSocketAddress("333.333.333.333", 11111),
+                        new InetSocketAddress("444.444.444.444", 22222)))) {
 
             assertThat(fluency.getFlusher().getIngester().getSender(), instanceOf(RetryableSender.class));
             RetryableSender retryableSender = (RetryableSender) fluency.getFlusher().getIngester().getSender();
@@ -396,11 +347,6 @@ public class FluencyBuilderTest
                 assertThat(failureDetector.getHeartbeater().getHost(), is("444.444.444.444"));
                 assertThat(failureDetector.getHeartbeater().getPort(), is(22222));
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
-            }
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
             }
         }
     }

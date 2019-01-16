@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.BaseFluencyBuilder;
+import org.komamitsu.fluency.TestableFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
@@ -300,7 +301,7 @@ public class FluencyTestWithMockServer
                     .setWaitUntilBufferFlushed(10)
                     .setWaitUntilTerminated(10);
 
-            return new BaseFluencyBuilder().buildFromConfigs(
+            return new TestableFluencyBuilder().buildFromConfigs(
                     new FluentdRecordFormatter.Config(),
                     bufferConfig,
                     flusherConfig,

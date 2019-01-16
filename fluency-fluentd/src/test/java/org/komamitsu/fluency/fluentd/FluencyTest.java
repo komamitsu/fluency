@@ -26,8 +26,8 @@ import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.TestableFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
@@ -85,23 +85,24 @@ public class FluencyTest
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
 
-        Fluency fluency = new FluencyBuilder().build(Integer.MAX_VALUE,
-                new FluencyBuilder.FluencyConfig()
-                        .setSenderMaxRetryCount(1)
-                        .setErrorHandler(e -> {
-                            errorContainer.set(e);
-                            countDownLatch.countDown();
-                        }));
+        FluencyBuilder builder = new FluencyBuilder();
+        builder.setSenderMaxRetryCount(1);
+        builder.setErrorHandler(e -> {
+            errorContainer.set(e);
+            countDownLatch.countDown();
+        });
 
-        HashMap<String, Object> event = new HashMap<>();
-        event.put("name", "foo");
-        fluency.emit("tag", event);
+        try (Fluency fluency = builder.build(Integer.MAX_VALUE)) {
+            HashMap<String, Object> event = new HashMap<>();
+            event.put("name", "foo");
+            fluency.emit("tag", event);
 
-        if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
-            throw new AssertionError("Timeout");
+            if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
+                throw new AssertionError("Timeout");
+            }
+
+            assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
         }
-
-        assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
 
     @Theory
@@ -120,11 +121,12 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            new FluencyBuilder().build(serverPort,
-                                    new FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilder builder = new FluencyBuilder();
+                    builder.setSslEnabled(sslEnabled);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertNull(exception);
     }
@@ -146,11 +148,13 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            new FluencyBuilder().build(serverPort,
-                                    new FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilder builder = new FluencyBuilder();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -179,11 +183,13 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            new FluencyBuilder().build(serverPort,
-                                    new FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilder builder = new FluencyBuilder();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -213,10 +219,13 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency = new FluencyBuilder().build(serverPort,
-                            new FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilder builder = new FluencyBuilder();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertNull(exception);
     }
@@ -264,7 +273,7 @@ public class FluencyTest
         FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
                 new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
 
-        Fluency fluency = new BaseFluencyBuilder().buildFromConfigs(
+        Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(
                     fluentdRecordFormatterWithModuleConfig,
                     bufferConfig,
                     new AsyncFlusher.Config(),
