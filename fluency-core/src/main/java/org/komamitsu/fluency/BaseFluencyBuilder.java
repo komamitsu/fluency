@@ -35,6 +35,8 @@ public abstract class BaseFluencyBuilder
     private Integer waitUntilFlusherTerminated;
     private Boolean jvmHeapBufferMode;
     private ErrorHandler errorHandler;
+    private Buffer.Config customBufferConfig;
+    private AsyncFlusher.Config customFlusherConfig;
 
     // TODO: Contain sender's retry setting here?
 
@@ -138,6 +140,26 @@ public abstract class BaseFluencyBuilder
         this.errorHandler = errorHandler;
     }
 
+    public Buffer.Config getCustomBufferConfig()
+    {
+        return customBufferConfig;
+    }
+
+    public void setCustomBufferConfig(Buffer.Config customBufferConfig)
+    {
+        this.customBufferConfig = customBufferConfig;
+    }
+
+    public AsyncFlusher.Config getCustomFlusherConfig()
+    {
+        return customFlusherConfig;
+    }
+
+    public void setCustomFlusherConfig(AsyncFlusher.Config customFlusherConfig)
+    {
+        this.customFlusherConfig = customFlusherConfig;
+    }
+
     @Override
     public String toString()
     {
@@ -152,53 +174,22 @@ public abstract class BaseFluencyBuilder
                 ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                 ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                 ", errorHandler=" + errorHandler +
+                ", customBufferConfig=" + customBufferConfig +
+                ", customFlusherConfig=" + customFlusherConfig +
                 '}';
     }
 
-    public Fluency buildFromConfigs(
-            RecordFormatter.Instantiator recordFormatterConfig,
-            Buffer.Instantiator bufferConfig,
-            Flusher.Instantiator flusherConfig,
-            Ingester ingester)
+    protected Fluency buildInternal(RecordFormatter recordFormatter, Ingester ingester)
     {
-        Buffer buffer =
-                (bufferConfig != null ? bufferConfig : new Buffer.Config()).
-                        createInstance(recordFormatterConfig.createInstance());
-
-        Flusher flusher =
-                (flusherConfig != null ? flusherConfig : new AsyncFlusher.Config()).
-                        createInstance(buffer, ingester);
-
+        Buffer buffer = buildBufferConfig().createInstance(recordFormatter);
+        Flusher flusher = buildFlusherConfig().createInstance(buffer, ingester);
         return new Fluency(buffer, flusher);
     }
 
-    public static class Configs
+    private Buffer.Config buildBufferConfig()
     {
-        private final Buffer.Config bufferConfig;
-        private final AsyncFlusher.Config flusherConfig;
-
-        public Configs(Buffer.Config bufferConfig, AsyncFlusher.Config flusherConfig)
-        {
-            this.bufferConfig = bufferConfig;
-            this.flusherConfig = flusherConfig;
-        }
-
-        public Buffer.Config getBufferConfig()
-        {
-            return bufferConfig;
-        }
-
-        public AsyncFlusher.Config getFlusherConfig()
-        {
-            return flusherConfig;
-        }
-
-    }
-
-    protected Configs buildConfigs()
-    {
-        Buffer.Config bufferConfig = new Buffer.Config();
-        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+        Buffer.Config bufferConfig =
+                customBufferConfig == null ? new Buffer.Config() : customBufferConfig;
 
         if (getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(getMaxBufferSize());
@@ -224,6 +215,14 @@ public abstract class BaseFluencyBuilder
             bufferConfig.setJvmHeapBufferMode(getJvmHeapBufferMode());
         }
 
+        return bufferConfig;
+    }
+
+    private AsyncFlusher.Config buildFlusherConfig()
+    {
+        AsyncFlusher.Config flusherConfig =
+                customFlusherConfig == null ? new AsyncFlusher.Config() : customFlusherConfig;
+
         if (getFlushIntervalMillis() != null) {
             flusherConfig.setFlushIntervalMillis(getFlushIntervalMillis());
         }
@@ -236,6 +235,6 @@ public abstract class BaseFluencyBuilder
             flusherConfig.setWaitUntilTerminated(getWaitUntilFlusherTerminated());
         }
 
-        return new Configs(bufferConfig, flusherConfig);
+        return flusherConfig;
     }
 }

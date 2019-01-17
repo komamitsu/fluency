@@ -18,14 +18,14 @@ package org.komamitsu.fluency.treasuredata;
 
 import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.treasuredata.ingester.TreasureDataIngester;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.komamitsu.fluency.treasuredata.recordformat.TreasureDataRecordFormatter;
 
 public class FluencyBuilder
-    extends BaseFluencyBuilder
+        extends BaseFluencyBuilder
 {
     private Integer senderRetryMax;
     private Integer senderRetryIntervalMillis;
@@ -90,12 +90,16 @@ public class FluencyBuilder
 
     public Fluency build(String apikey, String endpoint)
     {
-        return buildInternal(createSenderConfig(endpoint, apikey));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(createSenderConfig(endpoint, apikey)));
     }
 
     public Fluency build(String apikey)
     {
-        return buildInternal(createSenderConfig(null, apikey));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(createSenderConfig(null, apikey)));
     }
 
     private TreasureDataSender.Config createSenderConfig(String endpoint, String apikey)
@@ -114,13 +118,25 @@ public class FluencyBuilder
         return senderConfig;
     }
 
-    private Fluency buildInternal(TreasureDataSender.Config senderConfig)
+    @Override
+    public String toString()
     {
-        BaseFluencyBuilder.Configs configs = buildConfigs();
+        return "FluencyBuilder{" +
+                "senderRetryMax=" + senderRetryMax +
+                ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
+                ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
+                ", senderRetryFactor=" + senderRetryFactor +
+                ", senderWorkBufSize=" + senderWorkBufSize +
+                "} " + super.toString();
+    }
 
-        Buffer.Config bufferConfig = configs.getBufferConfig();
-        AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
+    private RecordFormatter buildRecordFormatter()
+    {
+        return new TreasureDataRecordFormatter.Config().createInstance();
+    }
 
+    private Ingester buildIngester(TreasureDataSender.Config senderConfig)
+    {
         if (getSenderRetryMax() != null) {
             senderConfig.setRetryMax(getSenderRetryMax());
         }
@@ -149,23 +165,6 @@ public class FluencyBuilder
 
         TreasureDataIngester.Config ingesterConfig = new TreasureDataIngester.Config();
 
-        return buildFromConfigs(
-                new TreasureDataRecordFormatter.Config(),
-                bufferConfig,
-                flusherConfig,
-                ingesterConfig.createInstance(sender)
-        );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "FluencyBuilder{" +
-                "senderRetryMax=" + senderRetryMax +
-                ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
-                ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
-                ", senderRetryFactor=" + senderRetryFactor +
-                ", senderWorkBufSize=" + senderWorkBufSize +
-                "} " + super.toString();
+        return ingesterConfig.createInstance(sender);
     }
 }

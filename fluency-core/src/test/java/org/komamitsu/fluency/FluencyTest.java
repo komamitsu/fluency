@@ -60,14 +60,13 @@ public class FluencyTest
     public void testIsTerminated()
             throws IOException, InterruptedException
     {
-        TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
+        Buffer.Config bufferConfig = new TestableBuffer.Config();
         {
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
-            Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
+            Flusher.Config flusherConfig = new AsyncFlusher.Config();
+            TestableFluencyBuilder builder = new TestableFluencyBuilder();
+            builder.setCustomBufferConfig(bufferConfig);
+            builder.setCustomFlusherConfig(flusherConfig);
+            Fluency fluency = new TestableFluencyBuilder().buildInternal(recordFormatterConfig.createInstance(), ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
@@ -75,12 +74,11 @@ public class FluencyTest
         }
 
         {
-            Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
-            Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
+            Flusher.Config flusherConfig = new SyncFlusher.Config();
+            TestableFluencyBuilder builder = new TestableFluencyBuilder();
+            builder.setCustomBufferConfig(bufferConfig);
+            builder.setCustomFlusherConfig(flusherConfig);
+            Fluency fluency = new TestableFluencyBuilder().buildInternal(recordFormatterConfig.createInstance(), ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);

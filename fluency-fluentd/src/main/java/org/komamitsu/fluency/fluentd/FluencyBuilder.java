@@ -18,7 +18,6 @@ package org.komamitsu.fluency.fluentd;
 
 import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
@@ -29,14 +28,15 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
+import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FluencyBuilder
-    extends BaseFluencyBuilder
+        extends BaseFluencyBuilder
 {
     private Integer senderMaxRetryCount;
     private boolean ackResponseMode;
@@ -74,17 +74,23 @@ public class FluencyBuilder
 
     public Fluency build(String host, int port)
     {
-        return buildInternal(createBaseSenderConfig(host, port));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(createBaseSenderConfig(host, port)));
     }
 
     public Fluency build(int port)
     {
-        return buildInternal(createBaseSenderConfig(null , port));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(createBaseSenderConfig(null , port)));
     }
 
     public Fluency build()
     {
-        return buildInternal(createBaseSenderConfig(null, null));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(createBaseSenderConfig(null, null)));
     }
 
     public Fluency build(List<InetSocketAddress> servers)
@@ -93,7 +99,9 @@ public class FluencyBuilder
         for (InetSocketAddress server : servers) {
             senderConfigs.add(createBaseSenderConfig(server.getHostName(), server.getPort(), true));
         }
-        return buildInternal(new MultiSender.Config(senderConfigs));
+        return buildInternal(
+                buildRecordFormatter(),
+                buildIngester(new MultiSender.Config(senderConfigs)));
     }
 
     private FluentdSender.Instantiator createBaseSenderConfig(String host, Integer port)
@@ -141,14 +149,25 @@ public class FluencyBuilder
         }
     }
 
-    private Fluency buildInternal(FluentdSender.Instantiator baseSenderConfig)
+    @Override
+    public String toString()
     {
-        BaseFluencyBuilder.Configs configs = buildConfigs();
+        return "FluencyBuilder{" +
+                "senderMaxRetryCount=" + senderMaxRetryCount +
+                ", ackResponseMode=" + ackResponseMode +
+                ", sslEnabled=" + sslEnabled +
+                "} " + super.toString();
+    }
 
-        Buffer.Config bufferConfig = configs.getBufferConfig();
-        AsyncFlusher.Config flusherConfig = configs.getFlusherConfig();
+    private RecordFormatter buildRecordFormatter()
+    {
+        return new FluentdRecordFormatter.Config().createInstance();
+    }
 
+    private Ingester buildIngester(FluentdSender.Instantiator baseSenderConfig)
+    {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+
         if (getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
@@ -169,21 +188,6 @@ public class FluencyBuilder
 
         RetryableSender retryableSender = senderConfig.createInstance();
 
-        return buildFromConfigs(
-                new FluentdRecordFormatter.Config(),
-                bufferConfig,
-                flusherConfig,
-                transporterConfig.createInstance(retryableSender)
-        );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "FluencyBuilder{" +
-                "senderMaxRetryCount=" + senderMaxRetryCount +
-                ", ackResponseMode=" + ackResponseMode +
-                ", sslEnabled=" + sslEnabled +
-                "} " + super.toString();
+        return new FluentdIngester.Config().createInstance(retryableSender);
     }
 }
