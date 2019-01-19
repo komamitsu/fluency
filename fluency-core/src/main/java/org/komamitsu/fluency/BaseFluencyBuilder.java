@@ -179,7 +179,7 @@ public abstract class BaseFluencyBuilder
                 '}';
     }
 
-    protected Fluency buildInternal(RecordFormatter recordFormatter, Ingester ingester)
+    protected Fluency buildFromConfigs(RecordFormatter recordFormatter, Ingester ingester)
     {
         Buffer buffer = buildBufferConfig().createInstance(recordFormatter);
         Flusher flusher = buildFlusherConfig().createInstance(buffer, ingester);

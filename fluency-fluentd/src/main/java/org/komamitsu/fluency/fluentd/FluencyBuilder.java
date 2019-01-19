@@ -74,21 +74,21 @@ public class FluencyBuilder
 
     public Fluency build(String host, int port)
     {
-        return buildInternal(
+        return buildFromConfigs(
                 buildRecordFormatter(),
                 buildIngester(createBaseSenderConfig(host, port)));
     }
 
     public Fluency build(int port)
     {
-        return buildInternal(
+        return buildFromConfigs(
                 buildRecordFormatter(),
                 buildIngester(createBaseSenderConfig(null , port)));
     }
 
     public Fluency build()
     {
-        return buildInternal(
+        return buildFromConfigs(
                 buildRecordFormatter(),
                 buildIngester(createBaseSenderConfig(null, null)));
     }
@@ -99,7 +99,7 @@ public class FluencyBuilder
         for (InetSocketAddress server : servers) {
             senderConfigs.add(createBaseSenderConfig(server.getHostName(), server.getPort(), true));
         }
-        return buildInternal(
+        return buildFromConfigs(
                 buildRecordFormatter(),
                 buildIngester(new MultiSender.Config(senderConfigs)));
     }

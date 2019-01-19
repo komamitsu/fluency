@@ -66,7 +66,7 @@ public class FluencyTest
             TestableFluencyBuilder builder = new TestableFluencyBuilder();
             builder.setCustomBufferConfig(bufferConfig);
             builder.setCustomFlusherConfig(flusherConfig);
-            Fluency fluency = new TestableFluencyBuilder().buildInternal(recordFormatterConfig.createInstance(), ingester);
+            Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(recordFormatterConfig.createInstance(), ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
@@ -78,7 +78,7 @@ public class FluencyTest
             TestableFluencyBuilder builder = new TestableFluencyBuilder();
             builder.setCustomBufferConfig(bufferConfig);
             builder.setCustomFlusherConfig(flusherConfig);
-            Fluency fluency = new TestableFluencyBuilder().buildInternal(recordFormatterConfig.createInstance(), ingester);
+            Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(recordFormatterConfig.createInstance(), ingester);
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
