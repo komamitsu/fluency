@@ -161,7 +161,7 @@ public class FluencyBuilder
 
     private RecordFormatter buildRecordFormatter()
     {
-        return new FluentdRecordFormatter.Config().createInstance();
+        return new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
     }
 
     private Ingester buildIngester(FluentdSender.Instantiator baseSenderConfig)

@@ -132,7 +132,7 @@ public class FluencyBuilder
 
     private RecordFormatter buildRecordFormatter()
     {
-        return new TreasureDataRecordFormatter.Config().createInstance();
+        return new TreasureDataRecordFormatter(new TreasureDataRecordFormatter.Config());
     }
 
     private Ingester buildIngester(TreasureDataSender.Config senderConfig)

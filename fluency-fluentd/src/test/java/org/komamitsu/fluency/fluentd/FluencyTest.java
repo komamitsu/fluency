@@ -263,11 +263,11 @@ public class FluencyTest
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
 
-        FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
-                new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
+        FluentdRecordFormatter.Config recordFormatterConfig = new FluentdRecordFormatter.Config();
+        recordFormatterConfig.setJacksonModules(Collections.singletonList(simpleModule));
 
         Fluency fluency = new TestableFluencyBuilder()
-                .buildFromIngester(fluentdRecordFormatterWithModuleConfig.createInstance(), ingester);
+                .buildFromIngester(new FluentdRecordFormatter(recordFormatterConfig), ingester);
 
         Map<String, Object> event = new HashMap<>();
         Foo foo = new Foo();

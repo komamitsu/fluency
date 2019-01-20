@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,16 +79,14 @@ class FluencyTest
     void testGetAllocatedBufferSize()
             throws IOException
     {
-        Buffer buffer = new TestableBuffer(new TestableBuffer.Config());
+        Buffer.Config bufferConfig = new Buffer.Config();
+        bufferConfig.setChunkInitialSize(1024);
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             assertThat(fluency.getAllocatedBufferSize(), is(0L));
-            Map<String, Object> map = new HashMap<>();
-            map.put("comment", "hello world");
-            for (int i = 0; i < 10000; i++) {
-                fluency.emit("foodb.bartbl", map);
-            }
-            assertThat(fluency.getAllocatedBufferSize(), is(TestableBuffer.ALLOC_SIZE * 10000L));
+            fluency.emit("foodb.bartbl", ImmutableMap.of("comment", "hello, world"));
+            assertThat(fluency.getAllocatedBufferSize(), is(1024L));
         }
     }
 

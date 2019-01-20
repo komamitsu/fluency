@@ -56,15 +56,9 @@ public abstract class RecordFormatter
             return jacksonModules;
         }
 
-        public Config setJacksonModules(List<Module> jacksonModules)
+        public void setJacksonModules(List<Module> jacksonModules)
         {
             this.jacksonModules = jacksonModules;
-            return this;
         }
-    }
-
-    public interface Instantiator<T extends RecordFormatter>
-    {
-        T createInstance();
     }
 }

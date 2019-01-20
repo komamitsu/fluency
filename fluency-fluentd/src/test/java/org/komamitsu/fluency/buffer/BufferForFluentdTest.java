@@ -51,7 +51,8 @@ import static org.junit.Assert.assertTrue;
 
 public class BufferForFluentdTest
 {
-    private final FluentdRecordFormatter fluentdRecordFormatter = new FluentdRecordFormatter.Config().createInstance();
+    private final FluentdRecordFormatter fluentdRecordFormatter =
+            new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
 
     @Test
     public void withFluentdFormat()

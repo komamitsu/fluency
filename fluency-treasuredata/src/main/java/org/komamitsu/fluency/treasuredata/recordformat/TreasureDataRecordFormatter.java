@@ -36,7 +36,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class TreasureDataRecordFormatter
@@ -44,13 +43,11 @@ public class TreasureDataRecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreasureDataRecordFormatter.class);
     private static final StringValue KEY_TIME = ValueFactory.newString("time");
-    private final Config config;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
     public TreasureDataRecordFormatter(Config config)
     {
-        super(config.baseConfig);
-        this.config = config;
+        super(config);
         registerObjectMapperModules(objectMapper);
     }
 
@@ -164,25 +161,7 @@ public class TreasureDataRecordFormatter
     }
 
     public static class Config
-            implements RecordFormatter.Instantiator<TreasureDataRecordFormatter>
+            extends RecordFormatter.Config
     {
-        RecordFormatter.Config baseConfig = new RecordFormatter.Config();
-
-        public List<Module> getJacksonModules()
-        {
-            return baseConfig.getJacksonModules();
-        }
-
-        public Config setJacksonModules(List<Module> jacksonModules)
-        {
-            baseConfig.setJacksonModules(jacksonModules);
-            return this;
-        }
-
-        @Override
-        public TreasureDataRecordFormatter createInstance()
-        {
-            return new TreasureDataRecordFormatter(this);
-        }
     }
 }

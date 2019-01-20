@@ -19,22 +19,12 @@ package org.komamitsu.fluency.flusher;
 import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.JsonRecordFormatter;
-import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;

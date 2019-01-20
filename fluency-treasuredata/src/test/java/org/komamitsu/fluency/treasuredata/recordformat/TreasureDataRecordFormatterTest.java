@@ -3,6 +3,7 @@ package org.komamitsu.fluency.treasuredata.recordformat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
@@ -30,6 +31,13 @@ class TreasureDataRecordFormatterTest
     private static final StringValue KEY_EMAIL = ValueFactory.newString("email");
     private static final StringValue KEY_COMMENT = ValueFactory.newString("comment");
     private static final StringValue KEY_JOB = ValueFactory.newString("job");
+    private TreasureDataRecordFormatter recordFormatter;
+
+    @BeforeEach
+    void setUp()
+    {
+        recordFormatter = new TreasureDataRecordFormatter(new TreasureDataRecordFormatter.Config());
+    }
 
     private void assertRecord0(byte[] formatted, long expectedTime)
             throws IOException
@@ -75,7 +83,6 @@ class TreasureDataRecordFormatterTest
             throws IOException
     {
         long now = System.currentTimeMillis() / 1000;
-        TreasureDataRecordFormatter recordFormatter = new TreasureDataRecordFormatter.Config().createInstance();
         assertRecord0(recordFormatter.format(TAG, now, RECORD_0), now);
         assertRecord1(recordFormatter.format(TAG, now, RECORD_1), FUTURE_EPOCH);
         assertRecord2(recordFormatter.format(TAG, now, RECORD_2), now);
@@ -86,7 +93,6 @@ class TreasureDataRecordFormatterTest
             throws IOException
     {
         long now = System.currentTimeMillis() / 1000;
-        TreasureDataRecordFormatter recordFormatter = new TreasureDataRecordFormatter.Config().createInstance();
         ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
         {
             byte[] bytes = objectMapper.writeValueAsBytes(RECORD_0);
@@ -124,7 +130,6 @@ class TreasureDataRecordFormatterTest
             throws IOException
     {
         long now = System.currentTimeMillis() / 1000;
-        TreasureDataRecordFormatter recordFormatter = new TreasureDataRecordFormatter.Config().createInstance();
         assertRecord0(recordFormatter.formatFromMessagePack(TAG, now, convertMapToMessagePackByteBuffer(RECORD_0, false)), now);
         assertRecord1(recordFormatter.formatFromMessagePack(TAG, now, convertMapToMessagePackByteBuffer(RECORD_1, true)), FUTURE_EPOCH);
         assertRecord2(recordFormatter.formatFromMessagePack(TAG, now, convertMapToMessagePackByteBuffer(RECORD_2, true)), now);

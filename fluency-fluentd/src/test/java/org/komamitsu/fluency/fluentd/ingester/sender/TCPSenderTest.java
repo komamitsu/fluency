@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
@@ -30,7 +30,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,9 +39,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-public class TCPSenderTest
+class TCPSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSenderTest.class);
 
@@ -52,33 +53,26 @@ public class TCPSenderTest
     }
 
     @Test
-    public void testSend()
+    void testSend()
             throws Exception
     {
-        testSendBase(new TCPSenderConfigurator() {
-            @Override
-            public TCPSender.Config config(int port)
-            {
-                return new TCPSender.Config().setPort(port);
-            }
-        }, is(1), is(1));
+        testSendBase(port -> new TCPSender.Config().setPort(port), is(1), is(1));
     }
 
     @Test
-    public void testSendWithHeartbeart()
+    void testSendWithHeartbeart()
             throws Exception
     {
-        testSendBase(new TCPSenderConfigurator() {
-            @Override
-            public TCPSender.Config config(int port)
-            {
-                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
-                return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
-            }
+        testSendBase(port -> {
+            TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
+            return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
         }, greaterThan(1), greaterThan(1));
     }
 
-    private void testSendBase(TCPSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
+    private void testSendBase(
+            TCPSenderConfigurator configurator,
+            Matcher<? super Integer> connectCountMatcher,
+            Matcher<? super Integer> closeCountMatcher)
             throws Exception
     {
         MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(false);
@@ -95,22 +89,17 @@ public class TCPSenderTest
 
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         for (int i = 0; i < concurency; i++) {
-            senderExecutorService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try {
-                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
+            senderExecutorService.execute(() -> {
+                try {
+                    byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
-                        for (int j = 0; j < reqNum; j++) {
-                            sender.send(ByteBuffer.wrap(bytes));
-                        }
-                        latch.countDown();
+                    for (int j = 0; j < reqNum; j++) {
+                        sender.send(ByteBuffer.wrap(bytes));
                     }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    latch.countDown();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
                 }
             });
         }
@@ -147,23 +136,22 @@ public class TCPSenderTest
     }
 
     @Test
-    public void testConnectionTimeout()
-            throws IOException, InterruptedException
+    void testConnectionTimeout()
+            throws InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(1);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Runnable() {
-            @Override
-            public void run()
-            {
-                TCPSender sender = new TCPSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
-                try {
-                    sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
+        executorService.execute(() -> {
+            TCPSender sender = new TCPSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
+            try {
+                sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
+            }
+            catch (Throwable e) {
+                if (e instanceof SocketTimeoutException) {
+                    latch.countDown();
                 }
-                catch (Exception e) {
-                    if (e instanceof SocketTimeoutException) {
-                        latch.countDown();
-                    }
+                else {
+                    throw new RuntimeException(e);
                 }
             }
         });
@@ -171,7 +159,7 @@ public class TCPSenderTest
     }
 
     @Test
-    public void testReadTimeout()
+    void testReadTimeout()
             throws Exception
     {
         final MockTCPServer server = new MockTCPServer(false);
@@ -180,19 +168,17 @@ public class TCPSenderTest
         try {
             final CountDownLatch latch = new CountDownLatch(1);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            executorService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
-                    try {
-                        sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
+            executorService.execute(() -> {
+                TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
+                try {
+                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
+                }
+                catch (Throwable e) {
+                    if (e instanceof SocketTimeoutException) {
+                        latch.countDown();
                     }
-                    catch (Exception e) {
-                        if (e instanceof SocketTimeoutException) {
-                            latch.countDown();
-                        }
+                    else {
+                        throw new RuntimeException(e);
                     }
                 }
             });
@@ -204,7 +190,7 @@ public class TCPSenderTest
     }
 
     @Test
-    public void testClose()
+    void testClose()
             throws Exception
     {
         final MockTCPServer server = new MockTCPServer(false);
@@ -213,26 +199,20 @@ public class TCPSenderTest
         try {
             final AtomicLong duration = new AtomicLong();
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
-                    long start;
-                    try {
-                        sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
-                        start = System.currentTimeMillis();
-                        sender.close();
-                        duration.set(System.currentTimeMillis() - start);
-                    }
-                    catch (Exception e) {
-                        LOG.error("Unexpected exception", e);
-                    }
-
-                    return null;
+            Future<Void> future = executorService.submit(() -> {
+                TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
+                long start;
+                try {
+                    sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
+                    start = System.currentTimeMillis();
+                    sender.close();
+                    duration.set(System.currentTimeMillis() - start);
                 }
+                catch (Exception e) {
+                    LOG.error("Unexpected exception", e);
+                }
+
+                return null;
             });
             future.get(3000, TimeUnit.MILLISECONDS);
             assertTrue(duration.get() > 1000 && duration.get() < 2000);
@@ -243,7 +223,7 @@ public class TCPSenderTest
     }
 
     @Test
-    public void testConfig()
+    void testConfig()
     {
         TCPSender.Config config = new TCPSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
