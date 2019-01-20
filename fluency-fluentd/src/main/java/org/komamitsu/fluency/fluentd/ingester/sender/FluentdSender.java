@@ -40,6 +40,11 @@ public abstract class FluentdSender
         this.config = config;
     }
 
+    protected FluentdSender()
+    {
+        this(new FluentdSender.Config());
+    }
+
     public synchronized void send(ByteBuffer buffer)
             throws IOException
     {
@@ -61,7 +66,7 @@ public abstract class FluentdSender
     private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        List<Integer> positions = new ArrayList<Integer>(buffers.size());
+        List<Integer> positions = new ArrayList<>(buffers.size());
         for (ByteBuffer data : buffers) {
             positions.add(data.position());
         }
@@ -98,30 +103,7 @@ public abstract class FluentdSender
     abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken) throws IOException;
 
     public static class Config
+        extends Sender.Config
     {
-        private Sender.Config baseConfig = new Sender.Config();
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return baseConfig.toString();
-        }
-    }
-
-    public interface Instantiator
-        extends Sender.Instantiator<FluentdSender>
-    {
-        FluentdSender createInstance();
     }
 }

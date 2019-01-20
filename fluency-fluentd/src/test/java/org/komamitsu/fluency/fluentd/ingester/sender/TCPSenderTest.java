@@ -56,7 +56,11 @@ class TCPSenderTest
     void testSend()
             throws Exception
     {
-        testSendBase(port -> new TCPSender.Config().setPort(port), is(1), is(1));
+        testSendBase(port -> {
+            TCPSender.Config senderConfig = new TCPSender.Config();
+            senderConfig.setPort(port);
+            return senderConfig;
+        }, is(1), is(1));
     }
 
     @Test
@@ -65,7 +69,10 @@ class TCPSenderTest
     {
         testSendBase(port -> {
             TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
-            return new TCPSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
+            TCPSender.Config senderConfig = new TCPSender.Config();
+            senderConfig.setPort(port);
+            senderConfig.setHeartbeaterConfig(hbConfig);
+            return senderConfig;
         }, greaterThan(1), greaterThan(1));
     }
 
@@ -82,7 +89,7 @@ class TCPSenderTest
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
         TCPSender.Config config = configurator.config(server.getLocalPort());
-        final TCPSender sender = config.createInstance();
+        final TCPSender sender = new TCPSender(config);
 
         // To receive heartbeat at least once
         TimeUnit.MILLISECONDS.sleep(500);
@@ -142,7 +149,10 @@ class TCPSenderTest
         final CountDownLatch latch = new CountDownLatch(1);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
-            TCPSender sender = new TCPSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
+            TCPSender.Config senderConfig = new TCPSender.Config();
+            senderConfig.setHost("192.0.2.0");
+            senderConfig.setConnectionTimeoutMilli(1000);
+            TCPSender sender = new TCPSender(senderConfig);
             try {
                 sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
             }
@@ -169,7 +179,10 @@ class TCPSenderTest
             final CountDownLatch latch = new CountDownLatch(1);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             executorService.execute(() -> {
-                TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
+                TCPSender.Config senderConfig = new TCPSender.Config();
+                senderConfig.setPort(server.getLocalPort());
+                senderConfig.setReadTimeoutMilli(1000);
+                TCPSender sender = new TCPSender(senderConfig);
                 try {
                     sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
                 }
@@ -200,7 +213,10 @@ class TCPSenderTest
             final AtomicLong duration = new AtomicLong();
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             Future<Void> future = executorService.submit(() -> {
-                TCPSender sender = new TCPSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
+                TCPSender.Config senderConfig = new TCPSender.Config();
+                senderConfig.setPort(server.getLocalPort());
+                senderConfig.setWaitBeforeCloseMilli(1500);
+                TCPSender sender = new TCPSender(senderConfig);
                 long start;
                 try {
                     sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));

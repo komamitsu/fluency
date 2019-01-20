@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -223,38 +224,44 @@ public class FluencyTestWithMockServer
 
     private FluentdSender getSingleTCPSender(int port)
     {
-        return new TCPSender.Config().setPort(port).createInstance();
+        TCPSender.Config config = new TCPSender.Config();
+        config.setPort(port);
+        return new TCPSender(config);
     }
 
     private FluentdSender getDoubleTCPSender(int firstPort, int secondPort)
     {
-        return new MultiSender.Config(
-                Arrays.asList(
-                    new TCPSender.Config()
-                            .setPort(firstPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
-                    new TCPSender.Config()
-                            .setPort(secondPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
-                )).createInstance();
+        TCPSender.Config config0 = new TCPSender.Config();
+        config0.setPort(firstPort);
+        config0.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort));
+
+        TCPSender.Config config1 = new TCPSender.Config();
+        config1.setPort(secondPort);
+        config1.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort));
+
+        return new MultiSender(new MultiSender.Config(),
+                ImmutableList.of(new TCPSender(config0), new TCPSender(config1)));
     }
 
     private FluentdSender getSingleSSLSender(int port)
     {
-        return new SSLSender.Config().setPort(port).createInstance();
+        SSLSender.Config config = new SSLSender.Config();
+        config.setPort(port);
+        return new SSLSender(config);
     }
 
     private FluentdSender getDoubleSSLSender(int firstPort, int secondPort)
     {
-        return new MultiSender.Config(
-                Arrays.asList(
-                    new SSLSender.Config()
-                            .setPort(firstPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
-                    new SSLSender.Config()
-                            .setPort(secondPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
-                )).createInstance();
+        SSLSender.Config config0 = new SSLSender.Config();
+        config0.setPort(firstPort);
+        config0.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort));
+
+        SSLSender.Config config1 = new SSLSender.Config();
+        config1.setPort(secondPort);
+        config1.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort));
+
+        return new MultiSender(new MultiSender.Config(),
+                ImmutableList.of(new SSLSender(config0), new SSLSender(config1)));
     }
 
     @Theory

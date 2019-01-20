@@ -161,7 +161,7 @@ public class FluencyBuilder
             senderConfig.setWorkBufSize(getSenderWorkBufSize());
         }
 
-        TreasureDataSender sender = senderConfig.createInstance();
+        TreasureDataSender sender = new TreasureDataSender(senderConfig);
 
         return new TreasureDataIngester(sender);
     }

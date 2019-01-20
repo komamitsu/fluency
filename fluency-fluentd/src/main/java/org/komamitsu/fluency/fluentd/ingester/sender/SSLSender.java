@@ -16,11 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetectStrategy;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
-
 import javax.net.ssl.SSLSocket;
 
 import java.io.IOException;
@@ -33,13 +28,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SSLSender
     extends NetworkSender<SSLSocket>
 {
-    private final AtomicReference<SSLSocket> socket = new AtomicReference<SSLSocket>();
+    private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
     private final SSLSocketBuilder socketBuilder;
     private final Config config;
 
     public SSLSender(Config config)
     {
-        super(config.baseConfig);
+        super(config);
         socketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),
@@ -104,126 +99,7 @@ public class SSLSender
     }
 
     public static class Config
-            implements Instantiator
+        extends NetworkSender.Config
     {
-        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
-
-        public NetworkSender.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public String getHost()
-        {
-            return baseConfig.getHost();
-        }
-
-        public Config setHost(String host)
-        {
-            baseConfig.setHost(host);
-            return this;
-        }
-
-        public int getPort()
-        {
-            return baseConfig.getPort();
-        }
-
-        public Config setPort(int port)
-        {
-            baseConfig.setPort(port);
-            return this;
-        }
-
-        public int getConnectionTimeoutMilli()
-        {
-            return baseConfig.getConnectionTimeoutMilli();
-        }
-
-        public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
-        {
-            baseConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
-            return this;
-        }
-
-        public int getReadTimeoutMilli()
-        {
-            return baseConfig.getReadTimeoutMilli();
-        }
-
-        public Config setReadTimeoutMilli(int readTimeoutMilli)
-        {
-            baseConfig.setReadTimeoutMilli(readTimeoutMilli);
-            return this;
-        }
-
-        public Heartbeater.Instantiator getHeartbeaterConfig()
-        {
-            return baseConfig.getHeartbeaterConfig();
-        }
-
-        public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
-        {
-            baseConfig.setHeartbeaterConfig(heartbeaterConfig);
-            return this;
-        }
-
-        public FailureDetector.Config getFailureDetectorConfig()
-        {
-            return baseConfig.getFailureDetectorConfig();
-        }
-
-        public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
-        {
-            baseConfig.setFailureDetectorConfig(failureDetectorConfig);
-            return this;
-        }
-
-        public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
-        {
-            return baseConfig.getFailureDetectorStrategyConfig();
-        }
-
-        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
-        {
-            baseConfig.setFailureDetectorStrategyConfig(failureDetectorStrategyConfig);
-            return this;
-        }
-
-        public int getWaitBeforeCloseMilli()
-        {
-            return baseConfig.getWaitBeforeCloseMilli();
-        }
-
-        public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
-        {
-            baseConfig.setWaitBeforeCloseMilli(waitBeforeCloseMilli);
-            return this;
-        }
-
-        @Override
-        public SSLSender createInstance()
-        {
-            return new SSLSender(this);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    '}';
-        }
     }
 }

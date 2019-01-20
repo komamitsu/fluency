@@ -22,6 +22,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
+import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.fluentd.ingester.sender.MockTCPSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
@@ -114,7 +115,9 @@ public class BufferForFluentdTest
             final int concurrency = 4;
             final CountDownLatch latch = new CountDownLatch(concurrency);
 
-            final MockTCPSender sender = new MockTCPSender(24229);
+            TCPSender.Config config = new TCPSender.Config();
+            config.setPort(24229);
+            final MockTCPSender sender = new MockTCPSender(config);
             Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), sender);
 
             Runnable emitTask = () -> {

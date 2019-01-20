@@ -16,6 +16,8 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
@@ -51,21 +53,18 @@ public class MultiSenderTest
     {
         MultiSender multiSender = null;
         try {
-            multiSender = new MultiSender.Config(
-                    Arrays.<FluentdSender.Instantiator>asList(
-                            new TCPSender.Config()
-                                    .setPort(24225)
-                                    .setHeartbeaterConfig(
-                                            new TCPHeartbeater.Config().
-                                                    setPort(24225)),
-                            new TCPSender.Config()
-                                    .setHost("0.0.0.0")
-                                    .setPort(24226)
-                                    .setHeartbeaterConfig(
-                                            new TCPHeartbeater.Config()
-                                                    .setHost("0.0.0.0")
-                                                    .setPort(24226))
-                                    )).createInstance();
+            TCPSender.Config senderConfig0 = new TCPSender.Config();
+            senderConfig0.setPort(24225);
+            senderConfig0.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(24225));
+
+            TCPSender.Config senderConfig1 = new TCPSender.Config();
+            senderConfig1.setHost("0.0.0.0");
+            senderConfig1.setPort(24226);
+            senderConfig1.setHeartbeaterConfig(
+                    new TCPHeartbeater.Config().setHost("0.0.0.0").setPort(24226));
+
+            multiSender = new MultiSender(new MultiSender.Config(),
+                    Arrays.asList(new TCPSender(senderConfig0), new TCPSender(senderConfig1)));
 
             assertThat(multiSender.toString().length(), greaterThan(0));
 
@@ -96,21 +95,18 @@ public class MultiSenderTest
     {
         MultiSender multiSender = null;
         try {
-            multiSender = new MultiSender.Config(
-                    Arrays.<FluentdSender.Instantiator>asList(
-                            new SSLSender.Config()
-                                    .setPort(24225)
-                                    .setHeartbeaterConfig(
-                                            new SSLHeartbeater.Config().
-                                                    setPort(24225)),
-                            new SSLSender.Config()
-                                    .setHost("0.0.0.0")
-                                    .setPort(24226)
-                                    .setHeartbeaterConfig(
-                                            new SSLHeartbeater.Config()
-                                                    .setHost("0.0.0.0")
-                                                    .setPort(24226))
-                                    )).createInstance();
+            SSLSender.Config senderConfig0 = new SSLSender.Config();
+            senderConfig0.setPort(24225);
+            senderConfig0.setHeartbeaterConfig(new SSLHeartbeater.Config().setPort(24225));
+
+            SSLSender.Config senderConfig1 = new SSLSender.Config();
+            senderConfig1.setHost("0.0.0.0");
+            senderConfig1.setPort(24226);
+            senderConfig1.setHeartbeaterConfig(
+                    new SSLHeartbeater.Config().setHost("0.0.0.0").setPort(24226));
+
+            multiSender = new MultiSender(new MultiSender.Config(),
+                    Arrays.asList(new SSLSender(senderConfig0), new SSLSender(senderConfig1)));
 
             assertThat(multiSender.toString().length(), greaterThan(0));
 
@@ -161,35 +157,41 @@ public class MultiSenderTest
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
 
-        final MultiSender sender = new MultiSender.Config(
-                sslEnabled ?
-                        Arrays.<FluentdSender.Instantiator>asList(
-                                new SSLSender.Config()
-                                        .setPort(server0.getLocalPort())
-                                        .setReadTimeoutMilli(500)
-                                        .setHeartbeaterConfig(
-                                                new UDPHeartbeater.Config()
-                                                        .setPort(server0.getLocalPort())),
-                                new SSLSender.Config()
-                                        .setPort(server1.getLocalPort())
-                                        .setReadTimeoutMilli(500)
-                                        .setHeartbeaterConfig(
-                                                new UDPHeartbeater.Config()
-                                                        .setPort(server1.getLocalPort()))
-                        ) :
-                        Arrays.<FluentdSender.Instantiator>asList(
-                                new TCPSender.Config()
-                                        .setPort(server0.getLocalPort())
-                                        .setHeartbeaterConfig(
-                                                new UDPHeartbeater.Config()
-                                                        .setPort(server0.getLocalPort())),
-                                new TCPSender.Config()
-                                        .setPort(server1.getLocalPort())
-                                        .setHeartbeaterConfig(
-                                                new UDPHeartbeater.Config()
-                                                        .setPort(server1.getLocalPort()))
-                        )
-        ).createInstance();
+        final MultiSender sender;
+
+        if (sslEnabled) {
+            SSLSender.Config senderConfig0 = new SSLSender.Config();
+            senderConfig0.setPort(server0.getLocalPort());
+            senderConfig0.setReadTimeoutMilli(500);
+            senderConfig0.setHeartbeaterConfig(
+                    new UDPHeartbeater.Config().setPort(server0.getLocalPort()));
+
+            SSLSender.Config senderConfig1 = new SSLSender.Config();
+            senderConfig1.setPort(server1.getLocalPort());
+            senderConfig1.setReadTimeoutMilli(500);
+            senderConfig1.setHeartbeaterConfig(
+                    new UDPHeartbeater.Config().setPort(server1.getLocalPort()));
+
+            sender = new MultiSender(new MultiSender.Config(),
+                    ImmutableList.of(new SSLSender(senderConfig0), new SSLSender(senderConfig1)));
+        }
+        else {
+            TCPSender.Config senderConfig0 = new TCPSender.Config();
+            senderConfig0.setPort(server0.getLocalPort());
+            senderConfig0.setReadTimeoutMilli(500);
+            senderConfig0.setHeartbeaterConfig(
+                    new UDPHeartbeater.Config().setPort(server0.getLocalPort()));
+
+            TCPSender.Config senderConfig1 = new TCPSender.Config();
+            senderConfig1.setPort(server1.getLocalPort());
+            senderConfig1.setReadTimeoutMilli(500);
+            senderConfig1.setHeartbeaterConfig(
+                    new UDPHeartbeater.Config().setPort(server1.getLocalPort()));
+
+            sender = new MultiSender(new MultiSender.Config(),
+                    ImmutableList.of(new TCPSender(senderConfig0), new TCPSender(senderConfig1)));
+        }
+
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {
@@ -221,7 +223,7 @@ public class MultiSenderTest
         }
 
         if (!latch.await(60, TimeUnit.SECONDS)) {
-            assertTrue("Sending all requests is timed out", false);
+            fail("Sending all requests is timed out");
         }
 
         sender.close();

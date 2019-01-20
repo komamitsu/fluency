@@ -18,8 +18,6 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
-import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +52,10 @@ public class RetryableSender
         }
     }
 
-    protected RetryableSender(Config config)
+    public RetryableSender(Config config, FluentdSender baseSender)
     {
-        super(config.getBaseConfig());
-        baseSender = config.getBaseSenderConfig().createInstance();
+        super(config);
+        this.baseSender = baseSender;
         retryStrategy = config.getRetryStrategyConfig().createInstance();
     }
 
@@ -132,64 +130,26 @@ public class RetryableSender
     }
 
     public static class Config
-            implements Instantiator
+            extends FluentdSender.Config
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
         private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-
-        public FluentdSender.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public Config(Instantiator baseSenderConfig)
-        {
-            this.baseSenderConfig = baseSenderConfig;
-        }
-
-        private final Instantiator baseSenderConfig;
-
-        public Instantiator getBaseSenderConfig()
-        {
-            return baseSenderConfig;
-        }
 
         public RetryStrategy.Instantiator getRetryStrategyConfig()
         {
             return retryStrategyConfig;
         }
 
-        public Config setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
+        public void setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
         {
             this.retryStrategyConfig = retryStrategyConfig;
-            return this;
         }
 
         @Override
         public String toString()
         {
             return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    ", retryStrategyConfig=" + retryStrategyConfig +
-                    ", baseSenderConfig=" + baseSenderConfig +
-                    '}';
-        }
-
-        @Override
-        public RetryableSender createInstance()
-        {
-            return new RetryableSender(this);
+                    "retryStrategyConfig=" + retryStrategyConfig +
+                    "} " + super.toString();
         }
     }
 }

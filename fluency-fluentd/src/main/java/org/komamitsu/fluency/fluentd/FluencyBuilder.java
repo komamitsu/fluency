@@ -76,40 +76,40 @@ public class FluencyBuilder
     {
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(createBaseSenderConfig(host, port)));
+                buildIngester(createBaseSender(host, port)));
     }
 
     public Fluency build(int port)
     {
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(createBaseSenderConfig(null , port)));
+                buildIngester(createBaseSender(null , port)));
     }
 
     public Fluency build()
     {
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(createBaseSenderConfig(null, null)));
+                buildIngester(createBaseSender(null, null)));
     }
 
     public Fluency build(List<InetSocketAddress> servers)
     {
-        List<FluentdSender.Instantiator> senderConfigs = new ArrayList<>();
+        List<FluentdSender> senders = new ArrayList<>();
         for (InetSocketAddress server : servers) {
-            senderConfigs.add(createBaseSenderConfig(server.getHostName(), server.getPort(), true));
+            senders.add(createBaseSender(server.getHostName(), server.getPort(), true));
         }
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(new MultiSender.Config(senderConfigs)));
+                buildIngester(new MultiSender(new MultiSender.Config(), senders)));
     }
 
-    private FluentdSender.Instantiator createBaseSenderConfig(String host, Integer port)
+    private FluentdSender createBaseSender(String host, Integer port)
     {
-        return createBaseSenderConfig(host, port, false);
+        return createBaseSender(host, port, false);
     }
 
-    private FluentdSender.Instantiator createBaseSenderConfig(String host, Integer port, boolean withHeartBeater)
+    private FluentdSender createBaseSender(String host, Integer port, boolean withHeartBeater)
     {
         if (withHeartBeater && port == null) {
             throw new IllegalArgumentException("`port` should be specified when using heartbeat");
@@ -129,7 +129,7 @@ public class FluencyBuilder
                                 .setHost(host)
                                 .setPort(port));
             }
-            return senderConfig;
+            return new SSLSender(senderConfig);
         }
         else {
             TCPSender.Config senderConfig = new TCPSender.Config();
@@ -145,7 +145,7 @@ public class FluencyBuilder
                                 .setHost(host)
                                 .setPort(port));
             }
-            return senderConfig;
+            return new TCPSender(senderConfig);
         }
     }
 
@@ -164,7 +164,7 @@ public class FluencyBuilder
         return new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
     }
 
-    private Ingester buildIngester(FluentdSender.Instantiator baseSenderConfig)
+    private Ingester buildIngester(FluentdSender baseSender)
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
 
@@ -179,14 +179,14 @@ public class FluencyBuilder
         FluentdIngester.Config ingesterConfig = new FluentdIngester.Config();
             ingesterConfig.setAckResponseMode(isAckResponseMode());
 
-        RetryableSender.Config senderConfig = new RetryableSender.Config(baseSenderConfig)
-                .setRetryStrategyConfig(retryStrategyConfig);
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
 
         if (getErrorHandler() != null) {
             senderConfig.setErrorHandler(getErrorHandler());
         }
 
-        RetryableSender retryableSender = senderConfig.createInstance();
+        RetryableSender retryableSender = new RetryableSender(senderConfig, baseSender);
 
         return new FluentdIngester(ingesterConfig, retryableSender);
     }

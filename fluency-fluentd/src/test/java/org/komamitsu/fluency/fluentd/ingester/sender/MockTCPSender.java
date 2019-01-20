@@ -62,16 +62,10 @@ public class MockTCPSender
         }
     }
 
-    public MockTCPSender(String host, int port)
+    public MockTCPSender(TCPSender.Config config)
             throws IOException
     {
-        super(new TCPSender.Config().setHost(host).setPort(port));
-    }
-
-    public MockTCPSender(int port)
-            throws IOException
-    {
-        super(new TCPSender.Config().setPort(port));
+        super(config);
     }
 
     @Override

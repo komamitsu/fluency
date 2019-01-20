@@ -68,23 +68,6 @@ public class RetryableSenderTest
                 throws IOException
         {
         }
-
-        static class Config
-            implements FluentdSender.Instantiator
-        {
-            private final int maxFailures;
-
-            Config(int maxFailures)
-            {
-                this.maxFailures = maxFailures;
-            }
-
-            @Override
-            public FluentdSender createInstance()
-            {
-                return new FailurableSender(maxFailures);
-            }
-        }
     }
 
     @Test
@@ -94,11 +77,9 @@ public class RetryableSenderTest
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
                 new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(3);
 
-        RetryableSender sender =
-                new RetryableSender
-                        .Config(new FailurableSender.Config(3))
-                        .setRetryStrategyConfig(retryStrategyConfig)
-                        .createInstance();
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
+        RetryableSender sender = new RetryableSender(senderConfig, new FailurableSender(3));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
         assertThat(baseSender.getRetry(), is(0));
@@ -113,11 +94,9 @@ public class RetryableSenderTest
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
                 new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(2);
 
-        RetryableSender sender =
-                new RetryableSender
-                        .Config(new FailurableSender.Config(3))
-                        .setRetryStrategyConfig(retryStrategyConfig)
-                        .createInstance();
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
+        RetryableSender sender = new RetryableSender(senderConfig, new FailurableSender(3));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
         assertThat(baseSender.getRetry(), is(0));
