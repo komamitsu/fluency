@@ -36,7 +36,8 @@ public class Fluency
     private final Flusher flusher;
     private final Emitter emitter = new Emitter();
 
-    Fluency(Buffer buffer, Flusher flusher)
+    // Fluency has this public constructor, but using FluentBuilder is usually more recommended.
+    public Fluency(Buffer buffer, Flusher flusher)
     {
         this.buffer = buffer;
         this.flusher = flusher;

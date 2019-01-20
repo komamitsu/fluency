@@ -18,64 +18,80 @@ package org.komamitsu.fluency.flusher;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.komamitsu.fluency.JsonRecordFormatter;
 import org.komamitsu.fluency.TestableBuffer;
+import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class AsyncFlusherTest
 {
     private Ingester ingester;
-    private RecordFormatter recordFormatter;
+    private Buffer.Config bufferConfig;
+    private AsyncFlusher.Config flusherConfig;
 
     @Before
     public void setUp()
     {
         ingester = mock(Ingester.class);
-        recordFormatter = mock(RecordFormatter.class);
+
+        bufferConfig = new Buffer.Config();
+        flusherConfig = new AsyncFlusher.Config();
     }
 
     @Test
     public void testAsyncFlusher()
             throws IOException, InterruptedException
     {
+        flusherConfig.setFlushIntervalMillis(500);
 
-        TestableBuffer buffer = new TestableBuffer.Config().createInstance(recordFormatter);
-        AsyncFlusher.Config config = new AsyncFlusher.Config();
-        config.setFlushIntervalMillis(500);
-        Flusher flusher = config.createInstance(buffer, ingester);
-        assertEquals(0, buffer.getFlushCount().get());
+        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+
+        verify(buffer, times(0)).flush(eq(ingester), anyBoolean());
 
         flusher.onUpdate();
-        assertEquals(0, buffer.getFlushCount().get());
+        verify(buffer, times(0)).flush(eq(ingester), anyBoolean());
 
         flusher.flush();
         TimeUnit.MILLISECONDS.sleep(50);
-        assertEquals(0, buffer.getFlushCount().get());
-        assertEquals(1, buffer.getForceFlushCount().get());
+        verify(buffer, times(0)).flush(eq(ingester), eq(false));
+        verify(buffer, times(1)).flush(eq(ingester), eq(true));
 
         TimeUnit.SECONDS.sleep(1);
-        int flushCount = buffer.getFlushCount().get();
-        assertTrue(1 <= flushCount && flushCount <= 3);
-        int forceFlushCount = buffer.getForceFlushCount().get();
-        assertEquals(1, forceFlushCount);
+        verify(buffer, atLeast(1)).flush(eq(ingester), eq(false));
+        verify(buffer, atMost(3)).flush(eq(ingester), eq(false));
+        verify(buffer, times(1)).flush(eq(ingester), eq(true));
 
-        assertEquals(0, buffer.getCloseCount().get());
+        verify(buffer, times(0)).close();
+
         flusher.close();
-        assertEquals(1, buffer.getCloseCount().get());
-        assertThat(buffer.getFlushCount().get(), is(greaterThanOrEqualTo(2)));
-        assertThat(buffer.getFlushCount().get(), is(lessThanOrEqualTo(3)));
-        assertThat(buffer.getForceFlushCount().get(), is(greaterThanOrEqualTo(2)));
-        assertThat(buffer.getForceFlushCount().get(), is(lessThanOrEqualTo(3)));
+        verify(buffer, times(1)).close();
+
+        verify(buffer, atLeast(2)).flush(eq(ingester), eq(false));
+        verify(buffer, atMost(3)).flush(eq(ingester), eq(false));
+
+        verify(buffer, atLeast(2)).flush(eq(ingester), eq(true));
+        verify(buffer, atMost(3)).flush(eq(ingester), eq(true));
     }
 }

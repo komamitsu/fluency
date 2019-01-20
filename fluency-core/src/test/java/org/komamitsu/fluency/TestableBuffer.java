@@ -52,9 +52,9 @@ public class TestableBuffer
     private final List<Tuple<List<String>, ByteBuffer>> loadedBuffers = new ArrayList<>();
     private final Config config;
 
-    private TestableBuffer(Config config)
+    public TestableBuffer(Config config)
     {
-        super(config.getBaseConfig(), mock(RecordFormatter.class));
+        super(config, mock(RecordFormatter.class));
         this.config = config;
     }
 
@@ -201,48 +201,9 @@ public class TestableBuffer
     }
 
     public static class Config
-        implements Buffer.Instantiator
+        extends Buffer.Config
     {
-        private final Buffer.Config baseConfig = new Buffer.Config();
         private int waitBeforeCloseMillis;
-
-        public Buffer.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public long getMaxBufferSize()
-        {
-            return baseConfig.getMaxBufferSize();
-        }
-
-        public Config setMaxBufferSize(long maxBufferSize)
-        {
-            baseConfig.setMaxBufferSize(maxBufferSize);
-            return this;
-        }
-
-        public Config setFileBackupPrefix(String fileBackupPrefix)
-        {
-            baseConfig.setFileBackupPrefix(fileBackupPrefix);
-            return this;
-        }
-
-        public Config setFileBackupDir(String fileBackupDir)
-        {
-            baseConfig.setFileBackupDir(fileBackupDir);
-            return this;
-        }
-
-        public String getFileBackupPrefix()
-        {
-            return baseConfig.getFileBackupPrefix();
-        }
-
-        public String getFileBackupDir()
-        {
-            return baseConfig.getFileBackupDir();
-        }
 
         public int getWaitBeforeCloseMillis()
         {
@@ -253,14 +214,6 @@ public class TestableBuffer
         {
             this.waitBeforeCloseMillis = wait;
             return this;
-        }
-
-        @Override
-        public TestableBuffer createInstance(RecordFormatter recordFormatter)
-        {
-            TestableBuffer buffer = new TestableBuffer(this);
-            buffer.init();
-            return buffer;
         }
     }
 }

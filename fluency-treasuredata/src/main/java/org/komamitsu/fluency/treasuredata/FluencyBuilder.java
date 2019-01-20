@@ -90,14 +90,14 @@ public class FluencyBuilder
 
     public Fluency build(String apikey, String endpoint)
     {
-        return buildFromConfigs(
+        return buildFromIngester(
                 buildRecordFormatter(),
                 buildIngester(createSenderConfig(endpoint, apikey)));
     }
 
     public Fluency build(String apikey)
     {
-        return buildFromConfigs(
+        return buildFromIngester(
                 buildRecordFormatter(),
                 buildIngester(createSenderConfig(null, apikey)));
     }

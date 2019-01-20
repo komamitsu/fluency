@@ -33,7 +33,7 @@ public class AsyncFlusher
         extends Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
-    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<Boolean>();
+    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Config config;
     private final Runnable task = () -> {
@@ -67,9 +67,9 @@ public class AsyncFlusher
         }
     };
 
-    private AsyncFlusher(final Config config, final Buffer buffer, final Ingester ingester)
+    public AsyncFlusher(final Config config, final Buffer buffer, final Ingester ingester)
     {
-        super(config.getBaseConfig(), buffer, ingester);
+        super(config, buffer, ingester);
         this.config = config;
         executorService.execute(task);
     }
@@ -114,60 +114,7 @@ public class AsyncFlusher
     }
 
     public static class Config
-        implements Flusher.Instantiator
+        extends Flusher.Config
     {
-        private final Flusher.Config baseConfig = new Flusher.Config();
-
-        public Flusher.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public int getFlushIntervalMillis()
-        {
-            return baseConfig.getFlushIntervalMillis();
-        }
-
-        public Config setFlushIntervalMillis(int flushIntervalMillis)
-        {
-            baseConfig.setFlushIntervalMillis(flushIntervalMillis);
-            return this;
-        }
-
-        public Config setWaitUntilBufferFlushed(int wait)
-        {
-            baseConfig.setWaitUntilBufferFlushed(wait);
-            return this;
-        }
-
-        public int getWaitUntilBufferFlushed()
-        {
-            return baseConfig.getWaitUntilBufferFlushed();
-        }
-
-        public Config setWaitUntilTerminated(int wait)
-        {
-            baseConfig.setWaitUntilTerminated(wait);
-            return this;
-        }
-
-        public int getWaitUntilTerminated()
-        {
-            return baseConfig.getWaitUntilTerminated();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    '}';
-        }
-
-        @Override
-        public AsyncFlusher createInstance(Buffer buffer, Ingester ingester)
-        {
-            return new AsyncFlusher(this, buffer, ingester);
-        }
     }
 }

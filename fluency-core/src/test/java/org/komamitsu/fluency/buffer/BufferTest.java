@@ -16,6 +16,10 @@
 
 package org.komamitsu.fluency.buffer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.JsonRecordFormatter;
@@ -23,11 +27,14 @@ import org.komamitsu.fluency.TestableBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
+import org.mockito.ArgumentCaptor;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -41,43 +48,69 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.floatThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class BufferTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferTest.class);
     private static final Charset UTF8 = Charset.forName("UTF-8");
-    private RecordFormatter recordFormatter;
     private Ingester ingester;
+    private RecordFormatter recordFormatter;
+    private Buffer.Config bufferConfig;
 
     @Before
     public void setUp()
     {
         recordFormatter = new JsonRecordFormatter();
         ingester = mock(Ingester.class);
+        bufferConfig = new Buffer.Config();
     }
 
     @Test
     public void testBuffer()
             throws IOException
     {
-        TestableBuffer buffer = new TestableBuffer.Config().setMaxBufferSize(10000).createInstance(recordFormatter);
+        int recordSize = 20; // '{"name":"komamitsu"}'
+        int tags = 10;
+        int allocSizePerBuf = recordSize;
+        float allocRatio = 2f;
+        int maxAllocSize = (allocSizePerBuf * 4) * tags;
+
+        bufferConfig.setChunkInitialSize(allocSizePerBuf);
+        bufferConfig.setChunkExpandRatio(allocRatio);
+        bufferConfig.setMaxBufferSize(maxAllocSize);
+        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+
+        assertEquals(0, buffer.getAllocatedSize());
+        assertEquals(0, buffer.getBufferedDataSize());
+        assertEquals(0f, buffer.getBufferUsage(), 0.001);
+
         Map<String, Object> data = new HashMap<>();
         data.put("name", "komamitsu");
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < tags; i++) {
             buffer.append("foodb.bartbl" + i, 1420070400, data);
         }
-        assertEquals(TestableBuffer.ALLOC_SIZE * 10, buffer.getAllocatedSize());
-        assertEquals(TestableBuffer.RECORD_DATA_SIZE * 10, buffer.getBufferedDataSize());
-        assertEquals(TestableBuffer.ALLOC_SIZE * 10 / 10000f, buffer.getBufferUsage(), 0.001);
-        for (int i = 0; i < 10; i++) {
+        assertEquals(allocSizePerBuf * tags, buffer.getAllocatedSize());
+        assertEquals(recordSize * tags, buffer.getBufferedDataSize());
+        assertEquals(((float) allocSizePerBuf) * tags / maxAllocSize, buffer.getBufferUsage(), 0.001);
+        for (int i = 0; i < tags; i++) {
             buffer.append("foodb.bartbl" + i, 1420070400, data);
         }
-        assertEquals(TestableBuffer.ALLOC_SIZE * 20, buffer.getAllocatedSize());
-        assertEquals(TestableBuffer.RECORD_DATA_SIZE * 20, buffer.getBufferedDataSize());
-        assertEquals(TestableBuffer.ALLOC_SIZE * 20 / 10000f, buffer.getBufferUsage(), 0.001);
+        float totalAllocatedSize = allocSizePerBuf * (1 + allocRatio) * tags;
+        assertEquals(totalAllocatedSize, buffer.getAllocatedSize(), 0.001);
+        assertEquals(2 * recordSize * tags, buffer.getBufferedDataSize());
+        assertEquals(totalAllocatedSize / maxAllocSize, buffer.getBufferUsage(), 0.001);
 
-        buffer.flush(ingester, false);
+        buffer.flush(ingester, true);
+        assertEquals(totalAllocatedSize, buffer.getAllocatedSize(), 0.001);
+        assertEquals(0, buffer.getBufferedDataSize());
+        assertEquals(totalAllocatedSize / maxAllocSize, buffer.getBufferUsage(), 0.001);
+
+        buffer.close();
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferedDataSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
@@ -85,55 +118,42 @@ public class BufferTest
 
     @Test
     public void testFileBackup()
+            throws IOException
     {
-        TestableBuffer.Config config = new TestableBuffer.Config().
-                setFileBackupDir(System.getProperty("java.io.tmpdir")).
-                setFileBackupPrefix("FileBackupTest");
+        bufferConfig.setFileBackupDir(System.getProperty("java.io.tmpdir"));
+        bufferConfig.setFileBackupPrefix("FileBackupTest");
 
         // Just for cleaning backup files
-        config.createInstance(recordFormatter).clearBackupFiles();
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            buffer.clearBackupFiles();
+        }
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            assertEquals(0, buffer.getBufferedDataSize());
+        }
 
-        TestableBuffer buffer = config.createInstance(recordFormatter);
-        buffer.close();
-        assertEquals(0, buffer.getLoadedBuffers().size());
-        buffer.clearBackupFiles();
+        long currentTime = System.currentTimeMillis() / 1000;
+        Map<String, Object> event0 = ImmutableMap.of("name", "a", "age", 42);
+        Map<String, Object> event1 = ImmutableMap.of("name", "b", "age", 99);
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            buffer.append("foo", currentTime, event0);
+            buffer.append("bar", currentTime, event1);
+        }
 
-        List<String> paramOfFirstBuf = Arrays.asList("hello", "42", "world");
-        ByteBuffer bufOfFirstBuf = ByteBuffer.wrap("foobar".getBytes(UTF8));
-        List<String> paramOfSecondBuf = Arrays.asList("01234567");
-        ByteBuffer bufOfSecondBuf = ByteBuffer.wrap(new byte[] {0x00, (byte)0xff});
+        Ingester ingester = mock(Ingester.class);
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            buffer.flushInternal(ingester, true);
+        }
 
-        buffer = config.createInstance(recordFormatter);
-        buffer.setSavableBuffer(paramOfFirstBuf, bufOfFirstBuf);
-        buffer.setSavableBuffer(paramOfSecondBuf, bufOfSecondBuf);
-        buffer.close();
-        assertEquals(0, buffer.getLoadedBuffers().size());
-
-        buffer = config.createInstance(recordFormatter);
-        buffer.close();
-        assertEquals(2, buffer.getLoadedBuffers().size());
-
-        bufOfFirstBuf.flip();
-        bufOfSecondBuf.flip();
-        for (Tuple<List<String>, ByteBuffer> loadedBuffer : buffer.getLoadedBuffers()) {
-            ByteBuffer expected = null;
-            ByteBuffer actual = null;
-            if (loadedBuffer.getFirst().equals(paramOfFirstBuf)) {
-                expected = loadedBuffer.getSecond();
-                actual = bufOfFirstBuf;
-            }
-            else if (loadedBuffer.getFirst().equals(paramOfSecondBuf)) {
-                expected = loadedBuffer.getSecond();
-                actual = bufOfSecondBuf;
-            }
-            else {
-                assertTrue(false);
-            }
-
-            assertEquals(expected.remaining(), actual.remaining());
-            for (int i = 0; i < expected.remaining(); i++) {
-                assertEquals(expected.get(i), actual.get(i));
-            }
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (Tuple<String, Map<String, Object>> tagAndEvent :
+                ImmutableList.of(new Tuple<>("foo", event0), new Tuple<>("bar", event1))) {
+            ArgumentCaptor<ByteBuffer> byteBufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+            verify(ingester, times(1)).ingest(eq(tagAndEvent.getFirst()), byteBufferArgumentCaptor.capture());
+            ByteBuffer byteBuffer = byteBufferArgumentCaptor.getValue();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            Map<String, Object> map = objectMapper.readValue(bytes, new TypeReference<Map<String, Object>>() {});
+            assertEquals(tagAndEvent.getSecond(), map);
         }
     }
 
@@ -143,11 +163,11 @@ public class BufferTest
     {
         File backupDirFile = File.createTempFile("testFileBackupWithInvalidDir", ".tmp");
         backupDirFile.deleteOnExit();
-        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDirFile.getAbsolutePath());
 
-        try {
-            config.createInstance(recordFormatter);
-            assertTrue(false);
+        bufferConfig.setFileBackupDir(backupDirFile.getAbsolutePath());
+
+        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+            fail();
         }
         catch (IllegalArgumentException e) {
             assertTrue(true);
@@ -165,11 +185,11 @@ public class BufferTest
             throw new RuntimeException("Failed to revoke writable permission");
         }
         backupDir.deleteOnExit();
-        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
 
-        try {
-            config.createInstance(recordFormatter);
-            assertTrue(false);
+        bufferConfig.setFileBackupDir(backupDir.getAbsolutePath());
+
+        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+            fail();
         }
         catch (IllegalArgumentException e) {
             assertTrue(true);
@@ -187,11 +207,11 @@ public class BufferTest
             throw new RuntimeException("Failed to revoke readable permission");
         }
         backupDir.deleteOnExit();
-        TestableBuffer.Config config = new TestableBuffer.Config().setFileBackupDir(backupDir.getAbsolutePath());
 
-        try {
-            config.createInstance(recordFormatter);
-            assertTrue(false);
+        bufferConfig.setFileBackupDir(backupDir.getAbsolutePath());
+
+        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+            fail();
         }
         catch (IllegalArgumentException e) {
             assertTrue(true);
@@ -202,66 +222,69 @@ public class BufferTest
     public void testGetAllocatedSize()
             throws IOException
     {
-        Buffer buffer = new Buffer.Config().setChunkInitialSize(256 * 1024)
-                .createInstance(recordFormatter);
-        assertThat(buffer.getAllocatedSize(), is(0L));
-        Map<String, Object> map = new HashMap<>();
-        map.put("name", "komamitsu");
-        for (int i = 0; i < 10; i++) {
-            buffer.append("foo.bar", new Date().getTime(), map);
+        bufferConfig.setChunkInitialSize(256 * 1024);
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            assertThat(buffer.getAllocatedSize(), is(0L));
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", "komamitsu");
+            for (int i = 0; i < 10; i++) {
+                buffer.append("foo.bar", new Date().getTime(), map);
+            }
+            assertThat(buffer.getAllocatedSize(), is(256 * 1024L));
         }
-        assertThat(buffer.getAllocatedSize(), is(256 * 1024L));
     }
 
     @Test
     public void testGetBufferedDataSize()
             throws IOException
     {
-        Buffer buffer = new Buffer.Config().setChunkInitialSize(256 * 1024)
-                .createInstance(recordFormatter);
-        assertThat(buffer.getBufferedDataSize(), is(0L));
+        bufferConfig.setChunkInitialSize(256 * 1024);
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+            assertThat(buffer.getBufferedDataSize(), is(0L));
 
-        Map<String, Object> map = new HashMap<>();
-        map.put("name", "komamitsu");
-        for (int i = 0; i < 10; i++) {
-            buffer.append("foo.bar", new Date().getTime(), map);
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", "komamitsu");
+            for (int i = 0; i < 10; i++) {
+                buffer.append("foo.bar", new Date().getTime(), map);
+            }
+            assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
+            assertThat(buffer.getBufferedDataSize(), is(lessThan(512L)));
+
+            buffer.flush(ingester, true);
+            assertThat(buffer.getBufferedDataSize(), is(0L));
         }
-        assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
-        assertThat(buffer.getBufferedDataSize(), is(lessThan(512L)));
-
-        buffer.flush(ingester, true);
-        assertThat(buffer.getBufferedDataSize(), is(0L));
     }
 
     @Test
     public void testAppendIfItDoesNotThrowBufferOverflow()
             throws IOException
     {
-        Buffer buffer = new Buffer.Config().setChunkInitialSize(64 * 1024)
-                .createInstance(recordFormatter);
+        bufferConfig.setChunkInitialSize(64 * 1024);
+        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
 
-        StringBuilder buf = new StringBuilder();
+            StringBuilder buf = new StringBuilder();
 
-        for (int i = 0; i < 1024 * 60; i++) {
-            buf.append('x');
-        }
-        String str60kb = buf.toString();
+            for (int i = 0; i < 1024 * 60; i++) {
+                buf.append('x');
+            }
+            String str60kb = buf.toString();
 
-        for (int i = 0; i < 1024 * 40; i++) {
-            buf.append('x');
-        }
-        String str100kb = buf.toString();
+            for (int i = 0; i < 1024 * 40; i++) {
+                buf.append('x');
+            }
+            String str100kb = buf.toString();
 
-        {
-            Map<String, Object> map = new HashMap<>();
-            map.put("k", str60kb);
-            buffer.append("tag0", new Date().getTime(), map);
-        }
+            {
+                Map<String, Object> map = new HashMap<>();
+                map.put("k", str60kb);
+                buffer.append("tag0", new Date().getTime(), map);
+            }
 
-        {
-            Map<String, Object> map = new HashMap<>();
-            map.put("k", str100kb);
-            buffer.append("tag0", new Date().getTime(), map);
+            {
+                Map<String, Object> map = new HashMap<>();
+                map.put("k", str100kb);
+                buffer.append("tag0", new Date().getTime(), map);
+            }
         }
     }
 }

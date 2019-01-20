@@ -23,6 +23,7 @@ import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +39,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Buffer
+    implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     private final FileBackup fileBackup;
@@ -49,7 +51,7 @@ public class Buffer
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<>();
     private final BufferPool bufferPool;
 
-    protected Buffer(final Config config, RecordFormatter recordFormatter)
+    public Buffer(final Config config, RecordFormatter recordFormatter)
     {
         this.config = config;
 
@@ -68,6 +70,8 @@ public class Buffer
         }
         bufferPool = new BufferPool(
                 config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
+
+        init();
     }
 
     protected void init()
@@ -103,6 +107,7 @@ public class Buffer
         flushInternal(ingester, force);
     }
 
+    @Override
     public void close()
     {
         try {
@@ -504,7 +509,6 @@ public class Buffer
     }
 
     public static class Config
-        implements Instantiator
     {
         private long maxBufferSize = 512 * 1024 * 1024;
         private String fileBackupDir;
@@ -521,10 +525,9 @@ public class Buffer
             return maxBufferSize;
         }
 
-        public Config setMaxBufferSize(long maxBufferSize)
+        public void setMaxBufferSize(long maxBufferSize)
         {
             this.maxBufferSize = maxBufferSize;
-            return this;
         }
 
         public String getFileBackupDir()
@@ -532,10 +535,9 @@ public class Buffer
             return fileBackupDir;
         }
 
-        public Config setFileBackupDir(String fileBackupDir)
+        public void setFileBackupDir(String fileBackupDir)
         {
             this.fileBackupDir = fileBackupDir;
-            return this;
         }
 
         public String getFileBackupPrefix()
@@ -543,22 +545,19 @@ public class Buffer
             return fileBackupPrefix;
         }
 
-        public Config setFileBackupPrefix(String fileBackupPrefix)
+        public void setFileBackupPrefix(String fileBackupPrefix)
         {
             this.fileBackupPrefix = fileBackupPrefix;
-            return this;
         }
-
 
         public int getChunkInitialSize()
         {
             return chunkInitialSize;
         }
 
-        public Config setChunkInitialSize(int chunkInitialSize)
+        public void setChunkInitialSize(int chunkInitialSize)
         {
             this.chunkInitialSize = chunkInitialSize;
-            return this;
         }
 
         public float getChunkExpandRatio()
@@ -566,10 +565,9 @@ public class Buffer
             return chunkExpandRatio;
         }
 
-        public Config setChunkExpandRatio(float chunkExpandRatio)
+        public void setChunkExpandRatio(float chunkExpandRatio)
         {
             this.chunkExpandRatio = chunkExpandRatio;
-            return this;
         }
 
         public int getChunkRetentionSize()
@@ -577,10 +575,9 @@ public class Buffer
             return chunkRetentionSize;
         }
 
-        public Config setChunkRetentionSize(int chunkRetentionSize)
+        public void setChunkRetentionSize(int chunkRetentionSize)
         {
             this.chunkRetentionSize = chunkRetentionSize;
-            return this;
         }
 
         public int getChunkRetentionTimeMillis()
@@ -588,10 +585,9 @@ public class Buffer
             return chunkRetentionTimeMillis;
         }
 
-        public Config setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
+        public void setChunkRetentionTimeMillis(int chunkRetentionTimeMillis)
         {
             this.chunkRetentionTimeMillis = chunkRetentionTimeMillis;
-            return this;
         }
 
         public boolean getJvmHeapBufferMode()
@@ -599,10 +595,9 @@ public class Buffer
             return jvmHeapBufferMode;
         }
 
-        public Config setJvmHeapBufferMode(boolean jvmHeapBufferMode)
+        public void setJvmHeapBufferMode(boolean jvmHeapBufferMode)
         {
             this.jvmHeapBufferMode = jvmHeapBufferMode;
-            return this;
         }
 
         @Override
@@ -619,18 +614,5 @@ public class Buffer
                     ", jvmHeapBufferMode=" + jvmHeapBufferMode +
                     '}';
         }
-
-        @Override
-        public Buffer createInstance(RecordFormatter recordFormatter)
-        {
-            Buffer buffer = new Buffer(this, recordFormatter);
-            buffer.init();
-            return buffer;
-        }
-    }
-
-    public interface Instantiator
-    {
-        Buffer createInstance(RecordFormatter recordFormatter);
     }
 }

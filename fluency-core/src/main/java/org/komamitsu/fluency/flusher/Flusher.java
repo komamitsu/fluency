@@ -170,7 +170,7 @@ public abstract class Flusher
                 '}';
     }
 
-    public static class Config
+    public abstract static class Config
     {
         private int flushIntervalMillis = 600;
         private int waitUntilBufferFlushed = 60;
@@ -181,10 +181,9 @@ public abstract class Flusher
             return flushIntervalMillis;
         }
 
-        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        public void setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
-            return this;
         }
 
         public int getWaitUntilBufferFlushed()
@@ -192,10 +191,9 @@ public abstract class Flusher
             return waitUntilBufferFlushed;
         }
 
-        public Config setWaitUntilBufferFlushed(int waitUntilBufferFlushed)
+        public void setWaitUntilBufferFlushed(int waitUntilBufferFlushed)
         {
             this.waitUntilBufferFlushed = waitUntilBufferFlushed;
-            return this;
         }
 
         public int getWaitUntilTerminated()
@@ -203,10 +201,9 @@ public abstract class Flusher
             return waitUntilTerminated;
         }
 
-        public Config setWaitUntilTerminated(int waitUntilTerminated)
+        public void setWaitUntilTerminated(int waitUntilTerminated)
         {
             this.waitUntilTerminated = waitUntilTerminated;
-            return this;
         }
 
         @Override
@@ -218,10 +215,5 @@ public abstract class Flusher
                     ", waitUntilTerminated=" + waitUntilTerminated +
                     '}';
         }
-    }
-
-    public interface Instantiator
-    {
-        Flusher createInstance(Buffer buffer, Ingester ingester);
     }
 }
