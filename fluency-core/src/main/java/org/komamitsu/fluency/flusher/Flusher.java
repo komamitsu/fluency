@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -159,7 +158,7 @@ public abstract class Flusher
         return "Flusher{" +
                 "isTerminated=" + isTerminated +
                 ", buffer=" + buffer +
-                ", transporter=" + ingester +
+                ", ingester=" + ingester +
                 ", config=" + config +
                 '}';
     }
