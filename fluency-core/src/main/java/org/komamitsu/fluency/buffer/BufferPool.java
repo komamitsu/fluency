@@ -56,7 +56,7 @@ class BufferPool
         synchronized (bufferPool) {
             buffers = bufferPool.get(normalizedBufferSize);
             if (buffers == null) {
-                buffers = new LinkedBlockingQueue<ByteBuffer>();
+                buffers = new LinkedBlockingQueue<>();
                 bufferPool.put(normalizedBufferSize, buffers);
             }
         }

@@ -85,16 +85,10 @@ public abstract class Flusher
         }
         finally {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    closeBuffer();
-                    isTerminated.set(true);
-                    return null;
-                }
+            Future<Void> future = executorService.submit(() -> {
+                closeBuffer();
+                isTerminated.set(true);
+                return null;
             });
 
             try {

@@ -184,13 +184,18 @@ class FluencyTest
         StuckIngester stuckIngester = new StuckIngester(latch);
 
         bufferConfig.setChunkInitialSize(64);
+        bufferConfig.setChunkExpandRatio(2);
         bufferConfig.setMaxBufferSize(256);
+        flusherConfig.setFlushIntervalMillis(1000);
 
         Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new AsyncFlusher(flusherConfig, buffer, stuckIngester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             Map<String, Object> event = new HashMap<>();
-            event.put("name", "xxxx");
+            event.put("name", "xxxx");  // '{"name":"xxxx"}' (length: 15 bytes)
+            // Buffers: 64 + 128 = 192
+            //          64 + 128 + 256 = 448 > 256
+            // 15 * (8 + 1) = 135
             for (int i = 0; i < 8; i++) {
                 fluency.emit("tag", event);
             }
@@ -201,9 +206,9 @@ class FluencyTest
             catch (BufferFullException e) {
                 assertTrue(true);
             }
-        }
-        finally {
-            latch.countDown();
+            finally {
+                latch.countDown();
+            }
         }
     }
 }
