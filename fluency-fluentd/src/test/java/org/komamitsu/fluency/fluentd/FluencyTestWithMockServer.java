@@ -23,13 +23,10 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.BaseFluencyBuilder;
-import org.komamitsu.fluency.TestableFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
-import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -295,17 +292,18 @@ public class FluencyTestWithMockServer
                 bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
             }
             if (options.fileBackup) {
-                bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
+                bufferConfig.setFileBackupDir(TMPDIR);
+                bufferConfig.setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
             }
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
-                    .setWaitUntilBufferFlushed(10)
-                    .setWaitUntilTerminated(10);
 
-            return new TestableFluencyBuilder().buildFromConfigs(
-                    new FluentdRecordFormatter.Config(),
-                    bufferConfig,
-                    flusherConfig,
-                    ingesterConfig.createInstance(sender));
+            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+            flusherConfig.setWaitUntilBufferFlushed(10);
+            flusherConfig.setWaitUntilTerminated(10);
+
+            Buffer buffer = new Buffer(bufferConfig, new FluentdRecordFormatter.Config().createInstance());
+            AsyncFlusher flusher = new AsyncFlusher(flusherConfig, buffer, ingesterConfig.createInstance(sender));
+
+            return new Fluency(buffer, flusher);
         }, options);
     }
 

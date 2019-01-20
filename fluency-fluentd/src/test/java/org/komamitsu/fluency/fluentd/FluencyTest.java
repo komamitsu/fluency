@@ -28,10 +28,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.TestableFluencyBuilder;
-import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -265,19 +263,11 @@ public class FluencyTest
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
 
-        Buffer.Config bufferConfig = new Buffer
-                .Config()
-                .setChunkInitialSize(64)
-                .setMaxBufferSize(256);
-
         FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
                 new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
 
-        Fluency fluency = new TestableFluencyBuilder().buildFromConfigs(
-                    fluentdRecordFormatterWithModuleConfig,
-                    bufferConfig,
-                    new AsyncFlusher.Config(),
-                    ingester);
+        Fluency fluency = new TestableFluencyBuilder()
+                .buildFromIngester(fluentdRecordFormatterWithModuleConfig.createInstance(), ingester);
 
         Map<String, Object> event = new HashMap<>();
         Foo foo = new Foo();

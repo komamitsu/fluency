@@ -30,7 +30,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,26 +56,16 @@ public class SSLSenderTest
     public void testSend()
             throws Exception
     {
-        testSendBase(new SSLSenderConfigurator() {
-            @Override
-            public SSLSender.Config config(int port)
-            {
-                return new SSLSender.Config().setPort(port);
-            }
-        }, is(1), is(1));
+        testSendBase(port -> new SSLSender.Config().setPort(port), is(1), is(1));
     }
 
     @Test
     public void testSendWithHeartbeart()
             throws Exception
     {
-        testSendBase(new SSLSenderConfigurator() {
-            @Override
-            public SSLSender.Config config(int port)
-            {
-                SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config().setPort(port).setIntervalMillis(400);
-                return new SSLSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
-            }
+        testSendBase(port -> {
+            SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config().setPort(port).setIntervalMillis(400);
+            return new SSLSender.Config().setPort(port).setHeartbeaterConfig(hbConfig);
         }, greaterThan(1), greaterThan(1));
     }
 
@@ -97,22 +86,17 @@ public class SSLSenderTest
 
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         for (int i = 0; i < concurency; i++) {
-            senderExecutorService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try {
-                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
+            senderExecutorService.execute(() -> {
+                try {
+                    byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
-                        for (int j = 0; j < reqNum; j++) {
-                            sender.send(ByteBuffer.wrap(bytes));
-                        }
-                        latch.countDown();
+                    for (int j = 0; j < reqNum; j++) {
+                        sender.send(ByteBuffer.wrap(bytes));
                     }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    latch.countDown();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
                 }
             });
         }
@@ -156,18 +140,14 @@ public class SSLSenderTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Runnable() {
-            @Override
-            public void run()
-            {
-                SSLSender sender = new SSLSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
-                try {
-                    sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
-                }
-                catch (Exception e) {
-                    if (e instanceof SocketTimeoutException) {
-                        latch.countDown();
-                    }
+        executorService.execute(() -> {
+            SSLSender sender = new SSLSender.Config().setHost("192.0.2.0").setConnectionTimeoutMilli(1000).createInstance();
+            try {
+                sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
+            }
+            catch (Exception e) {
+                if (e instanceof SocketTimeoutException) {
+                    latch.countDown();
                 }
             }
         });
@@ -184,19 +164,14 @@ public class SSLSenderTest
         try {
             final CountDownLatch latch = new CountDownLatch(1);
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            executorService.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
-                    try {
-                        sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
-                    }
-                    catch (Exception e) {
-                        if (e instanceof SocketTimeoutException) {
-                            latch.countDown();
-                        }
+            executorService.execute(() -> {
+                SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setReadTimeoutMilli(1000).createInstance();
+                try {
+                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
+                }
+                catch (Exception e) {
+                    if (e instanceof SocketTimeoutException) {
+                        latch.countDown();
                     }
                 }
             });
@@ -217,26 +192,20 @@ public class SSLSenderTest
         try {
             final AtomicLong duration = new AtomicLong();
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
-                    long start;
-                    try {
-                        sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
-                        start = System.currentTimeMillis();
-                        sender.close();
-                        duration.set(System.currentTimeMillis() - start);
-                    }
-                    catch (Exception e) {
-                        LOG.error("Unexpected exception", e);
-                    }
-
-                    return null;
+            Future<Void> future = executorService.submit(() -> {
+                SSLSender sender = new SSLSender.Config().setPort(server.getLocalPort()).setWaitBeforeCloseMilli(1500).createInstance();
+                long start;
+                try {
+                    sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
+                    start = System.currentTimeMillis();
+                    sender.close();
+                    duration.set(System.currentTimeMillis() - start);
                 }
+                catch (Exception e) {
+                    LOG.error("Unexpected exception", e);
+                }
+
+                return null;
             });
             future.get(3000, TimeUnit.MILLISECONDS);
             assertTrue(duration.get() > 1000 && duration.get() < 2000);

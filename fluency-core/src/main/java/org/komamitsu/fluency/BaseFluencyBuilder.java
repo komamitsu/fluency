@@ -23,7 +23,7 @@ import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
-public abstract class BaseFluencyBuilder
+public class BaseFluencyBuilder
 {
     private Long maxBufferSize;
     private Integer bufferChunkInitialSize;
@@ -155,10 +155,10 @@ public abstract class BaseFluencyBuilder
                 '}';
     }
 
-    protected Fluency buildFromIngester(RecordFormatter recordFormatter, Ingester ingester)
+    public Fluency buildFromIngester(RecordFormatter recordFormatter, Ingester ingester)
     {
         Buffer.Config bufferConfig = new Buffer.Config();
-        configureBufferConfig(new Buffer.Config());
+        configureBufferConfig(bufferConfig);
         Buffer buffer = new Buffer(bufferConfig, recordFormatter);
 
         AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();

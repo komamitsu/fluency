@@ -176,8 +176,8 @@ public class FluencyBuilder
             retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
 
-        FluentdIngester.Config transporterConfig = new FluentdIngester.Config();
-            transporterConfig.setAckResponseMode(isAckResponseMode());
+        FluentdIngester.Config ingesterConfig = new FluentdIngester.Config();
+            ingesterConfig.setAckResponseMode(isAckResponseMode());
 
         RetryableSender.Config senderConfig = new RetryableSender.Config(baseSenderConfig)
                 .setRetryStrategyConfig(retryStrategyConfig);
@@ -188,6 +188,6 @@ public class FluencyBuilder
 
         RetryableSender retryableSender = senderConfig.createInstance();
 
-        return new FluentdIngester.Config().createInstance(retryableSender);
+        return ingesterConfig.createInstance(retryableSender);
     }
 }

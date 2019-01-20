@@ -59,21 +59,21 @@ public class BufferForFluentdTest
     {
         for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
         }
     }
 
