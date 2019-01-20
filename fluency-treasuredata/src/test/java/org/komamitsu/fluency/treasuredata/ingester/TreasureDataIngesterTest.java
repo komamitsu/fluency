@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
-import org.komamitsu.fluency.treasuredata.ingester.TreasureDataIngester;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -53,7 +52,7 @@ public class TreasureDataIngesterTest
     public void ingest()
             throws IOException
     {
-        TreasureDataIngester ingester = new TreasureDataIngester.Config().createInstance(treasureDataSender);
+        TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
         ArgumentCaptor<ByteBuffer> byteBufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
         verify(treasureDataSender, times(1)).send(eq(TAG), byteBufferArgumentCaptor.capture());
@@ -66,14 +65,14 @@ public class TreasureDataIngesterTest
     public void getSender()
     {
         assertEquals(treasureDataSender,
-                new TreasureDataIngester.Config().createInstance(treasureDataSender).getSender());
+                new TreasureDataIngester(treasureDataSender).getSender());
     }
 
     @Test
     public void close()
             throws IOException
     {
-        TreasureDataIngester ingester = new TreasureDataIngester.Config().createInstance(treasureDataSender);
+        TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
         ingester.close();
 
         verify(treasureDataSender, times(1)).close();

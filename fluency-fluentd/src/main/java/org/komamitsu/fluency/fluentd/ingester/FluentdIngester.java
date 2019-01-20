@@ -102,7 +102,6 @@ public class FluentdIngester
     }
 
     public static class Config
-        implements Instantiator<FluentdSender>
     {
         private boolean ackResponseMode = false;
 
@@ -111,16 +110,9 @@ public class FluentdIngester
             return ackResponseMode;
         }
 
-        public Config setAckResponseMode(boolean ackResponseMode)
+        public void setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
-            return this;
-        }
-
-        @Override
-        public Ingester createInstance(FluentdSender sender)
-        {
-            return new FluentdIngester(this, sender);
         }
     }
 }

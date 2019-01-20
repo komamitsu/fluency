@@ -163,8 +163,6 @@ public class FluencyBuilder
 
         TreasureDataSender sender = senderConfig.createInstance();
 
-        TreasureDataIngester.Config ingesterConfig = new TreasureDataIngester.Config();
-
-        return ingesterConfig.createInstance(sender);
+        return new TreasureDataIngester(sender);
     }
 }

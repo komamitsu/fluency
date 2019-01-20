@@ -29,13 +29,4 @@ public interface Ingester
             throws IOException;
 
     Sender getSender();
-
-    interface Config
-    {}
-
-    interface Instantiator<T extends Sender>
-    {
-        // TODO: Revisit to think of taking Sender.Config instead
-        Ingester createInstance(T sender);
-    }
 }

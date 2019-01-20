@@ -188,6 +188,6 @@ public class FluencyBuilder
 
         RetryableSender retryableSender = senderConfig.createInstance();
 
-        return ingesterConfig.createInstance(retryableSender);
+        return new FluentdIngester(ingesterConfig, retryableSender);
     }
 }

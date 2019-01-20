@@ -301,7 +301,7 @@ public class FluencyTestWithMockServer
             flusherConfig.setWaitUntilTerminated(10);
 
             Buffer buffer = new Buffer(bufferConfig, new FluentdRecordFormatter.Config().createInstance());
-            AsyncFlusher flusher = new AsyncFlusher(flusherConfig, buffer, ingesterConfig.createInstance(sender));
+            AsyncFlusher flusher = new AsyncFlusher(flusherConfig, buffer, new FluentdIngester(ingesterConfig, sender));
 
             return new Fluency(buffer, flusher);
         }, options);

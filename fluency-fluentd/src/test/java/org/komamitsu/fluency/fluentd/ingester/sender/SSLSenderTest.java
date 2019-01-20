@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SSLSenderTest
 {
@@ -69,7 +70,10 @@ public class SSLSenderTest
         }, greaterThan(1), greaterThan(1));
     }
 
-    private void testSendBase(SSLSenderConfigurator configurator, Matcher connectCountMatcher, Matcher closeCountMatcher)
+    private void testSendBase(
+            SSLSenderConfigurator configurator,
+            Matcher<? super Integer> connectCountMatcher,
+            Matcher<? super Integer> closeCountMatcher)
             throws Exception
     {
         MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(true);
@@ -102,7 +106,7 @@ public class SSLSenderTest
         }
 
         if (!latch.await(30, TimeUnit.SECONDS)) {
-            assertTrue("Sending all requests timed out", false);
+            fail("Sending all requests timed out");
         }
         sender.close();
 

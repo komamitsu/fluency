@@ -77,7 +77,7 @@ public class FluentdIngesterTest
     public void ingestWithoutAck()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
+        Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
         verify(fluentdSender, times(1)).send(byteBuffersArgumentCaptor.capture());
@@ -99,7 +99,9 @@ public class FluentdIngesterTest
     public void ingestWithAck()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().setAckResponseMode(true).createInstance(fluentdSender);
+        FluentdIngester.Config config = new FluentdIngester.Config();
+        config.setAckResponseMode(true);
+        Ingester ingester = new FluentdIngester(config, fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
         ArgumentCaptor<byte[]> ackTokenArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
@@ -128,14 +130,14 @@ public class FluentdIngesterTest
     @Test
     public void getSender()
     {
-        assertEquals(fluentdSender, new FluentdIngester.Config().createInstance(fluentdSender).getSender());
+        assertEquals(fluentdSender, new FluentdIngester(new FluentdIngester.Config(), fluentdSender).getSender());
     }
 
     @Test
     public void close()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
+        Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);
         ingester.close();
 
         verify(fluentdSender, times(1)).close();

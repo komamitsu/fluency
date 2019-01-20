@@ -114,7 +114,7 @@ public class BufferForFluentdTest
             final CountDownLatch latch = new CountDownLatch(concurrency);
 
             final MockTCPSender sender = new MockTCPSender(24229);
-            Ingester ingester = new FluentdIngester.Config().createInstance(sender);
+            Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), sender);
 
             Runnable emitTask = () -> {
                 try {
