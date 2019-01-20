@@ -99,7 +99,7 @@ public class BufferTest
         }
         float totalAllocatedSize = allocSizePerBuf * (1 + allocRatio) * tags;
         assertEquals(totalAllocatedSize, buffer.getAllocatedSize(), 0.001);
-        assertEquals(2 * recordSize * tags, buffer.getBufferedDataSize());
+        assertEquals(2L * recordSize * tags, buffer.getBufferedDataSize());
         assertEquals(totalAllocatedSize / maxAllocSize, buffer.getBufferUsage(), 0.001);
 
         buffer.flush(ingester, true);
