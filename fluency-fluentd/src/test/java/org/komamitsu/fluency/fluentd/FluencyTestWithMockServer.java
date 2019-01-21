@@ -26,6 +26,9 @@ import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
@@ -222,6 +225,11 @@ public class FluencyTestWithMockServer
                 throws IOException;
     }
 
+    private FailureDetector createFailureDetector(Heartbeater hb)
+    {
+        return new FailureDetector( new PhiAccrualFailureDetectStrategy(), hb);
+    }
+
     private FluentdSender getSingleTCPSender(int port)
     {
         TCPSender.Config config = new TCPSender.Config();
@@ -233,14 +241,23 @@ public class FluencyTestWithMockServer
     {
         TCPSender.Config config0 = new TCPSender.Config();
         config0.setPort(firstPort);
-        config0.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort));
+
+        TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
+        hbConfig0.setPort(firstPort);
 
         TCPSender.Config config1 = new TCPSender.Config();
         config1.setPort(secondPort);
-        config1.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort));
+
+        TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
+        hbConfig1.setPort(secondPort);
+
 
         return new MultiSender(new MultiSender.Config(),
-                ImmutableList.of(new TCPSender(config0), new TCPSender(config1)));
+                ImmutableList.of(
+                        new TCPSender(config0,
+                                createFailureDetector(new TCPHeartbeater(hbConfig0))),
+                        new TCPSender(config1,
+                                createFailureDetector(new TCPHeartbeater(hbConfig1)))));
     }
 
     private FluentdSender getSingleSSLSender(int port)
@@ -254,14 +271,22 @@ public class FluencyTestWithMockServer
     {
         SSLSender.Config config0 = new SSLSender.Config();
         config0.setPort(firstPort);
-        config0.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort));
+
+        TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
+        hbConfig0.setPort(firstPort);
 
         SSLSender.Config config1 = new SSLSender.Config();
         config1.setPort(secondPort);
-        config1.setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort));
+
+        TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
+        hbConfig1.setPort(secondPort);
 
         return new MultiSender(new MultiSender.Config(),
-                ImmutableList.of(new SSLSender(config0), new SSLSender(config1)));
+                ImmutableList.of(
+                        new SSLSender(config0,
+                                createFailureDetector(new TCPHeartbeater(hbConfig0))),
+                        new SSLSender(config1,
+                                createFailureDetector(new TCPHeartbeater(hbConfig1)))));
     }
 
     @Theory

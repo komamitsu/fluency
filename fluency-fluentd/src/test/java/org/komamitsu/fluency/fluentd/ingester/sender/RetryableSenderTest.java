@@ -17,8 +17,6 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.junit.Test;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 
 import java.io.IOException;
@@ -65,7 +63,6 @@ public class RetryableSenderTest
 
         @Override
         public void close()
-                throws IOException
         {
         }
     }
@@ -75,11 +72,12 @@ public class RetryableSenderTest
             throws IOException
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(3);
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(3);
 
         RetryableSender.Config senderConfig = new RetryableSender.Config();
-        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
-        RetryableSender sender = new RetryableSender(senderConfig, new FailurableSender(3));
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
         assertThat(baseSender.getRetry(), is(0));
@@ -92,11 +90,12 @@ public class RetryableSenderTest
             throws IOException
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(2);
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(2);
 
         RetryableSender.Config senderConfig = new RetryableSender.Config();
-        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
-        RetryableSender sender = new RetryableSender(senderConfig, new FailurableSender(3));
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
         assertThat(baseSender.getRetry(), is(0));

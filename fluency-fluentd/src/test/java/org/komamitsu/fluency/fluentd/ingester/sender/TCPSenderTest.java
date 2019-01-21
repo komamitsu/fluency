@@ -20,6 +20,8 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
@@ -47,9 +49,9 @@ class TCPSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSenderTest.class);
 
-    interface TCPSenderConfigurator
+    interface TCPSenderCreater
     {
-        TCPSender.Config config(int port);
+        TCPSender create(int port);
     }
 
     @Test
@@ -59,7 +61,7 @@ class TCPSenderTest
         testSendBase(port -> {
             TCPSender.Config senderConfig = new TCPSender.Config();
             senderConfig.setPort(port);
-            return senderConfig;
+            return new TCPSender(senderConfig);
         }, is(1), is(1));
     }
 
@@ -68,16 +70,22 @@ class TCPSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config().setPort(port).setIntervalMillis(400);
+            TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config();
+            hbConfig.setPort(port);
+            hbConfig.setIntervalMillis(400);
+
             TCPSender.Config senderConfig = new TCPSender.Config();
             senderConfig.setPort(port);
-            senderConfig.setHeartbeaterConfig(hbConfig);
-            return senderConfig;
+
+            return new TCPSender(senderConfig,
+                    new FailureDetector(
+                            new PhiAccrualFailureDetectStrategy(),
+                            new TCPHeartbeater(hbConfig)));
         }, greaterThan(1), greaterThan(1));
     }
 
     private void testSendBase(
-            TCPSenderConfigurator configurator,
+            TCPSenderCreater senderCreater,
             Matcher<? super Integer> connectCountMatcher,
             Matcher<? super Integer> closeCountMatcher)
             throws Exception
@@ -88,8 +96,7 @@ class TCPSenderTest
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
-        TCPSender.Config config = configurator.config(server.getLocalPort());
-        final TCPSender sender = new TCPSender(config);
+        TCPSender sender = senderCreater.create(server.getLocalPort());
 
         // To receive heartbeat at least once
         TimeUnit.MILLISECONDS.sleep(500);

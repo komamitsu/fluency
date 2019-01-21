@@ -52,11 +52,11 @@ public class RetryableSender
         }
     }
 
-    public RetryableSender(Config config, FluentdSender baseSender)
+    public RetryableSender(Config config, FluentdSender baseSender, RetryStrategy retryStrategy)
     {
         super(config);
         this.baseSender = baseSender;
-        retryStrategy = config.getRetryStrategyConfig().createInstance();
+        this.retryStrategy = retryStrategy;
     }
 
     @Override
@@ -132,24 +132,5 @@ public class RetryableSender
     public static class Config
             extends FluentdSender.Config
     {
-        private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-
-        public RetryStrategy.Instantiator getRetryStrategyConfig()
-        {
-            return retryStrategyConfig;
-        }
-
-        public void setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
-        {
-            this.retryStrategyConfig = retryStrategyConfig;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "retryStrategyConfig=" + retryStrategyConfig +
-                    "} " + super.toString();
-        }
     }
 }

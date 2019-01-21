@@ -20,6 +20,8 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
@@ -48,9 +50,9 @@ public class SSLSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
 
-    interface SSLSenderConfigurator
+    interface SSLSenderCreater
     {
-        SSLSender.Config config(int port);
+        SSLSender create(int port);
     }
 
     @Test
@@ -60,7 +62,7 @@ public class SSLSenderTest
         testSendBase(port -> {
             SSLSender.Config config = new SSLSender.Config();
             config.setPort(port);
-            return config;
+            return new SSLSender(config);
         }, is(1), is(1));
     }
 
@@ -69,16 +71,20 @@ public class SSLSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config().setPort(port).setIntervalMillis(400);
+            SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config();
+            hbConfig.setPort(port);
+            hbConfig.setIntervalMillis(400);
             SSLSender.Config senderConfig = new SSLSender.Config();
             senderConfig.setPort(port);
-            senderConfig.setHeartbeaterConfig(hbConfig);
-            return senderConfig;
+            return new SSLSender(senderConfig,
+                    new FailureDetector(
+                            new PhiAccrualFailureDetectStrategy(),
+                            new SSLHeartbeater(hbConfig)));
         }, greaterThan(1), greaterThan(1));
     }
 
     private void testSendBase(
-            SSLSenderConfigurator configurator,
+            SSLSenderCreater sslSenderCreater,
             Matcher<? super Integer> connectCountMatcher,
             Matcher<? super Integer> closeCountMatcher)
             throws Exception
@@ -89,8 +95,7 @@ public class SSLSenderTest
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
-        SSLSender.Config config = configurator.config(server.getLocalPort());
-        final SSLSender sender = new SSLSender(config);
+        SSLSender sender = sslSenderCreater.create(server.getLocalPort());
 
         // To receive heartbeat at least once
         TimeUnit.MILLISECONDS.sleep(500);

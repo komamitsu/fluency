@@ -37,27 +37,22 @@ public class TCPHeartbeaterTest
         final CountDownLatch latch = new CountDownLatch(2);
         final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(null);
-        Executors.newSingleThreadExecutor().execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    serverSocketChannel.accept();
-                    latch.countDown();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                serverSocketChannel.accept();
+                latch.countDown();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
-        TCPHeartbeater.Config config = new TCPHeartbeater.Config().setPort(serverSocketChannel.socket().getLocalPort()).setIntervalMillis(500);
-        TCPHeartbeater heartbeater = null;
-        try {
-            final AtomicInteger pongCounter  = new AtomicInteger();
-            final AtomicInteger failureCounter  = new AtomicInteger();
-            heartbeater = config.createInstance();
+        TCPHeartbeater.Config config = new TCPHeartbeater.Config();
+        config.setPort(serverSocketChannel.socket().getLocalPort());
+        config.setIntervalMillis(500);
+        try (TCPHeartbeater heartbeater = new TCPHeartbeater(config)) {
+            final AtomicInteger pongCounter = new AtomicInteger();
+            final AtomicInteger failureCounter = new AtomicInteger();
             heartbeater.setCallback(new Heartbeater.Callback()
             {
                 @Override
@@ -78,11 +73,6 @@ public class TCPHeartbeaterTest
             assertTrue(0 < pongCounter.get() && pongCounter.get() < 3);
             assertEquals(0, failureCounter.get());
         }
-        finally {
-            if (heartbeater != null) {
-                heartbeater.close();
-            }
-        }
     }
 
     @Test
@@ -94,12 +84,12 @@ public class TCPHeartbeaterTest
         int localPort = serverSocketChannel.socket().getLocalPort();
         serverSocketChannel.close();
 
-        TCPHeartbeater.Config config = new TCPHeartbeater.Config().setPort(localPort).setIntervalMillis(500);
-        TCPHeartbeater heartbeater = null;
-        try {
-            final AtomicInteger pongCounter  = new AtomicInteger();
-            final AtomicInteger failureCounter  = new AtomicInteger();
-            heartbeater = config.createInstance();
+        TCPHeartbeater.Config config = new TCPHeartbeater.Config();
+        config.setPort(localPort);
+        config.setIntervalMillis(500);
+        try (TCPHeartbeater heartbeater = new TCPHeartbeater(config)) {
+            final AtomicInteger pongCounter = new AtomicInteger();
+            final AtomicInteger failureCounter = new AtomicInteger();
             heartbeater.setCallback(new Heartbeater.Callback()
             {
                 @Override
@@ -118,11 +108,6 @@ public class TCPHeartbeaterTest
             TimeUnit.SECONDS.sleep(1);
             assertEquals(0, pongCounter.get());
             assertTrue(failureCounter.get() > 0);
-        }
-        finally {
-            if (heartbeater != null) {
-                heartbeater.close();
-            }
         }
     }
 }

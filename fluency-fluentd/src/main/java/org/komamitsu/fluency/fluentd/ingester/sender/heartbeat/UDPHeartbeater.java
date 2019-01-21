@@ -31,10 +31,14 @@ public class UDPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
 
-    protected UDPHeartbeater(final Config config)
-            throws IOException
+    public UDPHeartbeater()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public UDPHeartbeater(final Config config)
+    {
+        super(config);
         socketAddress = new InetSocketAddress(config.getHost(), config.getPort());
     }
 
@@ -42,18 +46,11 @@ public class UDPHeartbeater
     protected void invoke()
             throws IOException
     {
-        DatagramChannel datagramChannel = null;
-        try {
-            datagramChannel = DatagramChannel.open();
+        try (DatagramChannel datagramChannel = DatagramChannel.open()) {
             ByteBuffer byteBuffer = ByteBuffer.allocate(0);
             datagramChannel.send(byteBuffer, socketAddress);
             datagramChannel.receive(byteBuffer);
             pong();
-        }
-        finally {
-            if (datagramChannel != null) {
-                datagramChannel.close();
-            }
         }
     }
 
@@ -66,61 +63,7 @@ public class UDPHeartbeater
     }
 
     public static class Config
-        implements Instantiator
+            extends Heartbeater.Config
     {
-        private final Heartbeater.Config baseConfig = new Heartbeater.Config();
-
-        public Heartbeater.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public String getHost()
-        {
-            return baseConfig.getHost();
-        }
-
-        public int getPort()
-        {
-            return baseConfig.getPort();
-        }
-
-        public Config setIntervalMillis(int intervalMillis)
-        {
-            baseConfig.setIntervalMillis(intervalMillis);
-            return this;
-        }
-
-        public int getIntervalMillis()
-        {
-            return baseConfig.getIntervalMillis();
-        }
-
-        public Config setHost(String host)
-        {
-            baseConfig.setHost(host);
-            return this;
-        }
-
-        public Config setPort(int port)
-        {
-            baseConfig.setPort(port);
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    '}';
-        }
-
-        @Override
-        public UDPHeartbeater createInstance()
-                throws IOException
-        {
-            return new UDPHeartbeater(this);
-        }
     }
 }

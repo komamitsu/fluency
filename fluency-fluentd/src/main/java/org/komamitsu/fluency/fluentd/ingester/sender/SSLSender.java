@@ -16,6 +16,8 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+
 import javax.net.ssl.SSLSocket;
 
 import java.io.IOException;
@@ -32,9 +34,24 @@ public class SSLSender
     private final SSLSocketBuilder socketBuilder;
     private final Config config;
 
+    public SSLSender()
+    {
+        this(new Config());
+    }
+
     public SSLSender(Config config)
     {
-        super(config);
+        this(config, null);
+    }
+
+    public SSLSender(FailureDetector failureDetector)
+    {
+        this(new Config(), failureDetector);
+    }
+
+    public SSLSender(Config config, FailureDetector failureDetector)
+    {
+        super(config, failureDetector);
         socketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),

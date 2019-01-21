@@ -25,8 +25,11 @@ public class ExponentialBackOffRetryStrategyTest
     @Test
     public void testGetNextIntervalMillis()
     {
-        ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config().setBaseIntervalMillis(400).setMaxIntervalMillis(30000).setMaxRetryCount(7);
-        RetryStrategy strategy = config.createInstance();
+        ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
+        config.setBaseIntervalMillis(400);
+        config.setMaxIntervalMillis(30000);
+        config.setMaxRetryCount(7);
+        RetryStrategy strategy = new ExponentialBackOffRetryStrategy(config);
 
         assertEquals(400, strategy.getNextIntervalMillis(0));
         assertEquals(800, strategy.getNextIntervalMillis(1));

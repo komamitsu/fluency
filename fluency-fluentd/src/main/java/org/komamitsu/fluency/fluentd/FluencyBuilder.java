@@ -24,9 +24,12 @@ import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -117,6 +120,7 @@ public class FluencyBuilder
 
         if (isSslEnabled()) {
             SSLSender.Config senderConfig = new SSLSender.Config();
+            FailureDetector failureDetector = null;
             if (host != null) {
                 senderConfig.setHost(host);
             }
@@ -124,15 +128,17 @@ public class FluencyBuilder
                 senderConfig.setPort(port);
             }
             if (withHeartBeater) {
-                senderConfig.setHeartbeaterConfig(
-                        new SSLHeartbeater.Config()
-                                .setHost(host)
-                                .setPort(port));
+                SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config();
+                hbConfig.setHost(host);
+                hbConfig.setPort(port);
+                SSLHeartbeater heartbeater = new SSLHeartbeater(hbConfig);
+                failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
             }
-            return new SSLSender(senderConfig);
+            return new SSLSender(senderConfig, failureDetector);
         }
         else {
             TCPSender.Config senderConfig = new TCPSender.Config();
+            FailureDetector failureDetector = null;
             if (host != null) {
                 senderConfig.setHost(host);
             }
@@ -140,12 +146,13 @@ public class FluencyBuilder
                 senderConfig.setPort(port);
             }
             if (withHeartBeater) {
-                senderConfig.setHeartbeaterConfig(
-                        new TCPHeartbeater.Config()
-                                .setHost(host)
-                                .setPort(port));
+                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config();
+                hbConfig.setHost(host);
+                hbConfig.setPort(port);
+                TCPHeartbeater heartbeater = new TCPHeartbeater(hbConfig);
+                failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
             }
-            return new TCPSender(senderConfig);
+            return new TCPSender(senderConfig, failureDetector);
         }
     }
 
@@ -166,7 +173,8 @@ public class FluencyBuilder
 
     private Ingester buildIngester(FluentdSender baseSender)
     {
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
+                new ExponentialBackOffRetryStrategy.Config();
 
         if (getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
@@ -175,18 +183,18 @@ public class FluencyBuilder
         if (getSenderMaxRetryCount() != null) {
             retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
-
-        FluentdIngester.Config ingesterConfig = new FluentdIngester.Config();
-            ingesterConfig.setAckResponseMode(isAckResponseMode());
 
         RetryableSender.Config senderConfig = new RetryableSender.Config();
-        senderConfig.setRetryStrategyConfig(retryStrategyConfig);
 
         if (getErrorHandler() != null) {
             senderConfig.setErrorHandler(getErrorHandler());
         }
 
-        RetryableSender retryableSender = new RetryableSender(senderConfig, baseSender);
+        RetryableSender retryableSender = new RetryableSender(senderConfig, baseSender,
+                new ExponentialBackOffRetryStrategy(retryStrategyConfig));
+
+        FluentdIngester.Config ingesterConfig = new FluentdIngester.Config();
+        ingesterConfig.setAckResponseMode(isAckResponseMode());
 
         return new FluentdIngester(ingesterConfig, retryableSender);
     }

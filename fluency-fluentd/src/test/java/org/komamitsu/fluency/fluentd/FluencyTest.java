@@ -81,7 +81,7 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> errorContainer = new AtomicReference<>();
 
         FluencyBuilder builder = new FluencyBuilder();
         builder.setSenderMaxRetryCount(1);

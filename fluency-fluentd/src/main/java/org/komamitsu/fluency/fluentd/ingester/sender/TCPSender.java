@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +34,24 @@ public class TCPSender
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final Config config;
 
+    public TCPSender()
+    {
+        this(new Config());
+    }
+
     public TCPSender(Config config)
     {
-        super(config);
+        this(config, null);
+    }
+
+    public TCPSender(FailureDetector failureDetector)
+    {
+        this(new Config(), failureDetector);
+    }
+
+    public TCPSender(Config config, FailureDetector failureDetector)
+    {
+        super(config, failureDetector);
         this.config = config;
     }
 

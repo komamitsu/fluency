@@ -38,29 +38,24 @@ public class UDPHeartbeaterTest
         final CountDownLatch latch = new CountDownLatch(2);
         final DatagramChannel datagramChannel = DatagramChannel.open();
         datagramChannel.socket().bind(null);
-        Executors.newSingleThreadExecutor().execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    ByteBuffer byteBuffer = ByteBuffer.allocate(8);
-                    SocketAddress socketAddress = datagramChannel.receive(byteBuffer);
-                    datagramChannel.send(ByteBuffer.allocate(0), socketAddress);
-                    latch.countDown();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+                SocketAddress socketAddress = datagramChannel.receive(byteBuffer);
+                datagramChannel.send(ByteBuffer.allocate(0), socketAddress);
+                latch.countDown();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
-        UDPHeartbeater.Config config = new UDPHeartbeater.Config().setPort(datagramChannel.socket().getLocalPort()).setIntervalMillis(500);
-        UDPHeartbeater heartbeater = null;
-        try {
-            final AtomicInteger pongCounter  = new AtomicInteger();
-            final AtomicInteger failureCounter  = new AtomicInteger();
-            heartbeater = config.createInstance();
+        UDPHeartbeater.Config config = new UDPHeartbeater.Config();
+        config.setPort(datagramChannel.socket().getLocalPort());
+        config.setIntervalMillis(500);
+        try (UDPHeartbeater heartbeater = new UDPHeartbeater(config)) {
+            final AtomicInteger pongCounter = new AtomicInteger();
+            final AtomicInteger failureCounter = new AtomicInteger();
             heartbeater.setCallback(new Heartbeater.Callback()
             {
                 @Override
@@ -81,11 +76,6 @@ public class UDPHeartbeaterTest
             assertTrue(0 < pongCounter.get() && pongCounter.get() < 3);
             assertEquals(0, failureCounter.get());
         }
-        finally {
-            if (heartbeater != null) {
-                heartbeater.close();
-            }
-        }
     }
 
     @Test
@@ -97,11 +87,11 @@ public class UDPHeartbeaterTest
         int localPort = datagramChannel.socket().getLocalPort();
         datagramChannel.close();
 
-        UDPHeartbeater.Config config = new UDPHeartbeater.Config().setPort(localPort).setIntervalMillis(500);
-        UDPHeartbeater heartbeater = null;
-        try {
-            final AtomicInteger pongCounter  = new AtomicInteger();
-            heartbeater = config.createInstance();
+        UDPHeartbeater.Config config = new UDPHeartbeater.Config();
+        config.setPort(localPort);
+        config.setIntervalMillis(500);
+        try (UDPHeartbeater heartbeater = new UDPHeartbeater(config)) {
+            final AtomicInteger pongCounter = new AtomicInteger();
             heartbeater.setCallback(new Heartbeater.Callback()
             {
                 @Override
@@ -118,11 +108,6 @@ public class UDPHeartbeaterTest
             heartbeater.start();
             TimeUnit.SECONDS.sleep(1);
             assertEquals(0, pongCounter.get());
-        }
-        finally {
-            if (heartbeater != null) {
-                heartbeater.close();
-            }
         }
     }
 }

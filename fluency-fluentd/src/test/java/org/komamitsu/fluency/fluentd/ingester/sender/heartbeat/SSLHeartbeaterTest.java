@@ -48,8 +48,10 @@ public class SSLHeartbeaterTest
     {
         sslServerSocket = new SSLTestServerSocketFactory().create();
 
-        SSLHeartbeater.Config config = new SSLHeartbeater.Config().setPort(sslServerSocket.getLocalPort()).setIntervalMillis(500);
-        heartbeater = config.createInstance();
+        SSLHeartbeater.Config config = new SSLHeartbeater.Config();
+        config.setPort(sslServerSocket.getLocalPort());
+        config.setIntervalMillis(500);
+        heartbeater = new SSLHeartbeater(config);
     }
 
     @After
@@ -66,18 +68,13 @@ public class SSLHeartbeaterTest
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(2);
-        Executors.newSingleThreadExecutor().execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    sslServerSocket.accept();
-                    latch.countDown();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                sslServerSocket.accept();
+                latch.countDown();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
@@ -113,7 +110,7 @@ public class SSLHeartbeaterTest
 
     @Test
     public void testHeartbeaterDown()
-            throws IOException, InterruptedException, UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException
+            throws IOException, InterruptedException
     {
         sslServerSocket.close();
 

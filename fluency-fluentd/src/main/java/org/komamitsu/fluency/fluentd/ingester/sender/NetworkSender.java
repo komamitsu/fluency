@@ -18,10 +18,7 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.fluentd.ingester.Response;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -51,22 +48,10 @@ public abstract class NetworkSender<T>
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    NetworkSender(Config config)
+    NetworkSender(Config config, FailureDetector failureDetector)
     {
         super(config);
         this.config = config;
-        FailureDetector failureDetector = null;
-        if (config.getHeartbeaterConfig() != null) {
-            try {
-                failureDetector = new FailureDetector(
-                        config.getFailureDetectorStrategyConfig(),
-                        config.getHeartbeaterConfig(),
-                        config.getFailureDetectorConfig());
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to instantiate FailureDetector. Disabling it", e);
-            }
-        }
         this.failureDetector = failureDetector;
     }
 
@@ -231,9 +216,6 @@ public abstract class NetworkSender<T>
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
-        private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
-        private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
-        private FailureDetectStrategy.Instantiator failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
         private int waitBeforeCloseMilli = 1000;
 
         public String getHost()
@@ -276,36 +258,6 @@ public abstract class NetworkSender<T>
             this.readTimeoutMilli = readTimeoutMilli;
         }
 
-        public Heartbeater.Instantiator getHeartbeaterConfig()
-        {
-            return heartbeaterConfig;
-        }
-
-        public void setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
-        {
-            this.heartbeaterConfig = heartbeaterConfig;
-        }
-
-        public FailureDetector.Config getFailureDetectorConfig()
-        {
-            return failureDetectorConfig;
-        }
-
-        public void setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
-        {
-            this.failureDetectorConfig = failureDetectorConfig;
-        }
-
-        public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
-        {
-            return failureDetectorStrategyConfig;
-        }
-
-        public void setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
-        {
-            this.failureDetectorStrategyConfig = failureDetectorStrategyConfig;
-        }
-
         public int getWaitBeforeCloseMilli()
         {
             return waitBeforeCloseMilli;
@@ -324,9 +276,6 @@ public abstract class NetworkSender<T>
                     ", port=" + port +
                     ", connectionTimeoutMilli=" + connectionTimeoutMilli +
                     ", readTimeoutMilli=" + readTimeoutMilli +
-                    ", heartbeaterConfig=" + heartbeaterConfig +
-                    ", failureDetectorConfig=" + failureDetectorConfig +
-                    ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
                     ", waitBeforeCloseMilli=" + waitBeforeCloseMilli +
                     "} " + super.toString();
         }
