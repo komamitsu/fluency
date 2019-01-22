@@ -1,7 +1,7 @@
 # Fluency
 [<img src="https://travis-ci.org/komamitsu/fluency.svg?branch=master"/>](https://travis-ci.org/komamitsu/fluency) [![Coverage Status](https://coveralls.io/repos/komamitsu/fluency/badge.svg?branch=master&service=github)](https://coveralls.io/github/komamitsu/fluency?branch=master)
 
-Yet another fluentd logger which also supoprts ingestion to Treasure Data.
+Yet another fluentd logger. This supoprts ingestion to Treasure Data as well.
 
 ## Ingestion to Fluentd
 
@@ -13,7 +13,7 @@ Yet another fluentd logger which also supoprts ingestion to Treasure Data.
 * TCP / UDP heartbeat with Fluentd
 * `PackedForward` format
 * Failover with multiple Fluentds
-* Enable /disable ack response mode
+* Enable / disable ack response mode
 
 ### Install
 
@@ -49,8 +49,6 @@ dependencies {
 ##### For single Fluentd
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224 by default)
 //   - TCP heartbeat (by default)
 //   - Asynchronous flush (by default)
@@ -64,28 +62,27 @@ import org.komamitsu.fluency.fluentd.FluencyBuilder;
 //   - Max retry of sending events is 8 (by default)
 //   - Max wait until all buffers are flushed is 10 seconds (by default)
 //   - Max wait until the flusher is terminated is 10 seconds (by default)
-Fluency fluency = FluencyBuilder.build();
+Fluency fluency = new FluencyBuilderForFluentd().build();
 ```
 
 ##### For multiple Fluentd with failover
 
 ```java    
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Multiple Fluentd(localhost:24224, localhost:24225)
-Fluency fluency = FluencyBuilder.build(
-			Arrays.asList(new InetSocketAddress(24224), new InetSocketAddress(24225)));
+Fluency fluency = new FluencyBuilderForFluentd().build(
+        Arrays.asList(
+                new InetSocketAddress(24224),
+                new InetSocketAddress(24225)));
 ```
 
 ##### Enable ACK response mode
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224)
 //   - With ack response
-Fluency fluency = FluencyBuilder.build(
-                    new FluencyBuilder.FluencyConfig().setAckResponseMode(true));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setAckResponseMode(true);
+Fluency fluency = builder.build();
 ```
 
 ##### Enable file backup mode
@@ -93,79 +90,67 @@ Fluency fluency = FluencyBuilder.build(
 In this mode, Fluency takes backup of unsent memory buffers as files when closing and then resends them when restarting
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224)
 //   - Backup directory is the temporary directory
-Fluency fluency = FluencyBuilder.build(
-                    new FluencyBuilder.FluencyConfig().setFileBackupDir(System.getProperty("java.io.tmpdir")));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
+Fluency fluency = builder.build();
 ```
 
 ##### Buffer configuration
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(xxx.xxx.xxx.xxx:24224)
 //   - Initial chunk buffer size = 4MB
 //   - Threshold chunk buffer size to flush = 16MB
 //     Keep this value (BufferRetentionSize) between `Initial chunk buffer size` and `Max total buffer size`
 //   - Max total buffer size = 256MB
-Fluency fluency = FluencyBuilder.build("xxx.xxx.xxx.xxx", 24224,
-                    new FluencyBuilder.FluencyConfig()
-                        .setBufferChunkInitialSize(4 * 1024 * 1024)
-                        .setBufferChunkRetentionSize(16 * 1024 * 1024)
-                        .setMaxBufferSize(256 * 1024 * 1024L));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setBufferChunkInitialSize(4 * 1024 * 1024);
+builder.setBufferChunkRetentionSize(16 * 1024 * 1024);
+builder.setMaxBufferSize(256 * 1024 * 1024L);
+Fluency fluency = builder.build("xxx.xxx.xxx.xxx", 24224);
 ```
 
 ##### Waits on close sequence
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224)
 //   - Max wait until all buffers are flushed is 30 seconds
 //   - Max wait until the flusher is terminated is 40 seconds
-Fluency fluency = FluencyBuilder.build(
-	new FluencyBuilder.FluencyConfig()
-        .setWaitUntilBufferFlushed(30)
-        .setWaitUntilFlusherTerminated(40));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setWaitUntilBufferFlushed(30);
+builder.setWaitUntilFlusherTerminated(40);
+Fluency fluency = builder.build();
 ```
 
 ##### Register Jackson modules
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224)
 //   - SimpleModule that has FooSerializer is enabled
-FluentdSender sender = new TCPSender.Config().createInstance();
-Ingester ingester = new FluentdIngester.Config().createInstance(sender);
-
 SimpleModule simpleModule = new SimpleModule();
 simpleModule.addSerializer(Foo.class, new FooSerializer());
 
-Buffer.Config bufferConfig = new Buffer.Config();
+FluentdRecordFormatter.Config recordFormatterConfig =
+	new FluentdRecordFormatter.Config();
 
-FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
-            new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
+recordFormatterConfig.setJacksonModules(
+	Collections.singletonList(simpleModule));
 
-Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-        fluentdRecordFormatterWithModuleConfig,
-        bufferConfig,
-        new AsyncFlusher.Config(),
-        ingester);
+Fluency fluency = new FluencyBuilder().buildFromIngester(
+        new FluentdRecordFormatter(recordFormatterConfig),
+        new FluentdIngester(new TCPSender());
 ```
 
 ##### Set a custom error handler
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setErrorHandler(ex -> {
+  // Send a notification
+});
+Fluency fluency = builder.build();
 
-Fluency fluency = FluencyBuilder.build(
-                    new FluencyBuilder.FluencyConfig()
-                        .setErrorHandler(ex -> {
-                            // Send a notification
-                        }));
-	:
+    :
 
 // If flushing events to Fluentd fails and retried out, the error handler is called back.
 fluency.emit("foo.bar", event);
@@ -174,12 +159,11 @@ fluency.emit("foo.bar", event);
 ##### Send requests over SSL/TLS
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Single Fluentd(localhost:24224)
 //   - Enable SSL/TLS
-Fluency fluency = FluencyBuilder.build(
-	new FluencyBuilder.FluencyConfig().setUseSsl(true));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setSslEnabled(true);
+Fluency fluency = builder.build();
 ```
 
 If you want to use a custom truststore, specify the JKS file path using `-Djavax.net.ssl.trustStore` (and `-Djavax.net.ssl.trustStorePassword` if needed). You can create a custom truststore like this:
@@ -194,22 +178,21 @@ For server side configuration, see https://docs.fluentd.org/v1.0/articles/in_for
 ##### Other configurations
 
 ```java
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
-
 // Multiple Fluentd(localhost:24224, localhost:24225)
 //   - Flush attempt interval = 200ms
 //   - Max retry of sending events = 12
 //   - Use JVM heap memory for buffer pool
-Fluency fluency = FluencyBuilder.build(
-			Arrays.asList(
-				new InetSocketAddress(24224), new InetSocketAddress(24225)),
-				new FluencyBuilder.FluencyConfig().
-					setFlushIntervalMillis(200).
-					setSenderMaxRetryCount(12).
-					setJvmHeapBufferMode(true));
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setFlushIntervalMillis(200);
+builder.setSenderMaxRetryCount(12);
+builder.setJvmHeapBufferMode(true);
+Fluency fluency = builder.build(
+        Arrays.asList(
+                new InetSocketAddress(24224),
+                new InetSocketAddress(24225));
 ```
 
-##### Emit event
+#### Emit event
 
 ```java
 String tag = "foo_db.bar_tbl";
@@ -234,7 +217,7 @@ EventTime eventTime = EventTime.fromEpoch(epochSeconds, nanoseconds);
 fluency.emit(tag, eventTime, event);
 ```
 
-#### Release resources
+#### Wait until buffered data is flushed and release resource 
 
 ```java
 fluency.close();
@@ -292,8 +275,6 @@ dependencies {
 ##### Default configuration
 
 ```java
-import org.komamitsu.fluency.treasuredata.FluencyBuilder;
-
 // Asynchronous flush (by default)
 // Flush attempt interval is 600ms (by default)
 // Initial chunk buffer size is 1MB (by default)
@@ -304,31 +285,31 @@ import org.komamitsu.fluency.treasuredata.FluencyBuilder;
 // Max retry of sending events is 10 (by default)
 // Max wait until all buffers are flushed is 10 seconds (by default)
 // Max wait until the flusher is terminated is 10 seconds (by default)
-Fluency fluency = FluencyBuilder.build(yourApiKey);
+Fluency fluency = new FluencyBuilderForTreasureData().build(yourApiKey);
 ```
 
 ##### For high throughput data ingestion with high latency
 
 ```java
-import org.komamitsu.fluency.treasuredata.FluencyBuilder;
-
 // Initial chunk buffer size = 32MB
 // Threshold chunk buffer size to flush = 256MB
 // Threshold chunk buffer retention time to flush = 120 seconds
 // Max total buffer size = 1024MB
-Fluency fluency = FluencyBuilder.build(yourApiKey
-                        new FluencyBuilder.FluencyConfig()
-                            .setBufferChunkInitialSize(32 * 1024 * 1024)
-                            .setMaxBufferSize(1024 * 1024 * 1024L)
-                            .setBufferChunkRetentionSize(256 * 1024 * 1024)
-                            .setBufferChunkRetentionTimeMillis(120 * 1000));
+FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
+builder.setBufferChunkInitialSize(32 * 1024 * 1024);
+builder.setMaxBufferSize(1024 * 1024 * 1024L);
+builder.setBufferChunkRetentionSize(256 * 1024 * 1024);
+builder.setBufferChunkRetentionTimeMillis(120 * 1000);
+Fluency fluency = builder.build(yourApiKey);
 ```
 
 ##### Customize Treasure Data endpoint
 
 ```java
-import org.komamitsu.fluency.treasuredata.FluencyBuilder;
-
-Fluency fluency = FluencyBuilder.build(yourApiKey, tdEndpoint);
+Fluency fluency = new FluencyBuilderForTreasureData()
+						.build(yourApiKey, tdEndpoint);
 ```
 
+##### Other configurations
+
+Some of other usages are same as ingestion to Fluentd. See `Ingestion to Fluentd > Usage` above.
