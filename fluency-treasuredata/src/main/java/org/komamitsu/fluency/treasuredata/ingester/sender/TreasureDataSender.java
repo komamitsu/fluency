@@ -323,7 +323,7 @@ public class TreasureDataSender
     }
 
     public static class Config
-        extends Sender.Config
+            extends Sender.Config
     {
         private String endpoint = "https://api-import.treasuredata.com";
         private String apikey;

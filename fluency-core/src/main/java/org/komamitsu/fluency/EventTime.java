@@ -35,6 +35,26 @@ public class EventTime
     /**
      * Constructs an <code>EventTime</code>.
      *
+     * @param seconds the epoch seconds. This should be a 32-bit value.
+     * @param nanoseconds the nanoseconds. This should be a 32-bit value.
+     */
+    public EventTime(long seconds, long nanoseconds)
+    {
+        if (seconds >> 32 != 0) {
+            throw new IllegalArgumentException("`seconds` should be a 32-bit value");
+        }
+
+        if (nanoseconds >> 32 != 0) {
+            throw new IllegalArgumentException("`nanoseconds` should be a 32-bit value");
+        }
+
+        this.seconds = seconds;
+        this.nanoseconds = nanoseconds;
+    }
+
+    /**
+     * Constructs an <code>EventTime</code>.
+     *
      * @param epochSeconds the epoch seconds. This should be a 32-bit value.
      */
     public static EventTime fromEpoch(long epochSeconds)
@@ -57,31 +77,11 @@ public class EventTime
      * Constructs an <code>EventTime</code>.
      *
      * @param epochMillisecond the epoch milli seconds.
-     *        This should be a 32-bit value.
+     * This should be a 32-bit value.
      */
     public static EventTime fromEpochMilli(long epochMillisecond)
     {
-        return new EventTime(epochMillisecond/ 1000, (epochMillisecond % 1000) * 1000000);
-    }
-
-    /**
-     * Constructs an <code>EventTime</code>.
-     *
-     * @param seconds the epoch seconds. This should be a 32-bit value.
-     * @param nanoseconds the nanoseconds. This should be a 32-bit value.
-     */
-    public EventTime(long seconds, long nanoseconds)
-    {
-        if (seconds >> 32 != 0) {
-            throw new IllegalArgumentException("`seconds` should be a 32-bit value");
-        }
-
-        if (nanoseconds >> 32 != 0) {
-            throw new IllegalArgumentException("`nanoseconds` should be a 32-bit value");
-        }
-
-        this.seconds = seconds;
-        this.nanoseconds = nanoseconds;
+        return new EventTime(epochMillisecond / 1000, (epochMillisecond % 1000) * 1000000);
     }
 
     public long getSeconds()
@@ -95,7 +95,7 @@ public class EventTime
     }
 
     /**
-     * @deprecated  As of release 1.9, replaced by {@link #getNanoseconds()}
+     * @deprecated As of release 1.9, replaced by {@link #getNanoseconds()}
      */
     @Deprecated
     public long getNanoSeconds()
@@ -155,7 +155,7 @@ public class EventTime
         public void serialize(EventTime value, JsonGenerator gen, SerializerProvider provider)
                 throws IOException
         {
-            if (! (gen instanceof MessagePackGenerator)) {
+            if (!(gen instanceof MessagePackGenerator)) {
                 throw new IllegalStateException("" +
                         "This class should be serialized by MessagePackGenerator, but `gen` is " + gen.getClass());
             }
@@ -173,7 +173,7 @@ public class EventTime
             // +-------+----+----+----+----+----+----+----+----+----+
             ByteBuffer buffer = ByteBuffer.allocate(8);
             buffer.putInt((int) value.seconds).putInt((int) value.nanoseconds);
-            messagePackGenerator.writeExtensionType(new MessagePackExtensionType((byte)0x0, buffer.array()));
+            messagePackGenerator.writeExtensionType(new MessagePackExtensionType((byte) 0x0, buffer.array()));
         }
     }
 }

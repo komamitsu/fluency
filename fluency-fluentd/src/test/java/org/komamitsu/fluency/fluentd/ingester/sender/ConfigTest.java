@@ -29,8 +29,28 @@ import static org.junit.Assert.fail;
 
 class ConfigTest
 {
+    @Test
+    void errorHandler()
+            throws IOException
+    {
+        final AtomicBoolean errorOccurred = new AtomicBoolean();
+        FluentdSender.Config config = new FluentdSender.Config();
+        config.setErrorHandler(e -> errorOccurred.set(true));
+
+        new DummySender(config, false).send(ByteBuffer.allocate(8));
+        assertThat(errorOccurred.get(), is(false));
+
+        try {
+            new DummySender(config, true).send(ByteBuffer.allocate(8));
+            fail();
+        }
+        catch (Exception e) {
+            assertThat(errorOccurred.get(), is(true));
+        }
+    }
+
     static class DummySender
-        extends FluentdSender
+            extends FluentdSender
     {
         private final boolean shouldFail;
 
@@ -59,26 +79,6 @@ class ConfigTest
         public void close()
                 throws IOException
         {
-        }
-    }
-
-    @Test
-    void errorHandler()
-            throws IOException
-    {
-        final AtomicBoolean errorOccurred = new AtomicBoolean();
-        FluentdSender.Config config = new FluentdSender.Config();
-        config.setErrorHandler(e -> errorOccurred.set(true));
-
-        new DummySender(config, false).send(ByteBuffer.allocate(8));
-        assertThat(errorOccurred.get(), is(false));
-
-        try {
-            new DummySender(config, true).send(ByteBuffer.allocate(8));
-            fail();
-        }
-        catch (Exception e) {
-            assertThat(errorOccurred.get(), is(true));
         }
     }
 }

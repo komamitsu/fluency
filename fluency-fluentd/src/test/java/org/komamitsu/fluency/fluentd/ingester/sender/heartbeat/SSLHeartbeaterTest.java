@@ -78,8 +78,8 @@ public class SSLHeartbeaterTest
             }
         });
 
-        final AtomicInteger pongCounter  = new AtomicInteger();
-        final AtomicInteger failureCounter  = new AtomicInteger();
+        final AtomicInteger pongCounter = new AtomicInteger();
+        final AtomicInteger failureCounter = new AtomicInteger();
         try {
             heartbeater.setCallback(new Heartbeater.Callback()
             {
@@ -114,8 +114,8 @@ public class SSLHeartbeaterTest
     {
         sslServerSocket.close();
 
-        final AtomicInteger pongCounter  = new AtomicInteger();
-        final AtomicInteger failureCounter  = new AtomicInteger();
+        final AtomicInteger pongCounter = new AtomicInteger();
+        final AtomicInteger failureCounter = new AtomicInteger();
         try {
             heartbeater.setCallback(new Heartbeater.Callback()
             {

@@ -64,7 +64,7 @@ import static org.mockito.Mockito.mock;
 public class FluencyTest
 {
     @DataPoints
-    public static final boolean[] SSL_ENABLED = { false, true };
+    public static final boolean[] SSL_ENABLED = {false, true};
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
     private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
@@ -228,6 +228,29 @@ public class FluencyTest
         assertNull(exception);
     }
 
+    @Test
+    public void testBufferWithJacksonModule()
+            throws IOException
+    {
+        AtomicBoolean serialized = new AtomicBoolean();
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
+
+        FluentdRecordFormatter.Config recordFormatterConfig = new FluentdRecordFormatter.Config();
+        recordFormatterConfig.setJacksonModules(Collections.singletonList(simpleModule));
+
+        Fluency fluency = new TestableFluencyBuilder()
+                .buildFromIngester(new FluentdRecordFormatter(recordFormatterConfig), ingester);
+
+        Map<String, Object> event = new HashMap<>();
+        Foo foo = new Foo();
+        foo.s = "Hello";
+        event.put("foo", foo);
+        fluency.emit("tag", event);
+
+        assertThat(serialized.get(), is(true));
+    }
+
     static class Foo
     {
         String s;
@@ -253,28 +276,5 @@ public class FluencyTest
             gen.writeEndObject();
             serialized.set(true);
         }
-    }
-
-    @Test
-    public void testBufferWithJacksonModule()
-            throws IOException
-    {
-        AtomicBoolean serialized = new AtomicBoolean();
-        SimpleModule simpleModule = new SimpleModule();
-        simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
-
-        FluentdRecordFormatter.Config recordFormatterConfig = new FluentdRecordFormatter.Config();
-        recordFormatterConfig.setJacksonModules(Collections.singletonList(simpleModule));
-
-        Fluency fluency = new TestableFluencyBuilder()
-                .buildFromIngester(new FluentdRecordFormatter(recordFormatterConfig), ingester);
-
-        Map<String, Object> event = new HashMap<>();
-        Foo foo = new Foo();
-        foo.s = "Hello";
-        event.put("foo", foo);
-        fluency.emit("tag", event);
-
-        assertThat(serialized.get(), is(true));
     }
 }

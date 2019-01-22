@@ -24,13 +24,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HeartbeaterTest
 {
     private TestableHeartbeater.Config config;
 
-    private static class TestableHeartbeater extends Heartbeater
+    @Before
+    public void setup()
+    {
+        config = new TestableHeartbeater.Config();
+        config.setHost("dummy-hostname");
+        config.setPort(123456);
+        config.setIntervalMillis(300);
+    }
+
+    @Test
+    public void testHeartbeater()
+            throws InterruptedException
+    {
+        try (TestableHeartbeater heartbeater = new TestableHeartbeater(config)) {
+            heartbeater.start();
+            TimeUnit.SECONDS.sleep(1);
+            heartbeater.close();
+            TimeUnit.MILLISECONDS.sleep(500);
+            assertTrue(1 < heartbeater.pongedRecords.size() && heartbeater.pongedRecords.size() < 4);
+            Tuple3<Long, String, Integer> firstPong = heartbeater.pongedRecords.get(0);
+            Tuple3<Long, String, Integer> secondPong = heartbeater.pongedRecords.get(1);
+            long diff = secondPong.getFirst() - firstPong.getFirst();
+            assertTrue(100 < diff && diff < 1000);
+            for (Tuple3<Long, String, Integer> pongedRecord : heartbeater.pongedRecords) {
+                assertEquals("dummy-hostname", pongedRecord.getSecond());
+                assertEquals((Integer) 123456, pongedRecord.getThird());
+            }
+        }
+    }
+
+    private static class TestableHeartbeater
+            extends Heartbeater
     {
         private final Config config;
         private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<>();
@@ -60,36 +92,6 @@ public class HeartbeaterTest
         private static class Config
                 extends Heartbeater.Config
         {
-        }
-    }
-
-    @Before
-    public void setup()
-    {
-        config = new TestableHeartbeater.Config();
-        config.setHost("dummy-hostname");
-        config.setPort(123456);
-        config.setIntervalMillis(300);
-    }
-
-    @Test
-    public void testHeartbeater()
-            throws InterruptedException
-    {
-        try (TestableHeartbeater heartbeater = new TestableHeartbeater(config)) {
-            heartbeater.start();
-            TimeUnit.SECONDS.sleep(1);
-            heartbeater.close();
-            TimeUnit.MILLISECONDS.sleep(500);
-            assertTrue(1 < heartbeater.pongedRecords.size() && heartbeater.pongedRecords.size() < 4);
-            Tuple3<Long, String, Integer> firstPong = heartbeater.pongedRecords.get(0);
-            Tuple3<Long, String, Integer> secondPong = heartbeater.pongedRecords.get(1);
-            long diff = secondPong.getFirst() - firstPong.getFirst();
-            assertTrue(100 < diff && diff < 1000);
-            for (Tuple3<Long, String, Integer> pongedRecord : heartbeater.pongedRecords) {
-                assertEquals("dummy-hostname", pongedRecord.getSecond());
-                assertEquals((Integer) 123456, pongedRecord.getThird());
-            }
         }
     }
 }

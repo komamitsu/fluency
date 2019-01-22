@@ -50,11 +50,6 @@ public class SSLSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
 
-    interface SSLSenderCreater
-    {
-        SSLSender create(int port);
-    }
-
     @Test
     public void testSend()
             throws Exception
@@ -146,7 +141,7 @@ public class SSLSenderTest
         LOG.debug("recvCount={}", recvCount);
 
         assertThat(connectCount, connectCountMatcher);
-        assertThat(recvLen, is((long)concurency * reqNum * 10));
+        assertThat(recvLen, is((long) concurency * reqNum * 10));
         assertThat(closeCount, closeCountMatcher);
     }
 
@@ -252,5 +247,10 @@ public class SSLSenderTest
         SSLSender.Config config = new SSLSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
         // TODO: Add others later
+    }
+
+    interface SSLSenderCreater
+    {
+        SSLSender create(int port);
     }
 }

@@ -61,7 +61,8 @@ public class TreasureDataSenderTest
     public void setUp()
     {
         client = mock(TDClient.class);
-        sender = new TreasureDataSender(new TreasureDataSender.Config()) {
+        sender = new TreasureDataSender(new TreasureDataSender.Config())
+        {
             @Override
             protected TDClient buildClient()
             {

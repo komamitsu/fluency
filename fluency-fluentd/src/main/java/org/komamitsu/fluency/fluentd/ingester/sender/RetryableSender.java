@@ -31,25 +31,8 @@ public class RetryableSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final FluentdSender baseSender;
-    private RetryStrategy retryStrategy;
     private final AtomicBoolean isClosed = new AtomicBoolean();
-
-    @Override
-    public void close()
-            throws IOException
-    {
-        baseSender.close();
-        isClosed.set(true);
-    }
-
-    public static class RetryOverException
-            extends IOException
-    {
-        public RetryOverException(String s, Throwable throwable)
-        {
-            super(s, throwable);
-        }
-    }
+    private RetryStrategy retryStrategy;
 
     public RetryableSender(FluentdSender baseSender, RetryStrategy retryStrategy)
     {
@@ -61,6 +44,14 @@ public class RetryableSender
         super(config);
         this.baseSender = baseSender;
         this.retryStrategy = retryStrategy;
+    }
+
+    @Override
+    public void close()
+            throws IOException
+    {
+        baseSender.close();
+        isClosed.set(true);
     }
 
     @Override
@@ -131,6 +122,15 @@ public class RetryableSender
                 ", retryStrategy=" + retryStrategy +
                 ", isClosed=" + isClosed +
                 "} " + super.toString();
+    }
+
+    public static class RetryOverException
+            extends IOException
+    {
+        public RetryOverException(String s, Throwable throwable)
+        {
+            super(s, throwable);
+        }
     }
 
     public static class Config

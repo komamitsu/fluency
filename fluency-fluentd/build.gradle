@@ -1,13 +1,13 @@
 dependencies {
-    testImplementation files(project(':fluency-core').sourceSets.test.output.classesDir)
+  testImplementation files(project(':fluency-core').sourceSets.test.output.classesDir)
 
-    implementation project(':fluency-core')
+  implementation project(':fluency-core')
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = 'fluency-fluentd'
-        }
+  publications {
+    mavenJava(MavenPublication) {
+      artifactId = 'fluency-fluentd'
     }
+  }
 }

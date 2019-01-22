@@ -17,6 +17,6 @@
 package org.komamitsu.fluency;
 
 public class TestableFluencyBuilder
-    extends FluencyBuilder
+        extends FluencyBuilder
 {
 }

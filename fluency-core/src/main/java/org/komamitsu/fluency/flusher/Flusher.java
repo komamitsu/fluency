@@ -36,9 +36,9 @@ public abstract class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
-    private final AtomicBoolean isTerminated = new AtomicBoolean();
     protected final Buffer buffer;
     protected final Ingester ingester;
+    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
 
     protected Flusher(Config config, Buffer buffer, Ingester ingester)
@@ -114,7 +114,6 @@ public abstract class Flusher
                     catch (Exception e) {
                         LOG.error("Failed to close the sender", e);
                     }
-
                 }
             }
         }

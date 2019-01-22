@@ -50,7 +50,8 @@ public class AsyncFlusher
             catch (IOException e) {
                 LOG.error("Failed to flush", e);
             }
-        } while (!executorService.isShutdown());
+        }
+        while (!executorService.isShutdown());
 
         if (wakeup == null) {
             // The above run loop can quit without force buffer flush in the following cases

@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -90,7 +89,7 @@ public abstract class FluentdSender
             }
 
             if (e instanceof IOException) {
-                throw (IOException)e;
+                throw (IOException) e;
             }
             else {
                 throw new IOException(e);
@@ -100,7 +99,8 @@ public abstract class FluentdSender
 
     public abstract boolean isAvailable();
 
-    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken) throws IOException;
+    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+            throws IOException;
 
     public static class Config
             extends Sender.Config

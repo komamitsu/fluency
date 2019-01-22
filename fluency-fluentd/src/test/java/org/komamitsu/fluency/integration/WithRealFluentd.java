@@ -43,100 +43,6 @@ public class WithRealFluentd
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static class EmitTask
-            implements Callable<Void>
-    {
-        private final Fluency fluency;
-        private final String tag;
-        private final Map<String, Object> data;
-        private final int count;
-
-        private EmitTask(Fluency fluency, String tag, Map<String, Object> data, int count)
-        {
-            this.fluency = fluency;
-            this.tag = tag;
-            this.data = data;
-            this.count = count;
-        }
-
-        @Override
-        public Void call()
-        {
-            for (int i = 0; i < count; i++) {
-                try {
-                    fluency.emit(tag, data);
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(500);
-                    }
-                    catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                }
-            }
-            return null;
-        }
-    }
-
-    public static class Config
-    {
-        @JsonProperty("host")
-        public final String host;
-        @JsonProperty("port")
-        public final Integer port;
-        @JsonProperty("another_host")
-        public final String anotherHost;
-        @JsonProperty("another_port")
-        public final Integer anotherPort;
-        @JsonProperty("tag")
-        public final String tag;
-        @JsonProperty("requests")
-        public final int requests;
-        @JsonProperty("concurrency")
-        public final int concurrency;
-        @JsonProperty("wait_seconds")
-        public final int waitSeconds;
-        @JsonProperty("ssl_enabled")
-        public final boolean sslEnabled;
-
-        public Config(
-                @JsonProperty("host")
-                        String host,
-                @JsonProperty("port")
-                        Integer port,
-                @JsonProperty("another_host")
-                        String anotherHost,
-                @JsonProperty("another_port")
-                        Integer anotherPort,
-                @JsonProperty("tag")
-                        String tag,
-                @JsonProperty("requests")
-                        Integer requests,
-                @JsonProperty("concurrency")
-                        Integer concurrency,
-                @JsonProperty("wait_seconds")
-                        Integer waitSeconds,
-                @JsonProperty("ssl_enabled")
-                        Boolean sslEnabled
-                )
-        {
-            this.host = host == null ? "127.0.0.1" : host;
-            this.port = port == null ? Integer.valueOf(24224) : port;
-
-            this.anotherHost = anotherHost == null ? "127.0.0.1" : anotherHost;
-            // Nullable
-            this.anotherPort = anotherPort;
-
-            this.tag = tag == null ? "foodb.bartbl" : tag;
-            this.requests = requests == null ? 1000000 : requests;
-            this.concurrency = concurrency == null ? 4 : concurrency;
-            this.waitSeconds = waitSeconds == null ? 60 : waitSeconds;
-            this.sslEnabled = sslEnabled == null ? false : sslEnabled;
-        }
-    }
-
     WithRealFluentd.Config getConfig()
             throws IOException
     {
@@ -233,6 +139,100 @@ public class WithRealFluentd
             for (Future<Void> future : futures) {
                 future.get(config.waitSeconds, TimeUnit.SECONDS);
             }
+        }
+    }
+
+    public static class EmitTask
+            implements Callable<Void>
+    {
+        private final Fluency fluency;
+        private final String tag;
+        private final Map<String, Object> data;
+        private final int count;
+
+        private EmitTask(Fluency fluency, String tag, Map<String, Object> data, int count)
+        {
+            this.fluency = fluency;
+            this.tag = tag;
+            this.data = data;
+            this.count = count;
+        }
+
+        @Override
+        public Void call()
+        {
+            for (int i = 0; i < count; i++) {
+                try {
+                    fluency.emit(tag, data);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    }
+                    catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    public static class Config
+    {
+        @JsonProperty("host")
+        public final String host;
+        @JsonProperty("port")
+        public final Integer port;
+        @JsonProperty("another_host")
+        public final String anotherHost;
+        @JsonProperty("another_port")
+        public final Integer anotherPort;
+        @JsonProperty("tag")
+        public final String tag;
+        @JsonProperty("requests")
+        public final int requests;
+        @JsonProperty("concurrency")
+        public final int concurrency;
+        @JsonProperty("wait_seconds")
+        public final int waitSeconds;
+        @JsonProperty("ssl_enabled")
+        public final boolean sslEnabled;
+
+        public Config(
+                @JsonProperty("host")
+                        String host,
+                @JsonProperty("port")
+                        Integer port,
+                @JsonProperty("another_host")
+                        String anotherHost,
+                @JsonProperty("another_port")
+                        Integer anotherPort,
+                @JsonProperty("tag")
+                        String tag,
+                @JsonProperty("requests")
+                        Integer requests,
+                @JsonProperty("concurrency")
+                        Integer concurrency,
+                @JsonProperty("wait_seconds")
+                        Integer waitSeconds,
+                @JsonProperty("ssl_enabled")
+                        Boolean sslEnabled
+        )
+        {
+            this.host = host == null ? "127.0.0.1" : host;
+            this.port = port == null ? Integer.valueOf(24224) : port;
+
+            this.anotherHost = anotherHost == null ? "127.0.0.1" : anotherHost;
+            // Nullable
+            this.anotherPort = anotherPort;
+
+            this.tag = tag == null ? "foodb.bartbl" : tag;
+            this.requests = requests == null ? 1000000 : requests;
+            this.concurrency = concurrency == null ? 4 : concurrency;
+            this.waitSeconds = waitSeconds == null ? 60 : waitSeconds;
+            this.sslEnabled = sslEnabled == null ? false : sslEnabled;
         }
     }
 }

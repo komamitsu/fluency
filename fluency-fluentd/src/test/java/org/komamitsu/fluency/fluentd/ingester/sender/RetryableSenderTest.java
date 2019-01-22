@@ -28,8 +28,43 @@ import static org.hamcrest.Matchers.is;
 
 public class RetryableSenderTest
 {
+    @Test
+    public void testSend()
+            throws IOException
+    {
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(3);
+
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
+
+        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
+        assertThat(baseSender.getRetry(), is(0));
+        sender.send(ByteBuffer.allocate(64));
+        assertThat(baseSender.getRetry(), is(3));
+    }
+
+    @Test(expected = RetryableSender.RetryOverException.class)
+    public void testSendRetryOver()
+            throws IOException
+    {
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(2);
+
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
+
+        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
+        assertThat(baseSender.getRetry(), is(0));
+        sender.send(ByteBuffer.allocate(64));
+    }
+
     static class FailurableSender
-        extends FluentdSender
+            extends FluentdSender
     {
         private final int maxFailures;
         private int retry;
@@ -65,40 +100,5 @@ public class RetryableSenderTest
         public void close()
         {
         }
-    }
-
-    @Test
-    public void testSend()
-            throws IOException
-    {
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config();
-        retryStrategyConfig.setMaxRetryCount(3);
-
-        RetryableSender.Config senderConfig = new RetryableSender.Config();
-        RetryableSender sender = new RetryableSender(senderConfig,
-                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
-
-        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
-        sender.send(ByteBuffer.allocate(64));
-        assertThat(baseSender.getRetry(), is(3));
-    }
-
-    @Test(expected = RetryableSender.RetryOverException.class)
-    public void testSendRetryOver()
-            throws IOException
-    {
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config();
-        retryStrategyConfig.setMaxRetryCount(2);
-
-        RetryableSender.Config senderConfig = new RetryableSender.Config();
-        RetryableSender sender = new RetryableSender(senderConfig,
-                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
-
-        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
-        sender.send(ByteBuffer.allocate(64));
     }
 }

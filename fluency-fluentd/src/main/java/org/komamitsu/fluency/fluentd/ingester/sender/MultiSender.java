@@ -92,15 +92,6 @@ public class MultiSender
         }
     }
 
-    public static class AllNodesUnavailableException
-            extends IOException
-    {
-        public AllNodesUnavailableException(String s)
-        {
-            super(s);
-        }
-    }
-
     public List<FluentdSender> getSenders()
     {
         return Collections.unmodifiableList(senders);
@@ -112,6 +103,15 @@ public class MultiSender
         return "MultiSender{" +
                 "senders=" + senders +
                 "} " + super.toString();
+    }
+
+    public static class AllNodesUnavailableException
+            extends IOException
+    {
+        public AllNodesUnavailableException(String s)
+        {
+            super(s);
+        }
     }
 
     public static class Config

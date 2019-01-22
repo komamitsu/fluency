@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd;
 
-import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.util.Tuple;
 
 import java.net.Socket;
@@ -27,7 +26,8 @@ public class MockTCPServerWithMetrics
         extends MockTCPServer
 {
     private final List<Tuple<Type, Integer>> events = new CopyOnWriteArrayList<Tuple<Type, Integer>>();
-    private final EventHandler eventHandler = new EventHandler() {
+    private final EventHandler eventHandler = new EventHandler()
+    {
         @Override
         public void onConnect(Socket acceptSocket)
         {
@@ -58,14 +58,13 @@ public class MockTCPServerWithMetrics
         return eventHandler;
     }
 
-    public enum Type
-    {
-        CONNECT, RECEIVE, CLOSE;
-    }
-
     public List<Tuple<Type, Integer>> getEvents()
     {
         return events;
     }
 
+    public enum Type
+    {
+        CONNECT, RECEIVE, CLOSE;
+    }
 }

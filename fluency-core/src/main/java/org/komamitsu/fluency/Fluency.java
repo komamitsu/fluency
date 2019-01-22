@@ -43,29 +43,6 @@ public class Fluency
         this.flusher = flusher;
     }
 
-    private interface Append
-    {
-        void append()
-            throws IOException;
-    }
-
-    private class Emitter
-    {
-        void emit(Append appender)
-                throws IOException
-        {
-            try {
-                appender.append();
-                flusher.onUpdate();
-            }
-            catch (BufferFullException e) {
-                LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
-                flusher.flush();
-                throw e;
-            }
-        }
-    }
-
     public void emit(final String tag, final long timestamp, final Map<String, Object> data)
             throws IOException
     {
@@ -203,5 +180,28 @@ public class Fluency
                 "buffer=" + buffer +
                 ", flusher=" + flusher +
                 '}';
+    }
+
+    private interface Append
+    {
+        void append()
+                throws IOException;
+    }
+
+    private class Emitter
+    {
+        void emit(Append appender)
+                throws IOException
+        {
+            try {
+                appender.append();
+                flusher.onUpdate();
+            }
+            catch (BufferFullException e) {
+                LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
+                flusher.flush();
+                throw e;
+            }
+        }
     }
 }

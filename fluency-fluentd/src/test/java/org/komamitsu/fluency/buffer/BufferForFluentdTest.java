@@ -22,10 +22,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
-import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
-import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.fluentd.ingester.sender.MockTCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -272,7 +272,7 @@ public class BufferForFluentdTest
             else {
                 assertThat(timestamp.isIntegerValue(), is(true));
                 long tsInEpochMilli = timestamp.asIntegerValue().asLong();
-                assertTrue(start <= tsInEpochMilli && tsInEpochMilli<= end);
+                assertTrue(start <= tsInEpochMilli && tsInEpochMilli <= end);
             }
 
             assertEquals(3, data.size());

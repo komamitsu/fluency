@@ -1,7 +1,7 @@
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = 'fluency-core'
-        }
+  publications {
+    mavenJava(MavenPublication) {
+      artifactId = 'fluency-core'
     }
+  }
 }

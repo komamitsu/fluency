@@ -49,11 +49,6 @@ class TCPSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSenderTest.class);
 
-    interface TCPSenderCreater
-    {
-        TCPSender create(int port);
-    }
-
     @Test
     void testSend()
             throws Exception
@@ -145,7 +140,7 @@ class TCPSenderTest
         LOG.debug("recvCount={}", recvCount);
 
         assertThat(connectCount, connectCountMatcher);
-        assertThat(recvLen, is((long)concurency * reqNum * 10));
+        assertThat(recvLen, is((long) concurency * reqNum * 10));
         assertThat(closeCount, closeCountMatcher);
     }
 
@@ -251,5 +246,10 @@ class TCPSenderTest
         TCPSender.Config config = new TCPSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
         // TODO: Add others later
+    }
+
+    interface TCPSenderCreater
+    {
+        TCPSender create(int port);
     }
 }

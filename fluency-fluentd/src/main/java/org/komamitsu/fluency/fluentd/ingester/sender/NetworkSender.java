@@ -67,7 +67,7 @@ public abstract class NetworkSender<T>
     }
 
     abstract T getOrCreateSocketInternal()
-        throws IOException;
+            throws IOException;
 
     private synchronized T getOrCreateSocket()
             throws IOException
@@ -171,15 +171,6 @@ public abstract class NetworkSender<T>
         }
     }
 
-    public static class UnmatchedAckException
-            extends IOException
-    {
-        public UnmatchedAckException(String message)
-        {
-            super(message);
-        }
-    }
-
     public String getHost()
     {
         return config.getHost();
@@ -212,6 +203,15 @@ public abstract class NetworkSender<T>
                 "config=" + config +
                 ", failureDetector=" + failureDetector +
                 "} " + super.toString();
+    }
+
+    public static class UnmatchedAckException
+            extends IOException
+    {
+        public UnmatchedAckException(String message)
+        {
+            super(message);
+        }
     }
 
     public static class Config

@@ -161,7 +161,8 @@ public class FluencyBuilderForTreasureDataTest
         builder.setSenderMaxRetryIntervalMillis(345678);
         builder.setSenderRetryFactor(3.14f);
         builder.setSenderRetryMax(17);
-        builder.setSenderWorkBufSize(123456);;
+        builder.setSenderWorkBufSize(123456);
+        ;
 
         try (Fluency fluency = builder.build(APIKEY)) {
             assertThat(fluency.getBuffer(), instanceOf(Buffer.class));

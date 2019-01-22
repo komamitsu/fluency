@@ -91,7 +91,7 @@ class FluencyTest
     }
 
     @ParameterizedTest
-    @CsvSource({"1, false","3, true"})
+    @CsvSource({"1, false", "3, true"})
     void testWaitUntilFlusherTerminated(int waitUntilFlusherTerm, boolean expected)
             throws IOException, InterruptedException
     {
@@ -141,40 +141,6 @@ class FluencyTest
         }
     }
 
-    static class StuckIngester
-            implements Ingester
-    {
-        private final CountDownLatch latch;
-
-        StuckIngester(CountDownLatch latch)
-        {
-            this.latch = latch;
-        }
-
-        @Override
-        public void ingest(String tag, ByteBuffer dataBuffer)
-        {
-            try {
-                latch.await();
-            }
-            catch (InterruptedException e) {
-                FluencyTest.LOG.warn("Interrupted in send()", e);
-            }
-        }
-
-        @Override
-        public Sender getSender()
-        {
-            return null;
-        }
-
-        @Override
-        public void close()
-                throws IOException
-        {
-        }
-    }
-
     @Test
     public void testBufferFullException()
             throws IOException
@@ -208,6 +174,40 @@ class FluencyTest
             finally {
                 latch.countDown();
             }
+        }
+    }
+
+    static class StuckIngester
+            implements Ingester
+    {
+        private final CountDownLatch latch;
+
+        StuckIngester(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Override
+        public void ingest(String tag, ByteBuffer dataBuffer)
+        {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                FluencyTest.LOG.warn("Interrupted in send()", e);
+            }
+        }
+
+        @Override
+        public Sender getSender()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
         }
     }
 }

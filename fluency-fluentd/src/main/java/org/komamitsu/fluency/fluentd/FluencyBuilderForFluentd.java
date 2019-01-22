@@ -84,7 +84,7 @@ public class FluencyBuilderForFluentd
     {
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(createBaseSender(null , port)));
+                buildIngester(createBaseSender(null, port)));
     }
 
     public Fluency build()

@@ -53,7 +53,7 @@ public class MultiSenderTest
 
     private FailureDetector createFailureDetector(Heartbeater hb)
     {
-        return new FailureDetector( new PhiAccrualFailureDetectStrategy(), hb);
+        return new FailureDetector(new PhiAccrualFailureDetectStrategy(), hb);
     }
 
     @Test
@@ -294,8 +294,8 @@ public class MultiSenderTest
         assertEquals(2, connectCount);
         // This test doesn't use actual PackedForward format so that it can simply test MultiSender itself.
         // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here
-        long minExpectedRecvLen = ((long)(concurency - (sslEnabled ? 6 : 2)) * reqNum) * 10;
-        long maxExpectedRecvLen = ((long)concurency * reqNum) * 10;
+        long minExpectedRecvLen = ((long) (concurency - (sslEnabled ? 6 : 2)) * reqNum) * 10;
+        long maxExpectedRecvLen = ((long) concurency * reqNum) * 10;
         assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
         assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));
         assertEquals(1, closeCount);

@@ -19,7 +19,6 @@ package org.komamitsu.fluency.fluentd.ingester;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.mockito.ArgumentCaptor;
@@ -51,10 +50,9 @@ public class FluentdIngesterTest
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
     private static final byte[] DATA = "hello, world".getBytes(CHARSET);
-    private FluentdSender fluentdSender;
-
     @Captor
     public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
+    private FluentdSender fluentdSender;
 
     @Before
     public void setUp()

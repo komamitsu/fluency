@@ -17,10 +17,10 @@
 package org.komamitsu.fluency.fluentd.ingester;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.RequestOption;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -78,7 +78,8 @@ public class FluentdIngester
             synchronized (sender) {
                 sender.sendWithAck(buffers, uuidBytes);
             }
-        } else {
+        }
+        else {
             ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, null)));
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 

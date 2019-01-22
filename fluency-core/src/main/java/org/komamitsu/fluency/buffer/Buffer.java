@@ -173,7 +173,7 @@ public class Buffer
         if (retentionBuffer == null) {
             newBufferChunkRetentionSize = config.getChunkInitialSize();
         }
-        else{
+        else {
             existingDataSize = retentionBuffer.getByteBuffer().position();
             newBufferChunkRetentionSize = (int) (retentionBuffer.getByteBuffer().capacity() * config.getChunkExpandRatio());
         }
@@ -300,7 +300,6 @@ public class Buffer
             throws IOException
     {
         appendMessagePackMapValueInternal(tag, timestamp, mapValue);
-
     }
 
     private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
@@ -420,6 +419,38 @@ public class Buffer
         return "packed_forward";
     }
 
+    public int getChunkInitialSize()
+    {
+        return config.getChunkInitialSize();
+    }
+
+    public float getChunkExpandRatio()
+    {
+        return config.getChunkExpandRatio();
+    }
+
+    public int getChunkRetentionSize()
+    {
+        return config.getChunkRetentionSize();
+    }
+
+    public int getChunkRetentionTimeMillis()
+    {
+        return config.getChunkRetentionTimeMillis();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PackedForwardBuffer{" +
+                "retentionBuffers=" + retentionBuffers +
+                ", flushableBuffers=" + flushableBuffers +
+                ", backupBuffers=" + backupBuffers +
+                ", bufferPool=" + bufferPool +
+                ", config=" + config +
+                "} " + super.toString();
+    }
+
     private static class RetentionBuffer
     {
         private final AtomicLong createdTimeMillis = new AtomicLong();
@@ -444,7 +475,7 @@ public class Buffer
         public String toString()
         {
             return "RetentionBuffer{" +
-                    "createdTimeMillis=" + createdTimeMillis+
+                    "createdTimeMillis=" + createdTimeMillis +
                     ", byteBuffer=" + byteBuffer +
                     '}';
         }
@@ -479,38 +510,6 @@ public class Buffer
                     ", byteBuffer=" + byteBuffer +
                     '}';
         }
-    }
-
-    public int getChunkInitialSize()
-    {
-        return config.getChunkInitialSize();
-    }
-
-    public float getChunkExpandRatio()
-    {
-        return config.getChunkExpandRatio();
-    }
-
-    public int getChunkRetentionSize()
-    {
-        return config.getChunkRetentionSize();
-    }
-
-    public int getChunkRetentionTimeMillis()
-    {
-        return config.getChunkRetentionTimeMillis();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PackedForwardBuffer{" +
-                "retentionBuffers=" + retentionBuffers +
-                ", flushableBuffers=" + flushableBuffers +
-                ", backupBuffers=" + backupBuffers +
-                ", bufferPool=" + bufferPool +
-                ", config=" + config +
-                "} " + super.toString();
     }
 
     public static class Config
