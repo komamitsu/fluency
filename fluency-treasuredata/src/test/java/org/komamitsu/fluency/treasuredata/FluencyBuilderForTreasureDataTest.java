@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class FluencyBuilderTest
+public class FluencyBuilderForTreasureDataTest
 {
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
@@ -92,7 +92,7 @@ public class FluencyBuilderTest
     public void build()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        try (Fluency fluency = new FluencyBuilder().build(APIKEY)) {
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -105,7 +105,7 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpsEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        try (Fluency fluency = new FluencyBuilder().build(APIKEY, "https://custom.endpoint.org")) {
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "https://custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -118,7 +118,7 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpsEndpointWithoutScheme()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        try (Fluency fluency = new FluencyBuilder().build(APIKEY, "custom.endpoint.org")) {
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -131,7 +131,7 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        try (Fluency fluency = new FluencyBuilder().build(APIKEY, "http://custom.endpoint.org")) {
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "http://custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -147,7 +147,7 @@ public class FluencyBuilderTest
         String tmpdir = System.getProperty("java.io.tmpdir");
         assertThat(tmpdir, is(notNullValue()));
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
         builder.setFlushIntervalMillis(200);
         builder.setMaxBufferSize(Long.MAX_VALUE);
         builder.setBufferChunkInitialSize(7 * 1024 * 1024);

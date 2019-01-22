@@ -83,7 +83,7 @@ public class FluencyTest
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> errorContainer = new AtomicReference<>();
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSenderMaxRetryCount(1);
         builder.setErrorHandler(e -> {
             errorContainer.set(e);
@@ -119,7 +119,7 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    FluencyBuilder builder = new FluencyBuilder();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
                     builder.setSslEnabled(sslEnabled);
 
                     try (Fluency fluency = builder.build(serverPort)) {
@@ -146,7 +146,7 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    FluencyBuilder builder = new FluencyBuilder();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
 
@@ -181,7 +181,7 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    FluencyBuilder builder = new FluencyBuilder();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
 
@@ -217,7 +217,7 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    FluencyBuilder builder = new FluencyBuilder();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
 

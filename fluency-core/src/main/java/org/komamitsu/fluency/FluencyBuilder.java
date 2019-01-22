@@ -23,7 +23,7 @@ import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
-public class BaseFluencyBuilder
+public class FluencyBuilder
 {
     private Long maxBufferSize;
     private Integer bufferChunkInitialSize;

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
+import org.komamitsu.fluency.fluentd.FluencyBuilderForFluentd;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -155,7 +155,7 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);
 
         try (Fluency fluency = builder.build(config.host, config.port)) {
@@ -182,7 +182,7 @@ public class WithRealFluentd
         assumeNotNull(config);
         assumeNotNull(config.anotherPort);
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);
         builder.setAckResponseMode(true);
 
@@ -213,14 +213,14 @@ public class WithRealFluentd
         WithRealFluentd.Config config = getConfig();
         assumeNotNull(config);
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);
         // Fluency might use a lot of buffer for loaded backup files.
         // So it'd better increase max buffer size
         builder.setMaxBufferSize(512 * 1024 * 1024L);
         builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
 
-        try (Fluency fluency = new FluencyBuilder().build(config.host, config.port)) {
+        try (Fluency fluency = new FluencyBuilderForFluentd().build(config.host, config.port)) {
             Map<String, Object> data = new HashMap<>();
             data.put("name", "komamitsu");
             data.put("age", 42);

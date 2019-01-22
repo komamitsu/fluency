@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-public class FluencyBuilderTest
+public class FluencyBuilderForFluentdTest
 {
     private void assertDefaultBuffer(Buffer buffer)
     {
@@ -97,7 +97,7 @@ public class FluencyBuilderTest
     public void build()
             throws IOException
     {
-        try (Fluency fluency = new FluencyBuilder().build()) {
+        try (Fluency fluency = new FluencyBuilderForFluentd().build()) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -112,7 +112,7 @@ public class FluencyBuilderTest
     public void buildWithCustomPort()
             throws IOException
     {
-        try (Fluency fluency = new FluencyBuilder().build(54321)) {
+        try (Fluency fluency = new FluencyBuilderForFluentd().build(54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -127,7 +127,7 @@ public class FluencyBuilderTest
     public void buildWithCustomHostAndPort()
             throws IOException
     {
-        try (Fluency fluency = new FluencyBuilder().build("192.168.0.99", 54321)) {
+        try (Fluency fluency = new FluencyBuilderForFluentd().build("192.168.0.99", 54321)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
@@ -142,7 +142,7 @@ public class FluencyBuilderTest
     public void buildWithSsl()
             throws IOException
     {
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build()) {
             assertDefaultBuffer(fluency.getBuffer());
@@ -159,7 +159,7 @@ public class FluencyBuilderTest
     public void buildWithSslAndCustomPort()
             throws IOException
     {
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build(54321)) {
             assertDefaultBuffer(fluency.getBuffer());
@@ -176,7 +176,7 @@ public class FluencyBuilderTest
     public void buildWithSslAndCustomHostAndPort()
             throws IOException
     {
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build("192.168.0.99", 54321)) {
             assertDefaultBuffer(fluency.getBuffer());
@@ -196,7 +196,7 @@ public class FluencyBuilderTest
         String tmpdir = System.getProperty("java.io.tmpdir");
         assertThat(tmpdir, is(notNullValue()));
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setFlushIntervalMillis(200);
         builder.setMaxBufferSize(Long.MAX_VALUE);
         builder.setBufferChunkInitialSize(7 * 1024 * 1024);
@@ -286,7 +286,7 @@ public class FluencyBuilderTest
         String tmpdir = System.getProperty("java.io.tmpdir");
         assertThat(tmpdir, is(notNullValue()));
 
-        FluencyBuilder builder = new FluencyBuilder();
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         builder.setFlushIntervalMillis(200);
         builder.setMaxBufferSize(Long.MAX_VALUE);

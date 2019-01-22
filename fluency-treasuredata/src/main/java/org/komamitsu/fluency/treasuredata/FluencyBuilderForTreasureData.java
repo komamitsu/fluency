@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.treasuredata;
 
-import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -24,8 +23,8 @@ import org.komamitsu.fluency.treasuredata.ingester.TreasureDataIngester;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.komamitsu.fluency.treasuredata.recordformat.TreasureDataRecordFormatter;
 
-public class FluencyBuilder
-        extends BaseFluencyBuilder
+public class FluencyBuilderForTreasureData
+        extends org.komamitsu.fluency.FluencyBuilder
 {
     private Integer senderRetryMax;
     private Integer senderRetryIntervalMillis;
@@ -33,7 +32,7 @@ public class FluencyBuilder
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
 
-    public FluencyBuilder()
+    public FluencyBuilderForTreasureData()
     {
         setBufferChunkRetentionTimeMillis(30 * 1000);
     }
@@ -132,7 +131,7 @@ public class FluencyBuilder
 
     private RecordFormatter buildRecordFormatter()
     {
-        return new TreasureDataRecordFormatter(new TreasureDataRecordFormatter.Config());
+        return new TreasureDataRecordFormatter();
     }
 
     private Ingester buildIngester(TreasureDataSender.Config senderConfig)

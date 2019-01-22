@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd;
 
-import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -37,8 +36,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FluencyBuilder
-        extends BaseFluencyBuilder
+public class FluencyBuilderForFluentd
+        extends org.komamitsu.fluency.FluencyBuilder
 {
     private Integer senderMaxRetryCount;
     private boolean ackResponseMode;
@@ -103,7 +102,7 @@ public class FluencyBuilder
         }
         return buildFromIngester(
                 buildRecordFormatter(),
-                buildIngester(new MultiSender(new MultiSender.Config(), senders)));
+                buildIngester(new MultiSender(senders)));
     }
 
     private FluentdSender createBaseSender(String host, Integer port)
@@ -167,7 +166,7 @@ public class FluencyBuilder
 
     private RecordFormatter buildRecordFormatter()
     {
-        return new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
+        return new FluentdRecordFormatter();
     }
 
     private Ingester buildIngester(FluentdSender baseSender)
