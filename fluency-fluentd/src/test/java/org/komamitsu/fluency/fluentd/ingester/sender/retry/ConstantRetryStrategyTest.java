@@ -27,8 +27,10 @@ public class ConstantRetryStrategyTest
     @Test
     public void testGetNextIntervalMillis()
     {
-        ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config().setRetryIntervalMillis(600).setMaxRetryCount(6);
-        RetryStrategy strategy = config.createInstance();
+        ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
+        config.setRetryIntervalMillis(600);
+        config.setMaxRetryCount(6);
+        RetryStrategy strategy = new ConstantRetryStrategy(config);
 
         assertEquals(600, strategy.getNextIntervalMillis(0));
         assertEquals(600, strategy.getNextIntervalMillis(1));

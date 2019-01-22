@@ -31,10 +31,14 @@ public class SSLHeartbeater
     private final Config config;
     private final SSLSocketBuilder sslSocketBuilder;
 
-    protected SSLHeartbeater(final Config config)
-            throws IOException
+    public SSLHeartbeater()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public SSLHeartbeater(final Config config)
+    {
+        super(config);
         this.config = config;
         sslSocketBuilder = new SSLSocketBuilder(
                 config.getHost(),
@@ -47,18 +51,11 @@ public class SSLHeartbeater
     protected void invoke()
             throws IOException
     {
-        SSLSocket sslSocket = null;
-        try {
-            sslSocket = sslSocketBuilder.build();
+        try (SSLSocket sslSocket = sslSocketBuilder.build()) {
             LOG.trace("SSLHeartbeat: remotePort={}, localPort={}", sslSocket.getPort(), sslSocket.getLocalPort());
             // Try SSL handshake
             sslSocket.getSession();
             pong();
-        }
-        finally {
-            if (sslSocket != null) {
-                sslSocket.close();
-            }
         }
     }
 
@@ -72,59 +69,19 @@ public class SSLHeartbeater
     }
 
     public static class Config
-            implements Instantiator
+            extends Heartbeater.Config
     {
-        private final Heartbeater.Config baseConfig = new Heartbeater.Config();
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
-
-        public Heartbeater.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public String getHost()
-        {
-            return baseConfig.getHost();
-        }
-
-        public Config setHost(String host)
-        {
-            baseConfig.setHost(host);
-            return this;
-        }
-
-        public int getPort()
-        {
-            return baseConfig.getPort();
-        }
-
-        public Config setPort(int port)
-        {
-            baseConfig.setPort(port);
-            return this;
-        }
-
-        public int getIntervalMillis()
-        {
-            return baseConfig.getIntervalMillis();
-        }
-
-        public Config setIntervalMillis(int intervalMillis)
-        {
-            baseConfig.setIntervalMillis(intervalMillis);
-            return this;
-        }
 
         public int getConnectionTimeoutMilli()
         {
             return connectionTimeoutMilli;
         }
 
-        public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
+        public void setConnectionTimeoutMilli(int connectionTimeoutMilli)
         {
             this.connectionTimeoutMilli = connectionTimeoutMilli;
-            return this;
         }
 
         public int getReadTimeoutMilli()
@@ -132,17 +89,9 @@ public class SSLHeartbeater
             return readTimeoutMilli;
         }
 
-        public Config setReadTimeoutMilli(int readTimeoutMilli)
+        public void setReadTimeoutMilli(int readTimeoutMilli)
         {
             this.readTimeoutMilli = readTimeoutMilli;
-            return this;
-        }
-
-        @Override
-        public SSLHeartbeater createInstance()
-                throws IOException
-        {
-            return new SSLHeartbeater(this);
         }
     }
 }

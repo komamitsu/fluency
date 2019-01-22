@@ -28,7 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class FailureDetectorTest
 {
@@ -43,36 +44,20 @@ public class FailureDetectorTest
         int localPort = serverSocketChannel.socket().getLocalPort();
 
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Runnable serverTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while (!executorService.isShutdown()) {
-                    SocketChannel accept = null;
-                    try {
-                        accept = serverSocketChannel.accept();
-                        LOG.debug("Accepted: {}", accept);
-                    }
-                    catch (IOException e) {
-                        LOG.warn("Stab TCP server got an error", e);
-                    }
-                    finally {
-                        if (accept != null) {
-                            try {
-                                accept.close();
-                            }
-                            catch (IOException e) {
-                            }
-                        }
-                    }
-                }
-                try {
-                    serverSocketChannel.close();
+        Runnable serverTask = () -> {
+            while (!executorService.isShutdown()) {
+                try (SocketChannel accept = serverSocketChannel.accept()) {
+                    LOG.debug("Accepted: {}", accept);
                 }
                 catch (IOException e) {
-                    LOG.warn("Failed to close serverSocketChannel", e);
+                    LOG.warn("Stab TCP server got an error", e);
                 }
+            }
+            try {
+                serverSocketChannel.close();
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to close serverSocketChannel", e);
             }
         };
 
@@ -82,9 +67,9 @@ public class FailureDetectorTest
         heartbeaterConfig.setPort(localPort);
 
         PhiAccrualFailureDetectStrategy.Config failureDetectorConfig = new PhiAccrualFailureDetectStrategy.Config();
-        FailureDetector failureDetector = null;
-        try {
-            failureDetector = new FailureDetector(failureDetectorConfig, heartbeaterConfig);
+        try (FailureDetector failureDetector = new FailureDetector(
+                new PhiAccrualFailureDetectStrategy(failureDetectorConfig),
+                new TCPHeartbeater(heartbeaterConfig))) {
 
             assertTrue(failureDetector.isAvailable());
             TimeUnit.SECONDS.sleep(4);
@@ -98,11 +83,6 @@ public class FailureDetectorTest
                 TimeUnit.MILLISECONDS.sleep(500);
             }
             assertFalse(failureDetector.isAvailable());
-        }
-        finally {
-            if (failureDetector != null) {
-                failureDetector.close();
-            }
         }
     }
 }

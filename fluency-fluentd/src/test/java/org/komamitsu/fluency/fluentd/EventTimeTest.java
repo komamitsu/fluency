@@ -26,7 +26,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class EventTimeTest
 {

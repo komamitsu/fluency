@@ -36,33 +36,11 @@ public class Fluency
     private final Flusher flusher;
     private final Emitter emitter = new Emitter();
 
-    Fluency(Buffer buffer, Flusher flusher)
+    // Fluency has this public constructor, but using FluentBuilder is usually more recommended.
+    public Fluency(Buffer buffer, Flusher flusher)
     {
         this.buffer = buffer;
         this.flusher = flusher;
-    }
-
-    private interface Append
-    {
-        void append()
-            throws IOException;
-    }
-
-    private class Emitter
-    {
-        void emit(Append appender)
-                throws IOException
-        {
-            try {
-                appender.append();
-                flusher.onUpdate();
-            }
-            catch (BufferFullException e) {
-                LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
-                flusher.flush();
-                throw e;
-            }
-        }
     }
 
     public void emit(final String tag, final long timestamp, final Map<String, Object> data)
@@ -202,5 +180,28 @@ public class Fluency
                 "buffer=" + buffer +
                 ", flusher=" + flusher +
                 '}';
+    }
+
+    private interface Append
+    {
+        void append()
+                throws IOException;
+    }
+
+    private class Emitter
+    {
+        void emit(Append appender)
+                throws IOException
+        {
+            try {
+                appender.append();
+                flusher.onUpdate();
+            }
+            catch (BufferFullException e) {
+                LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");
+                flusher.flush();
+                throw e;
+            }
+        }
     }
 }

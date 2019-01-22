@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class JsonRecordFormatter
-    extends RecordFormatter
+        extends RecordFormatter
 {
     private ObjectMapper objectMapper = new ObjectMapper();
 

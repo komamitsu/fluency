@@ -26,12 +26,10 @@ import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.TestableFluencyBuilder;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -66,7 +64,7 @@ import static org.mockito.Mockito.mock;
 public class FluencyTest
 {
     @DataPoints
-    public static final boolean[] SSL_ENABLED = { false, true };
+    public static final boolean[] SSL_ENABLED = {false, true};
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
     private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
@@ -83,25 +81,26 @@ public class FluencyTest
             throws IOException, InterruptedException
     {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        final AtomicReference<Throwable> errorContainer = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> errorContainer = new AtomicReference<>();
 
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(Integer.MAX_VALUE,
-                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
-                        .setSenderMaxRetryCount(1)
-                        .setErrorHandler(e -> {
-                            errorContainer.set(e);
-                            countDownLatch.countDown();
-                        }));
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setSenderMaxRetryCount(1);
+        builder.setErrorHandler(e -> {
+            errorContainer.set(e);
+            countDownLatch.countDown();
+        });
 
-        HashMap<String, Object> event = new HashMap<>();
-        event.put("name", "foo");
-        fluency.emit("tag", event);
+        try (Fluency fluency = builder.build(Integer.MAX_VALUE)) {
+            HashMap<String, Object> event = new HashMap<>();
+            event.put("name", "foo");
+            fluency.emit("tag", event);
 
-        if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
-            throw new AssertionError("Timeout");
+            if (!countDownLatch.await(10, TimeUnit.SECONDS)) {
+                throw new AssertionError("Timeout");
+            }
+
+            assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
         }
-
-        assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
     }
 
     @Theory
@@ -120,11 +119,12 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
-                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+                    builder.setSslEnabled(sslEnabled);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertNull(exception);
     }
@@ -146,11 +146,13 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
-                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -179,11 +181,13 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency =
-                            org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
-                                    new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertEquals(exception.getClass(), TimeoutException.class);
     }
@@ -213,12 +217,38 @@ public class FluencyTest
                     unpacker.close();
                 },
                 serverPort -> {
-                    Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(serverPort,
-                            new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig().setSslEnabled(sslEnabled).setAckResponseMode(true));
-                    fluency.emit("foo.bar", new HashMap<>());
-                    fluency.close();
+                    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+                    builder.setSslEnabled(sslEnabled);
+                    builder.setAckResponseMode(true);
+
+                    try (Fluency fluency = builder.build(serverPort)) {
+                        fluency.emit("foo.bar", new HashMap<>());
+                    }
                 }, 5000);
         assertNull(exception);
+    }
+
+    @Test
+    public void testBufferWithJacksonModule()
+            throws IOException
+    {
+        AtomicBoolean serialized = new AtomicBoolean();
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
+
+        FluentdRecordFormatter.Config recordFormatterConfig = new FluentdRecordFormatter.Config();
+        recordFormatterConfig.setJacksonModules(Collections.singletonList(simpleModule));
+
+        Fluency fluency = new TestableFluencyBuilder()
+                .buildFromIngester(new FluentdRecordFormatter(recordFormatterConfig), ingester);
+
+        Map<String, Object> event = new HashMap<>();
+        Foo foo = new Foo();
+        foo.s = "Hello";
+        event.put("foo", foo);
+        fluency.emit("tag", event);
+
+        assertThat(serialized.get(), is(true));
     }
 
     static class Foo
@@ -246,36 +276,5 @@ public class FluencyTest
             gen.writeEndObject();
             serialized.set(true);
         }
-    }
-
-    @Test
-    public void testBufferWithJacksonModule()
-            throws IOException
-    {
-        AtomicBoolean serialized = new AtomicBoolean();
-        SimpleModule simpleModule = new SimpleModule();
-        simpleModule.addSerializer(Foo.class, new FooSerializer(serialized));
-
-        Buffer.Config bufferConfig = new Buffer
-                .Config()
-                .setChunkInitialSize(64)
-                .setMaxBufferSize(256);
-
-        FluentdRecordFormatter.Config fluentdRecordFormatterWithModuleConfig =
-                new FluentdRecordFormatter.Config().setJacksonModules(Collections.singletonList(simpleModule));
-
-        Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    fluentdRecordFormatterWithModuleConfig,
-                    bufferConfig,
-                    new AsyncFlusher.Config(),
-                    ingester);
-
-        Map<String, Object> event = new HashMap<>();
-        Foo foo = new Foo();
-        foo.s = "Hello";
-        event.put("foo", foo);
-        fluency.emit("tag", event);
-
-        assertThat(serialized.get(), is(true));
     }
 }

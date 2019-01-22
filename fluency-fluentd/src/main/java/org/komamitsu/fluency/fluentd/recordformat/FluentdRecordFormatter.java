@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.fluentd.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -27,23 +26,23 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 public class FluentdRecordFormatter
         extends RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
-    private static final Charset CHARSET = Charset.forName("ASCII");
-    private final Config config;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    public FluentdRecordFormatter()
+    {
+        this(new Config());
+    }
 
     public FluentdRecordFormatter(Config config)
     {
-        super(config.baseConfig);
-        this.config = config;
+        super(config);
         registerObjectMapperModules(objectMapper);
     }
 
@@ -113,25 +112,7 @@ public class FluentdRecordFormatter
     }
 
     public static class Config
-            implements RecordFormatter.Instantiator<FluentdRecordFormatter>
+            extends RecordFormatter.Config
     {
-        RecordFormatter.Config baseConfig = new RecordFormatter.Config();
-
-        public List<Module> getJacksonModules()
-        {
-            return baseConfig.getJacksonModules();
-        }
-
-        public Config setJacksonModules(List<Module> jacksonModules)
-        {
-            baseConfig.setJacksonModules(jacksonModules);
-            return this;
-        }
-
-        @Override
-        public FluentdRecordFormatter createInstance()
-        {
-            return new FluentdRecordFormatter(this);
-        }
     }
 }

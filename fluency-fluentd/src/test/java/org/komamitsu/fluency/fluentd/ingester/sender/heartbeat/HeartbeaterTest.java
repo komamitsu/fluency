@@ -20,104 +20,31 @@ import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.util.Tuple3;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HeartbeaterTest
 {
     private TestableHeartbeater.Config config;
 
-    private static class TestableHeartbeater extends Heartbeater
-    {
-        private final Config config;
-        private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<Tuple3<Long, String, Integer>>();
-
-        public TestableHeartbeater(Config config)
-        {
-            super(config.getBaseConfig());
-            this.config = config;
-        }
-
-        public List<Tuple3<Long, String, Integer>> getPongedRecords()
-        {
-            return pongedRecords;
-        }
-
-        @Override
-        protected void invoke()
-        {
-            pongedRecords.add(new Tuple3<Long, String, Integer>(System.currentTimeMillis(), config.getHost(), config.getPort()));
-        }
-
-        private static class Config
-            implements Instantiator
-        {
-            private final Heartbeater.Config baseConfig = new Heartbeater.Config();
-
-            public Heartbeater.Config getBaseConfig()
-            {
-                return baseConfig;
-            }
-
-            public String getHost()
-            {
-                return baseConfig.getHost();
-            }
-
-            public int getPort()
-            {
-                return baseConfig.getPort();
-            }
-
-            public Config setIntervalMillis(int intervalMillis)
-            {
-                baseConfig.setIntervalMillis(intervalMillis);
-                return this;
-            }
-
-            public int getIntervalMillis()
-            {
-                return baseConfig.getIntervalMillis();
-            }
-
-            public Config setHost(String host)
-            {
-                baseConfig.setHost(host);
-                return this;
-            }
-
-            public Config setPort(int port)
-            {
-                baseConfig.setPort(port);
-                return this;
-            }
-
-            @Override
-            public TestableHeartbeater createInstance()
-                    throws IOException
-            {
-                return new TestableHeartbeater(this);
-            }
-        }
-    }
-
     @Before
     public void setup()
     {
-        config = new TestableHeartbeater.Config().setHost("dummy-hostname").setPort(123456).setIntervalMillis(300);
+        config = new TestableHeartbeater.Config();
+        config.setHost("dummy-hostname");
+        config.setPort(123456);
+        config.setIntervalMillis(300);
     }
 
     @Test
     public void testHeartbeater()
-            throws InterruptedException, IOException
+            throws InterruptedException
     {
-        TestableHeartbeater heartbeater = null;
-        try {
-            heartbeater = new TestableHeartbeater(config);
+        try (TestableHeartbeater heartbeater = new TestableHeartbeater(config)) {
             heartbeater.start();
             TimeUnit.SECONDS.sleep(1);
             heartbeater.close();
@@ -132,10 +59,39 @@ public class HeartbeaterTest
                 assertEquals((Integer) 123456, pongedRecord.getThird());
             }
         }
-        finally {
-            if (heartbeater != null) {
-                heartbeater.close();
-            }
+    }
+
+    private static class TestableHeartbeater
+            extends Heartbeater
+    {
+        private final Config config;
+        private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<>();
+
+        public TestableHeartbeater()
+        {
+            this(new Config());
+        }
+
+        public TestableHeartbeater(Config config)
+        {
+            super(config);
+            this.config = config;
+        }
+
+        public List<Tuple3<Long, String, Integer>> getPongedRecords()
+        {
+            return pongedRecords;
+        }
+
+        @Override
+        protected void invoke()
+        {
+            pongedRecords.add(new Tuple3<>(System.currentTimeMillis(), config.getHost(), config.getPort()));
+        }
+
+        private static class Config
+                extends Heartbeater.Config
+        {
         }
     }
 }

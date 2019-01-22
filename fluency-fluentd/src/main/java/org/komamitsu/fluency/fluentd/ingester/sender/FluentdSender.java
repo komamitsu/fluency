@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public abstract class FluentdSender
-    implements Closeable, Sender
+        implements Closeable, Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdSender.class);
     private final Config config;
@@ -38,6 +37,11 @@ public abstract class FluentdSender
     protected FluentdSender(Config config)
     {
         this.config = config;
+    }
+
+    protected FluentdSender()
+    {
+        this(new FluentdSender.Config());
     }
 
     public synchronized void send(ByteBuffer buffer)
@@ -61,7 +65,7 @@ public abstract class FluentdSender
     private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> buffers, byte[] ackToken)
             throws IOException
     {
-        List<Integer> positions = new ArrayList<Integer>(buffers.size());
+        List<Integer> positions = new ArrayList<>(buffers.size());
         for (ByteBuffer data : buffers) {
             positions.add(data.position());
         }
@@ -85,7 +89,7 @@ public abstract class FluentdSender
             }
 
             if (e instanceof IOException) {
-                throw (IOException)e;
+                throw (IOException) e;
             }
             else {
                 throw new IOException(e);
@@ -95,33 +99,11 @@ public abstract class FluentdSender
 
     public abstract boolean isAvailable();
 
-    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken) throws IOException;
+    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+            throws IOException;
 
     public static class Config
+            extends Sender.Config
     {
-        private Sender.Config baseConfig = new Sender.Config();
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return baseConfig.toString();
-        }
-    }
-
-    public interface Instantiator
-        extends Sender.Instantiator<FluentdSender>
-    {
-        FluentdSender createInstance();
     }
 }

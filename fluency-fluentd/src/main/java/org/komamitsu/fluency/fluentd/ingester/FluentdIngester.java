@@ -17,10 +17,10 @@
 package org.komamitsu.fluency.fluentd.ingester;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.RequestOption;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -43,6 +43,11 @@ public class FluentdIngester
     private final Config config;
     private final FluentdSender sender;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    public FluentdIngester(FluentdSender sender)
+    {
+        this(new Config(), sender);
+    }
 
     public FluentdIngester(Config config, FluentdSender sender)
     {
@@ -73,7 +78,8 @@ public class FluentdIngester
             synchronized (sender) {
                 sender.sendWithAck(buffers, uuidBytes);
             }
-        } else {
+        }
+        else {
             ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, null)));
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
@@ -102,7 +108,6 @@ public class FluentdIngester
     }
 
     public static class Config
-        implements Instantiator<FluentdSender>
     {
         private boolean ackResponseMode = false;
 
@@ -111,16 +116,9 @@ public class FluentdIngester
             return ackResponseMode;
         }
 
-        public Config setAckResponseMode(boolean ackResponseMode)
+        public void setAckResponseMode(boolean ackResponseMode)
         {
             this.ackResponseMode = ackResponseMode;
-            return this;
-        }
-
-        @Override
-        public Ingester createInstance(FluentdSender sender)
-        {
-            return new FluentdIngester(this, sender);
         }
     }
 }

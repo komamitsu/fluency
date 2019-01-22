@@ -22,9 +22,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
-import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.fluentd.ingester.sender.MockTCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.ingester.Ingester;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -51,7 +52,8 @@ import static org.junit.Assert.assertTrue;
 
 public class BufferForFluentdTest
 {
-    private final FluentdRecordFormatter fluentdRecordFormatter = new FluentdRecordFormatter.Config().createInstance();
+    private final FluentdRecordFormatter fluentdRecordFormatter =
+            new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
 
     @Test
     public void withFluentdFormat()
@@ -59,21 +61,21 @@ public class BufferForFluentdTest
     {
         for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, false,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, true,
-                    new Buffer.Config().createInstance(fluentdRecordFormatter));
+                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
         }
     }
 
@@ -113,8 +115,10 @@ public class BufferForFluentdTest
             final int concurrency = 4;
             final CountDownLatch latch = new CountDownLatch(concurrency);
 
-            final MockTCPSender sender = new MockTCPSender(24229);
-            Ingester ingester = new FluentdIngester.Config().createInstance(sender);
+            TCPSender.Config config = new TCPSender.Config();
+            config.setPort(24229);
+            final MockTCPSender sender = new MockTCPSender(config);
+            Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), sender);
 
             Runnable emitTask = () -> {
                 try {
@@ -268,7 +272,7 @@ public class BufferForFluentdTest
             else {
                 assertThat(timestamp.isIntegerValue(), is(true));
                 long tsInEpochMilli = timestamp.asIntegerValue().asLong();
-                assertTrue(start <= tsInEpochMilli && tsInEpochMilli<= end);
+                assertTrue(start <= tsInEpochMilli && tsInEpochMilli <= end);
             }
 
             assertEquals(3, data.size());

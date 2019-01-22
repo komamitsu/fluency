@@ -17,13 +17,13 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
 public class ConstantRetryStrategy
-    extends RetryStrategy
+        extends RetryStrategy
 {
     private final Config config;
 
-    protected ConstantRetryStrategy(Config config)
+    public ConstantRetryStrategy(Config config)
     {
-        super(config.getBaseConfig());
+        super(config);
         this.config = config;
     }
 
@@ -42,51 +42,26 @@ public class ConstantRetryStrategy
     }
 
     public static class Config
-        implements Instantiator
+            extends RetryStrategy.Config
     {
-        private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
         private int retryIntervalMillis = 2000;
-
-        public RetryStrategy.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public int getMaxRetryCount()
-        {
-            return baseConfig.getMaxRetryCount();
-        }
-
-        public Config setMaxRetryCount(int maxRetryCount)
-        {
-            baseConfig.setMaxRetryCount(maxRetryCount);
-            return this;
-        }
 
         public int getRetryIntervalMillis()
         {
             return retryIntervalMillis;
         }
 
-        public Config setRetryIntervalMillis(int retryIntervalMillis)
+        public void setRetryIntervalMillis(int retryIntervalMillis)
         {
             this.retryIntervalMillis = retryIntervalMillis;
-            return this;
         }
 
         @Override
         public String toString()
         {
             return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    ", retryIntervalMillis=" + retryIntervalMillis +
-                    '}';
-        }
-
-        @Override
-        public ConstantRetryStrategy createInstance()
-        {
-            return new ConstantRetryStrategy(this);
+                    "retryIntervalMillis=" + retryIntervalMillis +
+                    "} " + super.toString();
         }
     }
 }

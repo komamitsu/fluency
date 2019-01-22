@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,9 +36,9 @@ public abstract class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
-    private final AtomicBoolean isTerminated = new AtomicBoolean();
     protected final Buffer buffer;
     protected final Ingester ingester;
+    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
 
     protected Flusher(Config config, Buffer buffer, Ingester ingester)
@@ -75,7 +74,6 @@ public abstract class Flusher
 
     @Override
     public void close()
-            throws IOException
     {
         try {
             beforeClosingBuffer();
@@ -85,16 +83,10 @@ public abstract class Flusher
         }
         finally {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    closeBuffer();
-                    isTerminated.set(true);
-                    return null;
-                }
+            Future<Void> future = executorService.submit(() -> {
+                closeBuffer();
+                isTerminated.set(true);
+                return null;
             });
 
             try {
@@ -122,7 +114,6 @@ public abstract class Flusher
                     catch (Exception e) {
                         LOG.error("Failed to close the sender", e);
                     }
-
                 }
             }
         }
@@ -165,12 +156,12 @@ public abstract class Flusher
         return "Flusher{" +
                 "isTerminated=" + isTerminated +
                 ", buffer=" + buffer +
-                ", transporter=" + ingester +
+                ", ingester=" + ingester +
                 ", config=" + config +
                 '}';
     }
 
-    public static class Config
+    public abstract static class Config
     {
         private int flushIntervalMillis = 600;
         private int waitUntilBufferFlushed = 60;
@@ -181,10 +172,9 @@ public abstract class Flusher
             return flushIntervalMillis;
         }
 
-        public Config setFlushIntervalMillis(int flushIntervalMillis)
+        public void setFlushIntervalMillis(int flushIntervalMillis)
         {
             this.flushIntervalMillis = flushIntervalMillis;
-            return this;
         }
 
         public int getWaitUntilBufferFlushed()
@@ -192,10 +182,9 @@ public abstract class Flusher
             return waitUntilBufferFlushed;
         }
 
-        public Config setWaitUntilBufferFlushed(int waitUntilBufferFlushed)
+        public void setWaitUntilBufferFlushed(int waitUntilBufferFlushed)
         {
             this.waitUntilBufferFlushed = waitUntilBufferFlushed;
-            return this;
         }
 
         public int getWaitUntilTerminated()
@@ -203,10 +192,9 @@ public abstract class Flusher
             return waitUntilTerminated;
         }
 
-        public Config setWaitUntilTerminated(int waitUntilTerminated)
+        public void setWaitUntilTerminated(int waitUntilTerminated)
         {
             this.waitUntilTerminated = waitUntilTerminated;
-            return this;
         }
 
         @Override
@@ -218,10 +206,5 @@ public abstract class Flusher
                     ", waitUntilTerminated=" + waitUntilTerminated +
                     '}';
         }
-    }
-
-    public interface Instantiator
-    {
-        Flusher createInstance(Buffer buffer, Ingester ingester);
     }
 }

@@ -32,9 +32,4 @@ public abstract class FailureDetectStrategy
     public static class Config
     {
     }
-
-    public interface Instantiator
-    {
-        FailureDetectStrategy createInstance();
-    }
 }

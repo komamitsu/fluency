@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.fluentd.FluencyBuilder;
+import org.komamitsu.fluency.fluentd.FluencyBuilderForFluentd;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -42,6 +42,105 @@ import static org.junit.Assume.assumeNotNull;
 public class WithRealFluentd
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    WithRealFluentd.Config getConfig()
+            throws IOException
+    {
+        String conf = System.getenv("WITH_FLUENTD");
+        if (conf == null) {
+            return null;
+        }
+
+        return objectMapper.readValue(conf, WithRealFluentd.Config.class);
+    }
+
+    @Test
+    public void testWithRealFluentd()
+            throws Exception
+    {
+        WithRealFluentd.Config config = getConfig();
+        assumeNotNull(config);
+
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setSslEnabled(config.sslEnabled);
+
+        try (Fluency fluency = builder.build(config.host, config.port)) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
+            for (int i = 0; i < config.concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(config.waitSeconds, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
+    public void testWithRealMultipleFluentd()
+            throws IOException, InterruptedException, TimeoutException, ExecutionException
+    {
+        WithRealFluentd.Config config = getConfig();
+        assumeNotNull(config);
+        assumeNotNull(config.anotherPort);
+
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setSslEnabled(config.sslEnabled);
+        builder.setAckResponseMode(true);
+
+        try (Fluency fluency = builder.build(
+                Arrays.asList(
+                        new InetSocketAddress(config.host, config.port),
+                        new InetSocketAddress(config.host, config.anotherPort)))) {
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
+            for (int i = 0; i < config.concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(config.waitSeconds, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
+    public void testWithRealFluentdWithFileBackup()
+            throws ExecutionException, TimeoutException, IOException, InterruptedException
+    {
+        WithRealFluentd.Config config = getConfig();
+        assumeNotNull(config);
+
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setSslEnabled(config.sslEnabled);
+        // Fluency might use a lot of buffer for loaded backup files.
+        // So it'd better increase max buffer size
+        builder.setMaxBufferSize(512 * 1024 * 1024L);
+        builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
+
+        try (Fluency fluency = new FluencyBuilderForFluentd().build(config.host, config.port)) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", "komamitsu");
+            data.put("age", 42);
+            data.put("comment", "hello, world");
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            List<Future<Void>> futures = new ArrayList<>();
+            for (int i = 0; i < config.concurrency; i++) {
+                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
+            }
+            for (Future<Void> future : futures) {
+                future.get(config.waitSeconds, TimeUnit.SECONDS);
+            }
+        }
+    }
 
     public static class EmitTask
             implements Callable<Void>
@@ -120,7 +219,7 @@ public class WithRealFluentd
                         Integer waitSeconds,
                 @JsonProperty("ssl_enabled")
                         Boolean sslEnabled
-                )
+        )
         {
             this.host = host == null ? "127.0.0.1" : host;
             this.port = port == null ? Integer.valueOf(24224) : port;
@@ -134,122 +233,6 @@ public class WithRealFluentd
             this.concurrency = concurrency == null ? 4 : concurrency;
             this.waitSeconds = waitSeconds == null ? 60 : waitSeconds;
             this.sslEnabled = sslEnabled == null ? false : sslEnabled;
-        }
-    }
-
-    WithRealFluentd.Config getConfig()
-            throws IOException
-    {
-        String conf = System.getenv("WITH_FLUENTD");
-        if (conf == null) {
-            return null;
-        }
-
-        return objectMapper.readValue(conf, WithRealFluentd.Config.class);
-    }
-
-    @Test
-    public void testWithRealFluentd()
-            throws Exception
-    {
-        WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
-
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
-                config.host,
-                config.port,
-                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
-                        .setSslEnabled(config.sslEnabled)
-        );
-
-        Map<String, Object> data = new HashMap<String, Object>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>();
-        try {
-            for (int i = 0; i < config.concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(config.waitSeconds, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
-        }
-    }
-
-    @Test
-    public void testWithRealMultipleFluentd()
-            throws IOException, InterruptedException, TimeoutException, ExecutionException
-    {
-        WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
-        assumeNotNull(config.anotherPort);
-
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
-                Arrays.asList(
-                        new InetSocketAddress(config.host, config.port),
-                        new InetSocketAddress(config.host, config.anotherPort)),
-                new org.komamitsu.fluency.fluentd.FluencyBuilder.FluencyConfig()
-                        .setSslEnabled(config.sslEnabled)
-                        .setAckResponseMode(true));
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<>();
-        try {
-            for (int i = 0; i < config.concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(config.waitSeconds, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
-        }
-    }
-
-    @Test
-    public void testWithRealFluentdWithFileBackup()
-            throws ExecutionException, TimeoutException, IOException, InterruptedException
-    {
-        WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
-
-        Fluency fluency = org.komamitsu.fluency.fluentd.FluencyBuilder.build(
-                config.host,
-                config.port,
-                new FluencyBuilder.FluencyConfig()
-                        // Fluency might use a lot of buffer for loaded backup files.
-                        // So it'd better increase max buffer size
-                        .setSslEnabled(config.sslEnabled)
-                        .setMaxBufferSize(512 * 1024 * 1024L)
-                        .setFileBackupDir(System.getProperty("java.io.tmpdir")));
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "komamitsu");
-        data.put("age", 42);
-        data.put("comment", "hello, world");
-
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        List<Future<Void>> futures = new ArrayList<>();
-        try {
-            for (int i = 0; i < config.concurrency; i++) {
-                futures.add(executorService.submit(new EmitTask(fluency, config.tag, data, config.requests)));
-            }
-            for (Future<Void> future : futures) {
-                future.get(config.waitSeconds, TimeUnit.SECONDS);
-            }
-        }
-        finally {
-            fluency.close();
         }
     }
 }

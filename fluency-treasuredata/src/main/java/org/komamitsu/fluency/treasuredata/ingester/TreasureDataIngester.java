@@ -29,12 +29,10 @@ public class TreasureDataIngester
         implements Ingester
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreasureDataIngester.class);
-    private final Config config;
     private final TreasureDataSender sender;
 
-    public TreasureDataIngester(Config config, TreasureDataSender sender)
+    public TreasureDataIngester(TreasureDataSender sender)
     {
-        this.config = config;
         this.sender = sender;
     }
 
@@ -56,15 +54,5 @@ public class TreasureDataIngester
             throws IOException
     {
         sender.close();
-    }
-
-    public static class Config
-        implements Instantiator<TreasureDataSender>
-    {
-        @Override
-        public TreasureDataIngester createInstance(TreasureDataSender sender)
-        {
-            return new TreasureDataIngester(this, sender);
-        }
     }
 }

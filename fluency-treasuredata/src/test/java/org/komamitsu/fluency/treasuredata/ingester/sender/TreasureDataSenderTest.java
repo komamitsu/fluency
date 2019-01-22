@@ -22,7 +22,6 @@ import com.treasuredata.client.TDClientHttpNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.komamitsu.fluency.NonRetryableException;
-import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.mockito.ArgumentCaptor;
 
 import java.io.DataInputStream;
@@ -56,11 +55,20 @@ public class TreasureDataSenderTest
     private final static String DB_AND_TABLE = "foodb.bartbl";
     private final static byte[] DATA = "hello, world".getBytes(CHARSET);
     private TDClient client;
+    private TreasureDataSender sender;
 
     @Before
     public void setUp()
     {
         client = mock(TDClient.class);
+        sender = new TreasureDataSender(new TreasureDataSender.Config())
+        {
+            @Override
+            protected TDClient buildClient()
+            {
+                return client;
+            }
+        };
     }
 
     private void assertImportedFile(File file)
@@ -84,7 +92,6 @@ public class TreasureDataSenderTest
             return null;
         }).when(client).importFile(anyString(), anyString(), any(File.class), anyString());
 
-        TreasureDataSender sender = new TreasureDataSender(new TreasureDataSender.Config(), client);
         sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
         ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
         verify(client, times(1)).importFile(
@@ -107,7 +114,6 @@ public class TreasureDataSenderTest
             return null;
         }).when(client).importFile(anyString(), anyString(), any(File.class), anyString());
 
-        TreasureDataSender sender = new TreasureDataSender(new TreasureDataSender.Config(), client);
         sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
         ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
         verify(client, times(2)).importFile(
@@ -138,7 +144,6 @@ public class TreasureDataSenderTest
             return null;
         }).when(client).createTable(anyString(), anyString());
 
-        TreasureDataSender sender = new TreasureDataSender(new TreasureDataSender.Config(), client);
         sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
         ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
         verify(client, times(2)).importFile(
@@ -163,7 +168,6 @@ public class TreasureDataSenderTest
 
         doReturn(false).when(client).existsDatabase(anyString());
 
-        TreasureDataSender sender = new TreasureDataSender(new TreasureDataSender.Config(), client);
         try {
             sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
             fail();

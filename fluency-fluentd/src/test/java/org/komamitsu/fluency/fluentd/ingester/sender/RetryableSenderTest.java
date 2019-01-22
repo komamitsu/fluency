@@ -17,8 +17,6 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.junit.Test;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 
 import java.io.IOException;
@@ -30,8 +28,43 @@ import static org.hamcrest.Matchers.is;
 
 public class RetryableSenderTest
 {
+    @Test
+    public void testSend()
+            throws IOException
+    {
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(3);
+
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
+
+        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
+        assertThat(baseSender.getRetry(), is(0));
+        sender.send(ByteBuffer.allocate(64));
+        assertThat(baseSender.getRetry(), is(3));
+    }
+
+    @Test(expected = RetryableSender.RetryOverException.class)
+    public void testSendRetryOver()
+            throws IOException
+    {
+        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
+                new ExponentialBackOffRetryStrategy.Config();
+        retryStrategyConfig.setMaxRetryCount(2);
+
+        RetryableSender.Config senderConfig = new RetryableSender.Config();
+        RetryableSender sender = new RetryableSender(senderConfig,
+                new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
+
+        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
+        assertThat(baseSender.getRetry(), is(0));
+        sender.send(ByteBuffer.allocate(64));
+    }
+
     static class FailurableSender
-        extends FluentdSender
+            extends FluentdSender
     {
         private final int maxFailures;
         private int retry;
@@ -65,62 +98,7 @@ public class RetryableSenderTest
 
         @Override
         public void close()
-                throws IOException
         {
         }
-
-        static class Config
-            implements FluentdSender.Instantiator
-        {
-            private final int maxFailures;
-
-            Config(int maxFailures)
-            {
-                this.maxFailures = maxFailures;
-            }
-
-            @Override
-            public FluentdSender createInstance()
-            {
-                return new FailurableSender(maxFailures);
-            }
-        }
-    }
-
-    @Test
-    public void testSend()
-            throws IOException
-    {
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(3);
-
-        RetryableSender sender =
-                new RetryableSender
-                        .Config(new FailurableSender.Config(3))
-                        .setRetryStrategyConfig(retryStrategyConfig)
-                        .createInstance();
-
-        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
-        sender.send(ByteBuffer.allocate(64));
-        assertThat(baseSender.getRetry(), is(3));
-    }
-
-    @Test(expected = RetryableSender.RetryOverException.class)
-    public void testSendRetryOver()
-            throws IOException
-    {
-        ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
-                new ExponentialBackOffRetryStrategy.Config().setMaxRetryCount(2);
-
-        RetryableSender sender =
-                new RetryableSender
-                        .Config(new FailurableSender.Config(3))
-                        .setRetryStrategyConfig(retryStrategyConfig)
-                        .createInstance();
-
-        FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
-        sender.send(ByteBuffer.allocate(64));
     }
 }

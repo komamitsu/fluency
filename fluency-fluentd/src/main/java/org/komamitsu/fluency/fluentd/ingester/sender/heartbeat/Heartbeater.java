@@ -34,7 +34,7 @@ public abstract class Heartbeater
     private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
     private final Config config;
     private final ScheduledExecutorService executorService;
-    private final AtomicReference<Callback> callback = new AtomicReference<Callback>();
+    private final AtomicReference<Callback> callback = new AtomicReference<>();
 
     protected Heartbeater(Config config)
     {
@@ -44,14 +44,11 @@ public abstract class Heartbeater
 
     public void start()
     {
-        executorService.scheduleAtFixedRate(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                ping();
-            }
-        }, config.getIntervalMillis(), config.getIntervalMillis(), TimeUnit.MILLISECONDS);
+        executorService.scheduleAtFixedRate(
+                this::ping,
+                config.getIntervalMillis(),
+                config.getIntervalMillis(),
+                TimeUnit.MILLISECONDS);
     }
 
     protected abstract void invoke()
@@ -86,7 +83,6 @@ public abstract class Heartbeater
 
     @Override
     public void close()
-            throws IOException
     {
         ExecutorServiceUtils.finishExecutorService(executorService);
     }
@@ -132,10 +128,9 @@ public abstract class Heartbeater
             return host;
         }
 
-        public Config setHost(String host)
+        public void setHost(String host)
         {
             this.host = host;
-            return this;
         }
 
         public int getPort()
@@ -143,10 +138,9 @@ public abstract class Heartbeater
             return port;
         }
 
-        public Config setPort(int port)
+        public void setPort(int port)
         {
             this.port = port;
-            return this;
         }
 
         public int getIntervalMillis()
@@ -154,10 +148,9 @@ public abstract class Heartbeater
             return intervalMillis;
         }
 
-        public Config setIntervalMillis(int intervalMillis)
+        public void setIntervalMillis(int intervalMillis)
         {
             this.intervalMillis = intervalMillis;
-            return this;
         }
 
         @Override
@@ -169,11 +162,5 @@ public abstract class Heartbeater
                     ", intervalMillis=" + intervalMillis +
                     '}';
         }
-    }
-
-    public interface Instantiator
-    {
-        Heartbeater createInstance()
-                throws IOException;
     }
 }

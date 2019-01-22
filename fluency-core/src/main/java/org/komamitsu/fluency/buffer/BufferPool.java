@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 class BufferPool
 {
-    @VisibleForTesting
-    final Map<Integer, LinkedBlockingQueue<ByteBuffer>> bufferPool = new HashMap<Integer, LinkedBlockingQueue<ByteBuffer>>();
+    @VisibleForTesting final Map<Integer, LinkedBlockingQueue<ByteBuffer>> bufferPool = new HashMap<>();
     private final AtomicLong allocatedSize = new AtomicLong();
     private final int initialBufferSize;
     private final long maxBufferSize;
@@ -56,7 +55,7 @@ class BufferPool
         synchronized (bufferPool) {
             buffers = bufferPool.get(normalizedBufferSize);
             if (buffers == null) {
-                buffers = new LinkedBlockingQueue<ByteBuffer>();
+                buffers = new LinkedBlockingQueue<>();
                 bufferPool.put(normalizedBufferSize, buffers);
             }
         }

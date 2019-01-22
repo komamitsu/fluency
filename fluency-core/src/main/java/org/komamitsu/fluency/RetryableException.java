@@ -17,7 +17,7 @@
 package org.komamitsu.fluency;
 
 public class RetryableException
-    extends RuntimeException
+        extends RuntimeException
 {
     public RetryableException(String message)
     {

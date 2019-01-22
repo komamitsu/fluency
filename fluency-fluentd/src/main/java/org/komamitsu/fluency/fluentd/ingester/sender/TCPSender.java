@@ -16,10 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +28,30 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-    extends NetworkSender<SocketChannel>
+        extends NetworkSender<SocketChannel>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
     private final Config config;
 
-    TCPSender(Config config)
+    public TCPSender()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public TCPSender(Config config)
+    {
+        this(config, null);
+    }
+
+    public TCPSender(FailureDetector failureDetector)
+    {
+        this(new Config(), failureDetector);
+    }
+
+    public TCPSender(Config config, FailureDetector failureDetector)
+    {
+        super(config, failureDetector);
         this.config = config;
     }
 
@@ -90,126 +102,7 @@ public class TCPSender
     }
 
     public static class Config
-            implements Instantiator
+            extends NetworkSender.Config
     {
-        private final NetworkSender.Config baseConfig = new NetworkSender.Config();
-
-        public NetworkSender.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public String getHost()
-        {
-            return baseConfig.getHost();
-        }
-
-        public Config setHost(String host)
-        {
-            baseConfig.setHost(host);
-            return this;
-        }
-
-        public int getPort()
-        {
-            return baseConfig.getPort();
-        }
-
-        public Config setPort(int port)
-        {
-            baseConfig.setPort(port);
-            return this;
-        }
-
-        public int getConnectionTimeoutMilli()
-        {
-            return baseConfig.getConnectionTimeoutMilli();
-        }
-
-        public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
-        {
-            baseConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
-            return this;
-        }
-
-        public int getReadTimeoutMilli()
-        {
-            return baseConfig.getReadTimeoutMilli();
-        }
-
-        public Config setReadTimeoutMilli(int readTimeoutMilli)
-        {
-            baseConfig.setReadTimeoutMilli(readTimeoutMilli);
-            return this;
-        }
-
-        public Heartbeater.Instantiator getHeartbeaterConfig()
-        {
-            return baseConfig.getHeartbeaterConfig();
-        }
-
-        public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
-        {
-            baseConfig.setHeartbeaterConfig(heartbeaterConfig);
-            return this;
-        }
-
-        public FailureDetector.Config getFailureDetectorConfig()
-        {
-            return baseConfig.getFailureDetectorConfig();
-        }
-
-        public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
-        {
-            baseConfig.setFailureDetectorConfig(failureDetectorConfig);
-            return this;
-        }
-
-        public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
-        {
-            return baseConfig.getFailureDetectorStrategyConfig();
-        }
-
-        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
-        {
-            baseConfig.setFailureDetectorStrategyConfig(failureDetectorStrategyConfig);
-            return this;
-        }
-
-        public int getWaitBeforeCloseMilli()
-        {
-            return baseConfig.getWaitBeforeCloseMilli();
-        }
-
-        public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
-        {
-            baseConfig.setWaitBeforeCloseMilli(waitBeforeCloseMilli);
-            return this;
-        }
-
-        @Override
-        public TCPSender createInstance()
-        {
-            return new TCPSender(this);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    '}';
-        }
     }
 }

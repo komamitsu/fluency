@@ -19,15 +19,14 @@ package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FailureDetector
-    implements Heartbeater.Callback, Closeable
+        implements Heartbeater.Callback, Closeable
 {
     private final FailureDetectStrategy failureDetectStrategy;
     private final Heartbeater heartbeater;
-    private final AtomicReference<Long> lastFailureTimestampMillis = new AtomicReference<Long>();
+    private final AtomicReference<Long> lastFailureTimestampMillis = new AtomicReference<>();
     private final Config config;
 
     public FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater, Config config)
@@ -39,21 +38,9 @@ public class FailureDetector
         this.config = config;
     }
 
-    private FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater)
+    public FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater)
     {
         this(failureDetectStrategy, heartbeater, new Config());
-    }
-
-    public FailureDetector(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig, Config config)
-            throws IOException
-    {
-        this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance(), config);
-    }
-
-    public FailureDetector(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig, Heartbeater.Instantiator heartbeaterConfig)
-            throws IOException
-    {
-        this(failureDetectorStrategyConfig.createInstance(), heartbeaterConfig.createInstance());
     }
 
     @Override
@@ -84,7 +71,6 @@ public class FailureDetector
 
     @Override
     public void close()
-            throws IOException
     {
         heartbeater.close();
     }

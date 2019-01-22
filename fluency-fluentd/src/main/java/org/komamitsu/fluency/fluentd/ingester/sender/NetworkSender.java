@@ -18,11 +18,7 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.fluentd.ingester.Response;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -34,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public abstract class NetworkSender<T>
-    extends FluentdSender
+        extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
@@ -53,22 +48,15 @@ public abstract class NetworkSender<T>
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    NetworkSender(Config config)
+    NetworkSender(FailureDetector failureDetector)
     {
-        super(config.getBaseConfig());
+        this(new Config(), failureDetector);
+    }
+
+    NetworkSender(Config config, FailureDetector failureDetector)
+    {
+        super(config);
         this.config = config;
-        FailureDetector failureDetector = null;
-        if (config.getHeartbeaterConfig() != null) {
-            try {
-                failureDetector = new FailureDetector(
-                        config.getFailureDetectorStrategyConfig(),
-                        config.getHeartbeaterConfig(),
-                        config.getFailureDetectorConfig());
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to instantiate FailureDetector. Disabling it", e);
-            }
-        }
         this.failureDetector = failureDetector;
     }
 
@@ -79,7 +67,7 @@ public abstract class NetworkSender<T>
     }
 
     abstract T getOrCreateSocketInternal()
-        throws IOException;
+            throws IOException;
 
     private synchronized T getOrCreateSocket()
             throws IOException
@@ -119,16 +107,10 @@ public abstract class NetworkSender<T>
             // For ACK response mode
             final ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
 
-            Future<Void> future = executorService.submit(new Callable<Void>()
-            {
-                @Override
-                public Void call()
-                        throws Exception
-                {
-                    LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
-                    recvResponse(socket, byteBuffer);
-                    return null;
-                }
+            Future<Void> future = executorService.submit(() -> {
+                LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
+                recvResponse(socket, byteBuffer);
+                return null;
             });
 
             try {
@@ -189,15 +171,6 @@ public abstract class NetworkSender<T>
         }
     }
 
-    public static class UnmatchedAckException
-            extends IOException
-    {
-        public UnmatchedAckException(String message)
-        {
-            super(message);
-        }
-    }
-
     public String getHost()
     {
         return config.getHost();
@@ -232,43 +205,32 @@ public abstract class NetworkSender<T>
                 "} " + super.toString();
     }
 
-    public static class Config
+    public static class UnmatchedAckException
+            extends IOException
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
+        public UnmatchedAckException(String message)
+        {
+            super(message);
+        }
+    }
+
+    public static class Config
+            extends FluentdSender.Config
+    {
         private String host = "127.0.0.1";
         private int port = 24224;
         private int connectionTimeoutMilli = 5000;
         private int readTimeoutMilli = 5000;
-        private Heartbeater.Instantiator heartbeaterConfig;   // Disabled by default
-        private FailureDetector.Config failureDetectorConfig = new FailureDetector.Config();
-        private FailureDetectStrategy.Instantiator failureDetectorStrategyConfig = new PhiAccrualFailureDetectStrategy.Config();
         private int waitBeforeCloseMilli = 1000;
-
-        public FluentdSender.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
 
         public String getHost()
         {
             return host;
         }
 
-        public Config setHost(String host)
+        public void setHost(String host)
         {
             this.host = host;
-            return this;
         }
 
         public int getPort()
@@ -276,10 +238,9 @@ public abstract class NetworkSender<T>
             return port;
         }
 
-        public Config setPort(int port)
+        public void setPort(int port)
         {
             this.port = port;
-            return this;
         }
 
         public int getConnectionTimeoutMilli()
@@ -287,10 +248,9 @@ public abstract class NetworkSender<T>
             return connectionTimeoutMilli;
         }
 
-        public Config setConnectionTimeoutMilli(int connectionTimeoutMilli)
+        public void setConnectionTimeoutMilli(int connectionTimeoutMilli)
         {
             this.connectionTimeoutMilli = connectionTimeoutMilli;
-            return this;
         }
 
         public int getReadTimeoutMilli()
@@ -298,43 +258,9 @@ public abstract class NetworkSender<T>
             return readTimeoutMilli;
         }
 
-        public Config setReadTimeoutMilli(int readTimeoutMilli)
+        public void setReadTimeoutMilli(int readTimeoutMilli)
         {
             this.readTimeoutMilli = readTimeoutMilli;
-            return this;
-        }
-
-        public Heartbeater.Instantiator getHeartbeaterConfig()
-        {
-            return heartbeaterConfig;
-        }
-
-        public Config setHeartbeaterConfig(Heartbeater.Instantiator heartbeaterConfig)
-        {
-            this.heartbeaterConfig = heartbeaterConfig;
-            return this;
-        }
-
-        public FailureDetector.Config getFailureDetectorConfig()
-        {
-            return failureDetectorConfig;
-        }
-
-        public Config setFailureDetectorConfig(FailureDetector.Config failureDetectorConfig)
-        {
-            this.failureDetectorConfig = failureDetectorConfig;
-            return this;
-        }
-
-        public FailureDetectStrategy.Instantiator getFailureDetectorStrategyConfig()
-        {
-            return failureDetectorStrategyConfig;
-        }
-
-        public Config setFailureDetectorStrategyConfig(FailureDetectStrategy.Instantiator failureDetectorStrategyConfig)
-        {
-            this.failureDetectorStrategyConfig = failureDetectorStrategyConfig;
-            return this;
         }
 
         public int getWaitBeforeCloseMilli()
@@ -342,26 +268,21 @@ public abstract class NetworkSender<T>
             return waitBeforeCloseMilli;
         }
 
-        public Config setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
+        public void setWaitBeforeCloseMilli(int waitBeforeCloseMilli)
         {
             this.waitBeforeCloseMilli = waitBeforeCloseMilli;
-            return this;
         }
 
         @Override
         public String toString()
         {
             return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    ", host='" + host + '\'' +
+                    "host='" + host + '\'' +
                     ", port=" + port +
                     ", connectionTimeoutMilli=" + connectionTimeoutMilli +
                     ", readTimeoutMilli=" + readTimeoutMilli +
-                    ", heartbeaterConfig=" + heartbeaterConfig +
-                    ", failureDetectorConfig=" + failureDetectorConfig +
-                    ", failureDetectorStrategyConfig=" + failureDetectorStrategyConfig +
                     ", waitBeforeCloseMilli=" + waitBeforeCloseMilli +
-                    '}';
+                    "} " + super.toString();
         }
     }
 }

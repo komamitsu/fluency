@@ -35,43 +35,10 @@ public class MockTCPSender
     private final List<Event> events = new ArrayList<Event>();
     private final AtomicInteger closeCount = new AtomicInteger();
 
-    public static class Event
-    {
-        ByteBuffer header;
-        ByteBuffer data;
-        ByteBuffer option;
-
-        public byte[] getAllBytes()
-        {
-            byte[] bytes = new byte[header.limit() + data.limit() + option.limit()];
-
-            int pos = 0;
-            int len = header.limit();
-            header.get(bytes, pos, len);
-            pos += len;
-
-            len = data.limit();
-            data.get(bytes, pos, len);
-            pos += len;
-
-            len = option.limit();
-            option.get(bytes, pos, len);
-            pos += len;
-
-            return bytes;
-        }
-    }
-
-    public MockTCPSender(String host, int port)
+    public MockTCPSender(TCPSender.Config config)
             throws IOException
     {
-        super(new TCPSender.Config().setHost(host).setPort(port));
-    }
-
-    public MockTCPSender(int port)
-            throws IOException
-    {
-        super(new TCPSender.Config().setPort(port));
+        super(config);
     }
 
     @Override
@@ -118,5 +85,32 @@ public class MockTCPSender
     public AtomicInteger getCloseCount()
     {
         return closeCount;
+    }
+
+    public static class Event
+    {
+        ByteBuffer header;
+        ByteBuffer data;
+        ByteBuffer option;
+
+        public byte[] getAllBytes()
+        {
+            byte[] bytes = new byte[header.limit() + data.limit() + option.limit()];
+
+            int pos = 0;
+            int len = header.limit();
+            header.get(bytes, pos, len);
+            pos += len;
+
+            len = data.limit();
+            data.get(bytes, pos, len);
+            pos += len;
+
+            len = option.limit();
+            option.get(bytes, pos, len);
+            pos += len;
+
+            return bytes;
+        }
     }
 }

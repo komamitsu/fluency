@@ -1,13 +1,13 @@
 dependencies {
-    implementation project(':fluency-core')
+  implementation project(':fluency-core')
 
-    implementation 'com.treasuredata.client:td-client:0.8.9'
+  implementation 'com.treasuredata.client:td-client:0.8.9'
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = 'fluency-treasuredata'
-        }
+  publications {
+    mavenJava(MavenPublication) {
+      artifactId = 'fluency-treasuredata'
     }
+  }
 }

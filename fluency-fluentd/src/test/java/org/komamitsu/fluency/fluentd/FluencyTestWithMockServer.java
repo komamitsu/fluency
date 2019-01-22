@@ -17,23 +17,25 @@
 package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.BaseFluencyBuilder;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
-import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
-import org.komamitsu.fluency.flusher.Flusher;
+import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
+import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
+import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
@@ -67,9 +69,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Theories.class)
 public class FluencyTestWithMockServer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FluencyTestWithMockServer.class);
-    private static final int SMALL_BUF_SIZE = 4 * 1024 * 1024;
-    private static final String TMPDIR = System.getProperty("java.io.tmpdir");
     @DataPoints
     public static final Options[] OPTIONS = {
             // TCP
@@ -109,154 +108,71 @@ public class FluencyTestWithMockServer
             new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
             new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
     };
+    private static final Logger LOG = LoggerFactory.getLogger(FluencyTestWithMockServer.class);
+    private static final int SMALL_BUF_SIZE = 4 * 1024 * 1024;
+    private static final String TMPDIR = System.getProperty("java.io.tmpdir");
 
-    private enum EmitType
+    private FailureDetector createFailureDetector(Heartbeater hb)
     {
-        MAP, MAP_WITH_EVENT_TIME,
-        MSGPACK_MAP_VALUE_BYTES, MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME,
-        MSGPACK_MAP_VALUE_BYTEBUFFER, MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME,
-    }
-
-    public static class Options
-    {
-        private final boolean failover;
-        private final boolean fileBackup;
-        private final boolean closeInsteadOfFlush;
-        private final boolean ackResponse;
-        private final boolean smallBuffer;
-        private final boolean sslEnabled;
-        private final EmitType emitType;
-
-        Options(
-                boolean failover,
-                boolean fileBackup,
-                boolean closeInsteadOfFlush,
-                boolean ackResponse,
-                boolean smallBuffer,
-                boolean sslEnabled)
-        {
-            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, sslEnabled, EmitType.MAP);
-        }
-
-        Options(
-                boolean failover,
-                boolean fileBackup,
-                boolean closeInsteadOfFlush,
-                boolean ackResponse,
-                boolean smallBuffer,
-                boolean sslEnabled,
-                EmitType emitType)
-        {
-            this.failover = failover;
-            this.fileBackup = fileBackup;
-            this.closeInsteadOfFlush = closeInsteadOfFlush;
-            this.ackResponse = ackResponse;
-            this.smallBuffer = smallBuffer;
-            this.sslEnabled = sslEnabled;
-            this.emitType = emitType;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Options)) {
-                return false;
-            }
-
-            Options options = (Options) o;
-
-            if (failover != options.failover) {
-                return false;
-            }
-            if (fileBackup != options.fileBackup) {
-                return false;
-            }
-            if (closeInsteadOfFlush != options.closeInsteadOfFlush) {
-                return false;
-            }
-            if (ackResponse != options.ackResponse) {
-                return false;
-            }
-            if (smallBuffer != options.smallBuffer) {
-                return false;
-            }
-            if (sslEnabled != options.sslEnabled) {
-                return false;
-            }
-            return emitType == options.emitType;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = (failover ? 1 : 0);
-            result = 31 * result + (fileBackup ? 1 : 0);
-            result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
-            result = 31 * result + (ackResponse ? 1 : 0);
-            result = 31 * result + (smallBuffer ? 1 : 0);
-            result = 31 * result + (sslEnabled ? 1 : 0);
-            result = 31 * result + (emitType != null ? emitType.hashCode() : 0);
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Options{" +
-                    "failover=" + failover +
-                    ", fileBackup=" + fileBackup +
-                    ", closeInsteadOfFlush=" + closeInsteadOfFlush +
-                    ", ackResponse=" + ackResponse +
-                    ", smallBuffer=" + smallBuffer +
-                    ", sslEnabled=" + sslEnabled +
-                    ", emitType=" + emitType +
-                    '}';
-        }
-    }
-
-    interface FluencyFactory
-    {
-        Fluency generate(List<Integer> localPort)
-                throws IOException;
+        return new FailureDetector(new PhiAccrualFailureDetectStrategy(), hb);
     }
 
     private FluentdSender getSingleTCPSender(int port)
     {
-        return new TCPSender.Config().setPort(port).createInstance();
+        TCPSender.Config config = new TCPSender.Config();
+        config.setPort(port);
+        return new TCPSender(config);
     }
 
     private FluentdSender getDoubleTCPSender(int firstPort, int secondPort)
     {
-        return new MultiSender.Config(
-                Arrays.asList(
-                    new TCPSender.Config()
-                            .setPort(firstPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
-                    new TCPSender.Config()
-                            .setPort(secondPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
-                )).createInstance();
+        TCPSender.Config config0 = new TCPSender.Config();
+        config0.setPort(firstPort);
+
+        TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
+        hbConfig0.setPort(firstPort);
+
+        TCPSender.Config config1 = new TCPSender.Config();
+        config1.setPort(secondPort);
+
+        TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
+        hbConfig1.setPort(secondPort);
+
+        return new MultiSender(new MultiSender.Config(),
+                ImmutableList.of(
+                        new TCPSender(config0,
+                                createFailureDetector(new TCPHeartbeater(hbConfig0))),
+                        new TCPSender(config1,
+                                createFailureDetector(new TCPHeartbeater(hbConfig1)))));
     }
 
     private FluentdSender getSingleSSLSender(int port)
     {
-        return new SSLSender.Config().setPort(port).createInstance();
+        SSLSender.Config config = new SSLSender.Config();
+        config.setPort(port);
+        return new SSLSender(config);
     }
 
     private FluentdSender getDoubleSSLSender(int firstPort, int secondPort)
     {
-        return new MultiSender.Config(
-                Arrays.asList(
-                    new SSLSender.Config()
-                            .setPort(firstPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(firstPort)),
-                    new SSLSender.Config()
-                            .setPort(secondPort)
-                            .setHeartbeaterConfig(new TCPHeartbeater.Config().setPort(secondPort))
-                )).createInstance();
+        SSLSender.Config config0 = new SSLSender.Config();
+        config0.setPort(firstPort);
+
+        TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
+        hbConfig0.setPort(firstPort);
+
+        SSLSender.Config config1 = new SSLSender.Config();
+        config1.setPort(secondPort);
+
+        TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
+        hbConfig1.setPort(secondPort);
+
+        return new MultiSender(new MultiSender.Config(),
+                ImmutableList.of(
+                        new SSLSender(config0,
+                                createFailureDetector(new TCPHeartbeater(hbConfig0))),
+                        new SSLSender(config1,
+                                createFailureDetector(new TCPHeartbeater(hbConfig1)))));
     }
 
     @Theory
@@ -294,17 +210,18 @@ public class FluencyTestWithMockServer
                 bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
             }
             if (options.fileBackup) {
-                bufferConfig.setFileBackupDir(TMPDIR).setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
+                bufferConfig.setFileBackupDir(TMPDIR);
+                bufferConfig.setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
             }
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config()
-                    .setWaitUntilBufferFlushed(10)
-                    .setWaitUntilTerminated(10);
 
-            return BaseFluencyBuilder.buildFromConfigs(
-                    new FluentdRecordFormatter.Config(),
-                    bufferConfig,
-                    flusherConfig,
-                    ingesterConfig.createInstance(sender));
+            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+            flusherConfig.setWaitUntilBufferFlushed(10);
+            flusherConfig.setWaitUntilTerminated(10);
+
+            Buffer buffer = new Buffer(bufferConfig, new FluentdRecordFormatter(new FluentdRecordFormatter.Config()));
+            AsyncFlusher flusher = new AsyncFlusher(flusherConfig, buffer, new FluentdIngester(ingesterConfig, sender));
+
+            return new Fluency(buffer, flusher);
         }, options);
     }
 
@@ -579,6 +496,119 @@ public class FluencyTestWithMockServer
             fluency.get().close();
             fluentd.stop();
             secondaryFluentd.stop();
+        }
+    }
+
+    private enum EmitType
+    {
+        MAP, MAP_WITH_EVENT_TIME,
+        MSGPACK_MAP_VALUE_BYTES, MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME,
+        MSGPACK_MAP_VALUE_BYTEBUFFER, MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME,
+    }
+
+    interface FluencyFactory
+    {
+        Fluency generate(List<Integer> localPort)
+                throws IOException;
+    }
+
+    public static class Options
+    {
+        private final boolean failover;
+        private final boolean fileBackup;
+        private final boolean closeInsteadOfFlush;
+        private final boolean ackResponse;
+        private final boolean smallBuffer;
+        private final boolean sslEnabled;
+        private final EmitType emitType;
+
+        Options(
+                boolean failover,
+                boolean fileBackup,
+                boolean closeInsteadOfFlush,
+                boolean ackResponse,
+                boolean smallBuffer,
+                boolean sslEnabled)
+        {
+            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, sslEnabled, EmitType.MAP);
+        }
+
+        Options(
+                boolean failover,
+                boolean fileBackup,
+                boolean closeInsteadOfFlush,
+                boolean ackResponse,
+                boolean smallBuffer,
+                boolean sslEnabled,
+                EmitType emitType)
+        {
+            this.failover = failover;
+            this.fileBackup = fileBackup;
+            this.closeInsteadOfFlush = closeInsteadOfFlush;
+            this.ackResponse = ackResponse;
+            this.smallBuffer = smallBuffer;
+            this.sslEnabled = sslEnabled;
+            this.emitType = emitType;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Options)) {
+                return false;
+            }
+
+            Options options = (Options) o;
+
+            if (failover != options.failover) {
+                return false;
+            }
+            if (fileBackup != options.fileBackup) {
+                return false;
+            }
+            if (closeInsteadOfFlush != options.closeInsteadOfFlush) {
+                return false;
+            }
+            if (ackResponse != options.ackResponse) {
+                return false;
+            }
+            if (smallBuffer != options.smallBuffer) {
+                return false;
+            }
+            if (sslEnabled != options.sslEnabled) {
+                return false;
+            }
+            return emitType == options.emitType;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (failover ? 1 : 0);
+            result = 31 * result + (fileBackup ? 1 : 0);
+            result = 31 * result + (closeInsteadOfFlush ? 1 : 0);
+            result = 31 * result + (ackResponse ? 1 : 0);
+            result = 31 * result + (smallBuffer ? 1 : 0);
+            result = 31 * result + (sslEnabled ? 1 : 0);
+            result = 31 * result + (emitType != null ? emitType.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Options{" +
+                    "failover=" + failover +
+                    ", fileBackup=" + fileBackup +
+                    ", closeInsteadOfFlush=" + closeInsteadOfFlush +
+                    ", ackResponse=" + ackResponse +
+                    ", smallBuffer=" + smallBuffer +
+                    ", sslEnabled=" + sslEnabled +
+                    ", emitType=" + emitType +
+                    '}';
         }
     }
 

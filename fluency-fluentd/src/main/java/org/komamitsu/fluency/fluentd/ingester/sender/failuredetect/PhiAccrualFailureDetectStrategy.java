@@ -24,9 +24,14 @@ public class PhiAccrualFailureDetectStrategy
     private final PhiAccuralFailureDetector failureDetector;
     private final Config config;
 
-    protected PhiAccrualFailureDetectStrategy(Config config)
+    public PhiAccrualFailureDetectStrategy()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public PhiAccrualFailureDetectStrategy(Config config)
+    {
+        super(config);
         this.config = config;
         failureDetector = new PhiAccuralFailureDetector.Builder().
                 setThreshold(config.getPhiThreshold()).
@@ -65,26 +70,19 @@ public class PhiAccrualFailureDetectStrategy
     }
 
     public static class Config
-            implements Instantiator
+            extends FailureDetectStrategy.Config
     {
-        private FailureDetectStrategy.Config baseConfig = new FailureDetectStrategy.Config();
         private double phiThreshold = 16;
         private int arrivalWindowSize = 100;
-
-        public FailureDetectStrategy.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
 
         public double getPhiThreshold()
         {
             return phiThreshold;
         }
 
-        public Config setPhiThreshold(float phiThreshold)
+        public void setPhiThreshold(float phiThreshold)
         {
             this.phiThreshold = phiThreshold;
-            return this;
         }
 
         public int getArrivalWindowSize()
@@ -92,16 +90,9 @@ public class PhiAccrualFailureDetectStrategy
             return arrivalWindowSize;
         }
 
-        public Config setArrivalWindowSize(int arrivalWindowSize)
+        public void setArrivalWindowSize(int arrivalWindowSize)
         {
             this.arrivalWindowSize = arrivalWindowSize;
-            return this;
-        }
-
-        @Override
-        public FailureDetectStrategy createInstance()
-        {
-            return new PhiAccrualFailureDetectStrategy(this);
         }
     }
 }

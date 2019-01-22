@@ -16,10 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
-import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +31,20 @@ public class RetryableSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
     private final FluentdSender baseSender;
-    private RetryStrategy retryStrategy;
     private final AtomicBoolean isClosed = new AtomicBoolean();
+    private RetryStrategy retryStrategy;
+
+    public RetryableSender(FluentdSender baseSender, RetryStrategy retryStrategy)
+    {
+        this(new Config(), baseSender, retryStrategy);
+    }
+
+    public RetryableSender(Config config, FluentdSender baseSender, RetryStrategy retryStrategy)
+    {
+        super(config);
+        this.baseSender = baseSender;
+        this.retryStrategy = retryStrategy;
+    }
 
     @Override
     public void close()
@@ -43,22 +52,6 @@ public class RetryableSender
     {
         baseSender.close();
         isClosed.set(true);
-    }
-
-    public static class RetryOverException
-            extends IOException
-    {
-        public RetryOverException(String s, Throwable throwable)
-        {
-            super(s, throwable);
-        }
-    }
-
-    protected RetryableSender(Config config)
-    {
-        super(config.getBaseConfig());
-        baseSender = config.getBaseSenderConfig().createInstance();
-        retryStrategy = config.getRetryStrategyConfig().createInstance();
     }
 
     @Override
@@ -131,65 +124,17 @@ public class RetryableSender
                 "} " + super.toString();
     }
 
-    public static class Config
-            implements Instantiator
+    public static class RetryOverException
+            extends IOException
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
-        private RetryStrategy.Instantiator retryStrategyConfig = new ExponentialBackOffRetryStrategy.Config();
-
-        public FluentdSender.Config getBaseConfig()
+        public RetryOverException(String s, Throwable throwable)
         {
-            return baseConfig;
+            super(s, throwable);
         }
+    }
 
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public Config(Instantiator baseSenderConfig)
-        {
-            this.baseSenderConfig = baseSenderConfig;
-        }
-
-        private final Instantiator baseSenderConfig;
-
-        public Instantiator getBaseSenderConfig()
-        {
-            return baseSenderConfig;
-        }
-
-        public RetryStrategy.Instantiator getRetryStrategyConfig()
-        {
-            return retryStrategyConfig;
-        }
-
-        public Config setRetryStrategyConfig(RetryStrategy.Instantiator retryStrategyConfig)
-        {
-            this.retryStrategyConfig = retryStrategyConfig;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    ", retryStrategyConfig=" + retryStrategyConfig +
-                    ", baseSenderConfig=" + baseSenderConfig +
-                    '}';
-        }
-
-        @Override
-        public RetryableSender createInstance()
-        {
-            return new RetryableSender(this);
-        }
+    public static class Config
+            extends FluentdSender.Config
+    {
     }
 }

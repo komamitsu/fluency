@@ -51,6 +51,22 @@ public abstract class AbstractFluentdServer
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private FluentdEventHandler fluentdEventHandler;
 
+    public AbstractFluentdServer(boolean sslEnabled)
+    {
+        super(sslEnabled);
+    }
+
+    @Override
+    protected synchronized MockTCPServer.EventHandler getEventHandler()
+    {
+        if (this.fluentdEventHandler == null) {
+            this.fluentdEventHandler = new FluentdEventHandler(getFluentdEventHandler());
+        }
+        return fluentdEventHandler;
+    }
+
+    protected abstract EventHandler getFluentdEventHandler();
+
     public interface EventHandler
     {
         void onConnect(Socket acceptSocket);
@@ -79,10 +95,10 @@ public abstract class AbstractFluentdServer
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(
                     1 /* map header */ +
-                    1 /* key header */ +
-                    3 /* key body */ +
-                    2 /* value header(including len) */ +
-                    ackResponseToken.length);
+                            1 /* key header */ +
+                            3 /* key body */ +
+                            2 /* value header(including len) */ +
+                            ackResponseToken.length);
 
             byteBuffer.put((byte) 0x81); /* map header */
             byteBuffer.put((byte) 0xA3); /* key header */
@@ -94,7 +110,60 @@ public abstract class AbstractFluentdServer
             acceptSocket.getOutputStream().write(byteBuffer.array());
         }
 
-        private class FluentdAcceptTask implements Runnable
+        @Override
+        public void onConnect(final Socket acceptSocket)
+        {
+            eventHandler.onConnect(acceptSocket);
+            try {
+                FluentdAcceptTask fluentdAcceptTask = new FluentdAcceptTask(acceptSocket);
+                fluentdTasks.put(acceptSocket, fluentdAcceptTask);
+                executorService.execute(fluentdAcceptTask);
+            }
+            catch (IOException e) {
+                fluentdTasks.remove(acceptSocket);
+                throw new IllegalStateException("Failed to create FluentdAcceptTask", e);
+            }
+        }
+
+        @Override
+        public void onReceive(Socket acceptSocket, int len, byte[] data)
+        {
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.get(acceptSocket);
+            if (fluentdAcceptTask == null) {
+                throw new IllegalStateException("fluentAccept is null: this=" + this);
+            }
+
+            LOG.trace("onReceived: local.port={}, remote.port={}, dataLen={}", acceptSocket.getLocalPort(), acceptSocket.getPort(), len);
+            try {
+                fluentdAcceptTask.getPipedOutputStream().write(data, 0, len);
+                fluentdAcceptTask.getPipedOutputStream().flush();
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Failed to call PipedOutputStream.write(): this=" + this);
+            }
+        }
+
+        @Override
+        public void onClose(Socket acceptSocket)
+        {
+            eventHandler.onClose(acceptSocket);
+            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocket);
+            try {
+                fluentdAcceptTask.getPipedInputStream().close();
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to close PipedInputStream");
+            }
+            try {
+                fluentdAcceptTask.getPipedOutputStream().close();
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to close PipedOutputStream");
+            }
+        }
+
+        private class FluentdAcceptTask
+                implements Runnable
         {
             private final Socket acceptSocket;
             private final PipedInputStream pipedInputStream;
@@ -203,75 +272,6 @@ public abstract class AbstractFluentdServer
                 }
             }
         }
-
-        @Override
-        public void onConnect(final Socket acceptSocket)
-        {
-            eventHandler.onConnect(acceptSocket);
-            try {
-                FluentdAcceptTask fluentdAcceptTask = new FluentdAcceptTask(acceptSocket);
-                fluentdTasks.put(acceptSocket, fluentdAcceptTask);
-                executorService.execute(fluentdAcceptTask);
-            }
-            catch (IOException e) {
-                fluentdTasks.remove(acceptSocket);
-                throw new IllegalStateException("Failed to create FluentdAcceptTask", e);
-            }
-        }
-
-        @Override
-        public void onReceive(Socket acceptSocket, int len, byte[] data)
-        {
-            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.get(acceptSocket);
-            if (fluentdAcceptTask == null) {
-                throw new IllegalStateException("fluentAccept is null: this=" + this);
-            }
-
-            LOG.trace("onReceived: local.port={}, remote.port={}, dataLen={}", acceptSocket.getLocalPort(), acceptSocket.getPort(), len);
-            try {
-                fluentdAcceptTask.getPipedOutputStream().write(data, 0, len);
-                fluentdAcceptTask.getPipedOutputStream().flush();
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Failed to call PipedOutputStream.write(): this=" + this);
-            }
-        }
-
-        @Override
-        public void onClose(Socket acceptSocket)
-        {
-            eventHandler.onClose(acceptSocket);
-            FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocket);
-            try {
-                fluentdAcceptTask.getPipedInputStream().close();
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to close PipedInputStream");
-            }
-            try {
-                fluentdAcceptTask.getPipedOutputStream().close();
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to close PipedOutputStream");
-            }
-        }
     }
-
-    public AbstractFluentdServer(boolean sslEnabled)
-            throws Exception
-    {
-        super(sslEnabled);
-    }
-
-    @Override
-    protected synchronized MockTCPServer.EventHandler getEventHandler()
-    {
-        if (this.fluentdEventHandler == null) {
-            this.fluentdEventHandler = new FluentdEventHandler(getFluentdEventHandler());
-        }
-        return this.fluentdEventHandler;
-    }
-
-    protected abstract EventHandler getFluentdEventHandler();
 }
 

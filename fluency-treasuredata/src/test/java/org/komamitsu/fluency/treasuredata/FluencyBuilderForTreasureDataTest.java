@@ -19,7 +19,7 @@ package org.komamitsu.fluency.treasuredata;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientConfig;
 import com.treasuredata.client.TDHttpClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
@@ -28,7 +28,6 @@ import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -36,7 +35,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class FluencyBuilderTest
+public class FluencyBuilderForTreasureDataTest
 {
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
@@ -93,19 +92,12 @@ public class FluencyBuilderTest
     public void build()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        Fluency fluency = null;
-        try {
-            fluency = FluencyBuilder.build(APIKEY, new FluencyBuilder.FluencyConfig());
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY)) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "api-import.treasuredata.com", true, APIKEY);
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 
@@ -113,19 +105,12 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpsEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        Fluency fluency = null;
-        try {
-            fluency = FluencyBuilder.build(APIKEY, "https://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "https://custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", true, APIKEY);
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 
@@ -133,19 +118,12 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpsEndpointWithoutScheme()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        Fluency fluency = null;
-        try {
-            fluency = FluencyBuilder.build(APIKEY, "custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", true, APIKEY);
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 
@@ -153,19 +131,12 @@ public class FluencyBuilderTest
     public void buildWithCustomHttpEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
-        Fluency fluency = null;
-        try {
-            fluency = FluencyBuilder.build(APIKEY, "http://custom.endpoint.org", new FluencyBuilder.FluencyConfig());
+        try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "http://custom.endpoint.org")) {
             assertDefaultBuffer(fluency.getBuffer());
             assertDefaultFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", false, APIKEY);
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 
@@ -176,27 +147,24 @@ public class FluencyBuilderTest
         String tmpdir = System.getProperty("java.io.tmpdir");
         assertThat(tmpdir, is(notNullValue()));
 
-        Fluency fluency = null;
-        try {
-            FluencyBuilder.FluencyConfig config =
-                    new FluencyBuilder.FluencyConfig()
-                            .setFlushIntervalMillis(200)
-                            .setMaxBufferSize(Long.MAX_VALUE)
-                            .setBufferChunkInitialSize(7 * 1024 * 1024)
-                            .setBufferChunkRetentionSize(13 * 1024 * 1024)
-                            .setBufferChunkRetentionTimeMillis(19 * 1000)
-                            .setJvmHeapBufferMode(true)
-                            .setWaitUntilBufferFlushed(42)
-                            .setWaitUntilFlusherTerminated(24)
-                            .setFileBackupDir(tmpdir)
-                            .setSenderRetryIntervalMillis(1234)
-                            .setSenderMaxRetryIntervalMillis(345678)
-                            .setSenderRetryFactor(3.14f)
-                            .setSenderRetryMax(17)
-                            .setSenderWorkBufSize(123456);
+        FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
+        builder.setFlushIntervalMillis(200);
+        builder.setMaxBufferSize(Long.MAX_VALUE);
+        builder.setBufferChunkInitialSize(7 * 1024 * 1024);
+        builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
+        builder.setBufferChunkRetentionTimeMillis(19 * 1000);
+        builder.setJvmHeapBufferMode(true);
+        builder.setWaitUntilBufferFlushed(42);
+        builder.setWaitUntilFlusherTerminated(24);
+        builder.setFileBackupDir(tmpdir);
+        builder.setSenderRetryIntervalMillis(1234);
+        builder.setSenderMaxRetryIntervalMillis(345678);
+        builder.setSenderRetryFactor(3.14f);
+        builder.setSenderRetryMax(17);
+        builder.setSenderWorkBufSize(123456);
+        ;
 
-            fluency = FluencyBuilder.build(APIKEY, config);
-
+        try (Fluency fluency = builder.build(APIKEY)) {
             assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
             Buffer buffer = fluency.getBuffer();
             assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
@@ -222,11 +190,6 @@ public class FluencyBuilderTest
             assertThat(sender.getRetryFactor(), is(3.14f));
             assertThat(sender.getRetryMax(), is(17));
             assertThat(sender.getWorkBufSize(), is(123456));
-        }
-        finally {
-            if (fluency != null) {
-                fluency.close();
-            }
         }
     }
 }

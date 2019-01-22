@@ -16,9 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.Test;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,12 +24,33 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
-public class ConfigTest
+class ConfigTest
 {
+    @Test
+    void errorHandler()
+            throws IOException
+    {
+        final AtomicBoolean errorOccurred = new AtomicBoolean();
+        FluentdSender.Config config = new FluentdSender.Config();
+        config.setErrorHandler(e -> errorOccurred.set(true));
+
+        new DummySender(config, false).send(ByteBuffer.allocate(8));
+        assertThat(errorOccurred.get(), is(false));
+
+        try {
+            new DummySender(config, true).send(ByteBuffer.allocate(8));
+            fail();
+        }
+        catch (Exception e) {
+            assertThat(errorOccurred.get(), is(true));
+        }
+    }
+
     static class DummySender
-        extends FluentdSender
+            extends FluentdSender
     {
         private final boolean shouldFail;
 
@@ -60,32 +79,6 @@ public class ConfigTest
         public void close()
                 throws IOException
         {
-        }
-    }
-
-    @Test
-    public void errorHandler()
-            throws IOException
-    {
-        final AtomicBoolean errorOccurred = new AtomicBoolean();
-        FluentdSender.Config config = new FluentdSender.Config().setErrorHandler(new ErrorHandler()
-        {
-            @Override
-            public void handle(Throwable e)
-            {
-                errorOccurred.set(true);
-            }
-        });
-
-        new DummySender(config, false).send(ByteBuffer.allocate(8));
-        assertThat(errorOccurred.get(), is(false));
-
-        try {
-            new DummySender(config, true).send(ByteBuffer.allocate(8));
-            assertTrue(false);
-        }
-        catch (Exception e) {
-            assertThat(errorOccurred.get(), is(true));
         }
     }
 }

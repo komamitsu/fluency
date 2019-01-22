@@ -54,10 +54,9 @@ public abstract class RetryStrategy
             return maxRetryCount;
         }
 
-        public Config setMaxRetryCount(int maxRetryCount)
+        public void setMaxRetryCount(int maxRetryCount)
         {
             this.maxRetryCount = maxRetryCount;
-            return this;
         }
 
         @Override
@@ -67,10 +66,5 @@ public abstract class RetryStrategy
                     "maxRetryCount=" + maxRetryCount +
                     '}';
         }
-    }
-
-    public interface Instantiator
-    {
-        RetryStrategy createInstance();
     }
 }

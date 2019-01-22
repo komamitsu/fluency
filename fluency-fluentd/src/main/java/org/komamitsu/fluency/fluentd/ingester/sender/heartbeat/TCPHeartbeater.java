@@ -29,10 +29,14 @@ public class TCPHeartbeater
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
     private final Config config;
 
-    protected TCPHeartbeater(final Config config)
-            throws IOException
+    public TCPHeartbeater()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public TCPHeartbeater(final Config config)
+    {
+        super(config);
         this.config = config;
     }
 
@@ -40,17 +44,10 @@ public class TCPHeartbeater
     protected void invoke()
             throws IOException
     {
-        SocketChannel socketChannel = null;
-        try {
-            socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()));
+        try (SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()))) {
             LOG.trace("TCPHeartbeat: remotePort={}, localPort={}",
                     socketChannel.socket().getPort(), socketChannel.socket().getLocalPort());
             pong();
-        }
-        finally {
-            if (socketChannel != null) {
-                socketChannel.close();
-            }
         }
     }
 
@@ -63,63 +60,8 @@ public class TCPHeartbeater
     }
 
     public static class Config
-            implements Instantiator
+            extends Heartbeater.Config
     {
-        private final Heartbeater.Config baseConfig = new Heartbeater.Config();
-
-        public Heartbeater.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public String getHost()
-        {
-            return baseConfig.getHost();
-        }
-
-        public int getPort()
-        {
-            return baseConfig.getPort();
-        }
-
-        public Config setIntervalMillis(int intervalMillis)
-        {
-            baseConfig.setIntervalMillis(intervalMillis);
-            return this;
-        }
-
-        public int getIntervalMillis()
-        {
-            return baseConfig.getIntervalMillis();
-        }
-
-        public Config setHost(String host)
-        {
-            baseConfig.setHost(host);
-            return this;
-        }
-
-        public Config setPort(int port)
-        {
-            baseConfig.setPort(port);
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    '}';
-        }
-
-        @Override
-        public TCPHeartbeater createInstance()
-                throws IOException
-        {
-            return new TCPHeartbeater(this);
-        }
     }
-
 }
 

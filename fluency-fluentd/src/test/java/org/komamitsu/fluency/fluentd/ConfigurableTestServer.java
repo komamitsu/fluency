@@ -36,18 +36,6 @@ public class ConfigurableTestServer
         this.sslEnabled = sslEnabled;
     }
 
-    interface WithClientSocket
-    {
-        void run(Socket clientSocket)
-                throws Exception;
-    }
-
-    interface WithServerPort
-    {
-        void run(int serverPort)
-                throws Exception;
-    }
-
     Exception run(final WithClientSocket withClientSocket, final WithServerPort withServerPort, long timeoutMilli)
             throws Throwable
     {
@@ -109,5 +97,17 @@ public class ConfigurableTestServer
             }
         }
         return null;
+    }
+
+    interface WithClientSocket
+    {
+        void run(Socket clientSocket)
+                throws Exception;
+    }
+
+    interface WithServerPort
+    {
+        void run(int serverPort)
+                throws Exception;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mitsunori Komatsu (komamitsu)
+ * Copyright 2019 Mitsunori Komatsu (komamitsu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,7 @@
 
 package org.komamitsu.fluency;
 
-public class NonRetryableException
-        extends RuntimeException
+public class TestableFluencyBuilder
+        extends FluencyBuilder
 {
-    public NonRetryableException(String message)
-    {
-        super(message);
-    }
-
-    public NonRetryableException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
 }

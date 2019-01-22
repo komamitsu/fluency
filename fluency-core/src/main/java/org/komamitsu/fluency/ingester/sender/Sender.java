@@ -27,10 +27,9 @@ public interface Sender
             return errorHandler;
         }
 
-        public Config setErrorHandler(ErrorHandler errorHandler)
+        public void setErrorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
-            return this;
         }
 
         @Override
@@ -40,10 +39,5 @@ public interface Sender
                     "senderErrorHandler=" + errorHandler +
                     '}';
         }
-    }
-
-    interface Instantiator<T extends Sender>
-    {
-        T createInstance();
     }
 }

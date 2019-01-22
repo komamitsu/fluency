@@ -38,28 +38,21 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
-    private ExecutorService executorService;
-    private ServerTask serverTask;
     private final boolean sslEnabled;
     private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
+    private final AtomicInteger threadSeqNum = new AtomicInteger();
+    private ExecutorService executorService;
+    private ServerTask serverTask;
 
     public MockTCPServer(boolean sslEnabled)
     {
         this.sslEnabled = sslEnabled;
     }
 
-    public interface EventHandler
-    {
-        void onConnect(Socket acceptSocket);
-
-        void onReceive(Socket acceptSocket, int len, byte[] data);
-
-        void onClose(Socket acceptSocket);
-    }
-
     protected EventHandler getEventHandler()
     {
-        return new EventHandler() {
+        return new EventHandler()
+        {
             @Override
             public void onConnect(Socket acceptSocket)
             {
@@ -77,13 +70,12 @@ public class MockTCPServer
         };
     }
 
-    private final AtomicInteger threadSeqNum = new AtomicInteger();
-
     public synchronized void start()
             throws Exception
     {
         if (executorService == null) {
-            this.executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+            this.executorService = Executors.newCachedThreadPool(new ThreadFactory()
+            {
                 @Override
                 public Thread newThread(Runnable r)
                 {
@@ -155,7 +147,17 @@ public class MockTCPServer
         serverTask = null;
     }
 
-    private static class ServerTask implements Runnable
+    public interface EventHandler
+    {
+        void onConnect(Socket acceptSocket);
+
+        void onReceive(Socket acceptSocket, int len, byte[] data);
+
+        void onClose(Socket acceptSocket);
+    }
+
+    private static class ServerTask
+            implements Runnable
     {
         private final ServerSocket serverSocket;
         private final ExecutorService serverExecutorService;

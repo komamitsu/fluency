@@ -43,80 +43,6 @@ public class FileBackup
     private final Pattern pattern;
     private final String prefix;
 
-    public static class SavedBuffer
-        implements Closeable
-    {
-        private final List<String> params;
-        private final File savedFile;
-        private FileChannel channel;
-
-        public SavedBuffer(File savedFile, List<String> params)
-        {
-            this.savedFile = savedFile;
-            this.params = params;
-        }
-
-        public void open(Callback callback)
-        {
-            try {
-                channel = new RandomAccessFile(savedFile, "rw").getChannel();
-                callback.process(params, channel);
-                success();
-            }
-            catch (Exception e) {
-                LOG.error("Failed to process file. Skipping the file: file=" + savedFile, e);
-            }
-            finally {
-                try {
-                    close();
-                }
-                catch (IOException e) {
-                    LOG.warn("Failed to close file: file=" + savedFile, e);
-                }
-            }
-        }
-
-        public void remove()
-        {
-            if (!savedFile.delete()) {
-                LOG.warn("Failed to delete file: file=" + savedFile);
-            }
-        }
-
-        private void success()
-        {
-            try {
-                close();
-            }
-            catch (IOException e) {
-                LOG.warn("Failed to close file: file=" + savedFile, e);
-            }
-            finally {
-                remove();
-            }
-        }
-
-        @Override
-        public void close()
-                throws IOException
-        {
-            if (channel != null && channel.isOpen()) {
-                channel.close();
-                channel = null;
-            }
-        }
-
-        public interface Callback
-        {
-            void process(List<String> params, FileChannel channel);
-        }
-    }
-
-    private String prefix()
-    {
-        return prefix == null ? "" : "_" + prefix;
-    }
-
     public FileBackup(File backupDir, Buffer userBuffer, String prefix)
     {
         if (backupDir.mkdir()) {
@@ -130,6 +56,11 @@ public class FileBackup
         this.prefix = prefix;
         this.pattern = Pattern.compile(userBuffer.bufferFormatType() + prefix() + PARAM_DELIM_IN_FILENAME + "([\\w\\." + PARAM_DELIM_IN_FILENAME + "]+)" + EXT_FILENAME);
         LOG.debug(this.toString());
+    }
+
+    private String prefix()
+    {
+        return prefix == null ? "" : "_" + prefix;
     }
 
     @Override
@@ -213,6 +144,75 @@ public class FileBackup
                     LOG.warn("Failed to close Channel: channel=" + channel);
                 }
             }
+        }
+    }
+
+    public static class SavedBuffer
+            implements Closeable
+    {
+        private final List<String> params;
+        private final File savedFile;
+        private FileChannel channel;
+
+        public SavedBuffer(File savedFile, List<String> params)
+        {
+            this.savedFile = savedFile;
+            this.params = params;
+        }
+
+        public void open(Callback callback)
+        {
+            try {
+                channel = new RandomAccessFile(savedFile, "rw").getChannel();
+                callback.process(params, channel);
+                success();
+            }
+            catch (Exception e) {
+                LOG.error("Failed to process file. Skipping the file: file=" + savedFile, e);
+            }
+            finally {
+                try {
+                    close();
+                }
+                catch (IOException e) {
+                    LOG.warn("Failed to close file: file=" + savedFile, e);
+                }
+            }
+        }
+
+        public void remove()
+        {
+            if (!savedFile.delete()) {
+                LOG.warn("Failed to delete file: file=" + savedFile);
+            }
+        }
+
+        private void success()
+        {
+            try {
+                close();
+            }
+            catch (IOException e) {
+                LOG.warn("Failed to close file: file=" + savedFile, e);
+            }
+            finally {
+                remove();
+            }
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
+            if (channel != null && channel.isOpen()) {
+                channel.close();
+                channel = null;
+            }
+        }
+
+        public interface Callback
+        {
+            void process(List<String> params, FileChannel channel);
         }
     }
 }

@@ -1,14 +1,14 @@
 <FindBugsFilter>
-  <Match>
-    <Class name="org.komamitsu.fluency.fluentd.ingester.sender.RequestOption" />
-    <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2" />
-  </Match>
-  <Match>
-    <Class name="org.komamitsu.fluency.fluentd.ingester.Response" />
-    <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2" />
-  </Match>
-  <Match>
-    <Class name="org.komamitsu.fluency.treasuredata.FluencyBuilderTest" />
-    <Bug pattern="CNT_ROUGH_CONSTANT_VALUE" />
-  </Match>
+    <Match>
+        <Class name="org.komamitsu.fluency.fluentd.ingester.sender.RequestOption"/>
+        <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.komamitsu.fluency.fluentd.ingester.Response"/>
+        <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.komamitsu.fluency.treasuredata.FluencyBuilderForTreasureDataTest"/>
+        <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
+    </Match>
 </FindBugsFilter>

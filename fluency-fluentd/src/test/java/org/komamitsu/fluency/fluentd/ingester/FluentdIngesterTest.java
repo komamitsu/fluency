@@ -19,7 +19,6 @@ package org.komamitsu.fluency.fluentd.ingester;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.mockito.ArgumentCaptor;
@@ -51,10 +50,9 @@ public class FluentdIngesterTest
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
     private static final byte[] DATA = "hello, world".getBytes(CHARSET);
-    private FluentdSender fluentdSender;
-
     @Captor
     public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
+    private FluentdSender fluentdSender;
 
     @Before
     public void setUp()
@@ -77,7 +75,7 @@ public class FluentdIngesterTest
     public void ingestWithoutAck()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
+        Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
         verify(fluentdSender, times(1)).send(byteBuffersArgumentCaptor.capture());
@@ -99,7 +97,9 @@ public class FluentdIngesterTest
     public void ingestWithAck()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().setAckResponseMode(true).createInstance(fluentdSender);
+        FluentdIngester.Config config = new FluentdIngester.Config();
+        config.setAckResponseMode(true);
+        Ingester ingester = new FluentdIngester(config, fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
         ArgumentCaptor<byte[]> ackTokenArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
@@ -128,14 +128,14 @@ public class FluentdIngesterTest
     @Test
     public void getSender()
     {
-        assertEquals(fluentdSender, new FluentdIngester.Config().createInstance(fluentdSender).getSender());
+        assertEquals(fluentdSender, new FluentdIngester(new FluentdIngester.Config(), fluentdSender).getSender());
     }
 
     @Test
     public void close()
             throws IOException
     {
-        Ingester ingester = new FluentdIngester.Config().createInstance(fluentdSender);
+        Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);
         ingester.close();
 
         verify(fluentdSender, times(1)).close();

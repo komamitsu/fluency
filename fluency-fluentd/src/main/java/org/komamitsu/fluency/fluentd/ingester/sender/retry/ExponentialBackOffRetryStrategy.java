@@ -17,13 +17,18 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
 public class ExponentialBackOffRetryStrategy
-    extends RetryStrategy
+        extends RetryStrategy
 {
     private final Config config;
 
-    protected ExponentialBackOffRetryStrategy(Config config)
+    public ExponentialBackOffRetryStrategy()
     {
-        super(config.getBaseConfig());
+        this(new Config());
+    }
+
+    public ExponentialBackOffRetryStrategy(Config config)
+    {
+        super(config);
         this.config = config;
     }
 
@@ -56,37 +61,19 @@ public class ExponentialBackOffRetryStrategy
     }
 
     public static class Config
-            implements Instantiator
+            extends RetryStrategy.Config
     {
-        private RetryStrategy.Config baseConfig = new RetryStrategy.Config();
         private int baseIntervalMillis = 400;
         private int maxIntervalMillis = 30 * 1000;
-
-        public RetryStrategy.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public int getMaxRetryCount()
-        {
-            return baseConfig.getMaxRetryCount();
-        }
-
-        public Config setMaxRetryCount(int maxRetryCount)
-        {
-            baseConfig.setMaxRetryCount(maxRetryCount);
-            return this;
-        }
 
         public int getBaseIntervalMillis()
         {
             return baseIntervalMillis;
         }
 
-        public Config setBaseIntervalMillis(int baseIntervalMillis)
+        public void setBaseIntervalMillis(int baseIntervalMillis)
         {
             this.baseIntervalMillis = baseIntervalMillis;
-            return this;
         }
 
         public int getMaxIntervalMillis()
@@ -94,26 +81,18 @@ public class ExponentialBackOffRetryStrategy
             return maxIntervalMillis;
         }
 
-        public Config setMaxIntervalMillis(int maxIntervalMillis)
+        public void setMaxIntervalMillis(int maxIntervalMillis)
         {
             this.maxIntervalMillis = maxIntervalMillis;
-            return this;
         }
 
         @Override
         public String toString()
         {
             return "Config{" +
-                    "baseConfig=" + baseConfig +
-                    ", baseIntervalMillis=" + baseIntervalMillis +
+                    "baseIntervalMillis=" + baseIntervalMillis +
                     ", maxIntervalMillis=" + maxIntervalMillis +
-                    '}';
-        }
-
-        @Override
-        public ExponentialBackOffRetryStrategy createInstance()
-        {
-            return new ExponentialBackOffRetryStrategy(this);
+                    "} " + super.toString();
         }
     }
 }

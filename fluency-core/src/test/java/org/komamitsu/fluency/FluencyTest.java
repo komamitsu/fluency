@@ -16,15 +16,16 @@
 
 package org.komamitsu.fluency;
 
-import org.junit.Before;
-import org.junit.Test;
+import com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.komamitsu.fluency.flusher.SyncFlusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,48 +40,34 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.spy;
 
-public class FluencyTest
+class FluencyTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private Ingester ingester;
-    private RecordFormatter.Instantiator recordFormatterConfig;
+    private Buffer.Config bufferConfig;
+    private AsyncFlusher.Config flusherConfig;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         ingester = mock(Ingester.class);
-        recordFormatterConfig = mock(RecordFormatter.Instantiator.class);
-        when(recordFormatterConfig.createInstance()).thenReturn(new JsonRecordFormatter());
+
+        bufferConfig = new Buffer.Config();
+        flusherConfig = new AsyncFlusher.Config();
     }
 
     @Test
-    public void testIsTerminated()
+    void testIsTerminated()
             throws IOException, InterruptedException
     {
-        TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
-        {
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config();
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
-            assertFalse(fluency.isTerminated());
-            fluency.close();
-            TimeUnit.SECONDS.sleep(1);
-            assertTrue(fluency.isTerminated());
-        }
-
-        {
-            Flusher.Instantiator flusherConfig = new SyncFlusher.Config();
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        try (Fluency fluency = new Fluency(buffer, flusher)) {
             assertFalse(fluency.isTerminated());
             fluency.close();
             TimeUnit.SECONDS.sleep(1);
@@ -89,95 +76,103 @@ public class FluencyTest
     }
 
     @Test
-    public void testGetAllocatedBufferSize()
+    void testGetAllocatedBufferSize()
             throws IOException
     {
-        Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                recordFormatterConfig,
-                new TestableBuffer.Config(),
-                new AsyncFlusher.Config(),
-                ingester);
-        assertThat(fluency.getAllocatedBufferSize(), is(0L));
-        Map<String, Object> map = new HashMap<>();
-        map.put("comment", "hello world");
-        for (int i = 0; i < 10000; i++) {
-            fluency.emit("foodb.bartbl", map);
-        }
-        assertThat(fluency.getAllocatedBufferSize(), is(TestableBuffer.ALLOC_SIZE * 10000L));
-    }
-
-    @Test
-    public void testWaitUntilFlusherTerminated()
-            throws IOException, InterruptedException
-    {
-        {
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
-            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
-            fluency.emit("foo.bar", new HashMap<>());
-            fluency.close();
-            assertThat(fluency.waitUntilFlusherTerminated(1), is(false));
-        }
-
-        {
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config().setWaitBeforeCloseMillis(2000);
-            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config().setWaitUntilTerminated(0);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    flusherConfig,
-                    ingester);
-            fluency.emit("foo.bar", new HashMap<>());
-            fluency.close();
-            assertThat(fluency.waitUntilFlusherTerminated(3), is(true));
+        Buffer.Config bufferConfig = new Buffer.Config();
+        bufferConfig.setChunkInitialSize(1024);
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        try (Fluency fluency = new Fluency(buffer, flusher)) {
+            assertThat(fluency.getAllocatedBufferSize(), is(0L));
+            fluency.emit("foodb.bartbl", ImmutableMap.of("comment", "hello, world"));
+            assertThat(fluency.getAllocatedBufferSize(), is(1024L));
         }
     }
 
-    @Test
-    public void testWaitUntilFlushingAllBuffer()
+    @ParameterizedTest
+    @CsvSource({"1, false", "3, true"})
+    void testWaitUntilFlusherTerminated(int waitUntilFlusherTerm, boolean expected)
             throws IOException, InterruptedException
     {
-        {
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
-            Fluency fluency = null;
-            try {
-                fluency = BaseFluencyBuilder.buildFromConfigs(
-                        recordFormatterConfig,
-                        bufferConfig,
-                        flusherConfig,
-                        ingester);
-                fluency.emit("foo.bar", new HashMap<>());
-                assertThat(fluency.waitUntilAllBufferFlushed(3), is(true));
-            }
-            finally {
-                if (fluency != null) {
-                    fluency.close();
-                }
-            }
-        }
+        flusherConfig.setWaitUntilTerminated(0);
 
-        {
-            TestableBuffer.Config bufferConfig = new TestableBuffer.Config();
-            Flusher.Instantiator flusherConfig = new AsyncFlusher.Config().setFlushIntervalMillis(2000);
-            Fluency fluency = null;
+        // Wait before actually closing in Buffer
+        int waitBeforeCloseMillis = 2000;
+        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+        doAnswer((invocation) -> {
+            long start = System.currentTimeMillis();
             try {
-                fluency = BaseFluencyBuilder.buildFromConfigs(
-                        recordFormatterConfig,
-                        bufferConfig,
-                        flusherConfig,
-                        ingester);
-                fluency.emit("foo.bar", new HashMap<>());
-                assertThat(fluency.waitUntilAllBufferFlushed(1), is(false));
+                TimeUnit.MILLISECONDS.sleep(waitBeforeCloseMillis);
+            }
+            catch (InterruptedException e) {
+                long rest = waitBeforeCloseMillis - (System.currentTimeMillis() - start);
+                if (rest > 0) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(rest);
+                    }
+                    catch (InterruptedException e1) {
+                    }
+                }
+            }
+            return null;
+        }).doCallRealMethod().when(buffer).close();
+
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        Fluency fluency = new Fluency(buffer, flusher);
+
+        fluency.emit("foo.bar", new HashMap<>());
+        fluency.close();
+        assertThat(fluency.waitUntilFlusherTerminated(waitUntilFlusherTerm), is(expected));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1, false", "3, true"})
+    void testWaitUntilFlushingAllBuffer(int waitUntilFlusherTerm, boolean expected)
+            throws IOException, InterruptedException
+    {
+        flusherConfig.setFlushIntervalMillis(2000);
+
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        try (Fluency fluency = new Fluency(buffer, flusher)) {
+            fluency.emit("foo.bar", new HashMap<>());
+            assertThat(fluency.waitUntilAllBufferFlushed(waitUntilFlusherTerm), is(expected));
+        }
+    }
+
+    @Test
+    public void testBufferFullException()
+            throws IOException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        StuckIngester stuckIngester = new StuckIngester(latch);
+
+        bufferConfig.setChunkInitialSize(64);
+        bufferConfig.setChunkExpandRatio(2);
+        bufferConfig.setMaxBufferSize(256);
+        flusherConfig.setFlushIntervalMillis(1000);
+
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, stuckIngester);
+        try (Fluency fluency = new Fluency(buffer, flusher)) {
+            Map<String, Object> event = new HashMap<>();
+            event.put("name", "xxxx");  // '{"name":"xxxx"}' (length: 15 bytes)
+            // Buffers: 64 + 128 = 192
+            //          64 + 128 + 256 = 448 > 256
+            // 15 * (8 + 1) = 135
+            for (int i = 0; i < 8; i++) {
+                fluency.emit("tag", event);
+            }
+            try {
+                fluency.emit("tag", event);
+                fail();
+            }
+            catch (BufferFullException e) {
+                assertTrue(true);
             }
             finally {
-                if (fluency != null) {
-                    fluency.close();
-                }
+                latch.countDown();
             }
         }
     }
@@ -213,38 +208,6 @@ public class FluencyTest
         public void close()
                 throws IOException
         {
-        }
-    }
-
-    @Test
-    public void testBufferFullException()
-            throws IOException
-    {
-        final CountDownLatch latch = new CountDownLatch(1);
-        StuckIngester stuckIngester = new StuckIngester(latch);
-
-        try {
-            Buffer.Config bufferConfig = new Buffer.Config().setChunkInitialSize(64).setMaxBufferSize(256);
-            Fluency fluency = BaseFluencyBuilder.buildFromConfigs(
-                    recordFormatterConfig,
-                    bufferConfig,
-                    new AsyncFlusher.Config(),
-                    stuckIngester);
-            Map<String, Object> event = new HashMap<>();
-            event.put("name", "xxxx");
-            for (int i = 0; i < 8; i++) {
-                fluency.emit("tag", event);
-            }
-            try {
-                fluency.emit("tag", event);
-                assertTrue(false);
-            }
-            catch (BufferFullException e) {
-                assertTrue(true);
-            }
-        }
-        finally {
-            latch.countDown();
         }
     }
 }

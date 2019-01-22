@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.treasuredata.ingester.sender;
 
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
+import com.google.common.annotations.VisibleForTesting;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientBuilder;
 import com.treasuredata.client.TDClientHttpException;
@@ -54,10 +55,14 @@ public class TreasureDataSender
     private final TDClient client;
     private final RetryPolicy retryPolicy;
 
-    public TreasureDataSender(Config config, TDClient client)
+    public TreasureDataSender()
+    {
+        this(new Config());
+    }
+
+    public TreasureDataSender(Config config)
     {
         this.config = config;
-        this.client = client;
         this.retryPolicy =
                 new RetryPolicy().
                         retryOn(ex -> {
@@ -84,6 +89,41 @@ public class TreasureDataSender
                                 TimeUnit.MILLISECONDS,
                                 getRetryFactor()).
                         withMaxRetries(getRetryMax());
+
+        this.client = buildClient();
+    }
+
+    @VisibleForTesting
+    protected TDClient buildClient()
+    {
+        URI uri;
+        try {
+            uri = new URI(config.getEndpoint());
+        }
+        catch (URISyntaxException e) {
+            throw new NonRetryableException(
+                    String.format("Invalid endpoint. %s", config.getEndpoint()), e);
+        }
+
+        String host = uri.getHost() != null ? uri.getHost() : config.getEndpoint();
+
+        TDClientBuilder builder = new TDClientBuilder(false)
+                .setEndpoint(host)
+                .setApiKey(config.getApikey())
+                .setRetryLimit(config.getRetryMax())
+                .setRetryInitialIntervalMillis(config.getRetryIntervalMs())
+                .setRetryMaxIntervalMillis(config.getMaxRetryIntervalMs())
+                .setRetryMultiplier(config.getRetryFactor());
+
+        if (uri.getScheme() != null && uri.getScheme().equals("http")) {
+            builder.setUseSSL(false);
+        }
+
+        if (uri.getPort() > 0) {
+            builder.setPort(uri.getPort());
+        }
+
+        return builder.build();
     }
 
     public TDClient getClient()
@@ -93,27 +133,27 @@ public class TreasureDataSender
 
     public int getRetryInternalMs()
     {
-        return config.retryIntervalMs;
+        return config.getRetryIntervalMs();
     }
 
     public int getMaxRetryInternalMs()
     {
-        return config.maxRetryIntervalMs;
+        return config.getMaxRetryIntervalMs();
     }
 
     public float getRetryFactor()
     {
-        return config.retryFactor;
+        return config.getRetryFactor();
     }
 
     public int getRetryMax()
     {
-        return config.retryMax;
+        return config.getRetryMax();
     }
 
     public int getWorkBufSize()
     {
-        return config.workBufSize;
+        return config.getWorkBufSize();
     }
 
     private void copyStreams(InputStream in, OutputStream out)
@@ -283,9 +323,8 @@ public class TreasureDataSender
     }
 
     public static class Config
-            implements Instantiator<TreasureDataSender>
+            extends Sender.Config
     {
-        private Sender.Config baseConfig = new Sender.Config();
         private String endpoint = "https://api-import.treasuredata.com";
         private String apikey;
         private int retryIntervalMs = 1000;
@@ -299,10 +338,9 @@ public class TreasureDataSender
             return endpoint;
         }
 
-        public Config setEndpoint(String endpoint)
+        public void setEndpoint(String endpoint)
         {
             this.endpoint = endpoint;
-            return this;
         }
 
         public String getApikey()
@@ -310,21 +348,9 @@ public class TreasureDataSender
             return apikey;
         }
 
-        public Config setApikey(String apikey)
+        public void setApikey(String apikey)
         {
             this.apikey = apikey;
-            return this;
-        }
-
-        public Sender.Config getBaseConfig()
-        {
-            return baseConfig;
-        }
-
-        public Config setBaseConfig(Sender.Config baseConfig)
-        {
-            this.baseConfig = baseConfig;
-            return this;
         }
 
         public int getRetryIntervalMs()
@@ -332,10 +358,9 @@ public class TreasureDataSender
             return retryIntervalMs;
         }
 
-        public Config setRetryIntervalMs(int retryIntervalMs)
+        public void setRetryIntervalMs(int retryIntervalMs)
         {
             this.retryIntervalMs = retryIntervalMs;
-            return this;
         }
 
         public int getMaxRetryIntervalMs()
@@ -343,10 +368,9 @@ public class TreasureDataSender
             return maxRetryIntervalMs;
         }
 
-        public Config setMaxRetryIntervalMs(int maxRetryIntervalMs)
+        public void setMaxRetryIntervalMs(int maxRetryIntervalMs)
         {
             this.maxRetryIntervalMs = maxRetryIntervalMs;
-            return this;
         }
 
         public float getRetryFactor()
@@ -354,10 +378,9 @@ public class TreasureDataSender
             return retryFactor;
         }
 
-        public Config setRetryFactor(float retryFactor)
+        public void setRetryFactor(float retryFactor)
         {
             this.retryFactor = retryFactor;
-            return this;
         }
 
         public int getRetryMax()
@@ -365,10 +388,9 @@ public class TreasureDataSender
             return retryMax;
         }
 
-        public Config setRetryMax(int retryMax)
+        public void setRetryMax(int retryMax)
         {
             this.retryMax = retryMax;
-            return this;
         }
 
         public int getWorkBufSize()
@@ -376,53 +398,9 @@ public class TreasureDataSender
             return workBufSize;
         }
 
-        public Config setWorkBufSize(int workBufSize)
+        public void setWorkBufSize(int workBufSize)
         {
             this.workBufSize = workBufSize;
-            return this;
-        }
-
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        @Override
-        public TreasureDataSender createInstance()
-        {
-            URI uri;
-            try {
-                uri = new URI(endpoint);
-            }
-            catch (URISyntaxException e) {
-                throw new NonRetryableException(String.format("Invalid endpoint. %s", endpoint), e);
-            }
-
-            String host = uri.getHost() != null ? uri.getHost() : endpoint;
-
-            TDClientBuilder builder = new TDClientBuilder(false)
-                    .setEndpoint(host)
-                    .setApiKey(apikey)
-                    .setRetryLimit(retryMax)
-                    .setRetryInitialIntervalMillis(retryIntervalMs)
-                    .setRetryMaxIntervalMillis(maxRetryIntervalMs)
-                    .setRetryMultiplier(retryFactor);
-
-            if (uri.getScheme() != null && uri.getScheme().equals("http")) {
-                builder.setUseSSL(false);
-            }
-
-            if (uri.getPort() > 0) {
-                builder.setPort(uri.getPort());
-            }
-
-            return new TreasureDataSender(this, builder.build());
         }
     }
 }

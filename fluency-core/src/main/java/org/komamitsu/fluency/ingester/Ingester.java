@@ -23,19 +23,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface Ingester
-    extends Closeable
+        extends Closeable
 {
     void ingest(String tag, ByteBuffer dataBuffer)
             throws IOException;
 
     Sender getSender();
-
-    interface Config
-    {}
-
-    interface Instantiator<T extends Sender>
-    {
-        // TODO: Revisit to think of taking Sender.Config instead
-        Ingester createInstance(T sender);
-    }
 }

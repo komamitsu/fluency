@@ -16,13 +16,11 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,14 +28,17 @@ public class MultiSender
         extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
-    private final List<FluentdSender> senders = new ArrayList<>();
+    private final List<FluentdSender> senders;
 
-    protected MultiSender(Config config)
+    public MultiSender(List<FluentdSender> senders)
     {
-        super(config.getBaseConfig());
-        for (Instantiator senderConfig : config.getSenderConfigs()) {
-            senders.add(senderConfig.createInstance());
-        }
+        this(new Config(), senders);
+    }
+
+    public MultiSender(Config config, List<FluentdSender> senders)
+    {
+        super(config);
+        this.senders = senders;
     }
 
     @Override
@@ -91,15 +92,6 @@ public class MultiSender
         }
     }
 
-    public static class AllNodesUnavailableException
-            extends IOException
-    {
-        public AllNodesUnavailableException(String s)
-        {
-            super(s);
-        }
-    }
-
     public List<FluentdSender> getSenders()
     {
         return Collections.unmodifiableList(senders);
@@ -113,51 +105,18 @@ public class MultiSender
                 "} " + super.toString();
     }
 
-    public static class Config
-            implements Instantiator
+    public static class AllNodesUnavailableException
+            extends IOException
     {
-        private final FluentdSender.Config baseConfig = new FluentdSender.Config();
-        private final List<Instantiator> senderConfigs;
-
-        public FluentdSender.Config getBaseConfig()
+        public AllNodesUnavailableException(String s)
         {
-            return baseConfig;
+            super(s);
         }
+    }
 
-        public ErrorHandler getErrorHandler()
-        {
-            return baseConfig.getErrorHandler();
-        }
-
-        public Config setErrorHandler(ErrorHandler errorHandler)
-        {
-            baseConfig.setErrorHandler(errorHandler);
-            return this;
-        }
-
-        public Config(List<Instantiator> senderConfigs)
-        {
-            this.senderConfigs = senderConfigs;
-        }
-
-        public List<Instantiator> getSenderConfigs()
-        {
-            return senderConfigs;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "senderConfigs=" + senderConfigs +
-                    "} " + super.toString();
-        }
-
-        @Override
-        public MultiSender createInstance()
-        {
-            return new MultiSender(this);
-        }
+    public static class Config
+            extends FluentdSender.Config
+    {
     }
 }
 
