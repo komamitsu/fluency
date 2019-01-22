@@ -97,6 +97,9 @@ subprojects {
         artifact javadocJar
         artifact shadowJar
         pom {
+          name = 'fluency'
+          description = "High throughput data ingestion logger to Fluentd and Treasure Data"
+          url = 'https://github.com/komamitsu/fluency'
           licenses {
             license {
               name = 'The Apache License, Version 2.0'
