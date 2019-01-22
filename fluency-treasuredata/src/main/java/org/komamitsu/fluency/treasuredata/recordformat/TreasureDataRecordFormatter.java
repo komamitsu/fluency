@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.treasuredata.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -44,6 +43,11 @@ public class TreasureDataRecordFormatter
     private static final Logger LOG = LoggerFactory.getLogger(TreasureDataRecordFormatter.class);
     private static final StringValue KEY_TIME = ValueFactory.newString("time");
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    public TreasureDataRecordFormatter()
+    {
+        this(new Config());
+    }
 
     public TreasureDataRecordFormatter(Config config)
     {

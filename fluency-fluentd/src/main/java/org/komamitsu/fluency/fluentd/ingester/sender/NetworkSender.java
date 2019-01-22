@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public abstract class NetworkSender<T>
-    extends FluentdSender
+        extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
     private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
@@ -47,6 +47,11 @@ public abstract class NetworkSender<T>
     private final Config config;
     private final FailureDetector failureDetector;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+    NetworkSender(FailureDetector failureDetector)
+    {
+        this(new Config(), failureDetector);
+    }
 
     NetworkSender(Config config, FailureDetector failureDetector)
     {
@@ -210,7 +215,7 @@ public abstract class NetworkSender<T>
     }
 
     public static class Config
-        extends FluentdSender.Config
+            extends FluentdSender.Config
     {
         private String host = "127.0.0.1";
         private int port = 24224;

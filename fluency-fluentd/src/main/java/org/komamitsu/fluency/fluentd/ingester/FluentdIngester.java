@@ -44,6 +44,11 @@ public class FluentdIngester
     private final FluentdSender sender;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
+    public FluentdIngester(FluentdSender sender)
+    {
+        this(new Config(), sender);
+    }
+
     public FluentdIngester(Config config, FluentdSender sender)
     {
         this.config = config;

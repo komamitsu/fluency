@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-    extends NetworkSender<SSLSocket>
+        extends NetworkSender<SSLSocket>
 {
     private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
     private final SSLSocketBuilder socketBuilder;
@@ -116,7 +116,7 @@ public class SSLSender
     }
 
     public static class Config
-        extends NetworkSender.Config
+            extends NetworkSender.Config
     {
     }
 }

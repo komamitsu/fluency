@@ -44,7 +44,7 @@ public class FileBackup
     private final String prefix;
 
     public static class SavedBuffer
-        implements Closeable
+            implements Closeable
     {
         private final List<String> params;
         private final File savedFile;

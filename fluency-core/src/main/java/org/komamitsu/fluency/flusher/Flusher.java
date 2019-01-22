@@ -74,7 +74,6 @@ public abstract class Flusher
 
     @Override
     public void close()
-            throws IOException
     {
         try {
             beforeClosingBuffer();

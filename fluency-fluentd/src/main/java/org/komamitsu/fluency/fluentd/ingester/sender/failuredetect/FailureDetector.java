@@ -22,7 +22,7 @@ import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FailureDetector
-    implements Heartbeater.Callback, Closeable
+        implements Heartbeater.Callback, Closeable
 {
     private final FailureDetectStrategy failureDetectStrategy;
     private final Heartbeater heartbeater;

@@ -67,6 +67,11 @@ public class AsyncFlusher
         }
     };
 
+    public AsyncFlusher(final Buffer buffer, final Ingester ingester)
+    {
+        this(new Config(), buffer, ingester);
+    }
+
     public AsyncFlusher(final Config config, final Buffer buffer, final Ingester ingester)
     {
         super(config, buffer, ingester);
@@ -76,7 +81,6 @@ public class AsyncFlusher
 
     @Override
     protected void flushInternal(boolean force)
-            throws IOException
     {
         if (force) {
             try {
@@ -114,7 +118,7 @@ public class AsyncFlusher
     }
 
     public static class Config
-        extends Flusher.Config
+            extends Flusher.Config
     {
     }
 }

@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface Ingester
-    extends Closeable
+        extends Closeable
 {
     void ingest(String tag, ByteBuffer dataBuffer)
             throws IOException;

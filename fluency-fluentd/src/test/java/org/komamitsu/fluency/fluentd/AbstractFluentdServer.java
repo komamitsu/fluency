@@ -258,7 +258,6 @@ public abstract class AbstractFluentdServer
     }
 
     public AbstractFluentdServer(boolean sslEnabled)
-            throws Exception
     {
         super(sslEnabled);
     }
@@ -269,7 +268,7 @@ public abstract class AbstractFluentdServer
         if (this.fluentdEventHandler == null) {
             this.fluentdEventHandler = new FluentdEventHandler(getFluentdEventHandler());
         }
-        return this.fluentdEventHandler;
+        return fluentdEventHandler;
     }
 
     protected abstract EventHandler getFluentdEventHandler();

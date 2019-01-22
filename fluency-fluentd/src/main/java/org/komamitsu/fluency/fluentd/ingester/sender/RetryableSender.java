@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +49,11 @@ public class RetryableSender
         {
             super(s, throwable);
         }
+    }
+
+    public RetryableSender(FluentdSender baseSender, RetryStrategy retryStrategy)
+    {
+        this(new Config(), baseSender, retryStrategy);
     }
 
     public RetryableSender(Config config, FluentdSender baseSender, RetryStrategy retryStrategy)

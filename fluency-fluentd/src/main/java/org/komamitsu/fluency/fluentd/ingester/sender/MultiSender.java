@@ -30,6 +30,11 @@ public class MultiSender
     private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
     private final List<FluentdSender> senders;
 
+    public MultiSender(List<FluentdSender> senders)
+    {
+        this(new Config(), senders);
+    }
+
     public MultiSender(Config config, List<FluentdSender> senders)
     {
         super(config);
@@ -110,7 +115,7 @@ public class MultiSender
     }
 
     public static class Config
-        extends FluentdSender.Config
+            extends FluentdSender.Config
     {
     }
 }

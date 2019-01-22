@@ -39,7 +39,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Buffer
-    implements Closeable
+        implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     private final FileBackup fileBackup;
@@ -50,6 +50,11 @@ public class Buffer
     private final LinkedBlockingQueue<TaggableBuffer> flushableBuffers = new LinkedBlockingQueue<>();
     private final Queue<TaggableBuffer> backupBuffers = new ConcurrentLinkedQueue<>();
     private final BufferPool bufferPool;
+
+    public Buffer(RecordFormatter recordFormatter)
+    {
+        this(new Config(), recordFormatter);
+    }
 
     public Buffer(final Config config, RecordFormatter recordFormatter)
     {
@@ -74,7 +79,7 @@ public class Buffer
         init();
     }
 
-    protected void init()
+    private void init()
     {
         if (fileBackup != null) {
             for (FileBackup.SavedBuffer savedBuffer : fileBackup.getSavedFiles()) {

@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
 public class ExponentialBackOffRetryStrategy
-    extends RetryStrategy
+        extends RetryStrategy
 {
     private final Config config;
 

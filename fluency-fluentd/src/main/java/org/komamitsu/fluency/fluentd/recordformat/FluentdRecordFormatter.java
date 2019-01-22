@@ -35,6 +35,11 @@ public class FluentdRecordFormatter
     private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
+    public FluentdRecordFormatter()
+    {
+        this(new Config());
+    }
+
     public FluentdRecordFormatter(Config config)
     {
         super(config);
@@ -107,7 +112,7 @@ public class FluentdRecordFormatter
     }
 
     public static class Config
-        extends RecordFormatter.Config
+            extends RecordFormatter.Config
     {
     }
 }

@@ -17,7 +17,7 @@
 package org.komamitsu.fluency;
 
 public class NonRetryableException
-    extends RuntimeException
+        extends RuntimeException
 {
     public NonRetryableException(String message)
     {

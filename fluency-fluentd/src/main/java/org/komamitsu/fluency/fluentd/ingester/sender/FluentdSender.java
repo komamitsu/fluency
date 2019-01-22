@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public abstract class FluentdSender
-    implements Closeable, Sender
+        implements Closeable, Sender
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdSender.class);
     private final Config config;
@@ -103,7 +103,7 @@ public abstract class FluentdSender
     abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken) throws IOException;
 
     public static class Config
-        extends Sender.Config
+            extends Sender.Config
     {
     }
 }

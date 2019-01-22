@@ -55,6 +55,11 @@ public class TreasureDataSender
     private final TDClient client;
     private final RetryPolicy retryPolicy;
 
+    public TreasureDataSender()
+    {
+        this(new Config());
+    }
+
     public TreasureDataSender(Config config)
     {
         this.config = config;
