@@ -1,7 +1,10 @@
 # Fluency
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.komamitsu/fluency-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.komamitsu/fluency-core)
 [<img src="https://travis-ci.org/komamitsu/fluency.svg?branch=master"/>](https://travis-ci.org/komamitsu/fluency) [![Coverage Status](https://coveralls.io/repos/komamitsu/fluency/badge.svg?branch=master&service=github)](https://coveralls.io/github/komamitsu/fluency?branch=master)
 
-Yet another fluentd logger. This supoprts ingestion to Treasure Data as well.
+High throughput data ingestion logger to Fluentd and Treasure Data
+
+This document is for version 2. If you're looking for a document for version 1, see [this](./README-v1.md).
 
 ## Ingestion to Fluentd
 
