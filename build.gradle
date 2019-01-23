@@ -73,7 +73,7 @@ subprojects {
 
   task javadocJar(type: Jar) {
     classifier = 'javadoc'
-    from javadoc
+    from javadoc.destinationDir
   }
 
   task sourcesJar(type: Jar) {
@@ -118,6 +118,27 @@ subprojects {
             developerConnection = 'scm:git:git@github.com:komamitsu/fluency.git'
             url = 'https://github.com/komamitsu/fluency'
           }
+          withXml {
+            def pomFile = file("${project.buildDir}/generated-pom.xml")
+            writeTo(pomFile)
+            def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+            artifact(pomAscFile) {
+              classifier = null
+              extension = 'pom.asc'
+            }
+          }
+          // create the signed artifacts
+          project.tasks.signArchives.signatureFiles.each {
+            artifact(it) {
+              def matcher = it.file =~ /-(sources|javadoc|shadow)\.jar\.asc$/
+              if (matcher.find()) {
+                classifier = matcher.group(1)
+              } else {
+                classifier = null
+              }
+              extension = 'jar.asc'
+            }
+          }
         }
       }
     }
@@ -133,6 +154,17 @@ subprojects {
       }
     }
   }
+model {
+    tasks.generatePomFileForMavenJavaPublication {
+        destination = file("$buildDir/generated-pom.xml")
+    }
+    tasks.publishMavenJavaPublicationToMavenLocal {
+        dependsOn project.tasks.signArchives
+    }
+    tasks.publishMavenJavaPublicationToMavenRepository {
+        dependsOn project.tasks.signArchives
+    }
+}
 }
 
 def publishedProjects = subprojects.findAll()
