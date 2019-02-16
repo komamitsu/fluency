@@ -204,6 +204,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionTimeMillis(19 * 1000);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setConnectionTimeoutMilli(12345);
+        builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
         builder.setWaitUntilBufferFlushed(42);
         builder.setWaitUntilFlusherTerminated(24);
@@ -248,8 +250,8 @@ public class FluencyBuilderForFluentdTest
                 TCPSender sender = (TCPSender) multiSender.getSenders().get(0);
                 assertThat(sender.getHost(), is("333.333.333.333"));
                 assertThat(sender.getPort(), is(11111));
-                assertThat(sender.getConnectionTimeoutMilli(), is(5000));
-                assertThat(sender.getReadTimeoutMilli(), is(5000));
+                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
+                assertThat(sender.getReadTimeoutMilli(), is(9876));
 
                 FailureDetector failureDetector = sender.getFailureDetector();
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
@@ -265,8 +267,9 @@ public class FluencyBuilderForFluentdTest
                 TCPSender sender = (TCPSender) multiSender.getSenders().get(1);
                 assertThat(sender.getHost(), is("444.444.444.444"));
                 assertThat(sender.getPort(), is(22222));
-                assertThat(sender.getConnectionTimeoutMilli(), is(5000));
-                assertThat(sender.getReadTimeoutMilli(), is(5000));
+                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
+                assertThat(sender.getReadTimeoutMilli(), is(9876));
+
 
                 FailureDetector failureDetector = sender.getFailureDetector();
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
@@ -294,6 +297,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setConnectionTimeoutMilli(12345);
+        builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
         builder.setWaitUntilBufferFlushed(42);
         builder.setWaitUntilFlusherTerminated(24);
@@ -320,8 +325,8 @@ public class FluencyBuilderForFluentdTest
                 SSLSender sender = (SSLSender) multiSender.getSenders().get(0);
                 assertThat(sender.getHost(), is("333.333.333.333"));
                 assertThat(sender.getPort(), is(11111));
-                assertThat(sender.getConnectionTimeoutMilli(), is(5000));
-                assertThat(sender.getReadTimeoutMilli(), is(5000));
+                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
+                assertThat(sender.getReadTimeoutMilli(), is(9876));
 
                 FailureDetector failureDetector = sender.getFailureDetector();
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
@@ -337,8 +342,8 @@ public class FluencyBuilderForFluentdTest
                 SSLSender sender = (SSLSender) multiSender.getSenders().get(1);
                 assertThat(sender.getHost(), is("444.444.444.444"));
                 assertThat(sender.getPort(), is(22222));
-                assertThat(sender.getConnectionTimeoutMilli(), is(5000));
-                assertThat(sender.getReadTimeoutMilli(), is(5000));
+                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
+                assertThat(sender.getReadTimeoutMilli(), is(9876));
 
                 FailureDetector failureDetector = sender.getFailureDetector();
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));

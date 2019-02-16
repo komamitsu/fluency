@@ -66,6 +66,8 @@ dependencies {
 //   - Max retry of sending events is 8 (by default)
 //   - Max wait until all buffers are flushed is 10 seconds (by default)
 //   - Max wait until the flusher is terminated is 10 seconds (by default)
+//   - Socket connection timeout is 5000 ms (by default)
+//   - Socket read timeout is 5000 ms (by default)
 Fluency fluency = new FluencyBuilderForFluentd().build();
 ```
 
@@ -101,19 +103,30 @@ builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
 Fluency fluency = builder.build();
 ```
 
-##### Buffer configuration
+##### Buffer configuration for high throughput data ingestion with high latency
 
 ```java
 // Single Fluentd(xxx.xxx.xxx.xxx:24224)
-//   - Initial chunk buffer size = 4MB
-//   - Threshold chunk buffer size to flush = 16MB
+//   - Initial chunk buffer size = 16MB
+//   - Threshold chunk buffer size to flush = 64MB
 //     Keep this value (BufferRetentionSize) between `Initial chunk buffer size` and `Max total buffer size`
-//   - Max total buffer size = 256MB
+//   - Max total buffer size = 1024MB
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-builder.setBufferChunkInitialSize(4 * 1024 * 1024);
-builder.setBufferChunkRetentionSize(16 * 1024 * 1024);
-builder.setMaxBufferSize(256 * 1024 * 1024L);
+builder.setBufferChunkInitialSize(16 * 1024 * 1024);
+builder.setBufferChunkRetentionSize(64 * 1024 * 1024);
+builder.setMaxBufferSize(1024 * 1024 * 1024L);
 Fluency fluency = builder.build("xxx.xxx.xxx.xxx", 24224);
+```
+
+##### Socket configuration
+```java
+// Single Fluentd(localhost:24224)
+//   - Socket connection timeout is 15000 ms
+//   - Socket read timeout is 10000 ms
+FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+builder.setConnectionTimeoutMilli(15000);
+builder.setReadTimeoutMilli(10000);
+Fluency fluency = builder.build();
 ```
 
 ##### Waits on close sequence
@@ -292,7 +305,7 @@ dependencies {
 Fluency fluency = new FluencyBuilderForTreasureData().build(yourApiKey);
 ```
 
-##### For high throughput data ingestion with high latency
+##### Buffer configuration for high throughput data ingestion with high latency
 
 ```java
 // Initial chunk buffer size = 32MB
