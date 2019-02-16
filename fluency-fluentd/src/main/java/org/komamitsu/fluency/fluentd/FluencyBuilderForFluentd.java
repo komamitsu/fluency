@@ -42,6 +42,8 @@ public class FluencyBuilderForFluentd
     private Integer senderMaxRetryCount;
     private boolean ackResponseMode;
     private boolean sslEnabled;
+    private Integer connectionTimeoutMilli;
+    private Integer readTimeoutMilli;
 
     public Integer getSenderMaxRetryCount()
     {
@@ -71,6 +73,26 @@ public class FluencyBuilderForFluentd
     public void setSslEnabled(boolean sslEnabled)
     {
         this.sslEnabled = sslEnabled;
+    }
+
+    public Integer getConnectionTimeoutMilli()
+    {
+        return connectionTimeoutMilli;
+    }
+
+    public void setConnectionTimeoutMilli(Integer connectionTimeoutMilli)
+    {
+        this.connectionTimeoutMilli = connectionTimeoutMilli;
+    }
+
+    public Integer getReadTimeoutMilli()
+    {
+        return readTimeoutMilli;
+    }
+
+    public void setReadTimeoutMilli(Integer readTimeoutMilli)
+    {
+        this.readTimeoutMilli = readTimeoutMilli;
     }
 
     public Fluency build(String host, int port)
@@ -132,6 +154,12 @@ public class FluencyBuilderForFluentd
                 SSLHeartbeater heartbeater = new SSLHeartbeater(hbConfig);
                 failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
             }
+            if (connectionTimeoutMilli != null) {
+                senderConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
+            }
+            if (readTimeoutMilli != null) {
+                senderConfig.setReadTimeoutMilli(readTimeoutMilli);
+            }
             return new SSLSender(senderConfig, failureDetector);
         }
         else {
@@ -149,6 +177,12 @@ public class FluencyBuilderForFluentd
                 hbConfig.setPort(port);
                 TCPHeartbeater heartbeater = new TCPHeartbeater(hbConfig);
                 failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
+            }
+            if (connectionTimeoutMilli != null) {
+                senderConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
+            }
+            if (readTimeoutMilli != null) {
+                senderConfig.setReadTimeoutMilli(readTimeoutMilli);
             }
             return new TCPSender(senderConfig, failureDetector);
         }
