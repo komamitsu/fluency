@@ -12,11 +12,12 @@ This document is for version 2. If you're looking for a document for version 1, 
 
 * Better performance ([4 times faster than fluent-logger-java](https://gist.github.com/komamitsu/c1e4045fe2ddb108cfbf12d5f014b683))
 * Asynchronous flush
-* Backup of buffered data on local disk
 * TCP / UDP heartbeat with Fluentd
-* `PackedForward` format
 * Failover with multiple Fluentds
 * Enable / disable ack response mode
+* TLS / SSL support for https://docs.fluentd.org/v1.0/articles/in_forward#how-to-enable-tls-encryption
+* `PackedForward` format
+* Backup of buffered data on local disk
 
 ### Install
 
