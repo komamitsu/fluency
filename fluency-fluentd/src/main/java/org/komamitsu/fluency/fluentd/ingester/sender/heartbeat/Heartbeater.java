@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class Heartbeater
         implements Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AsyncFlusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Heartbeater.class);
     private final Config config;
     private final ScheduledExecutorService executorService;
     private final AtomicReference<Callback> callback = new AtomicReference<>();

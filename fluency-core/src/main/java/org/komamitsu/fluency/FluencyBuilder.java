@@ -17,7 +17,6 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
@@ -161,9 +160,9 @@ public class FluencyBuilder
         configureBufferConfig(bufferConfig);
         Buffer buffer = new Buffer(bufferConfig, recordFormatter);
 
-        AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+        Flusher.Config flusherConfig = new Flusher.Config();
         configureFlusherConfig(flusherConfig);
-        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
 
         return new Fluency(buffer, flusher);
     }

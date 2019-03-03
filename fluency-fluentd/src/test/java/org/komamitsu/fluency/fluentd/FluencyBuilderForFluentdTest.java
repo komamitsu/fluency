@@ -30,7 +30,6 @@ import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFai
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 
 import java.io.IOException;
@@ -45,9 +44,8 @@ import static org.junit.Assert.assertThat;
 
 public class FluencyBuilderForFluentdTest
 {
-    private void assertDefaultBuffer(Buffer buffer)
+    private void assertBuffer(Buffer buffer)
     {
-        assertThat(buffer, instanceOf(Buffer.class));
         assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
         assertThat(buffer.getFileBackupDir(), is(nullValue()));
         assertThat(buffer.bufferFormatType(), is("packed_forward"));
@@ -58,14 +56,12 @@ public class FluencyBuilderForFluentdTest
         assertThat(buffer.getJvmHeapBufferMode(), is(false));
     }
 
-    private void assertDefaultFlusher(Flusher flusher)
+    private void assertFlusher(Flusher flusher)
     {
-        assertThat(flusher, instanceOf(AsyncFlusher.class));
-        AsyncFlusher asyncFlusher = (AsyncFlusher) flusher;
-        assertThat(asyncFlusher.isTerminated(), is(false));
-        assertThat(asyncFlusher.getFlushIntervalMillis(), is(600));
-        assertThat(asyncFlusher.getWaitUntilBufferFlushed(), is(60));
-        assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
+        assertThat(flusher.isTerminated(), is(false));
+        assertThat(flusher.getFlushIntervalMillis(), is(600));
+        assertThat(flusher.getWaitUntilBufferFlushed(), is(60));
+        assertThat(flusher.getWaitUntilTerminated(), is(60));
     }
 
     private void assertDefaultRetryableSender(RetryableSender sender, Class<? extends NetworkSender> expectedBaseClass)
@@ -98,8 +94,8 @@ public class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build()) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "127.0.0.1",
@@ -113,8 +109,8 @@ public class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build(54321)) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "127.0.0.1",
@@ -128,8 +124,8 @@ public class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build("192.168.0.99", 54321)) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "192.168.0.99",
@@ -145,8 +141,8 @@ public class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build()) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "127.0.0.1",
@@ -162,8 +158,8 @@ public class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build(54321)) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "127.0.0.1",
@@ -179,8 +175,8 @@ public class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build("192.168.0.99", 54321)) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
                     "192.168.0.99",
@@ -227,8 +223,7 @@ public class FluencyBuilderForFluentdTest
             assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
             assertThat(buffer.getJvmHeapBufferMode(), is(true));
 
-            assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
-            AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
+            Flusher flusher = fluency.getFlusher();
             assertThat(flusher.isTerminated(), is(false));
             assertThat(flusher.getFlushIntervalMillis(), is(200));
             assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
