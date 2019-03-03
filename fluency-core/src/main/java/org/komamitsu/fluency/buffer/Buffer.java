@@ -369,6 +369,7 @@ public class Buffer
                     }
                     catch (InterruptedException e1) {
                         LOG.warn("Failed to save the data into the buffer. Trying to save it in extra buffer: chunk={}", flushableBuffer);
+                        Thread.currentThread().interrupt();
                         backupBuffers.add(flushableBuffer);
                     }
                 }

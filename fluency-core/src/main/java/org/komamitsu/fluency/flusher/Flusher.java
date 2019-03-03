@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.Flushable;
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +62,7 @@ public class Flusher
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            catch (IOException e) {
+            catch (Throwable e) {
                 LOG.error("Failed to flush", e);
             }
         }
@@ -78,7 +77,7 @@ public class Flusher
             try {
                 buffer.flush(ingester, true);
             }
-            catch (IOException e) {
+            catch (Throwable e) {
                 LOG.error("Failed to flush", e);
             }
         }
