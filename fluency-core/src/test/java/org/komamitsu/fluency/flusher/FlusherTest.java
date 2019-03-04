@@ -34,11 +34,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class AsyncFlusherTest
+public class FlusherTest
 {
     private Ingester ingester;
     private Buffer.Config bufferConfig;
-    private AsyncFlusher.Config flusherConfig;
+    private Flusher.Config flusherConfig;
 
     @Before
     public void setUp()
@@ -46,7 +46,7 @@ public class AsyncFlusherTest
         ingester = mock(Ingester.class);
 
         bufferConfig = new Buffer.Config();
-        flusherConfig = new AsyncFlusher.Config();
+        flusherConfig = new Flusher.Config();
     }
 
     @Test
@@ -56,11 +56,10 @@ public class AsyncFlusherTest
         flusherConfig.setFlushIntervalMillis(500);
 
         Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
-        Flusher flusher = new AsyncFlusher(flusherConfig, buffer, ingester);
+        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
 
         verify(buffer, times(0)).flush(eq(ingester), anyBoolean());
 
-        flusher.onUpdate();
         verify(buffer, times(0)).flush(eq(ingester), anyBoolean());
 
         flusher.flush();

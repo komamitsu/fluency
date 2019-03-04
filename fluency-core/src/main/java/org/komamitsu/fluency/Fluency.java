@@ -195,7 +195,6 @@ public class Fluency
         {
             try {
                 appender.append();
-                flusher.onUpdate();
             }
             catch (BufferFullException e) {
                 LOG.error("emit() failed due to buffer full. Flushing buffer. Please try again...");

@@ -41,6 +41,10 @@ public class ExecutorServiceUtils
             LOG.warn("1st awaitTermination was interrupted", e);
             Thread.currentThread().interrupt();
         }
+        catch (Throwable e) {
+            LOG.warn("Failed to await the termination of executorService", e);
+        }
+
         if (!executorService.isTerminated()) {
             executorService.shutdownNow();
         }

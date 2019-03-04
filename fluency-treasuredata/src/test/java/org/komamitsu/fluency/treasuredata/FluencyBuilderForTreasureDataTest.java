@@ -22,7 +22,6 @@ import com.treasuredata.client.TDHttpClient;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 
@@ -39,9 +38,8 @@ public class FluencyBuilderForTreasureDataTest
 {
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
-    private void assertDefaultBuffer(Buffer buffer)
+    private void assertBuffer(Buffer buffer)
     {
-        assertThat(buffer, instanceOf(Buffer.class));
         assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
         assertThat(buffer.getFileBackupDir(), is(nullValue()));
         assertThat(buffer.bufferFormatType(), is("packed_forward"));
@@ -52,14 +50,12 @@ public class FluencyBuilderForTreasureDataTest
         assertThat(buffer.getJvmHeapBufferMode(), is(false));
     }
 
-    private void assertDefaultFlusher(Flusher flusher)
+    private void assertFlusher(Flusher flusher)
     {
-        assertThat(flusher, instanceOf(AsyncFlusher.class));
-        AsyncFlusher asyncFlusher = (AsyncFlusher) flusher;
-        assertThat(asyncFlusher.isTerminated(), is(false));
-        assertThat(asyncFlusher.getFlushIntervalMillis(), is(600));
-        assertThat(asyncFlusher.getWaitUntilBufferFlushed(), is(60));
-        assertThat(asyncFlusher.getWaitUntilTerminated(), is(60));
+        assertThat(flusher.isTerminated(), is(false));
+        assertThat(flusher.getFlushIntervalMillis(), is(600));
+        assertThat(flusher.getWaitUntilBufferFlushed(), is(60));
+        assertThat(flusher.getWaitUntilTerminated(), is(60));
     }
 
     private void assertDefaultFluentdSender(
@@ -93,8 +89,8 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY)) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "api-import.treasuredata.com", true, APIKEY);
@@ -106,8 +102,8 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "https://custom.endpoint.org")) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", true, APIKEY);
@@ -119,8 +115,8 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "custom.endpoint.org")) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", true, APIKEY);
@@ -132,8 +128,8 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "http://custom.endpoint.org")) {
-            assertDefaultBuffer(fluency.getBuffer());
-            assertDefaultFlusher(fluency.getFlusher());
+            assertBuffer(fluency.getBuffer());
+            assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
                     "custom.endpoint.org", false, APIKEY);
@@ -176,8 +172,7 @@ public class FluencyBuilderForTreasureDataTest
             assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
             assertThat(buffer.getJvmHeapBufferMode(), is(true));
 
-            assertThat(fluency.getFlusher(), instanceOf(AsyncFlusher.class));
-            AsyncFlusher flusher = (AsyncFlusher) fluency.getFlusher();
+            Flusher flusher = fluency.getFlusher();
             assertThat(flusher.isTerminated(), is(false));
             assertThat(flusher.getFlushIntervalMillis(), is(200));
             assertThat(flusher.getWaitUntilBufferFlushed(), is(42));

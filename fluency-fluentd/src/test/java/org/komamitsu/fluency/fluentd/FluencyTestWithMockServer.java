@@ -35,7 +35,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFai
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
-import org.komamitsu.fluency.flusher.AsyncFlusher;
+import org.komamitsu.fluency.flusher.Flusher;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
@@ -214,12 +214,12 @@ public class FluencyTestWithMockServer
                 bufferConfig.setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
             }
 
-            AsyncFlusher.Config flusherConfig = new AsyncFlusher.Config();
+            Flusher.Config flusherConfig = new Flusher.Config();
             flusherConfig.setWaitUntilBufferFlushed(10);
             flusherConfig.setWaitUntilTerminated(10);
 
             Buffer buffer = new Buffer(bufferConfig, new FluentdRecordFormatter(new FluentdRecordFormatter.Config()));
-            AsyncFlusher flusher = new AsyncFlusher(flusherConfig, buffer, new FluentdIngester(ingesterConfig, sender));
+            Flusher flusher = new Flusher(flusherConfig, buffer, new FluentdIngester(ingesterConfig, sender));
 
             return new Fluency(buffer, flusher);
         }, options);

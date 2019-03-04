@@ -18,21 +18,21 @@ package org.komamitsu.fluency.flusher;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.Flushable;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class Flusher
+public class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
@@ -40,12 +40,47 @@ public abstract class Flusher
     protected final Ingester ingester;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
+    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    protected Flusher(Config config, Buffer buffer, Ingester ingester)
+    public Flusher(Config config, Buffer buffer, Ingester ingester)
     {
         this.config = config;
         this.buffer = buffer;
         this.ingester = ingester;
+        executorService.execute(this::runLoop);
+    }
+
+    private void runLoop() {
+        Boolean wakeup = null;
+        do {
+            try {
+                wakeup = eventQueue.poll(config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                boolean force = wakeup != null;
+                buffer.flush(ingester, force);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            catch (Throwable e) {
+                LOG.error("Failed to flush", e);
+            }
+        }
+        while (!executorService.isShutdown());
+
+        if (wakeup == null) {
+            // The above run loop can quit without force buffer flush in the following cases
+            // - close() is called right after the repeated non-force buffer flush executed in the run loop
+            //
+            // In these cases, remaining buffers wont't be flushed.
+            // So force buffer flush is executed here just in case
+            try {
+                buffer.flush(ingester, true);
+            }
+            catch (Throwable e) {
+                LOG.error("Failed to flush", e);
+            }
+        }
     }
 
     public Buffer getBuffer()
@@ -53,81 +88,96 @@ public abstract class Flusher
         return buffer;
     }
 
-    protected abstract void flushInternal(boolean force)
-            throws IOException;
-
-    protected abstract void beforeClosingBuffer()
-            throws IOException;
-
-    public void onUpdate()
-            throws IOException
-    {
-        flushInternal(false);
-    }
-
     @Override
     public void flush()
-            throws IOException
     {
-        flushInternal(true);
+        try {
+            eventQueue.put(true);
+        }
+        catch (InterruptedException e) {
+            LOG.warn("Failed to force flushing buffer", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void flushBufferQuietly()
+    {
+        LOG.trace("Flushing the buffer");
+
+        try {
+            flush();
+        }
+        catch (Throwable e) {
+            LOG.error("Failed to call flush()", e);
+        }
+    }
+
+    private void finishExecutorQuietly()
+    {
+        LOG.trace("Finishing the executor");
+
+        ExecutorServiceUtils.finishExecutorService(
+                executorService,
+                config.getWaitUntilBufferFlushed());
+    }
+
+    private void closeBufferQuietly()
+    {
+        LOG.trace("Closing the buffer");
+
+        ExecutorService executorServiceForBufferClose = Executors.newSingleThreadExecutor();
+        try {
+            // TODO: Should remove this nonblocking operation?
+            Future<Void> future = executorServiceForBufferClose.submit(() -> {
+                buffer.close();
+                isTerminated.set(true);
+                return null;
+            });
+
+            future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e) {
+            LOG.warn("Failed to close the buffer", e);
+            Thread.currentThread().interrupt();
+        }
+        catch (Throwable e) {
+            LOG.warn("Failed to close the buffer", e);
+        }
+        finally {
+            ExecutorServiceUtils.finishExecutorService(
+                    executorServiceForBufferClose,
+                    config.getWaitUntilBufferFlushed());
+        }
+    }
+
+    private void closeIngesterQuietly()
+    {
+        LOG.trace("Closing the ingester");
+
+        try {
+            // Close the socket at the end to prevent the server from failing to read from the connection
+            ingester.close();
+        }
+        catch (Throwable e) {
+            LOG.error("Failed to close the ingester", e);
+        }
     }
 
     @Override
     public void close()
     {
-        try {
-            beforeClosingBuffer();
-        }
-        catch (Exception e) {
-            LOG.error("Failed to call beforeClosingBuffer()", e);
-        }
-        finally {
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Future<Void> future = executorService.submit(() -> {
-                closeBuffer();
-                isTerminated.set(true);
-                return null;
-            });
+        flushBufferQuietly();
 
-            try {
-                future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e) {
-                LOG.warn("Interrupted", e);
-                Thread.currentThread().interrupt();
-            }
-            catch (ExecutionException e) {
-                LOG.warn("closeBuffer() failed", e);
-            }
-            catch (TimeoutException e) {
-                LOG.warn("closeBuffer() timed out", e);
-            }
-            finally {
-                try {
-                    executorService.shutdown();
-                }
-                finally {
-                    try {
-                        // Close the socket at the end to prevent the server from failing to read from the connection
-                        ingester.close();
-                    }
-                    catch (Exception e) {
-                        LOG.error("Failed to close the sender", e);
-                    }
-                }
-            }
-        }
+        finishExecutorQuietly();
+
+        closeBufferQuietly();
+
+        closeIngesterQuietly();
     }
 
     public boolean isTerminated()
     {
         return isTerminated.get();
-    }
-
-    private void closeBuffer()
-    {
-        LOG.trace("closeBuffer(): closing buffer");
-        buffer.close();
     }
 
     public Ingester getIngester()
@@ -161,7 +211,7 @@ public abstract class Flusher
                 '}';
     }
 
-    public abstract static class Config
+    public static class Config
     {
         private int flushIntervalMillis = 600;
         private int waitUntilBufferFlushed = 60;
