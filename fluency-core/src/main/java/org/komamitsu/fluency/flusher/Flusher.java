@@ -125,29 +125,13 @@ public class Flusher
     {
         LOG.trace("Closing the buffer");
 
-        ExecutorService executorServiceForBufferClose = Executors.newSingleThreadExecutor();
         try {
-            // TODO: Should remove this nonblocking operation?
-            Future<Void> future = executorServiceForBufferClose.submit(() -> {
-                buffer.close();
-                isTerminated.set(true);
-                return null;
-            });
-
-            future.get(config.getWaitUntilTerminated(), TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            LOG.warn("Failed to close the buffer", e);
-            Thread.currentThread().interrupt();
+            buffer.close();
         }
         catch (Throwable e) {
             LOG.warn("Failed to close the buffer", e);
         }
-        finally {
-            ExecutorServiceUtils.finishExecutorService(
-                    executorServiceForBufferClose,
-                    config.getWaitUntilBufferFlushed());
-        }
+        isTerminated.set(true);
     }
 
     private void closeIngesterQuietly()
