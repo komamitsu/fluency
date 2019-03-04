@@ -1,6 +1,6 @@
 ## 2.1.0 (2019-02-16)
 
-Refactoring
+Refactoring:
 
 - Divide the Gradle project into subprojects
 - Refactor and improve fluency-treasuredata
@@ -11,7 +11,7 @@ Features:
 
 - Experimentally support data ingestion to Treasure Data
 
-Refactoring
+Refactoring:
 
 - Extract FluencyBuilder from Fluency
 - Merge PackedForwardBuffer into Buffer
