@@ -1,3 +1,22 @@
+## 2.1.0 (2019-02-16)
+
+Refactoring:
+
+- Divide the Gradle project into subprojects
+- Refactor and improve fluency-treasuredata
+
+## 2.0.0 (2019-01-23)
+
+Features:
+
+- Experimentally support data ingestion to Treasure Data
+
+Refactoring:
+
+- Extract FluencyBuilder from Fluency
+- Merge PackedForwardBuffer into Buffer
+- Add Ingester class layer
+
 ## 1.8.0 (2018-04-01)
 
 Features:
