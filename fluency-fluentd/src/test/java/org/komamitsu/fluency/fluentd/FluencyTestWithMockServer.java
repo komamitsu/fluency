@@ -207,7 +207,8 @@ public class FluencyTestWithMockServer
 
             Buffer.Config bufferConfig = new Buffer.Config();
             if (options.smallBuffer) {
-                bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE);
+                bufferConfig.setChunkRetentionSize(SMALL_BUF_SIZE);
+                bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE + 1);
             }
             if (options.fileBackup) {
                 bufferConfig.setFileBackupDir(TMPDIR);
