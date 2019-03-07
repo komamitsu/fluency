@@ -290,34 +290,26 @@ class BufferTest
             Buffer.Config config = new Buffer.Config();
             config.setChunkInitialSize(4 * 1024 * 1024);
             config.setChunkRetentionSize(4 * 1024 * 1024);
-            assertThrows(IllegalArgumentException.class, () -> {
-                new Buffer(config, recordFormatter);
-            });
+            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
         }
 
         {
             Buffer.Config config = new Buffer.Config();
             config.setChunkRetentionSize(64 * 1024 * 1024);
             config.setMaxBufferSize(64 * 1024 * 1024);
-            assertThrows(IllegalArgumentException.class, () -> {
-                new Buffer(config, recordFormatter);
-            });
+            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
         }
 
         {
             Buffer.Config config = new Buffer.Config();
             config.setChunkExpandRatio(1.19f);
-            assertThrows(IllegalArgumentException.class, () -> {
-                new Buffer(config, recordFormatter);
-            });
+            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
         }
 
         {
             Buffer.Config config = new Buffer.Config();
             config.setChunkRetentionTimeMillis(49);
-            assertThrows(IllegalArgumentException.class, () -> {
-                new Buffer(config, recordFormatter);
-            });
+            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
         }
     }
 }

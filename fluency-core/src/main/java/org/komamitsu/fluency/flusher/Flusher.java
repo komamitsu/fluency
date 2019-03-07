@@ -27,7 +27,6 @@ import java.io.Flushable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,6 +44,7 @@ public class Flusher
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
     {
+        config.validate();
         this.config = config;
         this.buffer = buffer;
         this.ingester = ingester;
@@ -197,6 +197,10 @@ public class Flusher
 
     public static class Config
     {
+        private static final int MIN_FLUSH_INTERVAL_MILLIS = 20;
+        private static final int MAX_FLUSH_INTERVAL_MILLIS = 2000;
+        private static final int MIN_WAIT_UNTIL_BUFFER_FLUSHED = 1;
+        private static final int MIN_WAIT_UNTIL_TERMINATED = 1;
         private int flushIntervalMillis = 600;
         private int waitUntilBufferFlushed = 60;
         private int waitUntilTerminated = 60;
@@ -229,6 +233,30 @@ public class Flusher
         public void setWaitUntilTerminated(int waitUntilTerminated)
         {
             this.waitUntilTerminated = waitUntilTerminated;
+        }
+
+        void validate()
+        {
+            if (flushIntervalMillis < MIN_FLUSH_INTERVAL_MILLIS || flushIntervalMillis > MAX_FLUSH_INTERVAL_MILLIS) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Flush Interval (%d ms) should be between %d and %d. If you want to increase the retention time of buffered data, adjust Buffer Chunk Retention Time",
+                                flushIntervalMillis, MIN_FLUSH_INTERVAL_MILLIS, MAX_FLUSH_INTERVAL_MILLIS));
+            }
+
+            if (waitUntilBufferFlushed < MIN_WAIT_UNTIL_BUFFER_FLUSHED) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Wait Until Buffer Flushed (%d seconds) should be %d seconds or more",
+                                waitUntilBufferFlushed, MIN_WAIT_UNTIL_BUFFER_FLUSHED));
+            }
+
+            if (waitUntilTerminated < MIN_WAIT_UNTIL_TERMINATED) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Wait Until Terminated (%d seconds) should be %d seconds or more",
+                                waitUntilTerminated, MIN_WAIT_UNTIL_TERMINATED));
+            }
         }
 
         @Override

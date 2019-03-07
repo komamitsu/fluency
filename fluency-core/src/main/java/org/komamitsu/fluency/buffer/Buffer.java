@@ -512,6 +512,8 @@ public class Buffer
 
     public static class Config
     {
+        private static final float MIN_CHUNK_RETENTION_RATE = 1.2f;
+        private static final int MIN_CHUNK_RETENTION_TIME_MILLIS = 50;
         private long maxBufferSize = 512 * 1024 * 1024;
         private String fileBackupDir;
         private String fileBackupPrefix;  // Mainly for testing
@@ -602,7 +604,7 @@ public class Buffer
             this.jvmHeapBufferMode = jvmHeapBufferMode;
         }
 
-        public void validate()
+        void validate()
         {
             if (chunkInitialSize >= chunkRetentionSize) {
                 throw new IllegalArgumentException(
@@ -618,18 +620,18 @@ public class Buffer
                                 maxBufferSize, chunkRetentionSize));
             }
 
-            if (chunkExpandRatio <= 1.2f) {
+            if (chunkExpandRatio < MIN_CHUNK_RETENTION_RATE) {
                 throw new IllegalArgumentException(
                         String.format(
-                                "Buffer Chunk Retention Expand Ratio (%f) should be more than 1.2",
-                                chunkExpandRatio));
+                                "Buffer Chunk Retention Expand Ratio (%f) should be %f or more",
+                                chunkExpandRatio, MIN_CHUNK_RETENTION_RATE));
             }
 
-            if (chunkRetentionTimeMillis < 50) {
+            if (chunkRetentionTimeMillis < MIN_CHUNK_RETENTION_TIME_MILLIS) {
                 throw new IllegalArgumentException(
                         String.format(
-                                "Buffer Chunk Retention Time (%d ms) should be 50 or more",
-                                chunkRetentionTimeMillis));
+                                "Buffer Chunk Retention Time (%d ms) should be %d or more",
+                                chunkRetentionTimeMillis, MIN_CHUNK_RETENTION_TIME_MILLIS));
             }
         }
 
