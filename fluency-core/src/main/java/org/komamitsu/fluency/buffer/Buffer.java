@@ -58,6 +58,7 @@ public class Buffer
 
     public Buffer(final Config config, RecordFormatter recordFormatter)
     {
+        config.validate();
         this.config = config;
 
         if (config.getFileBackupDir() != null) {
@@ -69,10 +70,6 @@ public class Buffer
 
         this.recordFormatter = recordFormatter;
 
-        if (config.getChunkInitialSize() > config.getChunkRetentionSize()) {
-            LOG.warn("Initial Buffer Chunk Size ({}) shouldn't be more than Buffer Chunk Retention Size ({}) for better performance.",
-                    config.getChunkInitialSize(), config.getChunkRetentionSize());
-        }
         bufferPool = new BufferPool(
                 config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
 
@@ -603,6 +600,37 @@ public class Buffer
         public void setJvmHeapBufferMode(boolean jvmHeapBufferMode)
         {
             this.jvmHeapBufferMode = jvmHeapBufferMode;
+        }
+
+        public void validate()
+        {
+            if (chunkInitialSize >= chunkRetentionSize) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Buffer Chunk Retention Size (%d) should be more than Initial Buffer Chunk Size (%d)",
+                                chunkRetentionSize, chunkInitialSize));
+            }
+
+            if (chunkRetentionSize >= maxBufferSize) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Max Total Buffer Size (%d) should be more than Buffer Chunk Retention Size (%d)",
+                                maxBufferSize, chunkRetentionSize));
+            }
+
+            if (chunkExpandRatio <= 1.2f) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Buffer Chunk Retention Expand Ratio (%f) should be more than 1.2",
+                                chunkExpandRatio));
+            }
+
+            if (chunkRetentionTimeMillis < 50) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Buffer Chunk Retention Time (%d ms) should be 50 or more",
+                                chunkRetentionTimeMillis));
+            }
         }
 
         @Override

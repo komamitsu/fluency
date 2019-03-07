@@ -20,8 +20,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.JsonRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
@@ -33,34 +33,33 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class BufferTest
+class BufferTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferTest.class);
-    private static final Charset UTF8 = Charset.forName("UTF-8");
     private Ingester ingester;
     private RecordFormatter recordFormatter;
     private Buffer.Config bufferConfig;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         recordFormatter = new JsonRecordFormatter();
         ingester = mock(Ingester.class);
@@ -68,16 +67,15 @@ public class BufferTest
     }
 
     @Test
-    public void testBuffer()
+    void testBuffer()
             throws IOException
     {
         int recordSize = 20; // '{"name":"komamitsu"}'
         int tags = 10;
-        int allocSizePerBuf = recordSize;
         float allocRatio = 2f;
-        int maxAllocSize = (allocSizePerBuf * 4) * tags;
+        int maxAllocSize = (recordSize * 4) * tags;
 
-        bufferConfig.setChunkInitialSize(allocSizePerBuf);
+        bufferConfig.setChunkInitialSize(recordSize);
         bufferConfig.setChunkExpandRatio(allocRatio);
         bufferConfig.setMaxBufferSize(maxAllocSize);
         Buffer buffer = new Buffer(bufferConfig, recordFormatter);
@@ -91,13 +89,13 @@ public class BufferTest
         for (int i = 0; i < tags; i++) {
             buffer.append("foodb.bartbl" + i, 1420070400, data);
         }
-        assertEquals(allocSizePerBuf * tags, buffer.getAllocatedSize());
+        assertEquals(recordSize * tags, buffer.getAllocatedSize());
         assertEquals(recordSize * tags, buffer.getBufferedDataSize());
-        assertEquals(((float) allocSizePerBuf) * tags / maxAllocSize, buffer.getBufferUsage(), 0.001);
+        assertEquals(((float) recordSize) * tags / maxAllocSize, buffer.getBufferUsage(), 0.001);
         for (int i = 0; i < tags; i++) {
             buffer.append("foodb.bartbl" + i, 1420070400, data);
         }
-        float totalAllocatedSize = allocSizePerBuf * (1 + allocRatio) * tags;
+        float totalAllocatedSize = recordSize * (1 + allocRatio) * tags;
         assertEquals(totalAllocatedSize, buffer.getAllocatedSize(), 0.001);
         assertEquals(2L * recordSize * tags, buffer.getBufferedDataSize());
         assertEquals(totalAllocatedSize / maxAllocSize, buffer.getBufferUsage(), 0.001);
@@ -114,7 +112,7 @@ public class BufferTest
     }
 
     @Test
-    public void testFileBackup()
+    void testFileBackup()
             throws IOException
     {
         bufferConfig.setFileBackupDir(System.getProperty("java.io.tmpdir"));
@@ -155,7 +153,7 @@ public class BufferTest
     }
 
     @Test
-    public void testFileBackupThatIsNotDirectory()
+    void testFileBackupThatIsNotDirectory()
             throws IOException
     {
         File backupDirFile = File.createTempFile("testFileBackupWithInvalidDir", ".tmp");
@@ -172,7 +170,7 @@ public class BufferTest
     }
 
     @Test
-    public void testFileBackupThatIsWritable()
+    void testFileBackupThatIsWritable()
     {
         File backupDir = new File(System.getProperties().getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         if (backupDir.mkdir()) {
@@ -194,7 +192,7 @@ public class BufferTest
     }
 
     @Test
-    public void testFileBackupThatIsReadable()
+    void testFileBackupThatIsReadable()
     {
         File backupDir = new File(System.getProperties().getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         if (backupDir.mkdir()) {
@@ -216,7 +214,7 @@ public class BufferTest
     }
 
     @Test
-    public void testGetAllocatedSize()
+    void testGetAllocatedSize()
             throws IOException
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
@@ -232,7 +230,7 @@ public class BufferTest
     }
 
     @Test
-    public void testGetBufferedDataSize()
+    void testGetBufferedDataSize()
             throws IOException
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
@@ -253,7 +251,7 @@ public class BufferTest
     }
 
     @Test
-    public void testAppendIfItDoesNotThrowBufferOverflow()
+    void testAppendIfItDoesNotThrowBufferOverflow()
             throws IOException
     {
         bufferConfig.setChunkInitialSize(64 * 1024);
@@ -282,6 +280,44 @@ public class BufferTest
                 map.put("k", str100kb);
                 buffer.append("tag0", new Date().getTime(), map);
             }
+        }
+    }
+
+    @Test
+    void validateConfig()
+    {
+        {
+            Buffer.Config config = new Buffer.Config();
+            config.setChunkInitialSize(4 * 1024 * 1024);
+            config.setChunkRetentionSize(4 * 1024 * 1024);
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Buffer(config, recordFormatter);
+            });
+        }
+
+        {
+            Buffer.Config config = new Buffer.Config();
+            config.setChunkRetentionSize(64 * 1024 * 1024);
+            config.setMaxBufferSize(64 * 1024 * 1024);
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Buffer(config, recordFormatter);
+            });
+        }
+
+        {
+            Buffer.Config config = new Buffer.Config();
+            config.setChunkExpandRatio(1.19f);
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Buffer(config, recordFormatter);
+            });
+        }
+
+        {
+            Buffer.Config config = new Buffer.Config();
+            config.setChunkRetentionTimeMillis(49);
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Buffer(config, recordFormatter);
+            });
         }
     }
 }
