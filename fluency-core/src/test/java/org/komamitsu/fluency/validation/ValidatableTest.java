@@ -17,6 +17,8 @@
 package org.komamitsu.fluency.validation;
 
 import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.validation.annotation.DecimalMax;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
 import org.komamitsu.fluency.validation.annotation.Max;
 import org.komamitsu.fluency.validation.annotation.Min;
 
@@ -64,6 +66,38 @@ class ValidatableTest
         }
     }
 
+    private static class DecimalMaxTest
+        implements Validatable
+    {
+        @DecimalMax("3.14")
+        private final float f;
+
+        @DecimalMax(value = "3.14", inclusive = false)
+        private final Double exclusive;
+
+        public DecimalMaxTest(float f, Double exclusive)
+        {
+            this.f = f;
+            this.exclusive = exclusive;
+        }
+    }
+
+    private static class DecimalMinTest
+        implements Validatable
+    {
+        @DecimalMin("3.14")
+        private final float f;
+
+        @DecimalMin(value = "3.14", inclusive = false)
+        private final Double exclusive;
+
+        public DecimalMinTest(float f, Double exclusive)
+        {
+            this.f = f;
+            this.exclusive = exclusive;
+        }
+    }
+
     @Test
     void validateMax()
     {
@@ -96,5 +130,33 @@ class ValidatableTest
                 () -> new MinTest(42, (long) Integer.MIN_VALUE, 42).validate());
 
         new MinTest(42, null, 43).validate();
+    }
+
+    @Test
+    void validateDecimalMax()
+    {
+        new DecimalMaxTest(3.14f, 3.13).validate();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DecimalMaxTest(3.15f, 3.13).validate());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DecimalMaxTest(3.14f, 3.14).validate());
+
+        new DecimalMaxTest(3.14f, null).validate();
+    }
+
+    @Test
+    void validateDecimalMin()
+    {
+        new DecimalMinTest(3.14f, 3.15).validate();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DecimalMinTest(3.13f, 3.15).validate());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DecimalMinTest(3.14f, 3.14).validate());
+
+        new DecimalMinTest(3.14f, null).validate();
     }
 }

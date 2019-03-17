@@ -16,11 +16,14 @@
 
 package org.komamitsu.fluency.validation;
 
+import org.komamitsu.fluency.validation.annotation.DecimalMax;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
 import org.komamitsu.fluency.validation.annotation.Max;
 import org.komamitsu.fluency.validation.annotation.Min;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -70,7 +73,41 @@ public interface Validatable
             },
             "This field (%s) is less than (%s)");
 
-    List<Validation> VALIDATIONS = Arrays.asList(VALIDATION_MAX, VALIDATION_MIN);
+    Validation VALIDATION_DECIMAL_MAX  = new Validation(
+            DecimalMax.class,
+            (annotation, actual) -> {
+                DecimalMax maxAnnotation = (DecimalMax) annotation;
+                BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
+                BigDecimal actualValue = new BigDecimal(actual.toString());
+                if (maxAnnotation.inclusive()) {
+                    return limitValue.compareTo(actualValue) >= 0;
+                }
+                else {
+                    return limitValue.compareTo(actualValue) > 0;
+                }
+            },
+            "This field (%s) is more than (%s)");
+
+    Validation VALIDATION_DECIMAL_MIN  = new Validation(
+            DecimalMin.class,
+            (annotation, actual) -> {
+                DecimalMin maxAnnotation = (DecimalMin) annotation;
+                BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
+                BigDecimal actualValue = new BigDecimal(actual.toString());
+                if (maxAnnotation.inclusive()) {
+                    return limitValue.compareTo(actualValue) <= 0;
+                }
+                else {
+                    return limitValue.compareTo(actualValue) < 0;
+                }
+            },
+            "This field (%s) is less than (%s)");
+
+    List<Validation> VALIDATIONS = Arrays.asList(
+            VALIDATION_MAX,
+            VALIDATION_MIN,
+            VALIDATION_DECIMAL_MAX,
+            VALIDATION_DECIMAL_MIN);
 
     default void validate()
     {
