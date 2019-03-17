@@ -30,89 +30,91 @@ import java.util.function.BiFunction;
 
 public interface Validatable
 {
-    class Validation
-    {
-        Class<? extends Annotation> annotationClass;
-        BiFunction<Annotation, Number, Boolean> isValid;
-        String messageTemplate;
-
-        Validation(
-                Class<? extends Annotation> annotationClass,
-                BiFunction<Annotation, Number, Boolean> isValid,
-                String messageTemplate)
+    class ValidationList {
+        private static class Validation
         {
-            this.annotationClass = annotationClass;
-            this.isValid = isValid;
-            this.messageTemplate = messageTemplate;
+            Class<? extends Annotation> annotationClass;
+            BiFunction<Annotation, Number, Boolean> isValid;
+            String messageTemplate;
+
+            Validation(
+                    Class<? extends Annotation> annotationClass,
+                    BiFunction<Annotation, Number, Boolean> isValid,
+                    String messageTemplate)
+            {
+                this.annotationClass = annotationClass;
+                this.isValid = isValid;
+                this.messageTemplate = messageTemplate;
+            }
         }
+
+        private static final Validation VALIDATION_MAX  = new Validation(
+                Max.class,
+                (annotation, actual) -> {
+                    Max maxAnnotation = (Max) annotation;
+                    if (maxAnnotation.inclusive()) {
+                        return maxAnnotation.value() >= actual.longValue();
+                    }
+                    else {
+                        return maxAnnotation.value() > actual.longValue();
+                    }
+                },
+                "This field (%s) is more than (%s)");
+
+        private static final Validation VALIDATION_MIN  = new Validation(
+                Min.class,
+                (annotation, actual) -> {
+                    Min minAnnotation = (Min) annotation;
+                    if (minAnnotation.inclusive()) {
+                        return minAnnotation.value() <= actual.longValue();
+                    }
+                    else {
+                        return minAnnotation.value() < actual.longValue();
+                    }
+                },
+                "This field (%s) is less than (%s)");
+
+        private static final Validation VALIDATION_DECIMAL_MAX  = new Validation(
+                DecimalMax.class,
+                (annotation, actual) -> {
+                    DecimalMax maxAnnotation = (DecimalMax) annotation;
+                    BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
+                    BigDecimal actualValue = new BigDecimal(actual.toString());
+                    if (maxAnnotation.inclusive()) {
+                        return limitValue.compareTo(actualValue) >= 0;
+                    }
+                    else {
+                        return limitValue.compareTo(actualValue) > 0;
+                    }
+                },
+                "This field (%s) is more than (%s)");
+
+        private static final Validation VALIDATION_DECIMAL_MIN  = new Validation(
+                DecimalMin.class,
+                (annotation, actual) -> {
+                    DecimalMin maxAnnotation = (DecimalMin) annotation;
+                    BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
+                    BigDecimal actualValue = new BigDecimal(actual.toString());
+                    if (maxAnnotation.inclusive()) {
+                        return limitValue.compareTo(actualValue) <= 0;
+                    }
+                    else {
+                        return limitValue.compareTo(actualValue) < 0;
+                    }
+                },
+                "This field (%s) is less than (%s)");
+
+        private static final List<Validation> VALIDATIONS = Arrays.asList(
+                VALIDATION_MAX,
+                VALIDATION_MIN,
+                VALIDATION_DECIMAL_MAX,
+                VALIDATION_DECIMAL_MIN);
     }
-
-    Validation VALIDATION_MAX  = new Validation(
-            Max.class,
-            (annotation, actual) -> {
-                Max maxAnnotation = (Max) annotation;
-                if (maxAnnotation.inclusive()) {
-                    return maxAnnotation.value() >= actual.longValue();
-                }
-                else {
-                    return maxAnnotation.value() > actual.longValue();
-                }
-            },
-            "This field (%s) is more than (%s)");
-
-    Validation VALIDATION_MIN  = new Validation(
-            Min.class,
-            (annotation, actual) -> {
-                Min minAnnotation = (Min) annotation;
-                if (minAnnotation.inclusive()) {
-                    return minAnnotation.value() <= actual.longValue();
-                }
-                else {
-                    return minAnnotation.value() < actual.longValue();
-                }
-            },
-            "This field (%s) is less than (%s)");
-
-    Validation VALIDATION_DECIMAL_MAX  = new Validation(
-            DecimalMax.class,
-            (annotation, actual) -> {
-                DecimalMax maxAnnotation = (DecimalMax) annotation;
-                BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
-                BigDecimal actualValue = new BigDecimal(actual.toString());
-                if (maxAnnotation.inclusive()) {
-                    return limitValue.compareTo(actualValue) >= 0;
-                }
-                else {
-                    return limitValue.compareTo(actualValue) > 0;
-                }
-            },
-            "This field (%s) is more than (%s)");
-
-    Validation VALIDATION_DECIMAL_MIN  = new Validation(
-            DecimalMin.class,
-            (annotation, actual) -> {
-                DecimalMin maxAnnotation = (DecimalMin) annotation;
-                BigDecimal limitValue = new BigDecimal(maxAnnotation.value());
-                BigDecimal actualValue = new BigDecimal(actual.toString());
-                if (maxAnnotation.inclusive()) {
-                    return limitValue.compareTo(actualValue) <= 0;
-                }
-                else {
-                    return limitValue.compareTo(actualValue) < 0;
-                }
-            },
-            "This field (%s) is less than (%s)");
-
-    List<Validation> VALIDATIONS = Arrays.asList(
-            VALIDATION_MAX,
-            VALIDATION_MIN,
-            VALIDATION_DECIMAL_MAX,
-            VALIDATION_DECIMAL_MIN);
 
     default void validate()
     {
         for (Field field : getClass().getDeclaredFields()) {
-            for (Validation validation : VALIDATIONS) {
+            for (ValidationList.Validation validation : ValidationList.VALIDATIONS) {
                 Class<? extends Annotation> annotationClass = validation.annotationClass;
                 if (field.isAnnotationPresent(annotationClass)) {
                     Annotation annotation = field.getAnnotation(annotationClass);
