@@ -16,7 +16,8 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +29,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
-public class FailureDetectorTest
+class FailureDetectorTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FailureDetectorTest.class);
 
     @Test
-    public void testIsAvailable()
+    void testIsAvailable()
             throws IOException, InterruptedException
     {
         final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
@@ -84,5 +87,18 @@ public class FailureDetectorTest
             }
             assertFalse(failureDetector.isAvailable());
         }
+    }
+
+    @Test
+    void validateConfig()
+    {
+        FailureDetector.Config config = new FailureDetector.Config();
+        config.setFailureIntervalMillis(-1);
+
+        assertThrows(IllegalArgumentException.class, () -> new FailureDetector(
+                mock(FailureDetectStrategy.class),
+                mock(Heartbeater.class),
+                config
+        ));
     }
 }

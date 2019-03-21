@@ -17,6 +17,8 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,6 +122,7 @@ public abstract class Heartbeater
     {
         private String host = "127.0.0.1";
         private int port = 24224;
+        @Min(100)
         private int intervalMillis = 1000;
 
         public String getHost()

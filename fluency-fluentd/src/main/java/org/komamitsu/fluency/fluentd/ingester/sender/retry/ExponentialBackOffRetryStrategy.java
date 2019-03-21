@@ -16,6 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
+
 public class ExponentialBackOffRetryStrategy
         extends RetryStrategy
 {
@@ -29,6 +32,7 @@ public class ExponentialBackOffRetryStrategy
     public ExponentialBackOffRetryStrategy(Config config)
     {
         super(config);
+        config.validateValues();
         this.config = config;
     }
 
@@ -62,8 +66,11 @@ public class ExponentialBackOffRetryStrategy
 
     public static class Config
             extends RetryStrategy.Config
+            implements Validatable
     {
+        @Min(10)
         private int baseIntervalMillis = 400;
+        @Min(10)
         private int maxIntervalMillis = 30 * 1000;
 
         public int getBaseIntervalMillis()
@@ -84,6 +91,11 @@ public class ExponentialBackOffRetryStrategy
         public void setMaxIntervalMillis(int maxIntervalMillis)
         {
             this.maxIntervalMillis = maxIntervalMillis;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         @Override

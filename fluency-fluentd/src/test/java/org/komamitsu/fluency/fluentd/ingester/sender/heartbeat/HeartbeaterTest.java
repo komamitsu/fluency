@@ -16,22 +16,23 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.util.Tuple3;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HeartbeaterTest
 {
     private TestableHeartbeater.Config config;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         config = new TestableHeartbeater.Config();
@@ -59,6 +60,14 @@ public class HeartbeaterTest
                 assertEquals((Integer) 123456, pongedRecord.getThird());
             }
         }
+    }
+
+    @Test
+    void validateConfig()
+    {
+        TestableHeartbeater.Config invalidConfig = new TestableHeartbeater.Config();
+        invalidConfig.setIntervalMillis(99);
+        assertThrows(IllegalArgumentException.class, () -> new TestableHeartbeater(invalidConfig));
     }
 
     private static class TestableHeartbeater

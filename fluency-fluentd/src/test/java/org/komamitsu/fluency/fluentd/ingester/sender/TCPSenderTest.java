@@ -39,11 +39,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TCPSenderTest
 {
@@ -246,6 +247,28 @@ class TCPSenderTest
         TCPSender.Config config = new TCPSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
         // TODO: Add others later
+    }
+
+    @Test
+    void validateConfig()
+    {
+        {
+            TCPSender.Config config = new TCPSender.Config();
+            config.setConnectionTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new TCPSender(config));
+        }
+
+        {
+            TCPSender.Config config = new TCPSender.Config();
+            config.setReadTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new TCPSender(config));
+        }
+
+        {
+            TCPSender.Config config = new TCPSender.Config();
+            config.setWaitBeforeCloseMilli(-1);
+            assertThrows(IllegalArgumentException.class, () -> new TCPSender(config));
+        }
     }
 
     interface TCPSenderCreater

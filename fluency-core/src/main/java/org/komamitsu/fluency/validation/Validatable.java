@@ -113,36 +113,40 @@ public interface Validatable
 
     default void validate()
     {
-        for (Field field : getClass().getDeclaredFields()) {
-            for (ValidationList.Validation validation : ValidationList.VALIDATIONS) {
-                Class<? extends Annotation> annotationClass = validation.annotationClass;
-                if (field.isAnnotationPresent(annotationClass)) {
-                    Annotation annotation = field.getAnnotation(annotationClass);
-                    Object value;
-                    try {
-                        field.setAccessible(true);
-                        value = field.get(this);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new RuntimeException(
-                                String.format("Failed to get a value from field (%s)", field), e);
-                    }
+        Class<? extends Object> klass = getClass();
+        while (klass != Object.class) {
+            for (Field field : klass.getDeclaredFields()) {
+                for (ValidationList.Validation validation : ValidationList.VALIDATIONS) {
+                    Class<? extends Annotation> annotationClass = validation.annotationClass;
+                    if (field.isAnnotationPresent(annotationClass)) {
+                        Annotation annotation = field.getAnnotation(annotationClass);
+                        Object value;
+                        try {
+                            field.setAccessible(true);
+                            value = field.get(this);
+                        }
+                        catch (IllegalAccessException e) {
+                            throw new RuntimeException(
+                                    String.format("Failed to get a value from field (%s)", field), e);
+                        }
 
-                    if (value == null) {
-                        break;
-                    }
+                        if (value == null) {
+                            break;
+                        }
 
-                    if (!(value instanceof Number)) {
-                        throw new IllegalArgumentException(
-                                String.format("This field has (%s), but actual field is (%s)", annotation, value.getClass()));
-                    }
+                        if (!(value instanceof Number)) {
+                            throw new IllegalArgumentException(
+                                    String.format("This field has (%s), but actual field is (%s)", annotation, value.getClass()));
+                        }
 
-                    if (! validation.isValid.apply(annotation, (Number) value)) {
-                        throw new IllegalArgumentException(
-                                String.format(validation.messageTemplate, field, value));
+                        if (!validation.isValid.apply(annotation, (Number) value)) {
+                            throw new IllegalArgumentException(
+                                    String.format(validation.messageTemplate, field, value));
+                        }
                     }
                 }
             }
+            klass = klass.getSuperclass();
         }
     }
 }

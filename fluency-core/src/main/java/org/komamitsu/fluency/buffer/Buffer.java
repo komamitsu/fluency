@@ -20,6 +20,9 @@ import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,7 @@ public class Buffer
 
     public Buffer(final Config config, RecordFormatter recordFormatter)
     {
-        config.validate();
+        config.validateValues();
         this.config = config;
 
         if (config.getFileBackupDir() != null) {
@@ -511,16 +514,17 @@ public class Buffer
     }
 
     public static class Config
+        implements Validatable
     {
-        private static final float MIN_CHUNK_RETENTION_RATE = 1.2f;
-        private static final int MIN_CHUNK_RETENTION_TIME_MILLIS = 50;
         private long maxBufferSize = 512 * 1024 * 1024;
         private String fileBackupDir;
         private String fileBackupPrefix;  // Mainly for testing
 
         private int chunkInitialSize = 1024 * 1024;
+        @DecimalMin("1.2")
         private float chunkExpandRatio = 2.0f;
         private int chunkRetentionSize = 4 * 1024 * 1024;
+        @Min(50)
         private int chunkRetentionTimeMillis = 1000;
         private boolean jvmHeapBufferMode = false;
 
@@ -604,8 +608,10 @@ public class Buffer
             this.jvmHeapBufferMode = jvmHeapBufferMode;
         }
 
-        void validate()
+        void validateValues()
         {
+            validate();
+
             if (chunkInitialSize >= chunkRetentionSize) {
                 throw new IllegalArgumentException(
                         String.format(
@@ -618,20 +624,6 @@ public class Buffer
                         String.format(
                                 "Max Total Buffer Size (%d) should be more than Buffer Chunk Retention Size (%d)",
                                 maxBufferSize, chunkRetentionSize));
-            }
-
-            if (chunkExpandRatio < MIN_CHUNK_RETENTION_RATE) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Buffer Chunk Retention Expand Ratio (%f) should be %f or more",
-                                chunkExpandRatio, MIN_CHUNK_RETENTION_RATE));
-            }
-
-            if (chunkRetentionTimeMillis < MIN_CHUNK_RETENTION_TIME_MILLIS) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Buffer Chunk Retention Time (%d ms) should be %d or more",
-                                chunkRetentionTimeMillis, MIN_CHUNK_RETENTION_TIME_MILLIS));
             }
         }
 

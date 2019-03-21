@@ -19,6 +19,9 @@ package org.komamitsu.fluency.flusher;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Max;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +47,7 @@ public class Flusher
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
     {
-        config.validate();
+        config.validateValues();
         this.config = config;
         this.buffer = buffer;
         this.ingester = ingester;
@@ -196,13 +199,14 @@ public class Flusher
     }
 
     public static class Config
+        implements Validatable
     {
-        private static final int MIN_FLUSH_INTERVAL_MILLIS = 20;
-        private static final int MAX_FLUSH_INTERVAL_MILLIS = 2000;
-        private static final int MIN_WAIT_UNTIL_BUFFER_FLUSHED = 1;
-        private static final int MIN_WAIT_UNTIL_TERMINATED = 1;
+        @Min(20)
+        @Max(2000)
         private int flushIntervalMillis = 600;
+        @Min(1)
         private int waitUntilBufferFlushed = 60;
+        @Min(1)
         private int waitUntilTerminated = 60;
 
         public int getFlushIntervalMillis()
@@ -235,28 +239,9 @@ public class Flusher
             this.waitUntilTerminated = waitUntilTerminated;
         }
 
-        void validate()
+        void validateValues()
         {
-            if (flushIntervalMillis < MIN_FLUSH_INTERVAL_MILLIS || flushIntervalMillis > MAX_FLUSH_INTERVAL_MILLIS) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Flush Interval (%d ms) should be between %d and %d. If you want to increase the retention time of buffered data, adjust Buffer Chunk Retention Time",
-                                flushIntervalMillis, MIN_FLUSH_INTERVAL_MILLIS, MAX_FLUSH_INTERVAL_MILLIS));
-            }
-
-            if (waitUntilBufferFlushed < MIN_WAIT_UNTIL_BUFFER_FLUSHED) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Wait Until Buffer Flushed (%d seconds) should be %d seconds or more",
-                                waitUntilBufferFlushed, MIN_WAIT_UNTIL_BUFFER_FLUSHED));
-            }
-
-            if (waitUntilTerminated < MIN_WAIT_UNTIL_TERMINATED) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Wait Until Terminated (%d seconds) should be %d seconds or more",
-                                waitUntilTerminated, MIN_WAIT_UNTIL_TERMINATED));
-            }
+            validate();
         }
 
         @Override
