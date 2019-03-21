@@ -17,6 +17,8 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
 
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,7 +104,9 @@ public class FailureDetector
     }
 
     public static class Config
+        implements Validatable
     {
+        @Min(0)
         private int failureIntervalMillis = 3 * 1000;
 
         public int getFailureIntervalMillis()
@@ -113,6 +117,11 @@ public class FailureDetector
         public void setFailureIntervalMillis(int failureIntervalMillis)
         {
             this.failureIntervalMillis = failureIntervalMillis;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         @Override

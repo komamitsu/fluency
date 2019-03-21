@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
@@ -39,19 +39,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class SSLSenderTest
+class SSLSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
 
     @Test
-    public void testSend()
+    void testSend()
             throws Exception
     {
         testSendBase(port -> {
@@ -62,7 +63,7 @@ public class SSLSenderTest
     }
 
     @Test
-    public void testSendWithHeartbeart()
+    void testSendWithHeartbeart()
             throws Exception
     {
         testSendBase(port -> {
@@ -146,7 +147,7 @@ public class SSLSenderTest
     }
 
     @Test
-    public void testConnectionTimeout()
+    void testConnectionTimeout()
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(1);
@@ -172,7 +173,7 @@ public class SSLSenderTest
     }
 
     @Test
-    public void testReadTimeout()
+    void testReadTimeout()
             throws Exception
     {
         final MockTCPServer server = new MockTCPServer(true);
@@ -206,7 +207,7 @@ public class SSLSenderTest
     }
 
     @Test
-    public void testClose()
+    void testClose()
             throws Exception
     {
         final MockTCPServer server = new MockTCPServer(true);
@@ -242,11 +243,33 @@ public class SSLSenderTest
     }
 
     @Test
-    public void testConfig()
+    void testConfig()
     {
         SSLSender.Config config = new SSLSender.Config();
         assertEquals(1000, config.getWaitBeforeCloseMilli());
         // TODO: Add others later
+    }
+
+    @Test
+    void validateConfig()
+    {
+        {
+            SSLSender.Config config = new SSLSender.Config();
+            config.setConnectionTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new SSLSender(config));
+        }
+
+        {
+            SSLSender.Config config = new SSLSender.Config();
+            config.setReadTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new SSLSender(config));
+        }
+
+        {
+            SSLSender.Config config = new SSLSender.Config();
+            config.setWaitBeforeCloseMilli(-1);
+            assertThrows(IllegalArgumentException.class, () -> new SSLSender(config));
+        }
     }
 
     interface SSLSenderCreater

@@ -17,6 +17,8 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSocketBuilder;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ public class SSLHeartbeater
     public SSLHeartbeater(final Config config)
     {
         super(config);
+        config.validateValues();
         this.config = config;
         sslSocketBuilder = new SSLSocketBuilder(
                 config.getHost(),
@@ -70,8 +73,11 @@ public class SSLHeartbeater
 
     public static class Config
             extends Heartbeater.Config
+            implements Validatable
     {
+        @Min(10)
         private int connectionTimeoutMilli = 5000;
+        @Min(10)
         private int readTimeoutMilli = 5000;
 
         public int getConnectionTimeoutMilli()
@@ -92,6 +98,11 @@ public class SSLHeartbeater
         public void setReadTimeoutMilli(int readTimeoutMilli)
         {
             this.readTimeoutMilli = readTimeoutMilli;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
     }
 }

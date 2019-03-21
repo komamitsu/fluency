@@ -28,6 +28,9 @@ import org.komamitsu.fluency.NonRetryableException;
 import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.ingester.sender.Sender;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +65,7 @@ public class TreasureDataSender
 
     public TreasureDataSender(Config config)
     {
+        config.validateValues();
         this.config = config;
         this.retryPolicy =
                 new RetryPolicy().
@@ -324,13 +328,19 @@ public class TreasureDataSender
 
     public static class Config
             extends Sender.Config
+            implements Validatable
     {
         private String endpoint = "https://api-import.treasuredata.com";
         private String apikey;
+        @Min(10)
         private int retryIntervalMs = 1000;
+        @Min(10)
         private int maxRetryIntervalMs = 30000;
+        @DecimalMin("1.0")
         private float retryFactor = 2;
+        @Min(0)
         private int retryMax = 10;
+        @Min(1024)
         private int workBufSize = 8192;
 
         public String getEndpoint()
@@ -401,6 +411,11 @@ public class TreasureDataSender
         public void setWorkBufSize(int workBufSize)
         {
             this.workBufSize = workBufSize;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
     }
 }

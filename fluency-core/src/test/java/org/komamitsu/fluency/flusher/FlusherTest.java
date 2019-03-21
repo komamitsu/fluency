@@ -16,8 +16,8 @@
 
 package org.komamitsu.fluency.flusher;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.JsonRecordFormatter;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
@@ -25,6 +25,7 @@ import org.komamitsu.fluency.ingester.Ingester;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -34,14 +35,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class FlusherTest
+class FlusherTest
 {
     private Ingester ingester;
     private Buffer.Config bufferConfig;
     private Flusher.Config flusherConfig;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         ingester = mock(Ingester.class);
 
@@ -50,7 +51,7 @@ public class FlusherTest
     }
 
     @Test
-    public void testAsyncFlusher()
+    void testAsyncFlusher()
             throws IOException, InterruptedException
     {
         flusherConfig.setFlushIntervalMillis(500);
@@ -82,5 +83,35 @@ public class FlusherTest
 
         verify(buffer, atLeast(2)).flush(eq(ingester), eq(true));
         verify(buffer, atMost(3)).flush(eq(ingester), eq(true));
+    }
+
+    @Test
+    void validateConfig()
+    {
+        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+
+        {
+            Flusher.Config config = new Flusher.Config();
+            config.setFlushIntervalMillis(19);
+            assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
+        }
+
+        {
+            Flusher.Config config = new Flusher.Config();
+            config.setFlushIntervalMillis(2001);
+            assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
+        }
+
+        {
+            Flusher.Config config = new Flusher.Config();
+            config.setWaitUntilBufferFlushed(0);
+            assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
+        }
+
+        {
+            Flusher.Config config = new Flusher.Config();
+            config.setWaitUntilTerminated(0);
+            assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
+        }
     }
 }

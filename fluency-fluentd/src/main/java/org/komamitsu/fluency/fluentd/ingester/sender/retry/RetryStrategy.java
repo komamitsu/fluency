@@ -16,6 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
+
 public abstract class RetryStrategy
 {
     private final Config config;
@@ -47,6 +50,7 @@ public abstract class RetryStrategy
 
     public static class Config
     {
+        @Min(0)
         private int maxRetryCount = 7;
 
         public int getMaxRetryCount()

@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.validation.Validatable;
 
 import javax.net.ssl.SSLSocket;
 
@@ -52,6 +53,7 @@ public class SSLSender
     public SSLSender(Config config, FailureDetector failureDetector)
     {
         super(config, failureDetector);
+        config.validateValues();
         socketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),
@@ -117,6 +119,11 @@ public class SSLSender
 
     public static class Config
             extends NetworkSender.Config
+            implements Validatable
     {
+        void validateValues()
+        {
+            validate();
+        }
     }
 }

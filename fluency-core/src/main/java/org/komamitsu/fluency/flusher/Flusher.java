@@ -19,6 +19,9 @@ package org.komamitsu.fluency.flusher;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Max;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +30,6 @@ import java.io.Flushable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,6 +47,7 @@ public class Flusher
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
     {
+        config.validateValues();
         this.config = config;
         this.buffer = buffer;
         this.ingester = ingester;
@@ -196,9 +199,14 @@ public class Flusher
     }
 
     public static class Config
+        implements Validatable
     {
+        @Min(20)
+        @Max(2000)
         private int flushIntervalMillis = 600;
+        @Min(1)
         private int waitUntilBufferFlushed = 60;
+        @Min(1)
         private int waitUntilTerminated = 60;
 
         public int getFlushIntervalMillis()
@@ -229,6 +237,11 @@ public class Flusher
         public void setWaitUntilTerminated(int waitUntilTerminated)
         {
             this.waitUntilTerminated = waitUntilTerminated;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         @Override

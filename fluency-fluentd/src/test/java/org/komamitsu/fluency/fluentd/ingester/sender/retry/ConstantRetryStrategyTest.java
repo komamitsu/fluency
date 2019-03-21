@@ -16,16 +16,18 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
-public class ConstantRetryStrategyTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ConstantRetryStrategyTest
 {
     @Test
-    public void testGetNextIntervalMillis()
+    void testGetNextIntervalMillis()
     {
         ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
         config.setRetryIntervalMillis(600);
@@ -39,5 +41,13 @@ public class ConstantRetryStrategyTest
         assertFalse(strategy.isRetriedOver(6));
         assertEquals(600, strategy.getNextIntervalMillis(7));
         assertTrue(strategy.isRetriedOver(7));
+    }
+
+    @Test
+    void validateConfig()
+    {
+        ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
+        config.setRetryIntervalMillis(9);
+        assertThrows(IllegalArgumentException.class, () -> new ConstantRetryStrategy(config));
     }
 }

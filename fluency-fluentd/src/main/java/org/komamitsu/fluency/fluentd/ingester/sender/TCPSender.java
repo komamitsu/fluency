@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.validation.Validatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public class TCPSender
         extends NetworkSender<SocketChannel>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
-    private final AtomicReference<SocketChannel> channel = new AtomicReference<SocketChannel>();
+    private final AtomicReference<SocketChannel> channel = new AtomicReference<>();
     private final Config config;
 
     public TCPSender()
@@ -52,6 +53,7 @@ public class TCPSender
     public TCPSender(Config config, FailureDetector failureDetector)
     {
         super(config, failureDetector);
+        config.validateValues();
         this.config = config;
     }
 
@@ -103,6 +105,11 @@ public class TCPSender
 
     public static class Config
             extends NetworkSender.Config
+            implements Validatable
     {
+        void validateValues()
+        {
+            validate();
+        }
     }
 }

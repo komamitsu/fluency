@@ -16,6 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.Min;
+
 public class ConstantRetryStrategy
         extends RetryStrategy
 {
@@ -24,6 +27,7 @@ public class ConstantRetryStrategy
     public ConstantRetryStrategy(Config config)
     {
         super(config);
+        config.validateValues();
         this.config = config;
     }
 
@@ -43,7 +47,9 @@ public class ConstantRetryStrategy
 
     public static class Config
             extends RetryStrategy.Config
+            implements Validatable
     {
+        @Min(10)
         private int retryIntervalMillis = 2000;
 
         public int getRetryIntervalMillis()
@@ -54,6 +60,11 @@ public class ConstantRetryStrategy
         public void setRetryIntervalMillis(int retryIntervalMillis)
         {
             this.retryIntervalMillis = retryIntervalMillis;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         @Override

@@ -19,8 +19,8 @@ package org.komamitsu.fluency.treasuredata.ingester.sender;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientHttpConflictException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.NonRetryableException;
 import org.mockito.ArgumentCaptor;
 
@@ -34,9 +34,10 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,7 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TreasureDataSenderTest
+class TreasureDataSenderTest
 {
     private final static Charset CHARSET = Charset.forName("UTF-8");
     private final static String DB = "foodb";
@@ -57,8 +58,8 @@ public class TreasureDataSenderTest
     private TDClient client;
     private TreasureDataSender sender;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         client = mock(TDClient.class);
         sender = new TreasureDataSender(new TreasureDataSender.Config())
@@ -84,7 +85,7 @@ public class TreasureDataSenderTest
     }
 
     @Test
-    public void send()
+    void send()
             throws IOException
     {
         doAnswer(invocation -> {
@@ -102,7 +103,7 @@ public class TreasureDataSenderTest
     }
 
     @Test
-    public void sendWithCreatingTable()
+    void sendWithCreatingTable()
             throws IOException
     {
         AtomicInteger importToTableCalls = new AtomicInteger();
@@ -124,7 +125,7 @@ public class TreasureDataSenderTest
     }
 
     @Test
-    public void sendWithCreatingDatabase()
+    void sendWithCreatingDatabase()
             throws IOException
     {
         AtomicInteger importToTableCalls = new AtomicInteger();
@@ -182,5 +183,39 @@ public class TreasureDataSenderTest
         verify(client, times(4)).existsDatabase(eq(DB));
         verify(client, times(1)).createTable(eq(DB), eq(TABLE));
         UUID.fromString(uniqueIdArgumentCaptor.getValue());
+    }
+
+    @Test
+    void validateConfig()
+    {
+        {
+            TreasureDataSender.Config config = new TreasureDataSender.Config();
+            config.setRetryIntervalMs(9);
+            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+        }
+
+        {
+            TreasureDataSender.Config config = new TreasureDataSender.Config();
+            config.setMaxRetryIntervalMs(9);
+            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+        }
+
+        {
+            TreasureDataSender.Config config = new TreasureDataSender.Config();
+            config.setRetryMax(-1);
+            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+        }
+
+        {
+            TreasureDataSender.Config config = new TreasureDataSender.Config();
+            config.setRetryFactor(0.9f);
+            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+        }
+
+        {
+            TreasureDataSender.Config config = new TreasureDataSender.Config();
+            config.setWorkBufSize(1023);
+            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+        }
     }
 }

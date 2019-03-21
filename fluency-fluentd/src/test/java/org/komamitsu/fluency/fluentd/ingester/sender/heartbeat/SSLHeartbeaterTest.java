@@ -16,9 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
 
 import javax.net.ssl.SSLServerSocket;
@@ -34,16 +34,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SSLHeartbeaterTest
 {
     private SSLServerSocket sslServerSocket;
     private SSLHeartbeater heartbeater;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
             throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException
     {
         sslServerSocket = new SSLTestServerSocketFactory().create();
@@ -54,8 +55,8 @@ public class SSLHeartbeaterTest
         heartbeater = new SSLHeartbeater(config);
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
             throws IOException
     {
         if (sslServerSocket != null && !sslServerSocket.isClosed()) {
@@ -64,7 +65,7 @@ public class SSLHeartbeaterTest
     }
 
     @Test
-    public void testHeartbeaterUp()
+    void testHeartbeaterUp()
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -140,6 +141,28 @@ public class SSLHeartbeaterTest
             if (heartbeater != null) {
                 heartbeater.close();
             }
+        }
+    }
+
+    @Test
+    void validateConfig()
+    {
+        {
+            SSLHeartbeater.Config config = new SSLHeartbeater.Config();
+            config.setIntervalMillis(99);
+            assertThrows(IllegalArgumentException.class, () -> new SSLHeartbeater(config));
+        }
+
+        {
+            SSLHeartbeater.Config config = new SSLHeartbeater.Config();
+            config.setConnectionTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new SSLHeartbeater(config));
+        }
+
+        {
+            SSLHeartbeater.Config config = new SSLHeartbeater.Config();
+            config.setReadTimeoutMilli(9);
+            assertThrows(IllegalArgumentException.class, () -> new SSLHeartbeater(config));
         }
     }
 }

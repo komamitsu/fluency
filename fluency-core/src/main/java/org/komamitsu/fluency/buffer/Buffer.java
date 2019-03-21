@@ -20,6 +20,9 @@ import org.komamitsu.fluency.BufferFullException;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,7 @@ public class Buffer
 
     public Buffer(final Config config, RecordFormatter recordFormatter)
     {
+        config.validateValues();
         this.config = config;
 
         if (config.getFileBackupDir() != null) {
@@ -69,10 +73,6 @@ public class Buffer
 
         this.recordFormatter = recordFormatter;
 
-        if (config.getChunkInitialSize() > config.getChunkRetentionSize()) {
-            LOG.warn("Initial Buffer Chunk Size ({}) shouldn't be more than Buffer Chunk Retention Size ({}) for better performance.",
-                    config.getChunkInitialSize(), config.getChunkRetentionSize());
-        }
         bufferPool = new BufferPool(
                 config.getChunkInitialSize(), config.getMaxBufferSize(), config.jvmHeapBufferMode);
 
@@ -514,14 +514,17 @@ public class Buffer
     }
 
     public static class Config
+        implements Validatable
     {
         private long maxBufferSize = 512 * 1024 * 1024;
         private String fileBackupDir;
         private String fileBackupPrefix;  // Mainly for testing
 
         private int chunkInitialSize = 1024 * 1024;
+        @DecimalMin("1.2")
         private float chunkExpandRatio = 2.0f;
         private int chunkRetentionSize = 4 * 1024 * 1024;
+        @Min(50)
         private int chunkRetentionTimeMillis = 1000;
         private boolean jvmHeapBufferMode = false;
 
@@ -603,6 +606,25 @@ public class Buffer
         public void setJvmHeapBufferMode(boolean jvmHeapBufferMode)
         {
             this.jvmHeapBufferMode = jvmHeapBufferMode;
+        }
+
+        void validateValues()
+        {
+            validate();
+
+            if (chunkInitialSize >= chunkRetentionSize) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Buffer Chunk Retention Size (%d) should be more than Initial Buffer Chunk Size (%d)",
+                                chunkRetentionSize, chunkInitialSize));
+            }
+
+            if (chunkRetentionSize >= maxBufferSize) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Max Total Buffer Size (%d) should be more than Buffer Chunk Retention Size (%d)",
+                                maxBufferSize, chunkRetentionSize));
+            }
         }
 
         @Override

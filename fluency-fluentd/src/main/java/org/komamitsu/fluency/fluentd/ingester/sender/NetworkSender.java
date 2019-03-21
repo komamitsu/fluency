@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.fluentd.ingester.Response;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.validation.annotation.Min;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -219,8 +220,11 @@ public abstract class NetworkSender<T>
     {
         private String host = "127.0.0.1";
         private int port = 24224;
+        @Min(10)
         private int connectionTimeoutMilli = 5000;
+        @Min(10)
         private int readTimeoutMilli = 5000;
+        @Min(0)
         private int waitBeforeCloseMilli = 1000;
 
         public String getHost()

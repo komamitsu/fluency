@@ -17,6 +17,9 @@
 package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 
 import org.komamitsu.failuredetector.PhiAccuralFailureDetector;
+import org.komamitsu.fluency.validation.Validatable;
+import org.komamitsu.fluency.validation.annotation.DecimalMin;
+import org.komamitsu.fluency.validation.annotation.Min;
 
 public class PhiAccrualFailureDetectStrategy
         extends FailureDetectStrategy
@@ -32,6 +35,7 @@ public class PhiAccrualFailureDetectStrategy
     public PhiAccrualFailureDetectStrategy(Config config)
     {
         super(config);
+        config.validateValues();
         this.config = config;
         failureDetector = new PhiAccuralFailureDetector.Builder().
                 setThreshold(config.getPhiThreshold()).
@@ -71,8 +75,11 @@ public class PhiAccrualFailureDetectStrategy
 
     public static class Config
             extends FailureDetectStrategy.Config
+            implements Validatable
     {
+        @DecimalMin(value = "0", inclusive = false)
         private double phiThreshold = 16;
+        @Min(value = 0, inclusive = false)
         private int arrivalWindowSize = 100;
 
         public double getPhiThreshold()
@@ -88,6 +95,11 @@ public class PhiAccrualFailureDetectStrategy
         public int getArrivalWindowSize()
         {
             return arrivalWindowSize;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         public void setArrivalWindowSize(int arrivalWindowSize)
