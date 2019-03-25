@@ -1,0 +1,13 @@
+dependencies {
+  implementation project(':fluency-core')
+
+  implementation 'software.amazon.awssdk:s3:2.5.15'
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      artifactId = 'fluency-s3'
+    }
+  }
+}
