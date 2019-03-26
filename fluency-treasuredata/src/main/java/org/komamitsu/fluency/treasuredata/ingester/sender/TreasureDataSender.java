@@ -413,6 +413,19 @@ public class TreasureDataSender
             this.workBufSize = workBufSize;
         }
 
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "endpoint='" + endpoint + '\'' +
+                    ", retryIntervalMs=" + retryIntervalMs +
+                    ", maxRetryIntervalMs=" + maxRetryIntervalMs +
+                    ", retryFactor=" + retryFactor +
+                    ", retryMax=" + retryMax +
+                    ", workBufSize=" + workBufSize +
+                    "} " + super.toString();
+        }
+
         void validateValues()
         {
             validate();

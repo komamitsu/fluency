@@ -294,8 +294,8 @@ dependencies {
 ```java
 // Asynchronous flush (by default)
 // Flush attempt interval is 600ms (by default)
-// Initial chunk buffer size is 1MB (by default)
-// Threshold chunk buffer size to flush is 4MB (by default)
+// Initial chunk buffer size is 4MB (by default)
+// Threshold chunk buffer size to flush is 64MB (by default)
 // Threshold chunk buffer retention time to flush is 30000 ms (by default)
 // Max total buffer size is 512MB (by default)
 // Use off heap memory for buffer pool (by default)

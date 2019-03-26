@@ -35,6 +35,8 @@ public class FluencyBuilderForTreasureData
     public FluencyBuilderForTreasureData()
     {
         setBufferChunkRetentionTimeMillis(30 * 1000);
+        setBufferChunkInitialSize(4 * 1024 * 1024);
+        setBufferChunkRetentionSize(64 * 1024 * 1024);
     }
 
     public Integer getSenderRetryMax()
@@ -114,28 +116,6 @@ public class FluencyBuilderForTreasureData
             senderConfig.setEndpoint(endpoint);
         }
 
-        return senderConfig;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "FluencyBuilder{" +
-                "senderRetryMax=" + senderRetryMax +
-                ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
-                ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
-                ", senderRetryFactor=" + senderRetryFactor +
-                ", senderWorkBufSize=" + senderWorkBufSize +
-                "} " + super.toString();
-    }
-
-    private RecordFormatter buildRecordFormatter()
-    {
-        return new TreasureDataRecordFormatter();
-    }
-
-    private Ingester buildIngester(TreasureDataSender.Config senderConfig)
-    {
         if (getSenderRetryMax() != null) {
             senderConfig.setRetryMax(getSenderRetryMax());
         }
@@ -160,6 +140,28 @@ public class FluencyBuilderForTreasureData
             senderConfig.setWorkBufSize(getSenderWorkBufSize());
         }
 
+        return senderConfig;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "FluencyBuilder{" +
+                "senderRetryMax=" + senderRetryMax +
+                ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
+                ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
+                ", senderRetryFactor=" + senderRetryFactor +
+                ", senderWorkBufSize=" + senderWorkBufSize +
+                "} " + super.toString();
+    }
+
+    private RecordFormatter buildRecordFormatter()
+    {
+        return new TreasureDataRecordFormatter();
+    }
+
+    private Ingester buildIngester(TreasureDataSender.Config senderConfig)
+    {
         TreasureDataSender sender = new TreasureDataSender(senderConfig);
 
         return new TreasureDataIngester(sender);
