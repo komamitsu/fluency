@@ -39,6 +39,8 @@ public class FluencyBuilderForAwsS3
     public FluencyBuilderForAwsS3()
     {
         setBufferChunkRetentionTimeMillis(30 * 1000);
+        setBufferChunkInitialSize(4 * 1024 * 1024);
+        setBufferChunkRetentionSize(64 * 1024 * 1024);
     }
 
     public String getSenderEndpoint()

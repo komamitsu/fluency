@@ -202,7 +202,7 @@ public class AwsS3Sender
         // TODO: Reuse these instances
         // TODO: Make this configurable
         ZonedDateTime now = ZonedDateTime.now(Clock.systemUTC());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm-ss-nnn");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm-ss-SSSSSS");
         return now.format(formatter);
     }
 
