@@ -28,6 +28,8 @@ public class FluencyBuilderForAwsS3
 {
     private String senderEndpoint;
     private String senderRegion;
+    private String senderAwsAccessKeyId;
+    private String senderAwsSecretAccessKey;
     private Integer senderRetryMax;
     private Integer senderRetryIntervalMillis;
     private Integer senderMaxRetryIntervalMillis;
@@ -57,6 +59,26 @@ public class FluencyBuilderForAwsS3
     public void setSenderRegion(String senderRegion)
     {
         this.senderRegion = senderRegion;
+    }
+
+    public String getSenderAwsAccessKeyId()
+    {
+        return senderAwsAccessKeyId;
+    }
+
+    public void setSenderAwsAccessKeyId(String senderAwsAccessKeyId)
+    {
+        this.senderAwsAccessKeyId = senderAwsAccessKeyId;
+    }
+
+    public String getSenderAwsSecretAccessKey()
+    {
+        return senderAwsSecretAccessKey;
+    }
+
+    public void setSenderAwsSecretAccessKey(String senderAwsSecretAccessKey)
+    {
+        this.senderAwsSecretAccessKey = senderAwsSecretAccessKey;
     }
 
     public Integer getSenderRetryMax()
@@ -119,11 +141,35 @@ public class FluencyBuilderForAwsS3
     private AwsS3Sender.Config createSenderConfig()
     {
         AwsS3Sender.Config senderConfig = new AwsS3Sender.Config();
-        if (senderEndpoint != null) {
-            senderConfig.setEndpoint(senderEndpoint);
+        if (getSenderEndpoint() != null) {
+            senderConfig.setEndpoint(getSenderEndpoint());
         }
-        if (senderRegion != null) {
-            senderConfig.setRegion(senderRegion);
+        if (getSenderRegion()!= null) {
+            senderConfig.setRegion(getSenderRegion());
+        }
+        if (getSenderAwsAccessKeyId() != null) {
+            senderConfig.setAwsAccessKeyId(getSenderAwsAccessKeyId());
+        }
+        if (getSenderAwsSecretAccessKey() != null) {
+            senderConfig.setAwsSecretAccessKey(getSenderAwsSecretAccessKey());
+        }
+        if (getSenderRetryMax() != null) {
+            senderConfig.setRetryMax(getSenderRetryMax());
+        }
+        if (getSenderRetryIntervalMillis() != null) {
+            senderConfig.setRetryIntervalMs(getSenderRetryIntervalMillis());
+        }
+        if (getSenderMaxRetryIntervalMillis() != null) {
+            senderConfig.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
+        }
+        if (getSenderRetryFactor() != null) {
+            senderConfig.setRetryFactor(getSenderRetryFactor());
+        }
+        if (getErrorHandler() != null) {
+            senderConfig.setErrorHandler(getErrorHandler());
+        }
+        if (getSenderWorkBufSize() != null) {
+            senderConfig.setWorkBufSize(getSenderWorkBufSize());
         }
 
         return senderConfig;
@@ -148,32 +194,7 @@ public class FluencyBuilderForAwsS3
 
     private Ingester buildIngester(AwsS3Sender.Config senderConfig)
     {
-        if (getSenderRetryMax() != null) {
-            senderConfig.setRetryMax(getSenderRetryMax());
-        }
-
-        if (getSenderRetryIntervalMillis() != null) {
-            senderConfig.setRetryIntervalMs(getSenderRetryIntervalMillis());
-        }
-
-        if (getSenderMaxRetryIntervalMillis() != null) {
-            senderConfig.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
-        }
-
-        if (getSenderRetryFactor() != null) {
-            senderConfig.setRetryFactor(getSenderRetryFactor());
-        }
-
-        if (getErrorHandler() != null) {
-            senderConfig.setErrorHandler(getErrorHandler());
-        }
-
-        if (getSenderWorkBufSize() != null) {
-            senderConfig.setWorkBufSize(getSenderWorkBufSize());
-        }
-
         AwsS3Sender sender = new AwsS3Sender(senderConfig);
-
         return new AwsS3Ingester(sender);
     }
 }

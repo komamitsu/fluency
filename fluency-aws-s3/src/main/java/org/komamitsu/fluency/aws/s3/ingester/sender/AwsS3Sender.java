@@ -19,6 +19,7 @@ package org.komamitsu.fluency.aws.s3.ingester.sender;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.komamitsu.fluency.NonRetryableException;
 import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
@@ -29,6 +30,8 @@ import org.komamitsu.fluency.validation.annotation.Min;
 import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -115,6 +118,12 @@ public class AwsS3Sender
 
         if (config.getRegion() != null) {
             clientBuilder.region(Region.of(config.getRegion()));
+        }
+
+        if (config.getAwsAccessKeyId() != null && config.getAwsSecretAccessKey() != null) {
+            AwsBasicCredentials credentials =
+                    AwsBasicCredentials.create(config.getAwsAccessKeyId(), config.getAwsSecretAccessKey());
+            clientBuilder.credentialsProvider(StaticCredentialsProvider.create(credentials));
         }
 
         return clientBuilder.build();
@@ -241,7 +250,9 @@ public class AwsS3Sender
     {
         private String endpoint;
         private String region;
-        // TODO: Credentials (should include AssumeRole?)
+        private String awsAccessKeyId;
+        private String awsSecretAccessKey;
+
         @Min(10)
         private int retryIntervalMs = 1000;
         @Min(10)
@@ -271,6 +282,26 @@ public class AwsS3Sender
         public void setRegion(String region)
         {
             this.region = region;
+        }
+
+        public String getAwsAccessKeyId()
+        {
+            return awsAccessKeyId;
+        }
+
+        public void setAwsAccessKeyId(String awsAccessKeyId)
+        {
+            this.awsAccessKeyId = awsAccessKeyId;
+        }
+
+        public String getAwsSecretAccessKey()
+        {
+            return awsSecretAccessKey;
+        }
+
+        public void setAwsSecretAccessKey(String awsSecretAccessKey)
+        {
+            this.awsSecretAccessKey = awsSecretAccessKey;
         }
 
         public int getRetryIntervalMs()
@@ -321,6 +352,20 @@ public class AwsS3Sender
         public void setWorkBufSize(int workBufSize)
         {
             this.workBufSize = workBufSize;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "endpoint='" + endpoint + '\'' +
+                    ", region='" + region + '\'' +
+                    ", retryIntervalMs=" + retryIntervalMs +
+                    ", maxRetryIntervalMs=" + maxRetryIntervalMs +
+                    ", retryFactor=" + retryFactor +
+                    ", retryMax=" + retryMax +
+                    ", workBufSize=" + workBufSize +
+                    "} " + super.toString();
         }
 
         void validateValues()
