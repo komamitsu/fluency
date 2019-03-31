@@ -8,6 +8,14 @@
         <Bug pattern="EI_EXPOSE_REP, EI_EXPOSE_REP2"/>
     </Match>
     <Match>
+        <Class name="org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter"/>
+        <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"/>
+    </Match>
+    <Match>
+        <Class name="org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter$Config"/>
+        <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"/>
+    </Match>
+    <Match>
         <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
     </Match>
 </FindBugsFilter>

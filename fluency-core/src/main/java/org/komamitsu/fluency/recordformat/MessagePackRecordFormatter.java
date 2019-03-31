@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.treasuredata.recordformat;
+package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.EventTime;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -37,36 +35,21 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TreasureDataRecordFormatter
-        extends RecordFormatter
+public class MessagePackRecordFormatter
+        extends AbstractRecordFormatter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TreasureDataRecordFormatter.class);
     private static final StringValue KEY_TIME = ValueFactory.newString("time");
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
-    public TreasureDataRecordFormatter()
+    public MessagePackRecordFormatter()
     {
         this(new Config());
     }
 
-    public TreasureDataRecordFormatter(Config config)
+    public MessagePackRecordFormatter(Config config)
     {
         super(config);
         registerObjectMapperModules(objectMapper);
-    }
-
-    private long getEpoch(Object timestamp)
-    {
-        if (timestamp instanceof EventTime) {
-            return ((EventTime) timestamp).getSeconds();
-        }
-        else if (timestamp instanceof Number) {
-            return ((Number) timestamp).longValue();
-        }
-        else {
-            LOG.warn("Invalid timestamp. Using current time: timestamp={}", timestamp);
-            return System.currentTimeMillis() / 1000;
-        }
     }
 
     @Override
@@ -162,6 +145,12 @@ public class TreasureDataRecordFormatter
                             tag, timestamp, mapValueLen)
             );
         }
+    }
+
+    @Override
+    public String formatName()
+    {
+        return "msgpack";
     }
 
     public static class Config

@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Mitsunori Komatsu (komamitsu)
+ * Copyright 2019 Mitsunori Komatsu (komamitsu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,37 +17,23 @@
 package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public abstract class RecordFormatter
+public interface RecordFormatter
 {
-    protected final Config config;
+    byte[] format(String tag, Object timestamp, Map<String, Object> data);
 
-    public RecordFormatter(Config config)
-    {
-        this.config = config;
-    }
+    byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len);
 
-    protected void registerObjectMapperModules(ObjectMapper objectMapper)
-    {
-        List<Module> jacksonModules = config.getJacksonModules();
-        for (Module module : jacksonModules) {
-            objectMapper.registerModule(module);
-        }
-    }
+    byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
 
-    public abstract byte[] format(String tag, Object timestamp, Map<String, Object> data);
+    String formatName();
 
-    public abstract byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len);
-
-    public abstract byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
-
-    public static class Config
+    class Config
     {
         private List<Module> jacksonModules = Collections.emptyList();
 

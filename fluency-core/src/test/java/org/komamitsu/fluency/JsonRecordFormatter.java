@@ -18,13 +18,13 @@ package org.komamitsu.fluency;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class JsonRecordFormatter
-        extends RecordFormatter
+        extends AbstractRecordFormatter
 {
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -54,5 +54,11 @@ public class JsonRecordFormatter
     public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
     {
         throw new RuntimeException("Shouldn't be called");
+    }
+
+    @Override
+    public String formatName()
+    {
+        return "json";
     }
 }

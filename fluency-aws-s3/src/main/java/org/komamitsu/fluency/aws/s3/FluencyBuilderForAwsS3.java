@@ -19,11 +19,11 @@ package org.komamitsu.fluency.aws.s3;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.CsvRecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
-import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 
 import java.util.List;
 
@@ -181,7 +181,7 @@ public class FluencyBuilderForAwsS3
         return "." + recordFormatter.formatName();
     }
 
-    public Fluency build(RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
+    public Fluency build(AwsS3RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
     {
         return buildFromIngester(
                 recordFormatter,

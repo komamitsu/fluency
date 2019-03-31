@@ -1,4 +1,20 @@
-package org.komamitsu.fluency.treasuredata.recordformat;
+/*
+ * Copyright 2019 Mitsunori Komatsu (komamitsu)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +34,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class TreasureDataRecordFormatterTest
+class MessagePackRecordFormatterTest
 {
     private static final String TAG = "foodb.bartbl";
     private static final long FUTURE_EPOCH = 4294967296L;
@@ -31,12 +47,12 @@ class TreasureDataRecordFormatterTest
     private static final StringValue KEY_EMAIL = ValueFactory.newString("email");
     private static final StringValue KEY_COMMENT = ValueFactory.newString("comment");
     private static final StringValue KEY_JOB = ValueFactory.newString("job");
-    private TreasureDataRecordFormatter recordFormatter;
+    private MessagePackRecordFormatter recordFormatter;
 
     @BeforeEach
     void setUp()
     {
-        recordFormatter = new TreasureDataRecordFormatter(new TreasureDataRecordFormatter.Config());
+        recordFormatter = new MessagePackRecordFormatter(new MessagePackRecordFormatter.Config());
     }
 
     private void assertRecord0(byte[] formatted, long expectedTime)

@@ -16,18 +16,10 @@
 
 package org.komamitsu.fluency.aws.s3.recordformat;
 
-import org.komamitsu.fluency.EventTime;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.value.ImmutableMapValue;
-import org.msgpack.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -36,10 +28,9 @@ import java.util.Map;
 
 
 public class CsvRecordFormatter
-        extends AwsS3RecordFormatter
+        extends AbstractRecordFormatter
+        implements AwsS3RecordFormatter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CsvRecordFormatter.class);
-    private static final String KEY_TIME = "time";
     private final Config config;
     private final byte[] delimiter;
     private final byte[] quote;
@@ -73,21 +64,6 @@ public class CsvRecordFormatter
         }
 
         lineBreak = new byte[] { 0x0A };
-    }
-
-    // TODO: Make this configurable (e.g. nano time)
-    private long getEpoch(Object timestamp)
-    {
-        if (timestamp instanceof EventTime) {
-            return ((EventTime) timestamp).getSeconds();
-        }
-        else if (timestamp instanceof Number) {
-            return ((Number) timestamp).longValue();
-        }
-        else {
-            LOG.warn("Invalid timestamp. Using current time: timestamp={}", timestamp);
-            return System.currentTimeMillis() / 1000;
-        }
     }
 
     @Override
@@ -136,73 +112,16 @@ public class CsvRecordFormatter
         return output.toByteArray();
     }
 
-    private byte[] addTimeColumnToMsgpackRecord(MessageUnpacker unpacker, long timestamp, int mapValueLen)
-            throws IOException
-    {
-        ImmutableMapValue mapValue = unpacker.unpackValue().asMapValue();
-        int mapSize = mapValue.size();
-        Value[] keyValueArray = mapValue.getKeyValueArray();
-        // Find `time` column
-        boolean timeColExists = false;
-        for (int i = 0; i < mapSize; i++) {
-            if (keyValueArray[i * 2].asStringValue().equals(KEY_TIME)) {
-                timeColExists = true;
-                // TODO: Optimization by returning immediately
-                break;
-            }
-        }
-
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream(mapValueLen + 16)) {
-            try (MessagePacker packer = MessagePack.newDefaultPacker(output)) {
-                if (timeColExists) {
-                    packer.packMapHeader(mapSize);
-                }
-                else {
-                    packer.packMapHeader(mapSize + 1);
-                    packer.packString("time");
-                    packer.packLong(timestamp);
-                }
-                for (int i = 0; i < mapSize; i++) {
-                    packer.packValue(keyValueArray[i * 2]);
-                    packer.packValue(keyValueArray[i * 2 + 1]);
-                }
-            }
-            return output.toByteArray();
-        }
-    }
-
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
     {
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue, offset, len)) {
-            return addTimeColumnToMsgpackRecord(unpacker, getEpoch(timestamp), len);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, len)
-            );
-        }
+        throw new UnsupportedOperationException("This method isn't supported yet");
     }
 
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
     {
-        // TODO: Optimization
-        int mapValueLen = mapValue.remaining();
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue)) {
-            return addTimeColumnToMsgpackRecord(unpacker, getEpoch(timestamp), mapValueLen);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, mapValueLen)
-            );
-        }
+        throw new UnsupportedOperationException("This method isn't supported yet");
     }
 
     @Override

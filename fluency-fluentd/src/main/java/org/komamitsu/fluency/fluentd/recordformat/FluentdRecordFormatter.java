@@ -18,6 +18,7 @@ package org.komamitsu.fluency.fluentd.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -30,7 +31,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 public class FluentdRecordFormatter
-        extends RecordFormatter
+        extends AbstractRecordFormatter
+        implements RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
@@ -109,6 +111,12 @@ public class FluentdRecordFormatter
                             tag, timestamp, mapValueLen)
             );
         }
+    }
+
+    @Override
+    public String formatName()
+    {
+        return "fluentd-packedforward";
     }
 
     public static class Config
