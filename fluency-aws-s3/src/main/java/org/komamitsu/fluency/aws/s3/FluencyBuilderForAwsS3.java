@@ -17,15 +17,22 @@
 package org.komamitsu.fluency.aws.s3;
 
 import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.CsvRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
-import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
+
+import java.util.List;
 
 public class FluencyBuilderForAwsS3
         extends org.komamitsu.fluency.FluencyBuilder
 {
+    private FormatType formatType;
+    private List<String> formatCsvColumnNames;
+
     private String senderEndpoint;
     private String senderRegion;
     private String senderAwsAccessKeyId;
@@ -35,12 +42,38 @@ public class FluencyBuilderForAwsS3
     private Integer senderMaxRetryIntervalMillis;
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
+    private String senderKeySuffix;
+
+    public enum FormatType {
+        MESSAGE_PACK,
+        CSV
+    }
 
     public FluencyBuilderForAwsS3()
     {
         setBufferChunkRetentionTimeMillis(30 * 1000);
         setBufferChunkInitialSize(4 * 1024 * 1024);
         setBufferChunkRetentionSize(64 * 1024 * 1024);
+    }
+
+    public FormatType getFormatType()
+    {
+        return formatType;
+    }
+
+    public void setFormatType(FormatType formatType)
+    {
+        this.formatType = formatType;
+    }
+
+    public List<String> getFormatCsvColumnNames()
+    {
+        return formatCsvColumnNames;
+    }
+
+    public void setFormatCsvColumnNames(List<String> formatCsvColumnNames)
+    {
+        this.formatCsvColumnNames = formatCsvColumnNames;
     }
 
     public String getSenderEndpoint()
@@ -133,11 +166,55 @@ public class FluencyBuilderForAwsS3
         this.senderWorkBufSize = senderWorkBufSize;
     }
 
-    public Fluency build()
+    public String getSenderKeySuffix()
+    {
+        return senderKeySuffix;
+    }
+
+    public void setSenderKeySuffix(String senderKeySuffix)
+    {
+        this.senderKeySuffix = senderKeySuffix;
+    }
+
+    private String defaultKeyPrefix(AwsS3RecordFormatter recordFormatter)
+    {
+        return "." + recordFormatter.formatName();
+    }
+
+    public Fluency build(RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
     {
         return buildFromIngester(
-                buildRecordFormatter(),
-                buildIngester(createSenderConfig()));
+                recordFormatter,
+                buildIngester(senderConfig));
+    }
+
+    public Fluency build()
+    {
+        AwsS3RecordFormatter recordFormatter;
+        switch (getFormatType()) {
+            case MESSAGE_PACK:
+                recordFormatter = new MessagePackRecordFormatter();
+                break;
+            case CSV:
+                CsvRecordFormatter.Config config = new CsvRecordFormatter.Config();
+                config.setColumnNames(getFormatCsvColumnNames());
+                recordFormatter = new CsvRecordFormatter(config);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected format type: " + getFormatType());
+        }
+
+        return build(recordFormatter);
+    }
+
+    public Fluency build(AwsS3RecordFormatter recordFormatter)
+    {
+        AwsS3Sender.Config senderConfig = createSenderConfig();
+        if (senderConfig.getKeySuffix() == null) {
+            senderConfig.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
+        }
+
+        return build(recordFormatter, senderConfig);
     }
 
     private AwsS3Sender.Config createSenderConfig()
@@ -173,6 +250,9 @@ public class FluencyBuilderForAwsS3
         if (getSenderWorkBufSize() != null) {
             senderConfig.setWorkBufSize(getSenderWorkBufSize());
         }
+        if (getSenderKeySuffix() != null) {
+            senderConfig.setKeySuffix(getSenderKeySuffix());
+        }
 
         return senderConfig;
     }
@@ -187,11 +267,6 @@ public class FluencyBuilderForAwsS3
                 ", senderRetryFactor=" + senderRetryFactor +
                 ", senderWorkBufSize=" + senderWorkBufSize +
                 "} " + super.toString();
-    }
-
-    private RecordFormatter buildRecordFormatter()
-    {
-        return new AwsS3RecordFormatter();
     }
 
     private Ingester buildIngester(AwsS3Sender.Config senderConfig)

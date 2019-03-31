@@ -206,17 +206,15 @@ public class AwsS3Sender
         return now.format(formatter);
     }
 
-    protected String getKeySuffix(String tag)
+    protected String getKeySuffix()
     {
-        // TODO: Make this configurable
-        return ".msgpack.gz";
+        return config.getKeySuffix();
     }
 
     public void send(String tag, ByteBuffer dataBuffer)
             throws IOException
     {
-        // TODO: Support other format
-        File file = File.createTempFile("tmp-fluency-", ".msgpack.gz");
+        File file = File.createTempFile("tmp-fluency-", getKeySuffix());
         try {
             try (InputStream in = new ByteBufferBackedInputStream(dataBuffer);
                     OutputStream out = new GZIPOutputStream(
@@ -228,7 +226,7 @@ public class AwsS3Sender
             }
 
             String bucket = getBucket(tag);
-            String key = getKeyPrefix(tag) + getKeySuffix(tag);
+            String key = getKeyPrefix(tag) + getKeySuffix();
             Failsafe.with(retryPolicy).run(() -> uploadData(bucket, key, file));
         }
         finally {
@@ -252,6 +250,7 @@ public class AwsS3Sender
         private String region;
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
+        private String keySuffix;
 
         @Min(10)
         private int retryIntervalMs = 1000;
@@ -354,12 +353,23 @@ public class AwsS3Sender
             this.workBufSize = workBufSize;
         }
 
+        public String getKeySuffix()
+        {
+            return keySuffix;
+        }
+
+        public void setKeySuffix(String keySuffix)
+        {
+            this.keySuffix = keySuffix;
+        }
+
         @Override
         public String toString()
         {
             return "Config{" +
                     "endpoint='" + endpoint + '\'' +
                     ", region='" + region + '\'' +
+                    ", keySuffix='" + keySuffix + '\'' +
                     ", retryIntervalMs=" + retryIntervalMs +
                     ", maxRetryIntervalMs=" + maxRetryIntervalMs +
                     ", retryFactor=" + retryFactor +
@@ -371,6 +381,10 @@ public class AwsS3Sender
         void validateValues()
         {
             validate();
+
+            if (keySuffix == null) {
+                throw new IllegalArgumentException("`keySuffix` should be set");
+            }
         }
 
     }
