@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,20 @@ public abstract class AbstractRecordFormatter
     public abstract byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
 
     public abstract String formatName();
+
+    protected Map<String, Object> appendTimeToRecord(Object timestamp, Map<String, Object> origRecord) {
+        Map<String, Object> record;
+        if (origRecord.get("time") == null) {
+            record = new HashMap<>(origRecord);
+            long epoch = getEpoch(timestamp);
+            record.put("time", epoch);
+        }
+        else {
+            record = origRecord;
+        }
+
+        return record;
+    }
 
     protected long getEpoch(Object timestamp)
     {

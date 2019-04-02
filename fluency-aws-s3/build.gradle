@@ -2,7 +2,6 @@ dependencies {
   implementation project(':fluency-core')
 
   implementation 'software.amazon.awssdk:s3:2.5.15'
-  implementation 'org.apache.commons:commons-csv:1.6'
 }
 
 publishing {

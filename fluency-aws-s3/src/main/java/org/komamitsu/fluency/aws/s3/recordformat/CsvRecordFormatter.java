@@ -69,15 +69,7 @@ public class CsvRecordFormatter
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
-        Map<String, Object> record;
-        if (data.get("time") == null) {
-            record = new HashMap<>(data);
-            long epoch = getEpoch(timestamp);
-            record.put("time", epoch);
-        }
-        else {
-            record = data;
-        }
+        Map<String, Object> record = appendTimeToRecord(timestamp, data);
 
         boolean isFirst = true;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
