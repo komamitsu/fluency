@@ -383,7 +383,7 @@ public class AwsS3Sender
             validate();
 
             if (keySuffix == null) {
-                throw new IllegalArgumentException("`keySuffix` should be set");
+                throw new IllegalArgumentException("`keySuffix` should be addTimestamp");
             }
         }
 

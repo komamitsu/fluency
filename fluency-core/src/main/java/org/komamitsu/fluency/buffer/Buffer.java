@@ -317,7 +317,7 @@ public class Buffer
 
         synchronized (retentionBuffers) {
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
-                // it can be null because moveRetentionBufferToFlushable() can set null
+                // it can be null because moveRetentionBufferToFlushable() can addTimestamp null
                 if (entry.getValue() != null) {
                     if (force || entry.getValue().getCreatedTimeMillis().get() < expiredThreshold) {
                         moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());

@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.function.Function;
 
 public class CsvRecordFormatter
         extends AbstractRecordFormatter
@@ -66,10 +66,9 @@ public class CsvRecordFormatter
         lineBreak = new byte[] { 0x0A };
     }
 
-    @Override
-    public byte[] format(String tag, Object timestamp, Map<String, Object> data)
+    private byte[] formatInternal(String tag, Object timestamp, RecordAccessor recordAccessor)
     {
-        Map<String, Object> record = appendTimeToRecord(timestamp, data);
+        appendTimeToRecord(timestamp, recordAccessor);
 
         boolean isFirst = true;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -83,7 +82,7 @@ public class CsvRecordFormatter
                 }
             }
 
-            Object value = record.get(columnName);
+            Object value = recordAccessor.get(columnName);
             if (value == null) {
                 continue;
             }
@@ -102,6 +101,12 @@ public class CsvRecordFormatter
         output.write(lineBreak, 0, lineBreak.length);
 
         return output.toByteArray();
+    }
+
+    @Override
+    public byte[] format(String tag, Object timestamp, Map<String, Object> data)
+    {
+        return formatInternal(tag, timestamp, new MapRecordAccessor(data));
     }
 
     @Override

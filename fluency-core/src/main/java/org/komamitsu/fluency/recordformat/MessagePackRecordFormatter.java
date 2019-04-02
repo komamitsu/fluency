@@ -26,13 +26,10 @@ import org.msgpack.value.ImmutableMapValue;
 import org.msgpack.value.StringValue;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 
 public class MessagePackRecordFormatter
@@ -55,10 +52,11 @@ public class MessagePackRecordFormatter
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
-        Map<String, Object> record = appendTimeToRecord(timestamp, data);
+        MapRecordAccessor recordAccessor = new MapRecordAccessor(data);
+        appendTimeToRecord(timestamp, recordAccessor);
 
         try {
-            return objectMapper.writeValueAsBytes(record);
+            return objectMapper.writeValueAsBytes(recordAccessor.toMap());
         }
         catch (JsonProcessingException e) {
             throw new IllegalArgumentException(
