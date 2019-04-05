@@ -16,27 +16,16 @@
 
 package org.komamitsu.fluency.recordformat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-import org.msgpack.value.ImmutableMapValue;
-import org.msgpack.value.StringValue;
-import org.msgpack.value.Value;
-import org.msgpack.value.ValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class MessagePackRecordFormatter
         extends AbstractRecordFormatter
 {
-    private static final StringValue KEY_TIME = ValueFactory.newString("time");
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+    private static final Logger LOG = LoggerFactory.getLogger(MessagePackRecordFormatter.class);
 
     public MessagePackRecordFormatter()
     {
@@ -46,94 +35,53 @@ public class MessagePackRecordFormatter
     public MessagePackRecordFormatter(Config config)
     {
         super(config);
-        registerObjectMapperModules(objectMapper);
     }
 
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
-        MapRecordAccessor recordAccessor = new MapRecordAccessor(data);
-        appendTimeToRecord(timestamp, recordAccessor);
-
         try {
-            return objectMapper.writeValueAsBytes(recordAccessor.toMap());
+            MapRecordAccessor recordAccessor = new MapRecordAccessor(objectMapper, data);
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return recordAccessor.toMessagePackByteArray();
         }
-        catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
-                            e.getMessage(),
-                            tag, timestamp, data.size())
-            );
-        }
-    }
-
-    private byte[] addTimeColumnToMsgpackRecord(MessageUnpacker unpacker, long timestamp, int mapValueLen)
-            throws IOException
-    {
-        ImmutableMapValue mapValue = unpacker.unpackValue().asMapValue();
-        int mapSize = mapValue.size();
-        Value[] keyValueArray = mapValue.getKeyValueArray();
-        // Find `time` column
-        boolean timeColExists = false;
-        for (int i = 0; i < mapSize; i++) {
-            if (keyValueArray[i * 2].asStringValue().equals(KEY_TIME)) {
-                timeColExists = true;
-                // TODO: Optimization by returning immediately
-                break;
-            }
-        }
-
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream(mapValueLen + 16)) {
-            try (MessagePacker packer = MessagePack.newDefaultPacker(output)) {
-                if (timeColExists) {
-                    packer.packMapHeader(mapSize);
-                }
-                else {
-                    packer.packMapHeader(mapSize + 1);
-                    packer.packString("time");
-                    packer.packLong(timestamp);
-                }
-                for (int i = 0; i < mapSize; i++) {
-                    packer.packValue(keyValueArray[i * 2]);
-                    packer.packValue(keyValueArray[i * 2 + 1]);
-                }
-            }
-            return output.toByteArray();
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a Map record: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
+                    e.getMessage(), tag, timestamp, data.size()));
+            throw e;
         }
     }
 
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
     {
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue, offset, len)) {
-            return addTimeColumnToMsgpackRecord(unpacker, getEpoch(timestamp), len);
+        try {
+            MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(ByteBuffer.wrap(mapValue, offset, len));
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return recordAccessor.toMessagePackByteArray();
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, len)
-            );
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, offset=%d, len=%d",
+                    e.getMessage(), tag, timestamp, offset, len));
+            throw e;
         }
     }
 
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
     {
-        // TODO: Optimization
-        int mapValueLen = mapValue.remaining();
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValue)) {
-            return addTimeColumnToMsgpackRecord(unpacker, getEpoch(timestamp), mapValueLen);
+        try {
+            MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(mapValue);
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return recordAccessor.toMessagePackByteArray();
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, mapValueLen)
-            );
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, bytebuf=%s",
+                    e.getMessage(), tag, timestamp, mapValue));
+            throw e;
         }
     }
 

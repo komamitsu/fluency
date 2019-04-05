@@ -16,12 +16,14 @@
 
 package org.komamitsu.fluency.recordformat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.EventTime;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.StringValue;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
@@ -38,11 +40,13 @@ public abstract class AbstractRecordFormatter
         implements RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractRecordFormatter.class);
+    protected final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     protected final Config config;
 
     public AbstractRecordFormatter(Config config)
     {
         this.config = config;
+        registerObjectMapperModules(objectMapper);
     }
 
     public abstract byte[] format(String tag, Object timestamp, Map<String, Object> data);
@@ -55,9 +59,9 @@ public abstract class AbstractRecordFormatter
 
     public interface RecordAccessor
     {
-        Object get(String key);
+        String getAsString(String key);
 
-        void addTimestamp(long timestamp);
+        void setTimestamp(long timestamp);
 
         byte[] toMessagePackByteArray();
     }
@@ -65,23 +69,36 @@ public abstract class AbstractRecordFormatter
     public static class MapRecordAccessor
             implements RecordAccessor
     {
+        private final ObjectMapper objectMapper;
         private final Map<String, Object> map;
 
-        public MapRecordAccessor(Map<String, Object> map)
+        public MapRecordAccessor(ObjectMapper objectMapper, Map<String, Object> map)
         {
             this.map = map;
+            this.objectMapper = objectMapper;
         }
 
         @Override
-        public Object get(String key)
+        public String getAsString(String key)
         {
-            return map.get(key);
+            return map.get(key).toString();
         }
 
         @Override
-        public void addTimestamp(long timestamp)
+        public void setTimestamp(long timestamp)
         {
             map.put("time", timestamp);
+        }
+
+        @Override
+        public byte[] toMessagePackByteArray()
+        {
+            try {
+                return objectMapper.writeValueAsBytes(map);
+            }
+            catch (JsonProcessingException e) {
+                throw new IllegalStateException("Failed to serialize the map to MessagePack format", e);
+            }
         }
     }
 
@@ -89,38 +106,54 @@ public abstract class AbstractRecordFormatter
             implements RecordAccessor
     {
         private static final StringValue KEY_TIME = ValueFactory.newString("time");
-        private int bytesLen;
-        private Map<Value, Value> map;
+        private MapValueBytes mapValueBytes;
 
-        private void updateValue(ByteBuffer byteBuffer)
-        {
-            bytesLen = byteBuffer.remaining();
-            try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(byteBuffer)) {
-                this.map = unpacker.unpackValue().asMapValue().map();
+        private static class MapValueBytes {
+            private final byte[] byteArray;
+            private final Map<Value, Value> map;
+
+            MapValueBytes(ByteBuffer byteBuffer)
+            {
+                byte[] mapValueBytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(mapValueBytes);
+                try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(mapValueBytes)) {
+                    this.map = unpacker.unpackValue().asMapValue().map();
+                    this.byteArray = mapValueBytes;
+                }
+                catch (IOException e) {
+                    throw new IllegalArgumentException("Invalid MessagePack ByteBuffer", e);
+                }
             }
-            catch (IOException e) {
-                throw new RuntimeException("Failed to unpack MessagePack format data", e);
+
+            byte[] byteArray()
+            {
+                return byteArray;
+            }
+
+            Map<Value, Value> map()
+            {
+                return map;
             }
         }
 
         public MessagePackRecordAccessor(ByteBuffer byteBuffer)
         {
-            updateValue(byteBuffer);
+            mapValueBytes = new MapValueBytes(byteBuffer);
         }
 
         @Override
-        public Object get(String key)
+        public String getAsString(String key)
         {
-            return map.get(ValueFactory.newString(key));
+            return mapValueBytes.map().get(ValueFactory.newString(key)).toString();
         }
 
         @Override
-        public void addTimestamp(long timestamp)
+        public void setTimestamp(long timestamp)
         {
-            int mapSize = map.size();
-            try (ByteArrayOutputStream output = new ByteArrayOutputStream(bytesLen + 16)) {
+            int mapSize = mapValueBytes.map().size();
+            try (ByteArrayOutputStream output = new ByteArrayOutputStream(mapValueBytes.byteArray().length + 16)) {
                 try (MessagePacker packer = MessagePack.newDefaultPacker(output)) {
-                    if (map.containsKey(KEY_TIME)) {
+                    if (mapValueBytes.map().containsKey(KEY_TIME)) {
                         packer.packMapHeader(mapSize);
                     }
                     else {
@@ -129,24 +162,22 @@ public abstract class AbstractRecordFormatter
                         packer.packLong(timestamp);
                     }
 
-                    for (Map.Entry<Value, Value> entry : map.entrySet()) {
+                    for (Map.Entry<Value, Value> entry : mapValueBytes.map().entrySet()) {
                         packer.packValue(entry.getKey());
                         packer.packValue(entry.getValue());
                     }
                 }
-                updateValue(ByteBuffer.wrap(output.toByteArray()));
+                mapValueBytes = new MapValueBytes(ByteBuffer.wrap(output.toByteArray()));
             }
             catch (IOException e) {
-                throw new RuntimeException("Failed to unpack MessagePack format data", e);
+                throw new IllegalStateException("Failed to upsert `time` field", e);
             }
         }
-    }
 
-    protected void appendTimeToRecord(Object timestamp, RecordAccessor recordAccessor)
-    {
-        if (recordAccessor.get("time") == null) {
-            long epoch = getEpoch(timestamp);
-            recordAccessor.addTimestamp(epoch);
+        @Override
+        public byte[] toMessagePackByteArray()
+        {
+            return mapValueBytes.byteArray();
         }
     }
 

@@ -18,19 +18,20 @@ package org.komamitsu.fluency.aws.s3.recordformat;
 
 import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public class CsvRecordFormatter
         extends AbstractRecordFormatter
         implements AwsS3RecordFormatter
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CsvRecordFormatter.class);
     private final Config config;
     private final byte[] delimiter;
     private final byte[] quote;
@@ -66,10 +67,8 @@ public class CsvRecordFormatter
         lineBreak = new byte[] { 0x0A };
     }
 
-    private byte[] formatInternal(String tag, Object timestamp, RecordAccessor recordAccessor)
+    private byte[] formatInternal(RecordAccessor recordAccessor)
     {
-        appendTimeToRecord(timestamp, recordAccessor);
-
         boolean isFirst = true;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         for (String columnName : config.getColumnNames()) {
@@ -82,12 +81,12 @@ public class CsvRecordFormatter
                 }
             }
 
-            Object value = recordAccessor.get(columnName);
+            String value = recordAccessor.getAsString(columnName);
             if (value == null) {
                 continue;
             }
 
-            byte[] bytes = value.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
 
             if (quote == null) {
                 output.write(bytes, 0, bytes.length);
@@ -106,19 +105,49 @@ public class CsvRecordFormatter
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
-        return formatInternal(tag, timestamp, new MapRecordAccessor(data));
+        try {
+            RecordAccessor recordAccessor = new MapRecordAccessor(objectMapper, data);
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return formatInternal(recordAccessor);
+        }
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a Map record: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
+                    e.getMessage(), tag, timestamp, data.size()));
+            throw e;
+        }
     }
 
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
     {
-        throw new UnsupportedOperationException("This method isn't supported yet");
+        try {
+            RecordAccessor recordAccessor = new MessagePackRecordAccessor(ByteBuffer.wrap(mapValue, offset, len));
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return formatInternal(recordAccessor);
+        }
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, offset=%d, len=%d",
+                    e.getMessage(), tag, timestamp, offset, len));
+            throw e;
+        }
     }
 
     @Override
     public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
     {
-        throw new UnsupportedOperationException("This method isn't supported yet");
+        try {
+            RecordAccessor recordAccessor = new MessagePackRecordAccessor(mapValue);
+            recordAccessor.setTimestamp(getEpoch(timestamp));
+            return formatInternal(recordAccessor);
+        }
+        catch (Throwable e) {
+            LOG.error(String.format(
+                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, bytebuf=%s",
+                    e.getMessage(), tag, timestamp, mapValue));
+            throw e;
+        }
     }
 
     @Override

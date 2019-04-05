@@ -106,7 +106,7 @@ public class FluencyBuilderForTreasureData
     private TreasureDataSender.Config createSenderConfig(String endpoint, String apikey)
     {
         if (apikey == null) {
-            throw new IllegalArgumentException("`apikey` should be addTimestamp");
+            throw new IllegalArgumentException("`apikey` should be set");
         }
 
         TreasureDataSender.Config senderConfig = new TreasureDataSender.Config();
