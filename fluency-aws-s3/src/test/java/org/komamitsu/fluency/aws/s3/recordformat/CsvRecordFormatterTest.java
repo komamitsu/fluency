@@ -27,6 +27,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -97,7 +98,7 @@ class CsvRecordFormatterTest
                         option.quoter.apply(null),               // comment
                         option.quoter.apply(null)                // job
                 ),
-                new String(formatted));
+                new String(formatted, StandardCharsets.UTF_8));
     }
 
     private void assertRecord1(byte[] formatted, long expectedTime, Option option)
@@ -111,7 +112,7 @@ class CsvRecordFormatterTest
                         option.quoter.apply("zzzzzz"),           // comment
                         option.quoter.apply(null)                // job
                 ),
-                new String(formatted));
+                new String(formatted, StandardCharsets.UTF_8));
     }
 
     private void assertRecord2(byte[] formatted, long expectedTime, Option option)
@@ -125,7 +126,7 @@ class CsvRecordFormatterTest
                         option.quoter.apply(null),               // comment
                         option.quoter.apply("knight")            // job
                 ),
-                new String(formatted));
+                new String(formatted, StandardCharsets.UTF_8));
     }
 
     @ParameterizedTest
