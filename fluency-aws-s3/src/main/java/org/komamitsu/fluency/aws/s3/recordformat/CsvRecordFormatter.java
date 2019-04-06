@@ -178,7 +178,7 @@ public class CsvRecordFormatter
             return quoteString;
         }
 
-        public void setQuoteString(String quoteString)
+        public void setQuote(String quoteString)
         {
             this.quoteString = quoteString;
         }

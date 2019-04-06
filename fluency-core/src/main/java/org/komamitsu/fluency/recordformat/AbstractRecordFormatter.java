@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -70,24 +71,28 @@ public abstract class AbstractRecordFormatter
             implements RecordAccessor
     {
         private final ObjectMapper objectMapper;
-        private final Map<String, Object> map;
+        private Map<String, Object> map;
 
         public MapRecordAccessor(ObjectMapper objectMapper, Map<String, Object> map)
         {
-            this.map = map;
+            this.map = new HashMap<>(map);
             this.objectMapper = objectMapper;
         }
 
         @Override
         public String getAsString(String key)
         {
-            return map.get(key).toString();
+            Object value = map.get(key);
+            if (value == null) {
+                return null;
+            }
+            return value.toString();
         }
 
         @Override
         public void setTimestamp(long timestamp)
         {
-            map.put("time", timestamp);
+            map.putIfAbsent("time", timestamp);
         }
 
         @Override
@@ -144,7 +149,11 @@ public abstract class AbstractRecordFormatter
         @Override
         public String getAsString(String key)
         {
-            return mapValueBytes.map().get(ValueFactory.newString(key)).toString();
+            Value value = mapValueBytes.map().get(ValueFactory.newString(key));
+            if (value == null) {
+                return null;
+            }
+            return value.toString();
         }
 
         @Override
