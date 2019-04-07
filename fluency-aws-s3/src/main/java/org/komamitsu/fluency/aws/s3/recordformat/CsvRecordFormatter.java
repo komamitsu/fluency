@@ -109,7 +109,7 @@ public class CsvRecordFormatter
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
         try {
-            RecordAccessor recordAccessor = new MapRecordAccessor(objectMapper, data);
+            RecordAccessor recordAccessor = new MapRecordAccessor(data);
             recordAccessor.setTimestamp(getEpoch(timestamp));
             return formatInternal(recordAccessor);
         }

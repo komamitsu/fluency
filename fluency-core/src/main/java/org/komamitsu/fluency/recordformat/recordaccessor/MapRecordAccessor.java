@@ -25,13 +25,11 @@ import java.util.Map;
 public class MapRecordAccessor
         implements RecordAccessor
 {
-    private final ObjectMapper objectMapper;
     private Map<String, Object> map;
 
-    public MapRecordAccessor(ObjectMapper objectMapper, Map<String, Object> map)
+    public MapRecordAccessor(Map<String, Object> map)
     {
         this.map = new HashMap<>(map);
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -51,10 +49,10 @@ public class MapRecordAccessor
     }
 
     @Override
-    public byte[] toMessagePackByteArray()
+    public byte[] toMessagePackByteArray(ObjectMapper objectMapperForMessagePack)
     {
         try {
-            return objectMapper.writeValueAsBytes(map);
+            return objectMapperForMessagePack.writeValueAsBytes(map);
         }
         catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize the map to MessagePack format", e);

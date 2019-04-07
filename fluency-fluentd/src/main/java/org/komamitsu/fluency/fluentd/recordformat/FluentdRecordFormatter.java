@@ -48,7 +48,7 @@ public class FluentdRecordFormatter
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
         try {
-            return objectMapper.writeValueAsBytes(Arrays.asList(timestamp, data));
+            return objectMapperForMessagePack.writeValueAsBytes(Arrays.asList(timestamp, data));
         }
         catch (JsonProcessingException e) {
             throw new IllegalArgumentException(
@@ -67,7 +67,7 @@ public class FluentdRecordFormatter
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // 2 items array
             outputStream.write(0x92);
-            objectMapper.writeValue(outputStream, timestamp);
+            objectMapperForMessagePack.writeValue(outputStream, timestamp);
             outputStream.write(mapValue, offset, len);
             outputStream.close();
 
@@ -91,7 +91,7 @@ public class FluentdRecordFormatter
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // 2 items array
             outputStream.write(0x92);
-            objectMapper.writeValue(outputStream, timestamp);
+            objectMapperForMessagePack.writeValue(outputStream, timestamp);
             while (mapValue.hasRemaining()) {
                 outputStream.write(mapValue.get());
             }

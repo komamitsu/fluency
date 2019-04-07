@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency.recordformat.recordaccessor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -105,7 +106,7 @@ public class MessagePackRecordAccessor
     }
 
     @Override
-    public byte[] toMessagePackByteArray()
+    public byte[] toMessagePackByteArray(ObjectMapper objectMapperForMessagePack)
     {
         return mapValueBytes.byteArray();
     }

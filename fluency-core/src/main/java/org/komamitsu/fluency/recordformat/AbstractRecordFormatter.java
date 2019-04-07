@@ -31,13 +31,13 @@ public abstract class AbstractRecordFormatter
         implements RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractRecordFormatter.class);
-    protected final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+    protected final ObjectMapper objectMapperForMessagePack = new ObjectMapper(new MessagePackFactory());
     protected final Config config;
 
     public AbstractRecordFormatter(Config config)
     {
         this.config = config;
-        registerObjectMapperModules(objectMapper);
+        registerObjectMapperModules(objectMapperForMessagePack);
     }
 
     public abstract byte[] format(String tag, Object timestamp, Map<String, Object> data);

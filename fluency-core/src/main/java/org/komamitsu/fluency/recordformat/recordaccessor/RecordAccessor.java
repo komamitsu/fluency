@@ -16,11 +16,13 @@
 
 package org.komamitsu.fluency.recordformat.recordaccessor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public interface RecordAccessor
 {
     String getAsString(String key);
 
     void setTimestamp(long timestamp);
 
-    byte[] toMessagePackByteArray();
+    byte[] toMessagePackByteArray(ObjectMapper objectMapperForMessagePack);
 }
