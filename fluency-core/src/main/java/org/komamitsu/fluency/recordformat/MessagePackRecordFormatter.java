@@ -45,7 +45,7 @@ public class MessagePackRecordFormatter
         try {
             MapRecordAccessor recordAccessor = new MapRecordAccessor(data);
             recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePackByteArray(objectMapperForMessagePack);
+            return recordAccessor.toMessagePack(objectMapperForMessagePack);
         }
         catch (Throwable e) {
             LOG.error(String.format(
@@ -61,7 +61,7 @@ public class MessagePackRecordFormatter
         try {
             MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(ByteBuffer.wrap(mapValue, offset, len));
             recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePackByteArray(objectMapperForMessagePack);
+            return recordAccessor.toMessagePack(objectMapperForMessagePack);
         }
         catch (Throwable e) {
             LOG.error(String.format(
@@ -77,7 +77,7 @@ public class MessagePackRecordFormatter
         try {
             MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(mapValue);
             recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePackByteArray(objectMapperForMessagePack);
+            return recordAccessor.toMessagePack(objectMapperForMessagePack);
         }
         catch (Throwable e) {
             LOG.error(String.format(

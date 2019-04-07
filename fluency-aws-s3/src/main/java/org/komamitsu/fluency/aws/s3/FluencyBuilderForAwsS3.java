@@ -19,9 +19,9 @@ package org.komamitsu.fluency.aws.s3;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.CsvRecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.JsonlRecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 
@@ -46,6 +46,7 @@ public class FluencyBuilderForAwsS3
 
     public enum FormatType {
         MESSAGE_PACK,
+        JSONL,
         CSV
     }
 
@@ -194,6 +195,9 @@ public class FluencyBuilderForAwsS3
         switch (getFormatType()) {
             case MESSAGE_PACK:
                 recordFormatter = new MessagePackRecordFormatter();
+                break;
+            case JSONL:
+                recordFormatter = new JsonlRecordFormatter();
                 break;
             case CSV:
                 CsvRecordFormatter.Config config = new CsvRecordFormatter.Config();

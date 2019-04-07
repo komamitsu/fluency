@@ -106,8 +106,14 @@ public class MessagePackRecordAccessor
     }
 
     @Override
-    public byte[] toMessagePackByteArray(ObjectMapper objectMapperForMessagePack)
+    public byte[] toMessagePack(ObjectMapper objectMapperForMessagePack)
     {
         return mapValueBytes.byteArray();
+    }
+
+    @Override
+    public String toJson(ObjectMapper objectMapperForJson)
+    {
+        return ValueFactory.newMap(mapValueBytes.map()).toJson();
     }
 }

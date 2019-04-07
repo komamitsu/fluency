@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.recordformat.recordaccessor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
@@ -49,13 +50,24 @@ public class MapRecordAccessor
     }
 
     @Override
-    public byte[] toMessagePackByteArray(ObjectMapper objectMapperForMessagePack)
+    public byte[] toMessagePack(ObjectMapper objectMapperForMessagePack)
     {
         try {
             return objectMapperForMessagePack.writeValueAsBytes(map);
         }
         catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize the map to MessagePack format", e);
+        }
+    }
+
+    @Override
+    public String toJson(ObjectMapper objectMapperForJson)
+    {
+        try {
+            return objectMapperForJson.writeValueAsString(map);
+        }
+        catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize the map to JSON format", e);
         }
     }
 }
