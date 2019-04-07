@@ -19,7 +19,6 @@ package org.komamitsu.fluency.aws.s3.ingester.sender;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.komamitsu.fluency.NonRetryableException;
 import org.komamitsu.fluency.RetryableException;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
@@ -62,12 +61,12 @@ public class AwsS3Sender
     private final RetryPolicy retryPolicy;
     private final S3Client client;
 
-    public AwsS3Sender()
+    public AwsS3Sender(S3ClientBuilder s3ClientBuilder)
     {
-        this(new Config());
+        this(s3ClientBuilder, new Config());
     }
 
-    public AwsS3Sender(Config config)
+    public AwsS3Sender(S3ClientBuilder s3ClientBuilder, Config config)
     {
         config.validateValues();
         this.config = config;
@@ -98,17 +97,16 @@ public class AwsS3Sender
                                 getRetryFactor()).
                         withMaxRetries(getRetryMax());
 
-        this.client = buildClient();
+        this.client = buildClient(s3ClientBuilder);
     }
 
     @VisibleForTesting
-    protected S3Client buildClient()
+    protected S3Client buildClient(S3ClientBuilder s3ClientBuilder)
     {
-        S3ClientBuilder clientBuilder = S3Client.builder();
         if (config.getEndpoint() != null) {
             try {
                 URI uri = new URI(config.getEndpoint());
-                clientBuilder.endpointOverride(uri);
+                s3ClientBuilder.endpointOverride(uri);
             }
             catch (URISyntaxException e) {
                 throw new NonRetryableException(
@@ -117,16 +115,16 @@ public class AwsS3Sender
         }
 
         if (config.getRegion() != null) {
-            clientBuilder.region(Region.of(config.getRegion()));
+            s3ClientBuilder.region(Region.of(config.getRegion()));
         }
 
         if (config.getAwsAccessKeyId() != null && config.getAwsSecretAccessKey() != null) {
             AwsBasicCredentials credentials =
                     AwsBasicCredentials.create(config.getAwsAccessKeyId(), config.getAwsSecretAccessKey());
-            clientBuilder.credentialsProvider(StaticCredentialsProvider.create(credentials));
+            s3ClientBuilder.credentialsProvider(StaticCredentialsProvider.create(credentials));
         }
 
-        return clientBuilder.build();
+        return s3ClientBuilder.build();
     }
 
     public S3Client getClient()
@@ -217,11 +215,8 @@ public class AwsS3Sender
         File file = File.createTempFile("tmp-fluency-", getKeySuffix());
         try {
             try (InputStream in = new ByteBufferBackedInputStream(dataBuffer);
-                    OutputStream out = new GZIPOutputStream(
-                            Files.newOutputStream(
-                                    file.toPath(),
-                                    StandardOpenOption.WRITE))) {
-
+                    OutputStream fout = Files.newOutputStream(file.toPath(), StandardOpenOption.WRITE);
+                    OutputStream out = config.isCompression() ? new GZIPOutputStream(fout) : fout) {
                 copyStreams(in, out);
             }
 
@@ -238,8 +233,8 @@ public class AwsS3Sender
 
     @Override
     public void close()
-            throws IOException
     {
+        client.close();
     }
 
     public static class Config
@@ -251,6 +246,7 @@ public class AwsS3Sender
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
         private String keySuffix;
+        private boolean compression = true;
 
         @Min(10)
         private int retryIntervalMs = 1000;
@@ -301,6 +297,16 @@ public class AwsS3Sender
         public void setAwsSecretAccessKey(String awsSecretAccessKey)
         {
             this.awsSecretAccessKey = awsSecretAccessKey;
+        }
+
+        public boolean isCompression()
+        {
+            return compression;
+        }
+
+        public void setCompression(boolean compression)
+        {
+            this.compression = compression;
         }
 
         public int getRetryIntervalMs()
@@ -370,6 +376,7 @@ public class AwsS3Sender
                     "endpoint='" + endpoint + '\'' +
                     ", region='" + region + '\'' +
                     ", keySuffix='" + keySuffix + '\'' +
+                    ", compression=" + compression +
                     ", retryIntervalMs=" + retryIntervalMs +
                     ", maxRetryIntervalMs=" + maxRetryIntervalMs +
                     ", retryFactor=" + retryFactor +

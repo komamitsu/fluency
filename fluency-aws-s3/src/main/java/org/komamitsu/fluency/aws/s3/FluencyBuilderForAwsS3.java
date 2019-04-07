@@ -24,6 +24,8 @@ import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 import java.util.List;
 
@@ -275,7 +277,7 @@ public class FluencyBuilderForAwsS3
 
     private Ingester buildIngester(AwsS3Sender.Config senderConfig)
     {
-        AwsS3Sender sender = new AwsS3Sender(senderConfig);
+        AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
         return new AwsS3Ingester(sender);
     }
 }
