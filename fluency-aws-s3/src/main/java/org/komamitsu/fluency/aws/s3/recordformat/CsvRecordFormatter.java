@@ -17,6 +17,9 @@
 package org.komamitsu.fluency.aws.s3.recordformat;
 
 import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
+import org.komamitsu.fluency.recordformat.recordaccessor.MapRecordAccessor;
+import org.komamitsu.fluency.recordformat.recordaccessor.MessagePackRecordAccessor;
+import org.komamitsu.fluency.recordformat.recordaccessor.RecordAccessor;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

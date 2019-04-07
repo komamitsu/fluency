@@ -16,6 +16,8 @@
 
 package org.komamitsu.fluency.recordformat;
 
+import org.komamitsu.fluency.recordformat.recordaccessor.MapRecordAccessor;
+import org.komamitsu.fluency.recordformat.recordaccessor.MessagePackRecordAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
