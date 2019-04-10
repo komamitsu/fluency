@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.aws.s3.ingester.sender;
 
 import com.google.common.io.ByteStreams;
-import com.google.common.primitives.Bytes;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -35,11 +34,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -97,13 +98,9 @@ class AwsS3SenderTest
         verify(s3ClientBuilder, times(1)).credentialsProvider(any());
     }
 
-    @Test
-    void send()
+    private void testSend(AwsS3Sender.Config config, boolean gzipCompressed)
             throws IOException
     {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setKeySuffix(".data");
-
         S3Client s3Client = mock(S3Client.class);
         S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
         doReturn(s3Client).when(s3ClientBuilder).build();
@@ -131,7 +128,8 @@ class AwsS3SenderTest
             assertTrue(Instant.now().minusSeconds(5).isBefore(timestampFromkey));
 
             RequestBody body = invocation.getArgument(1);
-            try (InputStream in = new GZIPInputStream(body.contentStreamProvider().newStream())) {
+            try (InputStream s3In = body.contentStreamProvider().newStream();
+                    InputStream in = gzipCompressed ? new GZIPInputStream(s3In) : s3In) {
                 byte[] content = ByteStreams.toByteArray(in);
                 assertEquals("0123456789", new String(content, StandardCharsets.UTF_8));
             }
@@ -145,5 +143,25 @@ class AwsS3SenderTest
                 ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8)));
 
         sender.close();
+    }
+
+    @Test
+    void send()
+            throws IOException
+    {
+        AwsS3Sender.Config config = new AwsS3Sender.Config();
+        config.setKeySuffix(".data");
+        testSend(config, true);
+    }
+
+    @Test
+    void sendWithoutCompression()
+            throws IOException
+    {
+        AwsS3Sender.Config config = new AwsS3Sender.Config();
+        config.setKeySuffix(".data");
+        config.setCompression(false);
+
+        testSend(config, false);
     }
 }
