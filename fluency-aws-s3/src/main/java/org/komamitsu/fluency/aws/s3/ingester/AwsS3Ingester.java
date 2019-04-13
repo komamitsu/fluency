@@ -19,6 +19,7 @@ package org.komamitsu.fluency.aws.s3.ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
+import org.komamitsu.fluency.validation.Validatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,18 +30,34 @@ public class AwsS3Ingester
         implements Ingester
 {
     private static final Logger LOG = LoggerFactory.getLogger(AwsS3Ingester.class);
+    private final Config config;
     private final AwsS3Sender sender;
+    private final S3DestinationDecider s3DestinationDecider;
 
-    public AwsS3Ingester(AwsS3Sender sender)
+    public AwsS3Ingester(AwsS3Sender sender, S3DestinationDecider s3DestinationDecider)
     {
+        this(new Config(), sender, s3DestinationDecider);
+    }
+
+    public AwsS3Ingester(Config config, AwsS3Sender sender, S3DestinationDecider s3DestinationDecider)
+    {
+        config.validateValues();
+
+        this.config = config;
         this.sender = sender;
+        this.s3DestinationDecider = s3DestinationDecider;
     }
 
     @Override
     public void ingest(String tag, ByteBuffer dataBuffer)
             throws IOException
     {
-        sender.send(tag, dataBuffer);
+        S3DestinationDecider.S3Destination s3Destination =
+                s3DestinationDecider.decide(tag, System.currentTimeMillis() / 1000);
+        String bucket = s3Destination.getBucket();
+        String key = s3Destination.getKeyBase() + config.getKeySuffix();
+
+        sender.send(bucket, key, dataBuffer);
     }
 
     @Override
@@ -54,5 +71,38 @@ public class AwsS3Ingester
             throws IOException
     {
         sender.close();
+    }
+
+    public static class Config
+            implements Validatable
+    {
+        private String keySuffix;
+
+        public String getKeySuffix()
+        {
+            return keySuffix;
+        }
+
+        public void setKeySuffix(String keySuffix)
+        {
+            this.keySuffix = keySuffix;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Config{" +
+                    "keySuffix='" + keySuffix + '\'' +
+                    '}';
+        }
+
+        void validateValues()
+        {
+            validate();
+
+            if (keySuffix == null) {
+                throw new IllegalArgumentException("`keySuffix` should be set");
+            }
+        }
     }
 }

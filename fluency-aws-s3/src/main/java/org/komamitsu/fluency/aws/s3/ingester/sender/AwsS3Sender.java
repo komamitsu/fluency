@@ -47,9 +47,6 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.time.Clock;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
@@ -190,29 +187,10 @@ public class AwsS3Sender
         }
     }
 
-    protected String getBucket(String tag)
-    {
-        return tag;
-    }
-
-    protected String getKeyPrefix(String tag)
-    {
-        // TODO: Reuse these instances
-        // TODO: Make this configurable
-        ZonedDateTime now = ZonedDateTime.now(Clock.systemUTC());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm-ss-SSSSSS");
-        return now.format(formatter);
-    }
-
-    protected String getKeySuffix()
-    {
-        return config.getKeySuffix();
-    }
-
-    public void send(String tag, ByteBuffer dataBuffer)
+    public void send(String bucket, String key, ByteBuffer dataBuffer)
             throws IOException
     {
-        File file = File.createTempFile("tmp-fluency-", getKeySuffix());
+        File file = File.createTempFile("tmp-fluency-", ".tmp");
         try {
             try (InputStream in = new ByteBufferBackedInputStream(dataBuffer);
                     OutputStream fout = Files.newOutputStream(file.toPath(), StandardOpenOption.WRITE);
@@ -220,8 +198,6 @@ public class AwsS3Sender
                 copyStreams(in, out);
             }
 
-            String bucket = getBucket(tag);
-            String key = getKeyPrefix(tag) + getKeySuffix();
             Failsafe.with(retryPolicy).run(() -> uploadData(bucket, key, file));
         }
         finally {
@@ -245,7 +221,6 @@ public class AwsS3Sender
         private String region;
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
-        private String keySuffix;
         private boolean compression = true;
 
         @Min(10)
@@ -359,23 +334,12 @@ public class AwsS3Sender
             this.workBufSize = workBufSize;
         }
 
-        public String getKeySuffix()
-        {
-            return keySuffix;
-        }
-
-        public void setKeySuffix(String keySuffix)
-        {
-            this.keySuffix = keySuffix;
-        }
-
         @Override
         public String toString()
         {
             return "Config{" +
                     "endpoint='" + endpoint + '\'' +
                     ", region='" + region + '\'' +
-                    ", keySuffix='" + keySuffix + '\'' +
                     ", compression=" + compression +
                     ", retryIntervalMs=" + retryIntervalMs +
                     ", maxRetryIntervalMs=" + maxRetryIntervalMs +
@@ -388,10 +352,6 @@ public class AwsS3Sender
         void validateValues()
         {
             validate();
-
-            if (keySuffix == null) {
-                throw new IllegalArgumentException("`keySuffix` should be set");
-            }
         }
 
     }

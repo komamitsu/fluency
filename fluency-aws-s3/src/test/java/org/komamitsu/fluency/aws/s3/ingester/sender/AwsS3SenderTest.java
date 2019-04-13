@@ -55,7 +55,6 @@ class AwsS3SenderTest
     void buildClientWithDefaults()
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setKeySuffix(".data");
 
         S3Client s3Client = mock(S3Client.class);
         S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
@@ -73,7 +72,6 @@ class AwsS3SenderTest
     void buildClientWithCustomizedConfig()
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setKeySuffix(".data");
         config.setEndpoint("https://another.s3endpoi.nt");
         config.setRegion("ap-northeast-1");
         config.setAwsAccessKeyId("foo");
@@ -108,7 +106,9 @@ class AwsS3SenderTest
             PutObjectRequest request = invocation.getArgument(0);
 
             assertEquals("hello.world", request.bucket());
+            assertEquals("2345/01/31/23/59-59-99999.data", request.key());
 
+            /*
             Pattern pattern = Pattern.compile("(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})-(\\d{2})-(\\d{5})");
             Matcher matcher = pattern.matcher(request.key());
             assertTrue(matcher.find());
@@ -126,6 +126,7 @@ class AwsS3SenderTest
 
             assertTrue(Instant.now().isAfter(timestampFromkey));
             assertTrue(Instant.now().minusSeconds(5).isBefore(timestampFromkey));
+            */
 
             RequestBody body = invocation.getArgument(1);
             try (InputStream s3In = body.contentStreamProvider().newStream();
@@ -139,7 +140,7 @@ class AwsS3SenderTest
 
         AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder, config);
 
-        sender.send("hello.world",
+        sender.send("hello.world", "2345/01/31/23/59-59-99999.data",
                 ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8)));
 
         sender.close();
@@ -150,7 +151,6 @@ class AwsS3SenderTest
             throws IOException
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setKeySuffix(".data");
         testSend(config, true);
     }
 
@@ -159,7 +159,6 @@ class AwsS3SenderTest
             throws IOException
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setKeySuffix(".data");
         config.setCompression(false);
 
         testSend(config, false);

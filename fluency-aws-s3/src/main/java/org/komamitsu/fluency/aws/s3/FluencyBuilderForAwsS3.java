@@ -17,15 +17,15 @@
 package org.komamitsu.fluency.aws.s3;
 
 import org.komamitsu.fluency.Fluency;
+import org.komamitsu.fluency.aws.s3.ingester.DefaultS3DestinationDecider;
+import org.komamitsu.fluency.aws.s3.ingester.S3DestinationDecider;
 import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.CsvRecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.JsonlRecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
-import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 import java.util.List;
 
@@ -44,7 +44,8 @@ public class FluencyBuilderForAwsS3
     private Integer senderMaxRetryIntervalMillis;
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
-    private String senderKeySuffix;
+    private String ingesterKeySuffix;
+    private String s3DestinationDeciderZone;
 
     public enum FormatType {
         MESSAGE_PACK,
@@ -169,14 +170,24 @@ public class FluencyBuilderForAwsS3
         this.senderWorkBufSize = senderWorkBufSize;
     }
 
-    public String getSenderKeySuffix()
+    public String getIngesterKeySuffix()
     {
-        return senderKeySuffix;
+        return ingesterKeySuffix;
     }
 
-    public void setSenderKeySuffix(String senderKeySuffix)
+    public void setIngesterKeySuffix(String ingesterKeySuffix)
     {
-        this.senderKeySuffix = senderKeySuffix;
+        this.ingesterKeySuffix = ingesterKeySuffix;
+    }
+
+    public String getS3DestinationDeciderZone()
+    {
+        return s3DestinationDeciderZone;
+    }
+
+    public void setS3DestinationDeciderZone(String s3DestinationDeciderZone)
+    {
+        this.s3DestinationDeciderZone = s3DestinationDeciderZone;
     }
 
     private String defaultKeyPrefix(AwsS3RecordFormatter recordFormatter)
@@ -186,9 +197,20 @@ public class FluencyBuilderForAwsS3
 
     public Fluency build(AwsS3RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
     {
-        return buildFromIngester(
-                recordFormatter,
-                buildIngester(senderConfig));
+        AwsS3Ingester.Config ingesterConfig = new AwsS3Ingester.Config();
+
+        if (getIngesterKeySuffix() == null) {
+            ingesterConfig.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
+        }
+        else {
+            ingesterConfig.setKeySuffix(getIngesterKeySuffix());
+        }
+
+        AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
+        S3DestinationDecider s3DestinationDecider = new DefaultS3DestinationDecider();
+        AwsS3Ingester ingester = new AwsS3Ingester(ingesterConfig, sender, s3DestinationDecider);
+
+        return buildFromIngester(recordFormatter, ingester);
     }
 
     public Fluency build()
@@ -216,9 +238,7 @@ public class FluencyBuilderForAwsS3
     public Fluency build(AwsS3RecordFormatter recordFormatter)
     {
         AwsS3Sender.Config senderConfig = createSenderConfig();
-        if (senderConfig.getKeySuffix() == null) {
-            senderConfig.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
-        }
+
 
         return build(recordFormatter, senderConfig);
     }
@@ -256,9 +276,6 @@ public class FluencyBuilderForAwsS3
         if (getSenderWorkBufSize() != null) {
             senderConfig.setWorkBufSize(getSenderWorkBufSize());
         }
-        if (getSenderKeySuffix() != null) {
-            senderConfig.setKeySuffix(getSenderKeySuffix());
-        }
 
         return senderConfig;
     }
@@ -273,11 +290,5 @@ public class FluencyBuilderForAwsS3
                 ", senderRetryFactor=" + senderRetryFactor +
                 ", senderWorkBufSize=" + senderWorkBufSize +
                 "} " + super.toString();
-    }
-
-    private Ingester buildIngester(AwsS3Sender.Config senderConfig)
-    {
-        AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
-        return new AwsS3Ingester(sender);
     }
 }
