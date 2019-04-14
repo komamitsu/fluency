@@ -108,26 +108,6 @@ class AwsS3SenderTest
             assertEquals("hello.world", request.bucket());
             assertEquals("2345/01/31/23/59-59-99999.data", request.key());
 
-            /*
-            Pattern pattern = Pattern.compile("(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})-(\\d{2})-(\\d{5})");
-            Matcher matcher = pattern.matcher(request.key());
-            assertTrue(matcher.find());
-            assertEquals(7, matcher.groupCount());
-            int year = Integer.valueOf(matcher.group(1));
-            int month = Integer.valueOf(matcher.group(2));
-            int day = Integer.valueOf(matcher.group(3));
-            int hour = Integer.valueOf(matcher.group(4));
-            int minute = Integer.valueOf(matcher.group(5));
-            int second = Integer.valueOf(matcher.group(6));
-            int nanoSeconds = Integer.valueOf(matcher.group(7));
-            Instant timestampFromkey =
-                    ZonedDateTime.of(year, month, day, hour, minute, second, nanoSeconds, ZoneOffset.UTC)
-                            .toInstant();
-
-            assertTrue(Instant.now().isAfter(timestampFromkey));
-            assertTrue(Instant.now().minusSeconds(5).isBefore(timestampFromkey));
-            */
-
             RequestBody body = invocation.getArgument(1);
             try (InputStream s3In = body.contentStreamProvider().newStream();
                     InputStream in = gzipCompressed ? new GZIPInputStream(s3In) : s3In) {

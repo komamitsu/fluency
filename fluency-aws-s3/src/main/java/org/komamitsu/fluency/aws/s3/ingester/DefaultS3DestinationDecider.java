@@ -43,14 +43,15 @@ public class DefaultS3DestinationDecider
         return tag;
     }
 
-    protected String getKeyExceptSuffix(String tag, long time)
+    protected String getKeyBase(String tag, Instant time)
     {
-        return ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), config.getZoneId()).format(FORMATTER);
+        return ZonedDateTime.ofInstant(time, config.getZoneId()).format(FORMATTER);
     }
 
-    public S3Destination decide(String tag, long time)
+    @Override
+    public S3Destination decide(String tag, Instant time)
     {
-        return new S3Destination(getBucket(tag), getKeyExceptSuffix(tag, time));
+        return new S3Destination(getBucket(tag), getKeyBase(tag, time));
     }
 
     public static class Config

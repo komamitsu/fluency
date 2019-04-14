@@ -16,6 +16,8 @@
 
 package org.komamitsu.fluency.aws.s3.ingester;
 
+import java.time.Instant;
+
 public interface S3DestinationDecider
 {
     class S3Destination
@@ -40,5 +42,5 @@ public interface S3DestinationDecider
         }
     }
 
-    S3Destination decide(String tag, long time);
+    S3Destination decide(String tag, Instant time);
 }

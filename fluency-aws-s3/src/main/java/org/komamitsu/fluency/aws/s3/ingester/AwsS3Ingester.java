@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 
 public class AwsS3Ingester
         implements Ingester
@@ -53,7 +54,7 @@ public class AwsS3Ingester
             throws IOException
     {
         S3DestinationDecider.S3Destination s3Destination =
-                s3DestinationDecider.decide(tag, System.currentTimeMillis() / 1000);
+                s3DestinationDecider.decide(tag, Instant.now());
         String bucket = s3Destination.getBucket();
         String key = s3Destination.getKeyBase() + config.getKeySuffix();
 
