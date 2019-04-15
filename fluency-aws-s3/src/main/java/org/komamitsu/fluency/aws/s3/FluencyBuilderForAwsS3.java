@@ -45,8 +45,8 @@ public class FluencyBuilderForAwsS3
     private Integer senderMaxRetryIntervalMillis;
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
-    private String ingesterKeySuffix;
-    private ZoneId s3DestinationDeciderTimeZoneId;
+    private String s3KeySuffix;
+    private ZoneId s3KeyTimeZoneId;
     private S3DestinationDecider customS3DestinationDecider;
 
     public enum FormatType {
@@ -172,24 +172,24 @@ public class FluencyBuilderForAwsS3
         this.senderWorkBufSize = senderWorkBufSize;
     }
 
-    public String getIngesterKeySuffix()
+    public String getS3KeySuffix()
     {
-        return ingesterKeySuffix;
+        return s3KeySuffix;
     }
 
-    public void setIngesterKeySuffix(String ingesterKeySuffix)
+    public void setS3KeySuffix(String s3KeySuffix)
     {
-        this.ingesterKeySuffix = ingesterKeySuffix;
+        this.s3KeySuffix = s3KeySuffix;
     }
 
-    public ZoneId getS3DestinationDeciderTimeZoneId()
+    public ZoneId getS3KeyTimeZoneId()
     {
-        return s3DestinationDeciderTimeZoneId;
+        return s3KeyTimeZoneId;
     }
 
-    public void setS3DestinationDeciderTimeZoneId(ZoneId s3DestinationDeciderTimeZoneId)
+    public void setS3KeyTimeZoneId(ZoneId s3KeyTimeZoneId)
     {
-        this.s3DestinationDeciderTimeZoneId = s3DestinationDeciderTimeZoneId;
+        this.s3KeyTimeZoneId = s3KeyTimeZoneId;
     }
 
     public S3DestinationDecider getCustomS3DestinationDecider()
@@ -209,20 +209,18 @@ public class FluencyBuilderForAwsS3
 
     public Fluency build(AwsS3RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
     {
-        AwsS3Ingester.Config ingesterConfig = new AwsS3Ingester.Config();
-
-        if (getIngesterKeySuffix() == null) {
-            ingesterConfig.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
-        }
-        else {
-            ingesterConfig.setKeySuffix(getIngesterKeySuffix());
-        }
-
         S3DestinationDecider s3DestinationDecider;
         if (getCustomS3DestinationDecider() == null) {
             DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
-            if (getS3DestinationDeciderTimeZoneId() != null) {
-                config.setZoneId(getS3DestinationDeciderTimeZoneId());
+            if (getS3KeySuffix() == null) {
+                config.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
+            }
+            else {
+                config.setKeySuffix(getS3KeySuffix());
+            }
+
+            if (getS3KeyTimeZoneId() != null) {
+                config.setZoneId(getS3KeyTimeZoneId());
             }
             s3DestinationDecider = new DefaultS3DestinationDecider(config);
         }
@@ -231,7 +229,7 @@ public class FluencyBuilderForAwsS3
         }
 
         AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
-        AwsS3Ingester ingester = new AwsS3Ingester(ingesterConfig, sender, s3DestinationDecider);
+        AwsS3Ingester ingester = new AwsS3Ingester(sender, s3DestinationDecider);
 
         return buildFromIngester(recordFormatter, ingester);
     }

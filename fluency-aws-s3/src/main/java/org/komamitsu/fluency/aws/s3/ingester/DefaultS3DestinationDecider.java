@@ -16,6 +16,8 @@
 
 package org.komamitsu.fluency.aws.s3.ingester;
 
+import org.komamitsu.fluency.validation.Validatable;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -28,13 +30,9 @@ public class DefaultS3DestinationDecider
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm-ss-SSSSSS");
     private final Config config;
 
-    public DefaultS3DestinationDecider()
-    {
-        this(new Config());
-    }
-
     public DefaultS3DestinationDecider(Config config)
     {
+        config.validateValues();
         this.config = config;
     }
 
@@ -43,7 +41,7 @@ public class DefaultS3DestinationDecider
         return tag;
     }
 
-    protected String getKeyBase(String tag, Instant time)
+    protected String getKeyBase(Instant time)
     {
         return ZonedDateTime.ofInstant(time, config.getZoneId()).format(FORMATTER);
     }
@@ -51,12 +49,25 @@ public class DefaultS3DestinationDecider
     @Override
     public S3Destination decide(String tag, Instant time)
     {
-        return new S3Destination(getBucket(tag), getKeyBase(tag, time));
+        return new S3Destination(getBucket(tag), getKeyBase(time) + config.getKeySuffix());
     }
 
     public static class Config
+            implements Validatable
     {
+        private String keySuffix;
+
         private ZoneId zoneId = ZoneOffset.UTC;
+
+        public String getKeySuffix()
+        {
+            return keySuffix;
+        }
+
+        public void setKeySuffix(String keySuffix)
+        {
+            this.keySuffix = keySuffix;
+        }
 
         public ZoneId getZoneId()
         {
@@ -68,11 +79,21 @@ public class DefaultS3DestinationDecider
             this.zoneId = zoneId;
         }
 
+        void validateValues()
+        {
+            validate();
+
+            if (keySuffix == null) {
+                throw new IllegalArgumentException("`keySuffix` should be set");
+            }
+        }
+
         @Override
         public String toString()
         {
             return "Config{" +
-                    "zoneId=" + zoneId +
+                    "keySuffix='" + keySuffix + '\'' +
+                    ", zoneId=" + zoneId +
                     '}';
         }
     }

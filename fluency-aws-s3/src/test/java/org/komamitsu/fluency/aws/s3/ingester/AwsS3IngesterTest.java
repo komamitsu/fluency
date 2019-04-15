@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,12 +45,10 @@ class AwsS3IngesterTest
         s3Sender = mock(AwsS3Sender.class);
 
         destinationDecider = mock(S3DestinationDecider.class);
-        doReturn(new S3DestinationDecider.S3Destination("mybucket", "my/key/base"))
+        doReturn(new S3DestinationDecider.S3Destination("mybucket", "my/key/base.data"))
                 .when(destinationDecider).decide(anyString(), any(Instant.class));
 
-        AwsS3Ingester.Config config = new AwsS3Ingester.Config();
-        config.setKeySuffix(".xyz");
-        ingester = new AwsS3Ingester(config, s3Sender, destinationDecider);
+        ingester = new AwsS3Ingester(s3Sender, destinationDecider);
     }
 
     @Test
@@ -63,7 +60,7 @@ class AwsS3IngesterTest
 
         verify(s3Sender, times(1))
                 .send(eq("mybucket"),
-                        eq("my/key/base.xyz"),
+                        eq("my/key/base.data"),
                         eq(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))));
     }
 

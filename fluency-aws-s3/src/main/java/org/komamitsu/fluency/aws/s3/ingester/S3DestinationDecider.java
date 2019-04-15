@@ -23,12 +23,12 @@ public interface S3DestinationDecider
     class S3Destination
     {
         private final String bucket;
-        private final String keyBase;
+        private final String key;
 
-        public S3Destination(String bucket, String keyBase)
+        public S3Destination(String bucket, String key)
         {
             this.bucket = bucket;
-            this.keyBase = keyBase;
+            this.key = key;
         }
 
         public String getBucket()
@@ -36,9 +36,9 @@ public interface S3DestinationDecider
             return bucket;
         }
 
-        public String getKeyBase()
+        public String getKey()
         {
-            return keyBase;
+            return key;
         }
     }
 
