@@ -35,11 +35,6 @@ public class AwsS3Ingester
     private final AwsS3Sender sender;
     private final S3DestinationDecider s3DestinationDecider;
 
-    public AwsS3Ingester(AwsS3Sender sender, S3DestinationDecider s3DestinationDecider)
-    {
-        this(new Config(), sender, s3DestinationDecider);
-    }
-
     public AwsS3Ingester(Config config, AwsS3Sender sender, S3DestinationDecider s3DestinationDecider)
     {
         config.validateValues();
@@ -69,7 +64,6 @@ public class AwsS3Ingester
 
     @Override
     public void close()
-            throws IOException
     {
         sender.close();
     }
