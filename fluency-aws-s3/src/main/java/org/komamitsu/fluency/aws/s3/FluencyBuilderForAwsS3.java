@@ -27,6 +27,7 @@ import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.time.ZoneId;
 import java.util.List;
 
 public class FluencyBuilderForAwsS3
@@ -45,7 +46,8 @@ public class FluencyBuilderForAwsS3
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
     private String ingesterKeySuffix;
-    private String s3DestinationDeciderZone;
+    private ZoneId s3DestinationDeciderTimeZoneId;
+    private S3DestinationDecider customS3DestinationDecider;
 
     public enum FormatType {
         MESSAGE_PACK,
@@ -180,14 +182,24 @@ public class FluencyBuilderForAwsS3
         this.ingesterKeySuffix = ingesterKeySuffix;
     }
 
-    public String getS3DestinationDeciderZone()
+    public ZoneId getS3DestinationDeciderTimeZoneId()
     {
-        return s3DestinationDeciderZone;
+        return s3DestinationDeciderTimeZoneId;
     }
 
-    public void setS3DestinationDeciderZone(String s3DestinationDeciderZone)
+    public void setS3DestinationDeciderTimeZoneId(ZoneId s3DestinationDeciderTimeZoneId)
     {
-        this.s3DestinationDeciderZone = s3DestinationDeciderZone;
+        this.s3DestinationDeciderTimeZoneId = s3DestinationDeciderTimeZoneId;
+    }
+
+    public S3DestinationDecider getCustomS3DestinationDecider()
+    {
+        return customS3DestinationDecider;
+    }
+
+    public void setCustomS3DestinationDecider(S3DestinationDecider customS3DestinationDecider)
+    {
+        this.customS3DestinationDecider = customS3DestinationDecider;
     }
 
     private String defaultKeyPrefix(AwsS3RecordFormatter recordFormatter)
@@ -206,8 +218,19 @@ public class FluencyBuilderForAwsS3
             ingesterConfig.setKeySuffix(getIngesterKeySuffix());
         }
 
+        S3DestinationDecider s3DestinationDecider;
+        if (getCustomS3DestinationDecider() == null) {
+            DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
+            if (getS3DestinationDeciderTimeZoneId() != null) {
+                config.setZoneId(getS3DestinationDeciderTimeZoneId());
+            }
+            s3DestinationDecider = new DefaultS3DestinationDecider(config);
+        }
+        else {
+            s3DestinationDecider = getCustomS3DestinationDecider();
+        }
+
         AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
-        S3DestinationDecider s3DestinationDecider = new DefaultS3DestinationDecider();
         AwsS3Ingester ingester = new AwsS3Ingester(ingesterConfig, sender, s3DestinationDecider);
 
         return buildFromIngester(recordFormatter, ingester);
