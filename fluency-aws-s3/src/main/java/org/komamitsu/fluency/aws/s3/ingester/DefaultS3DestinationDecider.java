@@ -43,15 +43,30 @@ public class DefaultS3DestinationDecider
 
     protected String getKeyBase(Instant time)
     {
-        return ZonedDateTime.ofInstant(time, config.getZoneId()).format(FORMATTER);
+        return ZonedDateTime.ofInstant(time, getZoneId()).format(FORMATTER);
     }
 
     @Override
     public S3Destination decide(String tag, Instant time)
     {
-        String keyPrefix = config.getKeyPrefix() == null ? "" : config.getKeyPrefix() + "/";
-        String keySuffix = config.getKeySuffix() == null ? "" : config.getKeySuffix();
+        String keyPrefix = getKeyPrefix() == null ? "" : getKeyPrefix() + "/";
+        String keySuffix = getKeySuffix() == null ? "" : getKeySuffix();
         return new S3Destination(getBucket(tag), keyPrefix + getKeyBase(time) + keySuffix);
+    }
+
+    public String getKeyPrefix()
+    {
+        return config.getKeyPrefix();
+    }
+
+    public String getKeySuffix()
+    {
+        return config.getKeySuffix();
+    }
+
+    public ZoneId getZoneId()
+    {
+        return config.getZoneId();
     }
 
     public static class Config

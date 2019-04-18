@@ -101,7 +101,7 @@ public class JsonlRecordFormatter
     @Override
     public String formatName()
     {
-        return "json";
+        return "jsonl";
     }
 
     public static class Config

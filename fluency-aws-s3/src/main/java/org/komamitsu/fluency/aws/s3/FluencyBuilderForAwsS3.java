@@ -25,6 +25,8 @@ import org.komamitsu.fluency.aws.s3.recordformat.JsonlRecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
+import org.msgpack.core.annotations.VisibleForTesting;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.ZoneId;
@@ -36,7 +38,7 @@ public class FluencyBuilderForAwsS3
     private FormatType formatType;
     private List<String> formatCsvColumnNames;
     private String awsEndpoint;
-    private String awsRegion;
+    private Region awsRegion;
     private String awsAccessKeyId;
     private String awsSecretAccessKey;
     private Integer senderRetryMax;
@@ -93,12 +95,12 @@ public class FluencyBuilderForAwsS3
         this.awsEndpoint = awsEndpoint;
     }
 
-    public String getAwsRegion()
+    public Region getAwsRegion()
     {
         return awsRegion;
     }
 
-    public void setAwsRegion(String awsRegion)
+    public void setAwsRegion(Region awsRegion)
     {
         this.awsRegion = awsRegion;
     }
@@ -230,6 +232,30 @@ public class FluencyBuilderForAwsS3
 
     public Fluency build(AwsS3RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
     {
+        return buildFromIngester(recordFormatter, createIngester(recordFormatter, senderConfig));
+    }
+
+    public Fluency build(AwsS3RecordFormatter recordFormatter)
+    {
+        AwsS3Sender.Config senderConfig = createSenderConfig();
+
+
+        return build(recordFormatter, senderConfig);
+    }
+
+    public Fluency build()
+    {
+        return build(createRecordFormatter());
+    }
+
+    @VisibleForTesting
+    AwsS3Sender createSender(AwsS3Sender.Config senderConfig)
+    {
+        return new AwsS3Sender(S3Client.builder(), senderConfig);
+    }
+
+    private AwsS3Ingester createIngester(AwsS3RecordFormatter recordFormatter, AwsS3Sender.Config senderConfig)
+    {
         S3DestinationDecider s3DestinationDecider;
         if (getCustomS3DestinationDecider() == null) {
             DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
@@ -255,14 +281,16 @@ public class FluencyBuilderForAwsS3
             s3DestinationDecider = getCustomS3DestinationDecider();
         }
 
-        AwsS3Sender sender = new AwsS3Sender(S3Client.builder(), senderConfig);
-        AwsS3Ingester ingester = new AwsS3Ingester(sender, s3DestinationDecider);
-
-        return buildFromIngester(recordFormatter, ingester);
+        AwsS3Sender sender = createSender(senderConfig);
+        return new AwsS3Ingester(sender, s3DestinationDecider);
     }
 
-    public Fluency build()
+    private AwsS3RecordFormatter createRecordFormatter()
     {
+        if (formatType == null) {
+            throw new IllegalArgumentException("format type must be set");
+        }
+
         AwsS3RecordFormatter recordFormatter;
         switch (getFormatType()) {
             case MESSAGE_PACK:
@@ -280,15 +308,7 @@ public class FluencyBuilderForAwsS3
                 throw new IllegalArgumentException("Unexpected format type: " + getFormatType());
         }
 
-        return build(recordFormatter);
-    }
-
-    public Fluency build(AwsS3RecordFormatter recordFormatter)
-    {
-        AwsS3Sender.Config senderConfig = createSenderConfig();
-
-
-        return build(recordFormatter, senderConfig);
+        return recordFormatter;
     }
 
     private AwsS3Sender.Config createSenderConfig()

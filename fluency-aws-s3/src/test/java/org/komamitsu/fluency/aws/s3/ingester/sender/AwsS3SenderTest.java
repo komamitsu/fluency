@@ -31,16 +31,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -73,7 +66,7 @@ class AwsS3SenderTest
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
         config.setEndpoint("https://another.s3endpoi.nt");
-        config.setRegion("ap-northeast-1");
+        config.setRegion(Region.AP_NORTHEAST_1);
         config.setAwsAccessKeyId("foo");
         config.setAwsSecretAccessKey("bar");
 

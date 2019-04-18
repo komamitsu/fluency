@@ -57,6 +57,11 @@ public class AwsS3Ingester
         return sender;
     }
 
+    public S3DestinationDecider getS3DestinationDecider()
+    {
+        return s3DestinationDecider;
+    }
+
     @Override
     public void close()
     {
