@@ -35,11 +35,10 @@ public class FluencyBuilderForAwsS3
 {
     private FormatType formatType;
     private List<String> formatCsvColumnNames;
-
-    private String senderEndpoint;
-    private String senderRegion;
-    private String senderAwsAccessKeyId;
-    private String senderAwsSecretAccessKey;
+    private String awsEndpoint;
+    private String awsRegion;
+    private String awsAccessKeyId;
+    private String awsSecretAccessKey;
     private Integer senderRetryMax;
     private Integer senderRetryIntervalMillis;
     private Integer senderMaxRetryIntervalMillis;
@@ -84,44 +83,44 @@ public class FluencyBuilderForAwsS3
         this.formatCsvColumnNames = formatCsvColumnNames;
     }
 
-    public String getSenderEndpoint()
+    public String getAwsEndpoint()
     {
-        return senderEndpoint;
+        return awsEndpoint;
     }
 
-    public void setSenderEndpoint(String senderEndpoint)
+    public void setAwsEndpoint(String awsEndpoint)
     {
-        this.senderEndpoint = senderEndpoint;
+        this.awsEndpoint = awsEndpoint;
     }
 
-    public String getSenderRegion()
+    public String getAwsRegion()
     {
-        return senderRegion;
+        return awsRegion;
     }
 
-    public void setSenderRegion(String senderRegion)
+    public void setAwsRegion(String awsRegion)
     {
-        this.senderRegion = senderRegion;
+        this.awsRegion = awsRegion;
     }
 
     public String getSenderAwsAccessKeyId()
     {
-        return senderAwsAccessKeyId;
+        return awsAccessKeyId;
     }
 
     public void setSenderAwsAccessKeyId(String senderAwsAccessKeyId)
     {
-        this.senderAwsAccessKeyId = senderAwsAccessKeyId;
+        this.awsAccessKeyId = senderAwsAccessKeyId;
     }
 
     public String getSenderAwsSecretAccessKey()
     {
-        return senderAwsSecretAccessKey;
+        return awsSecretAccessKey;
     }
 
     public void setSenderAwsSecretAccessKey(String senderAwsSecretAccessKey)
     {
-        this.senderAwsSecretAccessKey = senderAwsSecretAccessKey;
+        this.awsSecretAccessKey = senderAwsSecretAccessKey;
     }
 
     public Integer getSenderRetryMax()
@@ -295,33 +294,43 @@ public class FluencyBuilderForAwsS3
     private AwsS3Sender.Config createSenderConfig()
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        if (getSenderEndpoint() != null) {
-            config.setEndpoint(getSenderEndpoint());
+
+        if (getAwsEndpoint() != null) {
+            config.setEndpoint(getAwsEndpoint());
         }
-        if (getSenderRegion()!= null) {
-            config.setRegion(getSenderRegion());
+
+        if (getAwsRegion()!= null) {
+            config.setRegion(getAwsRegion());
         }
+
         if (getSenderAwsAccessKeyId() != null) {
             config.setAwsAccessKeyId(getSenderAwsAccessKeyId());
         }
+
         if (getSenderAwsSecretAccessKey() != null) {
             config.setAwsSecretAccessKey(getSenderAwsSecretAccessKey());
         }
+
         if (getSenderRetryMax() != null) {
             config.setRetryMax(getSenderRetryMax());
         }
+
         if (getSenderRetryIntervalMillis() != null) {
             config.setRetryIntervalMs(getSenderRetryIntervalMillis());
         }
+
         if (getSenderMaxRetryIntervalMillis() != null) {
             config.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
         }
+
         if (getSenderRetryFactor() != null) {
             config.setRetryFactor(getSenderRetryFactor());
         }
+
         if (getErrorHandler() != null) {
             config.setErrorHandler(getErrorHandler());
         }
+
         if (getSenderWorkBufSize() != null) {
             config.setWorkBufSize(getSenderWorkBufSize());
         }
@@ -337,8 +346,8 @@ public class FluencyBuilderForAwsS3
         return "FluencyBuilderForAwsS3{" +
                 "formatType=" + formatType +
                 ", formatCsvColumnNames=" + formatCsvColumnNames +
-                ", senderEndpoint='" + senderEndpoint + '\'' +
-                ", senderRegion='" + senderRegion + '\'' +
+                ", awsEndpoint='" + awsEndpoint + '\'' +
+                ", awsRegion='" + awsRegion + '\'' +
                 ", senderRetryMax=" + senderRetryMax +
                 ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
                 ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
