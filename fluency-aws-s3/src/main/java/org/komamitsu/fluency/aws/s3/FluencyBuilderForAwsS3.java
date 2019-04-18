@@ -45,6 +45,8 @@ public class FluencyBuilderForAwsS3
     private Integer senderMaxRetryIntervalMillis;
     private Float senderRetryFactor;
     private Integer senderWorkBufSize;
+    private boolean compressionEnabled = true;
+    private String s3KeyPrefix;
     private String s3KeySuffix;
     private ZoneId s3KeyTimeZoneId;
     private S3DestinationDecider customS3DestinationDecider;
@@ -172,6 +174,26 @@ public class FluencyBuilderForAwsS3
         this.senderWorkBufSize = senderWorkBufSize;
     }
 
+    public boolean isCompressionEnabled()
+    {
+        return compressionEnabled;
+    }
+
+    public void setCompressionEnabled(boolean compressionEnabled)
+    {
+        this.compressionEnabled = compressionEnabled;
+    }
+
+    public String getS3KeyPrefix()
+    {
+        return s3KeyPrefix;
+    }
+
+    public void setS3KeyPrefix(String s3KeyPrefix)
+    {
+        this.s3KeyPrefix = s3KeyPrefix;
+    }
+
     public String getS3KeySuffix()
     {
         return s3KeySuffix;
@@ -212,11 +234,17 @@ public class FluencyBuilderForAwsS3
         S3DestinationDecider s3DestinationDecider;
         if (getCustomS3DestinationDecider() == null) {
             DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
-            if (getS3KeySuffix() == null) {
-                config.setKeySuffix(defaultKeyPrefix(recordFormatter) + ".gz");
+
+            if (getS3KeyPrefix() != null) {
+                config.setKeyPrefix(getS3KeyPrefix());
+            }
+
+            if (getS3KeySuffix() != null) {
+                config.setKeySuffix(getS3KeySuffix());
             }
             else {
-                config.setKeySuffix(getS3KeySuffix());
+                config.setKeySuffix(
+                        defaultKeyPrefix(recordFormatter) + (isCompressionEnabled() ? ".gz" : ""));
             }
 
             if (getS3KeyTimeZoneId() != null) {
@@ -266,50 +294,61 @@ public class FluencyBuilderForAwsS3
 
     private AwsS3Sender.Config createSenderConfig()
     {
-        AwsS3Sender.Config senderConfig = new AwsS3Sender.Config();
+        AwsS3Sender.Config config = new AwsS3Sender.Config();
         if (getSenderEndpoint() != null) {
-            senderConfig.setEndpoint(getSenderEndpoint());
+            config.setEndpoint(getSenderEndpoint());
         }
         if (getSenderRegion()!= null) {
-            senderConfig.setRegion(getSenderRegion());
+            config.setRegion(getSenderRegion());
         }
         if (getSenderAwsAccessKeyId() != null) {
-            senderConfig.setAwsAccessKeyId(getSenderAwsAccessKeyId());
+            config.setAwsAccessKeyId(getSenderAwsAccessKeyId());
         }
         if (getSenderAwsSecretAccessKey() != null) {
-            senderConfig.setAwsSecretAccessKey(getSenderAwsSecretAccessKey());
+            config.setAwsSecretAccessKey(getSenderAwsSecretAccessKey());
         }
         if (getSenderRetryMax() != null) {
-            senderConfig.setRetryMax(getSenderRetryMax());
+            config.setRetryMax(getSenderRetryMax());
         }
         if (getSenderRetryIntervalMillis() != null) {
-            senderConfig.setRetryIntervalMs(getSenderRetryIntervalMillis());
+            config.setRetryIntervalMs(getSenderRetryIntervalMillis());
         }
         if (getSenderMaxRetryIntervalMillis() != null) {
-            senderConfig.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
+            config.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
         }
         if (getSenderRetryFactor() != null) {
-            senderConfig.setRetryFactor(getSenderRetryFactor());
+            config.setRetryFactor(getSenderRetryFactor());
         }
         if (getErrorHandler() != null) {
-            senderConfig.setErrorHandler(getErrorHandler());
+            config.setErrorHandler(getErrorHandler());
         }
         if (getSenderWorkBufSize() != null) {
-            senderConfig.setWorkBufSize(getSenderWorkBufSize());
+            config.setWorkBufSize(getSenderWorkBufSize());
         }
 
-        return senderConfig;
+        config.setCompression(isCompressionEnabled());
+
+        return config;
     }
 
     @Override
     public String toString()
     {
-        return "FluencyBuilder{" +
-                "senderRetryMax=" + senderRetryMax +
+        return "FluencyBuilderForAwsS3{" +
+                "formatType=" + formatType +
+                ", formatCsvColumnNames=" + formatCsvColumnNames +
+                ", senderEndpoint='" + senderEndpoint + '\'' +
+                ", senderRegion='" + senderRegion + '\'' +
+                ", senderRetryMax=" + senderRetryMax +
                 ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
                 ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
                 ", senderRetryFactor=" + senderRetryFactor +
                 ", senderWorkBufSize=" + senderWorkBufSize +
+                ", compressionEnabled=" + compressionEnabled +
+                ", s3KeyPrefix='" + s3KeyPrefix + '\'' +
+                ", s3KeySuffix='" + s3KeySuffix + '\'' +
+                ", s3KeyTimeZoneId=" + s3KeyTimeZoneId +
+                ", customS3DestinationDecider=" + customS3DestinationDecider +
                 "} " + super.toString();
     }
 }

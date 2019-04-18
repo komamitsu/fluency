@@ -32,6 +32,7 @@ class DefaultS3DestinationDeciderTest
     void decide()
     {
         DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
+        config.setKeyPrefix("archives");
         config.setKeySuffix(".testdata");
         DefaultS3DestinationDecider decider = new DefaultS3DestinationDecider(config);
         ZonedDateTime time = ZonedDateTime.of(2019, 12, 31, 23, 59, 59, 999999000, TIMEZONE_JST);
@@ -39,13 +40,14 @@ class DefaultS3DestinationDeciderTest
                 decider.decide("web.access_log", time.toInstant());
         assertEquals("web.access_log", destination.getBucket());
         // JST is 9 hours ahead of UTC
-        assertEquals("2019/12/31/14/59-59-999999.testdata", destination.getKey());
+        assertEquals("archives/2019/12/31/14/59-59-999999.testdata", destination.getKey());
     }
 
     @Test
     void decideWithSpecificTimeZone()
     {
         DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
+        config.setKeyPrefix("archives");
         config.setKeySuffix(".testdata");
         config.setZoneId(TIMEZONE_JST);
         DefaultS3DestinationDecider decider = new DefaultS3DestinationDecider(config);
@@ -53,6 +55,19 @@ class DefaultS3DestinationDeciderTest
         S3DestinationDecider.S3Destination destination =
                 decider.decide("web.access_log", time.toInstant());
         assertEquals("web.access_log", destination.getBucket());
-        assertEquals("2019/12/31/23/59-59-999999.testdata", destination.getKey());
+        assertEquals("archives/2019/12/31/23/59-59-999999.testdata", destination.getKey());
+    }
+
+    @Test
+    void decideWithoutPrefixNorSuffix()
+    {
+        DefaultS3DestinationDecider.Config config = new DefaultS3DestinationDecider.Config();
+        DefaultS3DestinationDecider decider = new DefaultS3DestinationDecider(config);
+        ZonedDateTime time = ZonedDateTime.of(2019, 12, 31, 23, 59, 59, 999999000, TIMEZONE_JST);
+        S3DestinationDecider.S3Destination destination =
+                decider.decide("web.access_log", time.toInstant());
+        assertEquals("web.access_log", destination.getBucket());
+        // JST is 9 hours ahead of UTC
+        assertEquals("2019/12/31/14/59-59-999999", destination.getKey());
     }
 }

@@ -49,15 +49,29 @@ public class DefaultS3DestinationDecider
     @Override
     public S3Destination decide(String tag, Instant time)
     {
-        return new S3Destination(getBucket(tag), getKeyBase(time) + config.getKeySuffix());
+        String keyPrefix = config.getKeyPrefix() == null ? "" : config.getKeyPrefix() + "/";
+        String keySuffix = config.getKeySuffix() == null ? "" : config.getKeySuffix();
+        return new S3Destination(getBucket(tag), keyPrefix + getKeyBase(time) + keySuffix);
     }
 
     public static class Config
             implements Validatable
     {
+        private String keyPrefix;
+
         private String keySuffix;
 
         private ZoneId zoneId = ZoneOffset.UTC;
+
+        public String getKeyPrefix()
+        {
+            return keyPrefix;
+        }
+
+        public void setKeyPrefix(String keyPrefix)
+        {
+            this.keyPrefix = keyPrefix;
+        }
 
         public String getKeySuffix()
         {
@@ -82,17 +96,14 @@ public class DefaultS3DestinationDecider
         void validateValues()
         {
             validate();
-
-            if (keySuffix == null) {
-                throw new IllegalArgumentException("`keySuffix` should be set");
-            }
         }
 
         @Override
         public String toString()
         {
             return "Config{" +
-                    "keySuffix='" + keySuffix + '\'' +
+                    "keyPrefix='" + keyPrefix + '\'' +
+                    ", keySuffix='" + keySuffix + '\'' +
                     ", zoneId=" + zoneId +
                     '}';
         }
