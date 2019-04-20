@@ -23,6 +23,8 @@ import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.DefaultS3DestinationDecider;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import org.komamitsu.fluency.aws.s3.recordformat.JsonlRecordFormatter;
+import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.mockito.ArgumentCaptor;
@@ -38,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -57,7 +60,11 @@ class FluencyBuilderForAwsS3Test
 
         builderWithDefaultConfig = spy(new FluencyBuilderForAwsS3());
         doReturn(fluency).when(builderWithDefaultConfig)
-                .buildFromIngester(any(RecordFormatter.class), any(Ingester.class));
+                .createFluency(
+                        any(RecordFormatter.class),
+                        any(Ingester.class),
+                        any(Buffer.Config.class),
+                        any(Flusher.Config.class));
 
         {
             FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
@@ -81,7 +88,11 @@ class FluencyBuilderForAwsS3Test
             builderWithCustomConfig = spy(builder);
         }
         doReturn(fluency).when(builderWithCustomConfig)
-                .buildFromIngester(any(RecordFormatter.class), any(Ingester.class));
+                .createFluency(
+                        any(RecordFormatter.class),
+                        any(Ingester.class),
+                        any(Buffer.Config.class),
+                        any(Flusher.Config.class));
     }
 
     @Test
@@ -124,6 +135,20 @@ class FluencyBuilderForAwsS3Test
         assertNull(destinationDecider.getKeyPrefix());
         assertEquals(".jsonl.gz", destinationDecider.getKeySuffix());
         assertEquals(UTC, destinationDecider.getZoneId());
+
+        ArgumentCaptor<Buffer.Config> bufferConfigArgumentCaptor = ArgumentCaptor.forClass(Buffer.Config.class);
+        ArgumentCaptor<Flusher.Config> flusherConfigArgumentCaptor = ArgumentCaptor.forClass(Flusher.Config.class);
+        verify(builder, times(1)).createFluency(
+                eq(recordFormatter),
+                eq(ingester),
+                bufferConfigArgumentCaptor.capture(),
+                flusherConfigArgumentCaptor.capture());
+
+        Buffer.Config bufferConfig = bufferConfigArgumentCaptor.getValue();
+        assertEquals(512 * 1024 * 1024, bufferConfig.getMaxBufferSize());
+        assertEquals(4 * 1024 * 1024, bufferConfig.getChunkInitialSize());
+        assertEquals(64 * 1024 * 1024, bufferConfig.getChunkRetentionSize());
+        assertEquals(30 * 1000, bufferConfig.getChunkRetentionTimeMillis());
     }
 
     @Test
@@ -166,5 +191,19 @@ class FluencyBuilderForAwsS3Test
         assertEquals("mydata", destinationDecider.getKeyPrefix());
         assertEquals(".zzz", destinationDecider.getKeySuffix());
         assertEquals(ZoneId.of("JST", SHORT_IDS), destinationDecider.getZoneId());
+
+        ArgumentCaptor<Buffer.Config> bufferConfigArgumentCaptor = ArgumentCaptor.forClass(Buffer.Config.class);
+        ArgumentCaptor<Flusher.Config> flusherConfigArgumentCaptor = ArgumentCaptor.forClass(Flusher.Config.class);
+        verify(builder, times(1)).createFluency(
+                eq(recordFormatter),
+                eq(ingester),
+                bufferConfigArgumentCaptor.capture(),
+                flusherConfigArgumentCaptor.capture());
+
+        Buffer.Config bufferConfig = bufferConfigArgumentCaptor.getValue();
+        assertEquals(42 * 1024 * 1024, bufferConfig.getMaxBufferSize());
+        assertEquals(2 * 1024 * 1024, bufferConfig.getChunkInitialSize());
+        assertEquals(9 * 1024 * 1024, bufferConfig.getChunkRetentionSize());
+        assertEquals(1234, bufferConfig.getChunkRetentionTimeMillis());
     }
 }
