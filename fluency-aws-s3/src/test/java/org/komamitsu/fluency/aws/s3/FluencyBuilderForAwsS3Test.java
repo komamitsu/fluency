@@ -28,8 +28,13 @@ import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.mockito.ArgumentCaptor;
 import software.amazon.awssdk.regions.Region;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
+import static java.time.ZoneId.SHORT_IDS;
 import static java.time.ZoneOffset.UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,10 +72,12 @@ class FluencyBuilderForAwsS3Test
             builder.setMaxBufferSize(42 * 1024 * 1024L);
             builder.setS3KeyPrefix("mydata");
             builder.setS3KeySuffix(".zzz");
+            builder.setS3KeyTimeZoneId(ZoneOffset.of("JST", SHORT_IDS));
             builder.setSenderRetryMax(4);
             builder.setSenderMaxRetryIntervalMillis(65432);
             builder.setSenderRetryIntervalMillis(543);
             builder.setSenderRetryFactor(1.234f);
+            builder.setSenderWorkBufSize(99 * 1024);
             builderWithCustomConfig = spy(builder);
         }
         doReturn(fluency).when(builderWithCustomConfig)
@@ -100,7 +107,7 @@ class FluencyBuilderForAwsS3Test
         assertEquals(30000, senderConfig.getMaxRetryIntervalMs());
         assertEquals(2.0, senderConfig.getRetryFactor());
         assertEquals(8192, senderConfig.getWorkBufSize());
-        assertTrue(senderConfig.isCompression());
+        assertTrue(senderConfig.isCompressionEnabled());
 
         ArgumentCaptor<RecordFormatter> recordFormatterArgumentCaptor = ArgumentCaptor.forClass(RecordFormatter.class);
         ArgumentCaptor<Ingester> ingesterArgumentCaptor = ArgumentCaptor.forClass(Ingester.class);
@@ -117,5 +124,47 @@ class FluencyBuilderForAwsS3Test
         assertNull(destinationDecider.getKeyPrefix());
         assertEquals(".jsonl.gz", destinationDecider.getKeySuffix());
         assertEquals(UTC, destinationDecider.getZoneId());
+    }
+
+    @Test
+    void buildWithCustomConfig()
+    {
+        FluencyBuilderForAwsS3 builder = builderWithCustomConfig;
+        AwsS3Sender sender = mock(AwsS3Sender.class);
+        doReturn(sender).when(builder).createSender(any(AwsS3Sender.Config.class));
+
+        builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+        Fluency fluency = builder.build();
+        assertEquals(fluency, this.fluency);
+
+        ArgumentCaptor<AwsS3Sender.Config> configArgumentCaptor = ArgumentCaptor.forClass(AwsS3Sender.Config.class);
+        verify(builder, times(1)).createSender(configArgumentCaptor.capture());
+        AwsS3Sender.Config senderConfig = configArgumentCaptor.getValue();
+        assertEquals("https://foo.bar.org", senderConfig.getEndpoint());
+        assertEquals(Region.US_EAST_1, senderConfig.getRegion());
+        assertEquals("ACCESSKEYID", senderConfig.getAwsAccessKeyId());
+        assertEquals("SECRETACCESSKEY", senderConfig.getAwsSecretAccessKey());
+        assertEquals(4, senderConfig.getRetryMax());
+        assertEquals(543, senderConfig.getRetryIntervalMs());
+        assertEquals(65432, senderConfig.getMaxRetryIntervalMs());
+        assertEquals(1.234f, senderConfig.getRetryFactor());
+        assertEquals(99 * 1024, senderConfig.getWorkBufSize());
+        assertFalse(senderConfig.isCompressionEnabled());
+
+        ArgumentCaptor<RecordFormatter> recordFormatterArgumentCaptor = ArgumentCaptor.forClass(RecordFormatter.class);
+        ArgumentCaptor<Ingester> ingesterArgumentCaptor = ArgumentCaptor.forClass(Ingester.class);
+        verify(builder, times(1)).buildFromIngester(
+                recordFormatterArgumentCaptor.capture(), ingesterArgumentCaptor.capture());
+
+        RecordFormatter recordFormatter = recordFormatterArgumentCaptor.getValue();
+        assertTrue(recordFormatter instanceof JsonlRecordFormatter);
+
+        AwsS3Ingester ingester = (AwsS3Ingester) ingesterArgumentCaptor.getValue();
+        assertEquals(sender, ingester.getSender());
+        DefaultS3DestinationDecider destinationDecider =
+                (DefaultS3DestinationDecider) ingester.getS3DestinationDecider();
+        assertEquals("mydata", destinationDecider.getKeyPrefix());
+        assertEquals(".zzz", destinationDecider.getKeySuffix());
+        assertEquals(ZoneId.of("JST", SHORT_IDS), destinationDecider.getZoneId());
     }
 }

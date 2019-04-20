@@ -355,7 +355,7 @@ public class FluencyBuilderForAwsS3
             config.setWorkBufSize(getSenderWorkBufSize());
         }
 
-        config.setCompression(isCompressionEnabled());
+        config.setCompressionEnabled(isCompressionEnabled());
 
         return config;
     }

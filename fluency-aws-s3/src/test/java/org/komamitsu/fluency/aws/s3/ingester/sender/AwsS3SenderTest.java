@@ -132,7 +132,7 @@ class AwsS3SenderTest
             throws IOException
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setCompression(false);
+        config.setCompressionEnabled(false);
 
         testSend(config, false);
     }

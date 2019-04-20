@@ -194,7 +194,7 @@ public class AwsS3Sender
         try {
             try (InputStream in = new ByteBufferBackedInputStream(dataBuffer);
                     OutputStream fout = Files.newOutputStream(file.toPath(), StandardOpenOption.WRITE);
-                    OutputStream out = config.isCompression() ? new GZIPOutputStream(fout) : fout) {
+                    OutputStream out = config.isCompressionEnabled() ? new GZIPOutputStream(fout) : fout) {
                 copyStreams(in, out);
             }
 
@@ -221,7 +221,7 @@ public class AwsS3Sender
         private Region region;
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
-        private boolean compression = true;
+        private boolean isCompressionEnabled = true;
 
         @Min(10)
         private int retryIntervalMs = 1000;
@@ -274,14 +274,14 @@ public class AwsS3Sender
             this.awsSecretAccessKey = awsSecretAccessKey;
         }
 
-        public boolean isCompression()
+        public boolean isCompressionEnabled()
         {
-            return compression;
+            return isCompressionEnabled;
         }
 
-        public void setCompression(boolean compression)
+        public void setCompressionEnabled(boolean isCompressionEnabled)
         {
-            this.compression = compression;
+            this.isCompressionEnabled = isCompressionEnabled;
         }
 
         public int getRetryIntervalMs()
@@ -340,7 +340,7 @@ public class AwsS3Sender
             return "Config{" +
                     "endpoint='" + endpoint + '\'' +
                     ", region='" + region + '\'' +
-                    ", compression=" + compression +
+                    ", isCompressionEnabled=" + isCompressionEnabled +
                     ", retryIntervalMs=" + retryIntervalMs +
                     ", maxRetryIntervalMs=" + maxRetryIntervalMs +
                     ", retryFactor=" + retryFactor +
