@@ -16,13 +16,19 @@
 
 package org.komamitsu.fluency.aws.s3;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.DefaultS3DestinationDecider;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
+import org.komamitsu.fluency.aws.s3.recordformat.AwsS3RecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.CsvRecordFormatter;
 import org.komamitsu.fluency.aws.s3.recordformat.JsonlRecordFormatter;
+import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
@@ -59,6 +65,7 @@ class FluencyBuilderForAwsS3Test
         fluency = mock(Fluency.class);
 
         builderWithDefaultConfig = spy(new FluencyBuilderForAwsS3());
+        builderWithDefaultConfig.setFormatCsvColumnNames(ImmutableList.of("dummy"));
         doReturn(fluency).when(builderWithDefaultConfig)
                 .createFluency(
                         any(RecordFormatter.class),
@@ -95,14 +102,15 @@ class FluencyBuilderForAwsS3Test
                         any(Flusher.Config.class));
     }
 
-    @Test
-    void buildWithDefaultConfig()
+    @ParameterizedTest
+    @EnumSource(FluencyBuilderForAwsS3.FormatType.class)
+    void buildWithDefaultConfig(FluencyBuilderForAwsS3.FormatType formatType)
     {
         FluencyBuilderForAwsS3 builder = builderWithDefaultConfig;
         AwsS3Sender sender = mock(AwsS3Sender.class);
         doReturn(sender).when(builder).createSender(any(AwsS3Sender.Config.class));
 
-        builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+        builder.setFormatType(formatType);
         Fluency fluency = builder.build();
         assertEquals(fluency, this.fluency);
 
@@ -126,14 +134,30 @@ class FluencyBuilderForAwsS3Test
                 recordFormatterArgumentCaptor.capture(), ingesterArgumentCaptor.capture());
 
         RecordFormatter recordFormatter = recordFormatterArgumentCaptor.getValue();
-        assertTrue(recordFormatter instanceof JsonlRecordFormatter);
+        Class<? extends AwsS3RecordFormatter> expectedAwsS3RecordFormatter = null;
+        String expectedS3KeySuffix = null;
+        switch (formatType) {
+            case MESSAGE_PACK:
+                expectedAwsS3RecordFormatter = MessagePackRecordFormatter.class;
+                expectedS3KeySuffix = ".msgpack.gz";
+                break;
+            case JSONL:
+                expectedAwsS3RecordFormatter = JsonlRecordFormatter.class;
+                expectedS3KeySuffix = ".jsonl.gz";
+                break;
+            case CSV:
+                expectedAwsS3RecordFormatter = CsvRecordFormatter.class;
+                expectedS3KeySuffix = ".csv.gz";
+                break;
+        }
+        assertEquals(expectedAwsS3RecordFormatter, recordFormatter.getClass());
 
         AwsS3Ingester ingester = (AwsS3Ingester) ingesterArgumentCaptor.getValue();
         assertEquals(sender, ingester.getSender());
         DefaultS3DestinationDecider destinationDecider =
                 (DefaultS3DestinationDecider) ingester.getS3DestinationDecider();
         assertNull(destinationDecider.getKeyPrefix());
-        assertEquals(".jsonl.gz", destinationDecider.getKeySuffix());
+        assertEquals(expectedS3KeySuffix, destinationDecider.getKeySuffix());
         assertEquals(UTC, destinationDecider.getZoneId());
 
         ArgumentCaptor<Buffer.Config> bufferConfigArgumentCaptor = ArgumentCaptor.forClass(Buffer.Config.class);
