@@ -124,11 +124,6 @@ public class AwsS3Sender
         return s3ClientBuilder.build();
     }
 
-    public S3Client getClient()
-    {
-        return client;
-    }
-
     public int getRetryInternalMs()
     {
         return config.getRetryIntervalMs();

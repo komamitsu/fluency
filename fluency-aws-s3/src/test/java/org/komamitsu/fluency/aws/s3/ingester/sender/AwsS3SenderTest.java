@@ -18,6 +18,9 @@ package org.komamitsu.fluency.aws.s3.ingester.sender;
 
 import com.google.common.io.ByteStreams;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.komamitsu.fluency.RetryableException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -31,9 +34,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -89,12 +94,17 @@ class AwsS3SenderTest
         verify(s3ClientBuilder, times(1)).credentialsProvider(any());
     }
 
-    private void testSend(AwsS3Sender.Config config, boolean gzipCompressed)
+    private void testSend(
+            AwsS3Sender.Config config,
+            boolean gzipCompressed,
+            int failures)
             throws IOException
     {
         S3Client s3Client = mock(S3Client.class);
         S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
         doReturn(s3Client).when(s3ClientBuilder).build();
+
+        AtomicInteger retryCount = new AtomicInteger();
         doAnswer(invocation -> {
             PutObjectRequest request = invocation.getArgument(0);
 
@@ -108,6 +118,10 @@ class AwsS3SenderTest
                 assertEquals("0123456789", new String(content, StandardCharsets.UTF_8));
             }
 
+            if (retryCount.getAndIncrement() < failures) {
+                throw new RuntimeException("Something happened");
+            }
+
             return null;
         }).when(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
@@ -116,24 +130,50 @@ class AwsS3SenderTest
         sender.send("hello.world", "2345/01/31/23/59-59-99999.data",
                 ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8)));
 
+        verify(s3Client, times(failures + 1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
         sender.close();
     }
 
-    @Test
-    void send()
+    @ParameterizedTest
+    @ValueSource(ints={0, 2})
+    void send(int failures)
             throws IOException
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
-        testSend(config, true);
+        testSend(config, true, failures);
     }
 
-    @Test
-    void sendWithoutCompression()
+    @ParameterizedTest
+    @ValueSource(ints={0, 2})
+    void sendWithoutCompression(int failures)
             throws IOException
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
         config.setCompressionEnabled(false);
 
-        testSend(config, false);
+        testSend(config, false, failures);
     }
+
+    @Test
+    void sendButRetryOver()
+    {
+        AwsS3Sender.Config config = new AwsS3Sender.Config();
+        config.setRetryMax(2);
+        assertThrows(RetryableException.class, () -> testSend(config, true, 3));
+    }
+
+    @Test
+    void close()
+    {
+        S3Client s3Client = mock(S3Client.class);
+        S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
+        doReturn(s3Client).when(s3ClientBuilder).build();
+
+        AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder);
+        sender.close();
+
+        verify(s3Client, times(1)).close();
+    }
+
 }
