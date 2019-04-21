@@ -7,7 +7,7 @@ dependencies {
 publishing {
   publications {
     mavenJava(MavenPublication) {
-      artifactId = 'fluency-s3'
+      artifactId = 'fluency-aws-s3'
     }
   }
 }
