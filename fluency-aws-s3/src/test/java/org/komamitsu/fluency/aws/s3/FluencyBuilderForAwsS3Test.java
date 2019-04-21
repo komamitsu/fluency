@@ -78,8 +78,8 @@ class FluencyBuilderForAwsS3Test
             builder.setAwsEndpoint("https://foo.bar.org");
             builder.setAwsRegion("us-east-1");
             builder.setCompressionEnabled(false);
-            builder.setSenderAwsAccessKeyId("ACCESSKEYID");
-            builder.setSenderAwsSecretAccessKey("SECRETACCESSKEY");
+            builder.setAwsAccessKeyId("ACCESSKEYID");
+            builder.setAwsSecretAccessKey("SECRETACCESSKEY");
             builder.setBufferChunkInitialSize(2 * 1024 * 1024);
             builder.setBufferChunkRetentionSize(9 * 1024 * 1024);
             builder.setBufferChunkRetentionTimeMillis(1234);

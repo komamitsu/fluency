@@ -26,7 +26,6 @@ import org.komamitsu.fluency.aws.s3.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.aws.s3.ingester.AwsS3Ingester;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import org.msgpack.core.annotations.VisibleForTesting;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.ZoneId;
@@ -105,22 +104,22 @@ public class FluencyBuilderForAwsS3
         this.awsRegion = awsRegion;
     }
 
-    public String getSenderAwsAccessKeyId()
+    public String getAwsAccessKeyId()
     {
         return awsAccessKeyId;
     }
 
-    public void setSenderAwsAccessKeyId(String senderAwsAccessKeyId)
+    public void setAwsAccessKeyId(String senderAwsAccessKeyId)
     {
         this.awsAccessKeyId = senderAwsAccessKeyId;
     }
 
-    public String getSenderAwsSecretAccessKey()
+    public String getAwsSecretAccessKey()
     {
         return awsSecretAccessKey;
     }
 
-    public void setSenderAwsSecretAccessKey(String senderAwsSecretAccessKey)
+    public void setAwsSecretAccessKey(String senderAwsSecretAccessKey)
     {
         this.awsSecretAccessKey = senderAwsSecretAccessKey;
     }
@@ -323,12 +322,12 @@ public class FluencyBuilderForAwsS3
             config.setRegion(getAwsRegion());
         }
 
-        if (getSenderAwsAccessKeyId() != null) {
-            config.setAwsAccessKeyId(getSenderAwsAccessKeyId());
+        if (getAwsAccessKeyId() != null) {
+            config.setAwsAccessKeyId(getAwsAccessKeyId());
         }
 
-        if (getSenderAwsSecretAccessKey() != null) {
-            config.setAwsSecretAccessKey(getSenderAwsSecretAccessKey());
+        if (getAwsSecretAccessKey() != null) {
+            config.setAwsSecretAccessKey(getAwsSecretAccessKey());
         }
 
         if (getSenderRetryMax() != null) {
