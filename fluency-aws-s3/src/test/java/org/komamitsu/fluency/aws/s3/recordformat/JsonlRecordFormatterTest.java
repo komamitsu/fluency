@@ -1,81 +1,86 @@
-package org.komamitsu.fluency.treasuredata.recordformat;
+/*
+ * Copyright 2019 Mitsunori Komatsu (komamitsu)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.komamitsu.fluency.aws.s3.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-import org.msgpack.value.StringValue;
-import org.msgpack.value.Value;
-import org.msgpack.value.ValueFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TreasureDataRecordFormatterTest
+class JsonlRecordFormatterTest
 {
     private static final String TAG = "foodb.bartbl";
     private static final long FUTURE_EPOCH = 4294967296L;
     private static final Map<String, Object> RECORD_0 = ImmutableMap.of("name", "first", "age", 42, "email", "hello@world.com");
     private static final Map<String, Object> RECORD_1 = ImmutableMap.of("name", "second", "age", 55, "time", FUTURE_EPOCH, "comment", "zzzzzz");
     private static final Map<String, Object> RECORD_2 = ImmutableMap.of("job", "knight", "name", "third", "age", 99);
-    private static final StringValue KEY_TIME = ValueFactory.newString("time");
-    private static final StringValue KEY_NAME = ValueFactory.newString("name");
-    private static final StringValue KEY_AGE = ValueFactory.newString("age");
-    private static final StringValue KEY_EMAIL = ValueFactory.newString("email");
-    private static final StringValue KEY_COMMENT = ValueFactory.newString("comment");
-    private static final StringValue KEY_JOB = ValueFactory.newString("job");
-    private TreasureDataRecordFormatter recordFormatter;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private JsonlRecordFormatter recordFormatter;
 
     @BeforeEach
     void setUp()
     {
-        recordFormatter = new TreasureDataRecordFormatter(new TreasureDataRecordFormatter.Config());
+        recordFormatter = new JsonlRecordFormatter(new JsonlRecordFormatter.Config());
     }
 
     private void assertRecord0(byte[] formatted, long expectedTime)
             throws IOException
     {
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(formatted)) {
-            Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-            assertEquals(4, map.size());
-            assertEquals(expectedTime, map.get(KEY_TIME).asNumberValue().toLong());
-            assertEquals("first", map.get(KEY_NAME).asStringValue().asString());
-            assertEquals(42, map.get(KEY_AGE).asNumberValue().toInt());
-            assertEquals("hello@world.com", map.get(KEY_EMAIL).asStringValue().asString());
-        }
+        JsonNode jsonNode = objectMapper.readTree(formatted);
+        assertTrue(jsonNode.isObject());
+        assertEquals(4, jsonNode.size());
+        assertEquals(expectedTime, jsonNode.get("time").asLong());
+        assertEquals("first", jsonNode.get("name").asText());
+        assertEquals(42, jsonNode.get("age").asInt());
+        assertEquals("hello@world.com", jsonNode.get("email").asText());
     }
 
     private void assertRecord1(byte[] formatted, long expectedTime)
             throws IOException
     {
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(formatted)) {
-            Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-            assertEquals(4, map.size());
-            assertEquals(expectedTime, map.get(KEY_TIME).asNumberValue().toLong());
-            assertEquals("second", map.get(KEY_NAME).asStringValue().asString());
-            assertEquals(55, map.get(KEY_AGE).asNumberValue().toInt());
-            assertEquals("zzzzzz", map.get(KEY_COMMENT).asStringValue().asString());
-        }
+        JsonNode jsonNode = objectMapper.readTree(formatted);
+        assertTrue(jsonNode.isObject());
+        assertEquals(4, jsonNode.size());
+        assertEquals(expectedTime, jsonNode.get("time").asLong());
+        assertEquals("second", jsonNode.get("name").asText());
+        assertEquals(55, jsonNode.get("age").asInt());
+        assertEquals("zzzzzz", jsonNode.get("comment").asText());
     }
 
     private void assertRecord2(byte[] formatted, long expectedTime)
             throws IOException
     {
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(formatted)) {
-            Map<Value, Value> map = unpacker.unpackValue().asMapValue().map();
-            assertEquals(4, map.size());
-            assertEquals(expectedTime, map.get(KEY_TIME).asNumberValue().toLong());
-            assertEquals("third", map.get(KEY_NAME).asStringValue().asString());
-            assertEquals(99, map.get(KEY_AGE).asNumberValue().toInt());
-            assertEquals("knight", map.get(KEY_JOB).asStringValue().asString());
-        }
+        JsonNode jsonNode = objectMapper.readTree(formatted);
+        assertTrue(jsonNode.isObject());
+        assertEquals(4, jsonNode.size());
+        assertEquals(expectedTime, jsonNode.get("time").asLong());
+        assertEquals("third", jsonNode.get("name").asText());
+        assertEquals(99, jsonNode.get("age").asInt());
+        assertEquals("knight", jsonNode.get("job").asText());
     }
 
     @Test

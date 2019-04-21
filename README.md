@@ -2,7 +2,7 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.komamitsu/fluency-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.komamitsu/fluency-core)
 [<img src="https://travis-ci.org/komamitsu/fluency.svg?branch=master"/>](https://travis-ci.org/komamitsu/fluency) [![Coverage Status](https://coveralls.io/repos/komamitsu/fluency/badge.svg?branch=master&service=github)](https://coveralls.io/github/komamitsu/fluency?branch=master)
 
-High throughput data ingestion logger to Fluentd and Treasure Data
+High throughput data ingestion logger to Fluentd, AWS S3 and Treasure Data
 
 This document is for version 2. If you're looking for a document for version 1, see [this](./README-v1.md).
 
@@ -63,7 +63,7 @@ dependencies {
 //   - Threshold chunk buffer retention time to flush is 1000 ms (by default)
 //   - Max total buffer size is 512MB (by default)
 //   - Use off heap memory for buffer pool (by default)
-//   - Max retry of sending events is 8 (by default)
+//   - Max retries of sending events is 8 (by default)
 //   - Max wait until all buffers are flushed is 10 seconds (by default)
 //   - Max wait until the flusher is terminated is 10 seconds (by default)
 //   - Socket connection timeout is 5000 ms (by default)
@@ -107,8 +107,8 @@ Fluency fluency = builder.build();
 
 ```java
 // Single Fluentd(xxx.xxx.xxx.xxx:24224)
-//   - Initial chunk buffer size = 16MB
-//   - Threshold chunk buffer size to flush = 64MB
+//   - Initial chunk buffer size is 16MB
+//   - Threshold chunk buffer size to flush is 64MB
 //     Keep this value (BufferRetentionSize) between `Initial chunk buffer size` and `Max total buffer size`
 //   - Max total buffer size = 1024MB
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
@@ -196,8 +196,8 @@ For server side configuration, see https://docs.fluentd.org/v1.0/articles/in_for
 
 ```java
 // Multiple Fluentd(localhost:24224, localhost:24225)
-//   - Flush attempt interval = 200ms
-//   - Max retry of sending events = 12
+//   - Flush attempt interval is 200ms
+//   - Max retry of sending events is 12
 //   - Use JVM heap memory for buffer pool
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
 builder.setFlushIntervalMillis(200);
@@ -299,7 +299,7 @@ dependencies {
 // Threshold chunk buffer retention time to flush is 30000 ms (by default)
 // Max total buffer size is 512MB (by default)
 // Use off heap memory for buffer pool (by default)
-// Max retry of sending events is 10 (by default)
+// Max retries of sending events is 10 (by default)
 // Max wait until all buffers are flushed is 10 seconds (by default)
 // Max wait until the flusher is terminated is 10 seconds (by default)
 Fluency fluency = new FluencyBuilderForTreasureData().build(yourApiKey);
@@ -308,15 +308,17 @@ Fluency fluency = new FluencyBuilderForTreasureData().build(yourApiKey);
 ##### Buffer configuration for high throughput data ingestion with high latency
 
 ```java
-// Initial chunk buffer size = 32MB
-// Threshold chunk buffer size to flush = 256MB
-// Threshold chunk buffer retention time to flush = 120 seconds
-// Max total buffer size = 1024MB
+// Initial chunk buffer size is 32MB
+// Threshold chunk buffer size to flush is 256MB
+// Threshold chunk buffer retention time to flush is 120 seconds
+// Max total buffer size is 1024MB
+// Sender's working buffer size 32KB
 FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
 builder.setBufferChunkInitialSize(32 * 1024 * 1024);
 builder.setMaxBufferSize(1024 * 1024 * 1024L);
 builder.setBufferChunkRetentionSize(256 * 1024 * 1024);
 builder.setBufferChunkRetentionTimeMillis(120 * 1000);
+builder.setSenderWorkBufSize(32 * 1024);
 Fluency fluency = builder.build(yourApiKey);
 ```
 
@@ -325,6 +327,185 @@ Fluency fluency = builder.build(yourApiKey);
 ```java
 Fluency fluency = new FluencyBuilderForTreasureData()
 						.build(yourApiKey, tdEndpoint);
+```
+
+##### Other configurations
+
+Some of other usages are same as ingestion to Fluentd. See `Ingestion to Fluentd > Usage` above.
+
+## Ingestion to AWS S3
+
+### Features
+
+* Asynchronous flush
+* Backup of buffered data on local disk
+* Several format supports
+  * CSV
+  * JSONL
+  * MessagePack
+* GZIP compression
+* Customizable S3 bucket/key decision rule
+
+### Install
+
+#### Gradle
+
+```groovy
+dependencies {
+    compile "org.komamitsu:fluency-core:${fluency.version}"
+    compile "org.komamitsu:fluency-aws-s3:${fluency.version}"
+}
+```
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency-core</artifactId>
+    <version>${fluency.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency-aws-s3</artifactId>
+    <version>${fluency.version}</version>
+</dependency>
+```
+
+#### Create Fluency instance
+
+##### Default configuration for JSONL format
+
+```java
+// Asynchronous flush (by default)
+// Flush attempt interval is 600ms (by default)
+// Initial chunk buffer size is 4MB (by default)
+// Threshold chunk buffer size to flush is 64MB (by default)
+// Threshold chunk buffer retention time to flush is 30000 ms (by default)
+// Max total buffer size is 512MB (by default)
+// Use off heap memory for buffer pool (by default)
+// Sender's working buffer size 8KB (by default)
+// Max retries of sending events is 10 (by default)
+// Initial retry interval of sending events is 1000 ms (by default)
+// Retry backoff factor of sending events is 2.0 (by default)
+// Max retry interval of sending events is 30000 ms (by default)
+// Max wait until all buffers are flushed is 10 seconds (by default)
+// Max wait until the flusher is terminated is 10 seconds (by default)
+// Destination S3 bucket is specified by Fluency#emit()'s "tag" parameter (by default)
+// Destination S3 key format is "yyyy/MM/dd/HH/mm-ss-SSSSSS" (by default)
+// Destination S3 key is decided as UTC (by default)
+// GZIP compression is enabled (by default)
+// File format is JSONL
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+Fluency fluency = builder.build();
+```
+
+##### Default configuration for MessagePack format
+
+```java
+// File format is MessagePack
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.MESSAGE_PACK);
+Fluency fluency = builder.build();
+```
+
+##### Default configuration for CSV format
+
+```java
+// File format is CSV
+// Expected columns are "time", "age", "name", "comment"
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.CSV);
+builder.setFormatCsvColumnNames(Arrays.asList("time", "age", "name", "comment"));
+Fluency fluency = builder.build();
+```
+
+##### AWS S3 configuration
+`fluency-aws-s3` follows [default credential provider chain](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html#credentials-default). If you want to explicitly specify credentials, use the following APIs.
+
+```java
+// AWS S3 region is "us-east-1"
+// AWS S3 endpoint is "https://another.s3.endpoi.nt"
+// AWS access key id is "ABCDEFGHIJKLMNOPQRST"
+// AWS secret access key is "ZaQ1XsW2CdE3VfR4BgT5NhY6"
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setAwsRegion("us-east-1");
+builder.setAwsEndpoint("https://another.s3.endpoi.nt");
+builder.setAwsAccessKeyId("ABCDEFGHIJKLMNOPQRST");
+builder.setAwsSecretAccessKey("ZaQ1XsW2CdE3VfR4BgT5NhY6");
+Fluency fluency = builder.build();
+```
+
+##### Disable compression
+
+```java
+// GZIP compression is disabled
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setCompressionEnabled(false);
+Fluency fluency = builder.build();
+```
+
+##### Change timezone used in S3 key decision rule
+
+```java
+// Destination S3 key is decided as JST
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setS3KeyTimeZoneId(ZoneId.of("JST", SHORT_IDS));
+Fluency fluency = builder.build();
+```
+
+##### Customize S3 destination decision rule
+
+```java
+// Destination S3 bucket is "fixed-bucket-name"
+// Destination S3 key format is UNIX epoch seconds rounded to 1 hour range
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setCustomS3DestinationDecider((tag, time) ->
+    new S3DestinationDecider.S3Destination(
+        "fixed-bucket-name",
+        String.format("%s-%d", tag, time.getEpochSecond() / 3600)
+));
+Fluency fluency = builder.build();
+```
+
+##### Buffer configuration for high throughput data ingestion with high latency
+
+```java
+// Initial chunk buffer size is 32MB
+// Threshold chunk buffer size to flush is 256MB
+// Threshold chunk buffer retention time to flush is 120 seconds
+// Max total buffer size is 1024MB
+// Sender's working buffer size 32KB
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setBufferChunkInitialSize(32 * 1024 * 1024);
+builder.setMaxBufferSize(1024 * 1024 * 1024L);
+builder.setBufferChunkRetentionSize(256 * 1024 * 1024);
+builder.setBufferChunkRetentionTimeMillis(120 * 1000);
+builder.setSenderWorkBufSize(32 * 1024);
+Fluency fluency = builder.build();
+```
+
+##### Retry configuration
+
+```java
+// Max retries of sending events is 16
+// Initial retry interval of sending events is 500 ms
+// Retry backoff factor of sending events is 1.5
+// Max retry interval of sending events is 20000 ms
+FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
+builder.setFormatType(FluencyBuilderForAwsS3.FormatType.JSONL);
+builder.setSenderRetryMax(16);
+builder.setSenderRetryIntervalMillis(500);
+builder.setSenderRetryFactor(1.5f);
+builder.setSenderMaxRetryIntervalMillis(20000);
+Fluency fluency = builder.build();
 ```
 
 ##### Other configurations

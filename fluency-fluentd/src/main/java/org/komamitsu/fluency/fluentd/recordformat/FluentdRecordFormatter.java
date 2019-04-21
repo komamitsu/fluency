@@ -17,9 +17,8 @@
 package org.komamitsu.fluency.fluentd.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +29,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 public class FluentdRecordFormatter
-        extends RecordFormatter
+        extends AbstractRecordFormatter
+        implements RecordFormatter
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
     public FluentdRecordFormatter()
     {
@@ -43,14 +42,13 @@ public class FluentdRecordFormatter
     public FluentdRecordFormatter(Config config)
     {
         super(config);
-        registerObjectMapperModules(objectMapper);
     }
 
     @Override
     public byte[] format(String tag, Object timestamp, Map<String, Object> data)
     {
         try {
-            return objectMapper.writeValueAsBytes(Arrays.asList(timestamp, data));
+            return objectMapperForMessagePack.writeValueAsBytes(Arrays.asList(timestamp, data));
         }
         catch (JsonProcessingException e) {
             throw new IllegalArgumentException(
@@ -69,7 +67,7 @@ public class FluentdRecordFormatter
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // 2 items array
             outputStream.write(0x92);
-            objectMapper.writeValue(outputStream, timestamp);
+            objectMapperForMessagePack.writeValue(outputStream, timestamp);
             outputStream.write(mapValue, offset, len);
             outputStream.close();
 
@@ -93,7 +91,7 @@ public class FluentdRecordFormatter
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // 2 items array
             outputStream.write(0x92);
-            objectMapper.writeValue(outputStream, timestamp);
+            objectMapperForMessagePack.writeValue(outputStream, timestamp);
             while (mapValue.hasRemaining()) {
                 outputStream.write(mapValue.get());
             }
@@ -109,6 +107,12 @@ public class FluentdRecordFormatter
                             tag, timestamp, mapValueLen)
             );
         }
+    }
+
+    @Override
+    public String formatName()
+    {
+        return "fluentd-packedforward";
     }
 
     public static class Config

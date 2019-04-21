@@ -21,7 +21,7 @@ import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.treasuredata.ingester.TreasureDataIngester;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
-import org.komamitsu.fluency.treasuredata.recordformat.TreasureDataRecordFormatter;
+import org.komamitsu.fluency.recordformat.MessagePackRecordFormatter;
 
 public class FluencyBuilderForTreasureData
         extends org.komamitsu.fluency.FluencyBuilder
@@ -155,9 +155,9 @@ public class FluencyBuilderForTreasureData
                 "} " + super.toString();
     }
 
-    private RecordFormatter buildRecordFormatter()
+    private MessagePackRecordFormatter buildRecordFormatter()
     {
-        return new TreasureDataRecordFormatter();
+        return new MessagePackRecordFormatter();
     }
 
     private Ingester buildIngester(TreasureDataSender.Config senderConfig)

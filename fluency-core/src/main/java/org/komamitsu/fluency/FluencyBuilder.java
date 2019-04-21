@@ -21,6 +21,7 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.msgpack.core.annotations.VisibleForTesting;
 
 public class FluencyBuilder
 {
@@ -154,20 +155,30 @@ public class FluencyBuilder
                 '}';
     }
 
+    @VisibleForTesting
+    public Fluency createFluency(
+            RecordFormatter recordFormatter,
+            Ingester ingester,
+            Buffer.Config bufferConfig,
+            Flusher.Config flusherConfig)
+    {
+        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
+        return new Fluency(buffer, flusher);
+    }
+
     public Fluency buildFromIngester(RecordFormatter recordFormatter, Ingester ingester)
     {
         Buffer.Config bufferConfig = new Buffer.Config();
         configureBufferConfig(bufferConfig);
-        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
 
         Flusher.Config flusherConfig = new Flusher.Config();
         configureFlusherConfig(flusherConfig);
-        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
 
-        return new Fluency(buffer, flusher);
+        return createFluency(recordFormatter, ingester, bufferConfig, flusherConfig);
     }
 
-    protected void configureBufferConfig(Buffer.Config bufferConfig)
+    private void configureBufferConfig(Buffer.Config bufferConfig)
     {
         if (getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(getMaxBufferSize());
