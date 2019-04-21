@@ -38,7 +38,7 @@ public class FluencyBuilderForAwsS3
     private FormatType formatType;
     private List<String> formatCsvColumnNames;
     private String awsEndpoint;
-    private Region awsRegion;
+    private String awsRegion;
     private String awsAccessKeyId;
     private String awsSecretAccessKey;
     private Integer senderRetryMax;
@@ -95,12 +95,12 @@ public class FluencyBuilderForAwsS3
         this.awsEndpoint = awsEndpoint;
     }
 
-    public Region getAwsRegion()
+    public String getAwsRegion()
     {
         return awsRegion;
     }
 
-    public void setAwsRegion(Region awsRegion)
+    public void setAwsRegion(String awsRegion)
     {
         this.awsRegion = awsRegion;
     }

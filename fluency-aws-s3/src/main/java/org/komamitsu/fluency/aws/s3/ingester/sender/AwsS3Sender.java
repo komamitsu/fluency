@@ -112,7 +112,7 @@ public class AwsS3Sender
         }
 
         if (config.getRegion() != null) {
-            s3ClientBuilder.region(config.getRegion());
+            s3ClientBuilder.region(Region.of(config.getRegion()));
         }
 
         if (config.getAwsAccessKeyId() != null && config.getAwsSecretAccessKey() != null) {
@@ -213,7 +213,7 @@ public class AwsS3Sender
             implements Validatable
     {
         private String endpoint;
-        private Region region;
+        private String region;
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
         private boolean isCompressionEnabled = true;
@@ -239,12 +239,12 @@ public class AwsS3Sender
             this.endpoint = endpoint;
         }
 
-        public Region getRegion()
+        public String getRegion()
         {
             return region;
         }
 
-        public void setRegion(Region region)
+        public void setRegion(String region)
         {
             this.region = region;
         }

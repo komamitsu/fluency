@@ -76,7 +76,7 @@ class FluencyBuilderForAwsS3Test
         {
             FluencyBuilderForAwsS3 builder = new FluencyBuilderForAwsS3();
             builder.setAwsEndpoint("https://foo.bar.org");
-            builder.setAwsRegion(Region.US_EAST_1);
+            builder.setAwsRegion("us-east-1");
             builder.setCompressionEnabled(false);
             builder.setSenderAwsAccessKeyId("ACCESSKEYID");
             builder.setSenderAwsSecretAccessKey("SECRETACCESSKEY");
@@ -190,7 +190,7 @@ class FluencyBuilderForAwsS3Test
         verify(builder, times(1)).createSender(configArgumentCaptor.capture());
         AwsS3Sender.Config senderConfig = configArgumentCaptor.getValue();
         assertEquals("https://foo.bar.org", senderConfig.getEndpoint());
-        assertEquals(Region.US_EAST_1, senderConfig.getRegion());
+        assertEquals(Region.US_EAST_1.toString(), senderConfig.getRegion());
         assertEquals("ACCESSKEYID", senderConfig.getAwsAccessKeyId());
         assertEquals("SECRETACCESSKEY", senderConfig.getAwsSecretAccessKey());
         assertEquals(4, senderConfig.getRetryMax());

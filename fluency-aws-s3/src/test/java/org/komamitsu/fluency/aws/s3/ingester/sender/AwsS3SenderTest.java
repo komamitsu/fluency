@@ -71,7 +71,7 @@ class AwsS3SenderTest
     {
         AwsS3Sender.Config config = new AwsS3Sender.Config();
         config.setEndpoint("https://another.s3endpoi.nt");
-        config.setRegion(Region.AP_NORTHEAST_1);
+        config.setRegion("ap-northeast-1");
         config.setAwsAccessKeyId("foo");
         config.setAwsSecretAccessKey("bar");
 
