@@ -1,3 +1,13 @@
+## 2.2.0 (2019-04-23)
+
+Features:
+
+- Support data ingestion to AWS S3
+
+Improvements:
+
+- Set daemon property of executor threads to reduce potential risks that prevent the program from shuting down
+
 ## 2.1.0 (2019-02-16)
 
 Refactoring:
