@@ -138,7 +138,7 @@ public class Fluency
         for (int i = 0; i < maxWaitSeconds * (1000 / intervalMilli); i++) {
             long bufferedDataSize = getBufferedDataSize();
             LOG.debug("Waiting for flushing all buffer: {}", bufferedDataSize);
-            if (getBufferedDataSize() == 0) {
+            if (bufferedDataSize == 0) {
                 return true;
             }
             TimeUnit.MILLISECONDS.sleep(intervalMilli);
