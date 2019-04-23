@@ -40,7 +40,7 @@ public abstract class Heartbeater
     protected Heartbeater(Config config)
     {
         this.config = config;
-        executorService = Executors.newScheduledThreadPool(1);
+        executorService = ExecutorServiceUtils.newScheduledDaemonThreadPool(1);
     }
 
     public void start()

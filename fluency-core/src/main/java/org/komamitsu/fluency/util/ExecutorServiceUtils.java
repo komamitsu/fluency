@@ -20,11 +20,47 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ExecutorServiceUtils
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExecutorServiceUtils.class);
+
+    /**
+     * Creates an Executor that is based on daemon threads.
+     * This allows the program to quit without explicitly
+     * calling shutdown on the pool
+     *
+     * @return the newly created single-threaded Executor
+     */
+    public static ExecutorService newSingleThreadDaemonExecutor() {
+        return Executors.newSingleThreadExecutor(r -> {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    /**
+     * Creates a scheduled thread pool where each thread has the daemon
+     * property set to true. This allows the program to quit without
+     * explicitly calling shutdown on the pool
+     *
+     * @param corePoolSize the number of threads to keep in the pool,
+     * even if they are idle
+
+     * @return a newly created scheduled thread pool
+     */
+    public static ScheduledExecutorService newScheduledDaemonThreadPool(int corePoolSize) {
+        return Executors.newScheduledThreadPool(corePoolSize, r -> {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
 
     public static void finishExecutorService(ExecutorService executorService)
     {
