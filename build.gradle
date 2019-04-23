@@ -34,7 +34,7 @@ subprojects {
 
   group = 'org.komamitsu'
   archivesBaseName = 'fluency'
-  version = '2.2.1'
+  version = '2.3.0-SNAPSHOT'
 
   def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
   def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
