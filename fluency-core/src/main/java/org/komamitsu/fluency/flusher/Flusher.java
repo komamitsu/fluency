@@ -29,7 +29,6 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +42,7 @@ public class Flusher
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
     private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>();
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorService = ExecutorServiceUtils.newSingleThreadDaemonExecutor();
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
     {
