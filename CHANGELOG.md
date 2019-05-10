@@ -1,3 +1,9 @@
+## 2.3.0 (2019-05-10)
+
+Bugfixes:
+
+- Fix potential socket leaks that could happen with connection failures except `java.net.ConnectException` and so on
+
 ## 2.2.1 (2019-04-23)
 
 Features:
