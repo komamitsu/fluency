@@ -63,9 +63,17 @@ public class TCPSender
     {
         if (channel.get() == null) {
             SocketChannel socketChannel = SocketChannel.open();
-            socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
-            socketChannel.socket().setTcpNoDelay(true);
-            socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
+            try {
+                socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
+                socketChannel.socket().setTcpNoDelay(true);
+                socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
+            }
+            catch (Throwable e) {
+                // In case of java.net.UnknownHostException and so on, the internal socket can be leak.
+                // So the SocketChannel should be closed here to avoid a socket leak.
+                socketChannel.close();
+                throw e;
+            }
             channel.set(socketChannel);
         }
         return channel.get();

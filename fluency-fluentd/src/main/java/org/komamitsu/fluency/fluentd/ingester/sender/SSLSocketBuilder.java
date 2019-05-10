@@ -50,11 +50,17 @@ public class SSLSocketBuilder
             sslContext.init(null, null, new SecureRandom());
             javax.net.ssl.SSLSocketFactory socketFactory = sslContext.getSocketFactory();
             Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
-            socket.setTcpNoDelay(true);
-            socket.setSoTimeout(readTimeoutMilli);
+            try {
+                socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
+                socket.setTcpNoDelay(true);
+                socket.setSoTimeout(readTimeoutMilli);
 
-            return (SSLSocket) socketFactory.createSocket(socket, host, port, true);
+                return (SSLSocket) socketFactory.createSocket(socket, host, port, true);
+            }
+            catch (Throwable e) {
+                socket.close();
+                throw e;
+            }
         }
         catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Failed to get SSLContext", e);
