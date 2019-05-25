@@ -1,3 +1,9 @@
+## 2.3.1 (2019-05-25)
+
+Bugfixes:
+
+- Remove logback.xml added unexpectedly
+
 ## 2.3.0 (2019-05-10)
 
 Bugfixes:
