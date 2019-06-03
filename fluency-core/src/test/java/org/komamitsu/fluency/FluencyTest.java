@@ -94,7 +94,7 @@ class FluencyTest
     void testWaitUntilFlusherTerminated(int waitUntilFlusherTerm, boolean expected)
             throws IOException, InterruptedException
     {
-        flusherConfig.setWaitUntilTerminated(0);
+        flusherConfig.setWaitUntilTerminated(1);
 
         // Wait before actually closing in Buffer
         int waitBeforeCloseMillis = 2000;

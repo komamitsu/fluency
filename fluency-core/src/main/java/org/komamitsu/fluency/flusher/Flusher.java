@@ -28,9 +28,13 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Flusher
@@ -133,7 +137,6 @@ public class Flusher
         catch (Throwable e) {
             LOG.warn("Failed to close the buffer", e);
         }
-        isTerminated.set(true);
     }
 
     private void closeIngesterQuietly()
@@ -149,6 +152,33 @@ public class Flusher
         }
     }
 
+    private void closeResourcesQuietly()
+    {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        try {
+            Future<Void> future = executorService.submit(() -> {
+                closeBufferQuietly();
+                closeIngesterQuietly();
+                isTerminated.set(true);
+                return null;
+            });
+            future.get(getWaitUntilTerminated(), TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e) {
+            LOG.warn("Interrupted", e);
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e) {
+            LOG.warn("closeBuffer() failed", e);
+        }
+        catch (TimeoutException e) {
+            LOG.warn("closeBuffer() timed out", e);
+        }
+        finally {
+            executorService.shutdown();;
+        }
+    }
+
     @Override
     public void close()
     {
@@ -156,9 +186,7 @@ public class Flusher
 
         finishExecutorQuietly();
 
-        closeBufferQuietly();
-
-        closeIngesterQuietly();
+        closeResourcesQuietly();
     }
 
     public boolean isTerminated()
