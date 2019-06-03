@@ -188,10 +188,10 @@ public class Buffer
         }
 
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
+        newBuffer.getCreatedTimeMillis().set(System.currentTimeMillis());
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
-            newBuffer.getCreatedTimeMillis().set(System.currentTimeMillis());
             bufferPool.returnBuffer(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
