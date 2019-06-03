@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -78,6 +78,7 @@ class BufferTest
         bufferConfig.setChunkInitialSize(recordSize);
         bufferConfig.setChunkExpandRatio(allocRatio);
         bufferConfig.setMaxBufferSize(maxAllocSize);
+        bufferConfig.setChunkRetentionSize(maxAllocSize / 2);
         Buffer buffer = new Buffer(bufferConfig, recordFormatter);
 
         assertEquals(0, buffer.getAllocatedSize());
@@ -109,6 +110,30 @@ class BufferTest
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferedDataSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
+    }
+
+    @Test
+    void flush()
+            throws IOException
+    {
+        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+
+        Ingester ingester = mock(Ingester.class);
+        buffer.flush(ingester, false);
+
+        verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "komamitsu");
+        buffer.append("foodb.bartbl", 1420070400, data);
+
+        buffer.flush(ingester, false);
+
+        verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+
+        buffer.flush(ingester, true);
+
+        verify(ingester, times(1)).ingest(eq("foodb.bartbl"), any(ByteBuffer.class));
     }
 
     @Test
