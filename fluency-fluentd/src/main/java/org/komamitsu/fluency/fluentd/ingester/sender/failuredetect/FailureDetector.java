@@ -33,6 +33,7 @@ public class FailureDetector
 
     public FailureDetector(FailureDetectStrategy failureDetectStrategy, Heartbeater heartbeater, Config config)
     {
+        config.validateValues();
         this.failureDetectStrategy = failureDetectStrategy;
         this.heartbeater = heartbeater;
         this.heartbeater.setCallback(this);

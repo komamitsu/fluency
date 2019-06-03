@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +38,7 @@ public abstract class Heartbeater
 
     protected Heartbeater(Config config)
     {
+        config.validateValues();
         this.config = config;
         executorService = ExecutorServiceUtils.newScheduledDaemonThreadPool(1);
     }
@@ -119,6 +119,7 @@ public abstract class Heartbeater
     }
 
     public static class Config
+            implements Validatable
     {
         private String host = "127.0.0.1";
         private int port = 24224;
@@ -153,6 +154,11 @@ public abstract class Heartbeater
         public void setIntervalMillis(int intervalMillis)
         {
             this.intervalMillis = intervalMillis;
+        }
+
+        void validateValues()
+        {
+            validate();
         }
 
         @Override
