@@ -44,8 +44,8 @@ public class FluencyBuilderForTreasureDataTest
         assertThat(buffer.getFileBackupDir(), is(nullValue()));
         assertThat(buffer.bufferFormatType(), is("packed_forward"));
         assertThat(buffer.getChunkExpandRatio(), is(2f));
-        assertThat(buffer.getChunkRetentionSize(), is(4 * 1024 * 1024));
-        assertThat(buffer.getChunkInitialSize(), is(1 * 1024 * 1024));
+        assertThat(buffer.getChunkRetentionSize(), is(64 * 1024 * 1024));
+        assertThat(buffer.getChunkInitialSize(), is(4 * 1024 * 1024));
         assertThat(buffer.getChunkRetentionTimeMillis(), is(30000));
         assertThat(buffer.getJvmHeapBufferMode(), is(false));
     }
