@@ -78,6 +78,7 @@ class BufferTest
         bufferConfig.setChunkInitialSize(recordSize);
         bufferConfig.setChunkExpandRatio(allocRatio);
         bufferConfig.setMaxBufferSize(maxAllocSize);
+        bufferConfig.setChunkRetentionSize(maxAllocSize / 2);
         Buffer buffer = new Buffer(bufferConfig, recordFormatter);
 
         assertEquals(0, buffer.getAllocatedSize());
