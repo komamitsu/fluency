@@ -187,8 +187,7 @@ public class Buffer
             throw new BufferFullException("Buffer is full. config=" + config + ", bufferPool=" + bufferPool);
         }
 
-        RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer);
-        newBuffer.getCreatedTimeMillis().set(System.currentTimeMillis());
+        RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer, System.currentTimeMillis());
         if (retentionBuffer != null) {
             retentionBuffer.getByteBuffer().flip();
             newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
@@ -319,7 +318,7 @@ public class Buffer
             for (Map.Entry<String, RetentionBuffer> entry : retentionBuffers.entrySet()) {
                 // it can be null because moveRetentionBufferToFlushable() can set null
                 if (entry.getValue() != null) {
-                    if (force || entry.getValue().getCreatedTimeMillis().get() < expiredThreshold) {
+                    if (force || entry.getValue().getCreatedTimeMillis() < expiredThreshold) {
                         moveRetentionBufferToFlushable(entry.getKey(), entry.getValue());
                     }
                 }
@@ -454,17 +453,18 @@ public class Buffer
 
     private static class RetentionBuffer
     {
-        private final AtomicLong createdTimeMillis = new AtomicLong();
+        private final AtomicLong createdTimeMillis;
         private final ByteBuffer byteBuffer;
 
-        RetentionBuffer(ByteBuffer byteBuffer)
+        RetentionBuffer(ByteBuffer byteBuffer, long currentTimeMillis)
         {
             this.byteBuffer = byteBuffer;
+            this.createdTimeMillis = new AtomicLong(currentTimeMillis);
         }
 
-        AtomicLong getCreatedTimeMillis()
+        long getCreatedTimeMillis()
         {
-            return createdTimeMillis;
+            return createdTimeMillis.get();
         }
 
         ByteBuffer getByteBuffer()
