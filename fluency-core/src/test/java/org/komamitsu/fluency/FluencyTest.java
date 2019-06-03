@@ -150,6 +150,7 @@ class FluencyTest
         bufferConfig.setChunkInitialSize(64);
         bufferConfig.setChunkExpandRatio(2);
         bufferConfig.setMaxBufferSize(256);
+        bufferConfig.setChunkRetentionSize(196);
         flusherConfig.setFlushIntervalMillis(1000);
 
         Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
