@@ -1,3 +1,10 @@
+## 2.3.2 (2019-06-03)
+
+Bugfixes:
+
+- Fix a bug small buffered data that doesn't reach `chunkRetentionSize` is unexpectedly flushed
+- Fix a bug that ignores `waitUntilTerminated` in `close()`
+
 ## 2.3.1 (2019-05-25)
 
 Bugfixes:
