@@ -1,3 +1,9 @@
+## 2.3.3 (2019-06-19)
+
+Security:
+
+- Use jackson-dataformat-msgpack:2.9.9 through msgpack-java:0.8.17 to take care of CVE-2017-7525 again
+
 ## 2.3.2 (2019-06-03)
 
 Bugfixes:
