@@ -1,5 +1,5 @@
 dependencies {
-  testImplementation files(project(':fluency-core').sourceSets.test.output.classesDir)
+  testImplementation files(project(':fluency-core').sourceSets.test.output.classesDirs)
 
   implementation project(':fluency-core')
 }
