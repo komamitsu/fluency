@@ -22,7 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
@@ -208,7 +208,7 @@ class FluencyTestWithMockServer
                 ingesterConfig.setAckResponseMode(true);
             }
 
-            Buffer.Config bufferConfig = new Buffer.Config();
+            DefaultBuffer.Config bufferConfig = new DefaultBuffer.Config();
             if (options.smallBuffer) {
                 bufferConfig.setChunkRetentionSize(SMALL_BUF_SIZE);
                 bufferConfig.setMaxBufferSize(SMALL_BUF_SIZE + 1);
@@ -222,7 +222,7 @@ class FluencyTestWithMockServer
             flusherConfig.setWaitUntilBufferFlushed(10);
             flusherConfig.setWaitUntilTerminated(10);
 
-            Buffer buffer = new Buffer(bufferConfig, new FluentdRecordFormatter(new FluentdRecordFormatter.Config()));
+            DefaultBuffer buffer = new DefaultBuffer(bufferConfig, new FluentdRecordFormatter(new FluentdRecordFormatter.Config()));
             Flusher flusher = new Flusher(flusherConfig, buffer, new FluentdIngester(ingesterConfig, sender));
 
             return new Fluency(buffer, flusher);

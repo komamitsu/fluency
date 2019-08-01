@@ -19,7 +19,7 @@ package org.komamitsu.fluency.flusher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.JsonRecordFormatter;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 class FlusherTest
 {
     private Ingester ingester;
-    private Buffer.Config bufferConfig;
+    private DefaultBuffer.Config bufferConfig;
     private Flusher.Config flusherConfig;
 
     @BeforeEach
@@ -46,7 +46,7 @@ class FlusherTest
     {
         ingester = mock(Ingester.class);
 
-        bufferConfig = new Buffer.Config();
+        bufferConfig = new DefaultBuffer.Config();
         flusherConfig = new Flusher.Config();
     }
 
@@ -56,7 +56,7 @@ class FlusherTest
     {
         flusherConfig.setFlushAttemptIntervalMillis(500);
 
-        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+        DefaultBuffer buffer = spy(new DefaultBuffer(bufferConfig, new JsonRecordFormatter()));
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
 
         verify(buffer, times(0)).flush(eq(ingester), anyBoolean());
@@ -88,7 +88,7 @@ class FlusherTest
     @Test
     void validateConfig()
     {
-        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+        DefaultBuffer buffer = spy(new DefaultBuffer(bufferConfig, new JsonRecordFormatter()));
 
         {
             Flusher.Config config = new Flusher.Config();

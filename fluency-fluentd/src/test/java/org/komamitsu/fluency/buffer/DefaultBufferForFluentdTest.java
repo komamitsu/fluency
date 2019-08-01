@@ -50,7 +50,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BufferForFluentdTest
+class DefaultBufferForFluentdTest
 {
     private final FluentdRecordFormatter fluentdRecordFormatter =
             new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
@@ -61,21 +61,21 @@ class BufferForFluentdTest
     {
         for (Integer loopCount : Arrays.asList(100, 1000, 10000, 100000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, false,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, false,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, true,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, true,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, false, true,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, false, true,
-                    new Buffer(new Buffer.Config(), fluentdRecordFormatter));
+                    new DefaultBuffer(new DefaultBuffer.Config(), fluentdRecordFormatter));
         }
     }
 
@@ -105,7 +105,7 @@ class BufferForFluentdTest
             longCommentCount = 0;
         }
 
-        void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final Buffer buffer)
+        void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final DefaultBuffer buffer)
                 throws IOException, InterruptedException
         {
             assertThat(buffer.getBufferUsage(), is(0f));

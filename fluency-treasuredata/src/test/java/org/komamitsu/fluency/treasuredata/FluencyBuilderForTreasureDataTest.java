@@ -21,7 +21,7 @@ import com.treasuredata.client.TDClientConfig;
 import com.treasuredata.client.TDHttpClient;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 
@@ -38,7 +38,7 @@ public class FluencyBuilderForTreasureDataTest
 {
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
-    private void assertBuffer(Buffer buffer)
+    private void assertBuffer(DefaultBuffer buffer)
     {
         assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
         assertThat(buffer.getFileBackupDir(), is(nullValue()));
@@ -89,7 +89,7 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY)) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
@@ -102,7 +102,7 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "https://custom.endpoint.org")) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
@@ -115,7 +115,7 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "custom.endpoint.org")) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
@@ -128,7 +128,7 @@ public class FluencyBuilderForTreasureDataTest
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "http://custom.endpoint.org")) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
@@ -158,11 +158,10 @@ public class FluencyBuilderForTreasureDataTest
         builder.setSenderRetryFactor(3.14f);
         builder.setSenderRetryMax(17);
         builder.setSenderWorkBufSize(123456);
-        ;
 
         try (Fluency fluency = builder.build(APIKEY)) {
-            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
-            Buffer buffer = fluency.getBuffer();
+            assertThat(fluency.getBuffer(), instanceOf(DefaultBuffer.class));
+            DefaultBuffer buffer = (DefaultBuffer) fluency.getBuffer();
             assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
             assertThat(buffer.getFileBackupDir(), is(tmpdir));
             assertThat(buffer.bufferFormatType(), is("packed_forward"));

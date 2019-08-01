@@ -21,7 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
@@ -48,7 +48,7 @@ class FluencyTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private Ingester ingester;
-    private Buffer.Config bufferConfig;
+    private DefaultBuffer.Config bufferConfig;
     private Flusher.Config flusherConfig;
 
     @BeforeEach
@@ -56,7 +56,7 @@ class FluencyTest
     {
         ingester = mock(Ingester.class);
 
-        bufferConfig = new Buffer.Config();
+        bufferConfig = new DefaultBuffer.Config();
         flusherConfig = new Flusher.Config();
     }
 
@@ -64,7 +64,7 @@ class FluencyTest
     void testIsTerminated()
             throws IOException, InterruptedException
     {
-        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             assertFalse(fluency.isTerminated());
@@ -78,9 +78,9 @@ class FluencyTest
     void testGetAllocatedBufferSize()
             throws IOException
     {
-        Buffer.Config bufferConfig = new Buffer.Config();
+        DefaultBuffer.Config bufferConfig = new DefaultBuffer.Config();
         bufferConfig.setChunkInitialSize(1024);
-        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             assertThat(fluency.getAllocatedBufferSize(), is(0L));
@@ -96,9 +96,9 @@ class FluencyTest
     {
         flusherConfig.setWaitUntilTerminated(1);
 
-        // Wait before actually closing in Buffer
+        // Wait before actually closing in DefaultBuffer
         int waitBeforeCloseMillis = 2000;
-        Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
+        DefaultBuffer buffer = spy(new DefaultBuffer(bufferConfig, new JsonRecordFormatter()));
         doAnswer((invocation) -> {
             long start = System.currentTimeMillis();
             try {
@@ -132,7 +132,7 @@ class FluencyTest
     {
         flusherConfig.setFlushAttemptIntervalMillis(2000);
 
-        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             fluency.emit("foo.bar", new HashMap<>());
@@ -153,7 +153,7 @@ class FluencyTest
         bufferConfig.setChunkRetentionSize(196);
         flusherConfig.setFlushAttemptIntervalMillis(1000);
 
-        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, stuckIngester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             Map<String, Object> event = new HashMap<>();

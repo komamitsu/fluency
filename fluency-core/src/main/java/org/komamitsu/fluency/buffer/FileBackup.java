@@ -39,11 +39,11 @@ public class FileBackup
     private static final String PARAM_DELIM_IN_FILENAME = "#";
     private static final String EXT_FILENAME = ".buf";
     private final File backupDir;
-    private final Buffer userBuffer;
+    private final DefaultBuffer userBuffer;
     private final Pattern pattern;
     private final String prefix;
 
-    public FileBackup(File backupDir, Buffer userBuffer, String prefix)
+    public FileBackup(File backupDir, DefaultBuffer userBuffer, String prefix)
     {
         if (backupDir.mkdir()) {
             LOG.info("Created backupDir: dir={}", backupDir);

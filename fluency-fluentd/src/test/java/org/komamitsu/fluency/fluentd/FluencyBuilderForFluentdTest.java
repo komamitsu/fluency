@@ -18,7 +18,7 @@ package org.komamitsu.fluency.fluentd;
 
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.NetworkSender;
@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 class FluencyBuilderForFluentdTest
 {
-    private void assertBuffer(Buffer buffer)
+    private void assertBuffer(DefaultBuffer buffer)
     {
         assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
         assertThat(buffer.getFileBackupDir(), is(nullValue()));
@@ -94,7 +94,7 @@ class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build()) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -109,7 +109,7 @@ class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build(54321)) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -124,7 +124,7 @@ class FluencyBuilderForFluentdTest
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build("192.168.0.99", 54321)) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -141,7 +141,7 @@ class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build()) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -158,7 +158,7 @@ class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build(54321)) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -175,7 +175,7 @@ class FluencyBuilderForFluentdTest
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(true);
         try (Fluency fluency = builder.build("192.168.0.99", 54321)) {
-            assertBuffer(fluency.getBuffer());
+            assertBuffer((DefaultBuffer) fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (FluentdSender) fluency.getFlusher().getIngester().getSender(),
@@ -214,8 +214,8 @@ class FluencyBuilderForFluentdTest
                         new InetSocketAddress("333.333.333.333", 11111),
                         new InetSocketAddress("444.444.444.444", 22222)))) {
 
-            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
-            Buffer buffer = fluency.getBuffer();
+            assertThat(fluency.getBuffer(), instanceOf(DefaultBuffer.class));
+            DefaultBuffer buffer = (DefaultBuffer) fluency.getBuffer();
             assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
             assertThat(buffer.getFileBackupDir(), is(tmpdir));
             assertThat(buffer.bufferFormatType(), is("packed_forward"));

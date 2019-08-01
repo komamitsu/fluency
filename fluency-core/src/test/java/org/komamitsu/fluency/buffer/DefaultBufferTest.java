@@ -51,19 +51,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class BufferTest
+class DefaultBufferTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(BufferTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultBufferTest.class);
     private Ingester ingester;
     private RecordFormatter recordFormatter;
-    private Buffer.Config bufferConfig;
+    private DefaultBuffer.Config bufferConfig;
 
     @BeforeEach
     void setUp()
     {
         recordFormatter = new JsonRecordFormatter();
         ingester = mock(Ingester.class);
-        bufferConfig = new Buffer.Config();
+        bufferConfig = new DefaultBuffer.Config();
     }
 
     @Test
@@ -79,7 +79,7 @@ class BufferTest
         bufferConfig.setChunkExpandRatio(allocRatio);
         bufferConfig.setMaxBufferSize(maxAllocSize);
         bufferConfig.setChunkRetentionSize(maxAllocSize / 2);
-        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter);
 
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferedDataSize());
@@ -116,7 +116,7 @@ class BufferTest
     void flush()
             throws IOException
     {
-        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+        DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter);
 
         Ingester ingester = mock(Ingester.class);
         buffer.flush(ingester, false);
@@ -144,23 +144,23 @@ class BufferTest
         bufferConfig.setFileBackupPrefix("FileBackupTest");
 
         // Just for cleaning backup files
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             buffer.clearBackupFiles();
         }
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             assertEquals(0, buffer.getBufferedDataSize());
         }
 
         long currentTime = System.currentTimeMillis() / 1000;
         Map<String, Object> event0 = ImmutableMap.of("name", "a", "age", 42);
         Map<String, Object> event1 = ImmutableMap.of("name", "b", "age", 99);
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             buffer.append("foo", currentTime, event0);
             buffer.append("bar", currentTime, event1);
         }
 
         Ingester ingester = mock(Ingester.class);
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             buffer.flushInternal(ingester, true);
         }
 
@@ -186,7 +186,7 @@ class BufferTest
 
         bufferConfig.setFileBackupDir(backupDirFile.getAbsolutePath());
 
-        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer ignored = new DefaultBuffer(bufferConfig, recordFormatter)) {
             fail();
         }
         catch (IllegalArgumentException e) {
@@ -208,7 +208,7 @@ class BufferTest
 
         bufferConfig.setFileBackupDir(backupDir.getAbsolutePath());
 
-        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer ignored = new DefaultBuffer(bufferConfig, recordFormatter)) {
             fail();
         }
         catch (IllegalArgumentException e) {
@@ -230,7 +230,7 @@ class BufferTest
 
         bufferConfig.setFileBackupDir(backupDir.getAbsolutePath());
 
-        try (Buffer ignored = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer ignored = new DefaultBuffer(bufferConfig, recordFormatter)) {
             fail();
         }
         catch (IllegalArgumentException e) {
@@ -243,7 +243,7 @@ class BufferTest
             throws IOException
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             assertThat(buffer.getAllocatedSize(), is(0L));
             Map<String, Object> map = new HashMap<>();
             map.put("name", "komamitsu");
@@ -259,7 +259,7 @@ class BufferTest
             throws IOException
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
             assertThat(buffer.getBufferedDataSize(), is(0L));
 
             Map<String, Object> map = new HashMap<>();
@@ -280,7 +280,7 @@ class BufferTest
             throws IOException
     {
         bufferConfig.setChunkInitialSize(64 * 1024);
-        try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
+        try (DefaultBuffer buffer = new DefaultBuffer(bufferConfig, recordFormatter)) {
 
             StringBuilder buf = new StringBuilder();
 
@@ -312,29 +312,29 @@ class BufferTest
     void validateConfig()
     {
         {
-            Buffer.Config config = new Buffer.Config();
+            DefaultBuffer.Config config = new DefaultBuffer.Config();
             config.setChunkInitialSize(4 * 1024 * 1024);
             config.setChunkRetentionSize(4 * 1024 * 1024);
-            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
+            assertThrows(IllegalArgumentException.class, () -> new DefaultBuffer(config, recordFormatter));
         }
 
         {
-            Buffer.Config config = new Buffer.Config();
+            DefaultBuffer.Config config = new DefaultBuffer.Config();
             config.setChunkRetentionSize(64 * 1024 * 1024);
             config.setMaxBufferSize(64 * 1024 * 1024);
-            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
+            assertThrows(IllegalArgumentException.class, () -> new DefaultBuffer(config, recordFormatter));
         }
 
         {
-            Buffer.Config config = new Buffer.Config();
+            DefaultBuffer.Config config = new DefaultBuffer.Config();
             config.setChunkExpandRatio(1.19f);
-            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
+            assertThrows(IllegalArgumentException.class, () -> new DefaultBuffer(config, recordFormatter));
         }
 
         {
-            Buffer.Config config = new Buffer.Config();
+            DefaultBuffer.Config config = new DefaultBuffer.Config();
             config.setChunkRetentionTimeMillis(49);
-            assertThrows(IllegalArgumentException.class, () -> new Buffer(config, recordFormatter));
+            assertThrows(IllegalArgumentException.class, () -> new DefaultBuffer(config, recordFormatter));
         }
     }
 }

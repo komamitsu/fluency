@@ -17,6 +17,7 @@
 package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
+import org.komamitsu.fluency.buffer.DefaultBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
@@ -175,28 +176,27 @@ public class FluencyBuilder
 
     @VisibleForTesting
     public Fluency createFluency(
-            RecordFormatter recordFormatter,
             Ingester ingester,
-            Buffer.Config bufferConfig,
+            Buffer buffer,
             Flusher.Config flusherConfig)
     {
-        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         return new Fluency(buffer, flusher);
     }
 
     public Fluency buildFromIngester(RecordFormatter recordFormatter, Ingester ingester)
     {
-        Buffer.Config bufferConfig = new Buffer.Config();
+        DefaultBuffer.Config bufferConfig = new DefaultBuffer.Config();
         configureBufferConfig(bufferConfig);
+        Buffer buffer = new DefaultBuffer(bufferConfig, recordFormatter);
 
         Flusher.Config flusherConfig = new Flusher.Config();
         configureFlusherConfig(flusherConfig);
 
-        return createFluency(recordFormatter, ingester, bufferConfig, flusherConfig);
+        return createFluency(ingester, buffer, flusherConfig);
     }
 
-    private void configureBufferConfig(Buffer.Config bufferConfig)
+    private void configureBufferConfig(DefaultBuffer.Config bufferConfig)
     {
         if (getMaxBufferSize() != null) {
             bufferConfig.setMaxBufferSize(getMaxBufferSize());
