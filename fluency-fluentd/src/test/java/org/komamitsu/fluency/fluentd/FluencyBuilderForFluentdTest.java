@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.fluentd;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -31,6 +32,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.flusher.Flusher;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -200,6 +202,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionTimeMillis(19 * 1000);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setSenderBaseRetryIntervalMillis(20);
+        builder.setSenderMaxRetryIntervalMillis(100000);
         builder.setConnectionTimeoutMilli(12345);
         builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
@@ -234,7 +238,8 @@ public class FluencyBuilderForFluentdTest
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
-            assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+            assertThat(retryStrategy.getBaseIntervalMillis(), is(20));
+            assertThat(retryStrategy.getMaxIntervalMillis(), is(100000));
 
             assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
             MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();
@@ -292,6 +297,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setSenderBaseRetryIntervalMillis(20);
+        builder.setSenderMaxRetryIntervalMillis(100000);
         builder.setConnectionTimeoutMilli(12345);
         builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
@@ -309,7 +316,8 @@ public class FluencyBuilderForFluentdTest
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
-            assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+            assertThat(retryStrategy.getBaseIntervalMillis(), is(20));
+            assertThat(retryStrategy.getMaxIntervalMillis(), is(100000));
 
             assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
             MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();
