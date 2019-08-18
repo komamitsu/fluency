@@ -200,6 +200,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionTimeMillis(19 * 1000);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setSenderBaseRetryIntervalMillis(20);
+        builder.setSenderMaxRetryIntervalMillis(100000);
         builder.setConnectionTimeoutMilli(12345);
         builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
@@ -234,7 +236,8 @@ public class FluencyBuilderForFluentdTest
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
-            assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+            assertThat(retryStrategy.getBaseIntervalMillis(), is(20));
+            assertThat(retryStrategy.getMaxIntervalMillis(), is(100000));
 
             assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
             MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();
@@ -292,6 +295,8 @@ public class FluencyBuilderForFluentdTest
         builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
         builder.setJvmHeapBufferMode(true);
         builder.setSenderMaxRetryCount(99);
+        builder.setSenderBaseRetryIntervalMillis(20);
+        builder.setSenderMaxRetryIntervalMillis(100000);
         builder.setConnectionTimeoutMilli(12345);
         builder.setReadTimeoutMilli(9876);
         builder.setAckResponseMode(true);
@@ -309,7 +314,8 @@ public class FluencyBuilderForFluentdTest
             assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
             ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
             assertThat(retryStrategy.getMaxRetryCount(), is(99));
-            assertThat(retryStrategy.getBaseIntervalMillis(), is(400));
+            assertThat(retryStrategy.getBaseIntervalMillis(), is(20));
+            assertThat(retryStrategy.getMaxIntervalMillis(), is(100000));
 
             assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
             MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();

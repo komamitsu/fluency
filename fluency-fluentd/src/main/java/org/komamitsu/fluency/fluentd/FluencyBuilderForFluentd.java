@@ -40,6 +40,8 @@ public class FluencyBuilderForFluentd
         extends org.komamitsu.fluency.FluencyBuilder
 {
     private Integer senderMaxRetryCount;
+    private Integer senderBaseRetryIntervalMillis;
+    private Integer senderMaxRetryIntervalMillis;
     private boolean ackResponseMode;
     private boolean sslEnabled;
     private Integer connectionTimeoutMilli;
@@ -48,6 +50,26 @@ public class FluencyBuilderForFluentd
     public Integer getSenderMaxRetryCount()
     {
         return senderMaxRetryCount;
+    }
+
+    public Integer getSenderBaseRetryIntervalMillis()
+    {
+        return senderBaseRetryIntervalMillis;
+    }
+
+    public Integer getSenderMaxRetryIntervalMillis()
+    {
+        return senderMaxRetryIntervalMillis;
+    }
+
+    public void setSenderBaseRetryIntervalMillis(Integer senderBaseRetryIntervalMillis)
+    {
+        this.senderBaseRetryIntervalMillis = senderBaseRetryIntervalMillis;
+    }
+
+    public void setSenderMaxRetryIntervalMillis(Integer senderMaxRetryIntervalMillis)
+    {
+        this.senderMaxRetryIntervalMillis = senderMaxRetryIntervalMillis;
     }
 
     public void setSenderMaxRetryCount(Integer senderMaxRetryCount)
@@ -212,8 +234,12 @@ public class FluencyBuilderForFluentd
             retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
         }
 
-        if (getSenderMaxRetryCount() != null) {
-            retryStrategyConfig.setMaxRetryCount(getSenderMaxRetryCount());
+        if (getSenderBaseRetryIntervalMillis() != null) {
+            retryStrategyConfig.setBaseIntervalMillis(getSenderBaseRetryIntervalMillis());
+        }
+
+        if (getSenderMaxRetryIntervalMillis() != null) {
+            retryStrategyConfig.setMaxIntervalMillis(getSenderMaxRetryIntervalMillis());
         }
 
         RetryableSender.Config senderConfig = new RetryableSender.Config();
