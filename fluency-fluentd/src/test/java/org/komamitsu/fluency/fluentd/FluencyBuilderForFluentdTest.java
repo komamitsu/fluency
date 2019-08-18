@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.fluentd;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -32,7 +31,6 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.flusher.Flusher;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
