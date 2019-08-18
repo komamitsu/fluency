@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
@@ -25,13 +25,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TCPHeartbeaterTest
+class TCPHeartbeaterTest
 {
     @Test
-    public void testTCPHeartbeaterUp()
+    void testTCPHeartbeaterUp()
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -76,7 +76,7 @@ public class TCPHeartbeaterTest
     }
 
     @Test
-    public void testTCPHeartbeaterDown()
+    void testTCPHeartbeaterDown()
             throws IOException, InterruptedException
     {
         final ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();

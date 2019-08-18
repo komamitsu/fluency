@@ -16,12 +16,10 @@
 
 package org.komamitsu.fluency.treasuredata.ingester;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.mockito.ArgumentCaptor;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,23 +32,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public class TreasureDataIngesterTest
+class TreasureDataIngesterTest
 {
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
     private static final byte[] DATA = "hello, world".getBytes(CHARSET);
     private TreasureDataSender treasureDataSender;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
             throws Exception
     {
         treasureDataSender = mock(TreasureDataSender.class);
     }
 
     @Test
-    public void ingest()
+    void ingest()
             throws IOException
     {
         TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
@@ -63,14 +60,14 @@ public class TreasureDataIngesterTest
     }
 
     @Test
-    public void getSender()
+    void getSender()
     {
         assertEquals(treasureDataSender,
                 new TreasureDataIngester(treasureDataSender).getSender());
     }
 
     @Test
-    public void close()
+    void close()
             throws IOException
     {
         TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);

@@ -18,7 +18,7 @@ package org.komamitsu.fluency.integration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.fluentd.FluencyBuilderForFluentd;
 
@@ -37,9 +37,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class WithRealFluentd
+class WithRealFluentd
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -55,11 +55,11 @@ public class WithRealFluentd
     }
 
     @Test
-    public void testWithRealFluentd()
+    void testWithRealFluentd()
             throws Exception
     {
         WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
+        assumeTrue(config != null);
 
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);
@@ -81,12 +81,12 @@ public class WithRealFluentd
     }
 
     @Test
-    public void testWithRealMultipleFluentd()
+    void testWithRealMultipleFluentd()
             throws IOException, InterruptedException, TimeoutException, ExecutionException
     {
         WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
-        assumeNotNull(config.anotherPort);
+        assumeTrue(config != null);
+        assumeTrue(config.anotherPort != null);
 
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);
@@ -113,11 +113,11 @@ public class WithRealFluentd
     }
 
     @Test
-    public void testWithRealFluentdWithFileBackup()
+    void testWithRealFluentdWithFileBackup()
             throws ExecutionException, TimeoutException, IOException, InterruptedException
     {
         WithRealFluentd.Config config = getConfig();
-        assumeNotNull(config);
+        assumeTrue(config != null);
 
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
         builder.setSslEnabled(config.sslEnabled);

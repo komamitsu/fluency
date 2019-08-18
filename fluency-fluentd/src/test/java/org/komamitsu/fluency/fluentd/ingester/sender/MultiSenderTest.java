@@ -17,7 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
@@ -39,15 +39,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class MultiSenderTest
+class MultiSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSenderTest.class);
 
@@ -57,7 +57,7 @@ public class MultiSenderTest
     }
 
     @Test
-    public void testConstructorForTCPSender()
+    void testConstructorForTCPSender()
             throws IOException
     {
         MultiSender multiSender = null;
@@ -107,7 +107,7 @@ public class MultiSenderTest
     }
 
     @Test
-    public void testConstructorForSSLSender()
+    void testConstructorForSSLSender()
             throws IOException
     {
         MultiSender multiSender = null;
@@ -157,14 +157,14 @@ public class MultiSenderTest
     }
 
     @Test
-    public void testTCPSend()
+    void testTCPSend()
             throws Exception
     {
         testSend(false);
     }
 
     @Test
-    public void testSSLSend()
+    void testSSLSend()
             throws Exception
     {
         testSend(true);

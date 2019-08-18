@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.buffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,18 +30,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BufferPoolTest
+class BufferPoolTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferPoolTest.class);
 
     @Test
-    public void testAcquireAndRelease()
+    void testAcquireAndRelease()
             throws IOException
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024);
@@ -79,7 +79,7 @@ public class BufferPoolTest
     }
 
     @Test
-    public void testAcquireWithBufferFull()
+    void testAcquireWithBufferFull()
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024);
         ByteBuffer buffer = bufferPool.acquireBuffer(64 * 1024);
@@ -107,7 +107,7 @@ public class BufferPoolTest
     }
 
     @Test
-    public void testAcquireAndReleaseWithMultiThread()
+    void testAcquireAndReleaseWithMultiThread()
             throws InterruptedException
     {
         final int concurrency = 8;
@@ -155,7 +155,7 @@ public class BufferPoolTest
     }
 
     @Test
-    public void useOffHeap()
+    void useOffHeap()
             throws IOException
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024);
@@ -168,7 +168,7 @@ public class BufferPoolTest
     }
 
     @Test
-    public void useOnHeap()
+    void useOnHeap()
             throws IOException
     {
         BufferPool bufferPool = new BufferPool(8 * 1024, 256 * 1024, true);

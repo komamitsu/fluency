@@ -20,12 +20,10 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.TestableFluencyBuilder;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
@@ -51,33 +49,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
-@RunWith(Theories.class)
-public class FluencyTest
+class FluencyTest
 {
-    @DataPoints
-    public static final boolean[] SSL_ENABLED = {false, true};
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTest.class);
     private static final StringValue KEY_OPTION_SIZE = ValueFactory.newString("size");
     private static final StringValue KEY_OPTION_CHUNK = ValueFactory.newString("chunk");
     private Ingester ingester;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         ingester = mock(Ingester.class);
     }
 
     @Test
-    public void testSenderErrorHandler()
+    void testSenderErrorHandler()
             throws IOException, InterruptedException
     {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -103,8 +99,14 @@ public class FluencyTest
         }
     }
 
-    @Theory
-    public void testWithoutAckResponse(final boolean sslEnabled)
+    static Stream<Boolean> sslFlagsProvider()
+    {
+        return Stream.of(false, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("sslFlagsProvider")
+    void testWithoutAckResponse(final boolean sslEnabled)
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
@@ -129,8 +131,9 @@ public class FluencyTest
         assertNull(exception);
     }
 
-    @Theory
-    public void testWithAckResponseButNotReceiveToken(final boolean sslEnabled)
+    @ParameterizedTest
+    @MethodSource("sslFlagsProvider")
+    void testWithAckResponseButNotReceiveToken(final boolean sslEnabled)
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
@@ -157,8 +160,9 @@ public class FluencyTest
         assertEquals(exception.getClass(), TimeoutException.class);
     }
 
-    @Theory
-    public void testWithAckResponseButWrongReceiveToken(final boolean sslEnabled)
+    @ParameterizedTest
+    @MethodSource("sslFlagsProvider")
+    void testWithAckResponseButWrongReceiveToken(final boolean sslEnabled)
             throws Throwable
     {
         Exception exception = new ConfigurableTestServer(sslEnabled).run(
@@ -192,7 +196,8 @@ public class FluencyTest
         assertEquals(exception.getClass(), TimeoutException.class);
     }
 
-    @Theory
+    @ParameterizedTest
+    @MethodSource("sslFlagsProvider")
     public void testWithAckResponseWithProperToken(final boolean sslEnabled)
             throws Throwable
     {
@@ -228,8 +233,9 @@ public class FluencyTest
         assertNull(exception);
     }
 
-    @Test
-    public void testBufferWithJacksonModule()
+    @ParameterizedTest
+    @MethodSource("sslFlagsProvider")
+    void testBufferWithJacksonModule()
             throws IOException
     {
         AtomicBoolean serialized = new AtomicBoolean();

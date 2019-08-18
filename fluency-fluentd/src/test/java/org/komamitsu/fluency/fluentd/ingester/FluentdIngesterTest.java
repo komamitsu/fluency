@@ -16,14 +16,12 @@
 
 package org.komamitsu.fluency.fluentd.ingester;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ImmutableArrayValue;
@@ -38,14 +36,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public class FluentdIngesterTest
+class FluentdIngesterTest
 {
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
@@ -54,8 +51,8 @@ public class FluentdIngesterTest
     public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
     private FluentdSender fluentdSender;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
             throws Exception
     {
         fluentdSender = mock(FluentdSender.class);
@@ -72,7 +69,7 @@ public class FluentdIngesterTest
     }
 
     @Test
-    public void ingestWithoutAck()
+    void ingestWithoutAck()
             throws IOException
     {
         Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);
@@ -94,7 +91,7 @@ public class FluentdIngesterTest
     }
 
     @Test
-    public void ingestWithAck()
+    void ingestWithAck()
             throws IOException
     {
         FluentdIngester.Config config = new FluentdIngester.Config();
@@ -126,13 +123,13 @@ public class FluentdIngesterTest
     }
 
     @Test
-    public void getSender()
+    void getSender()
     {
         assertEquals(fluentdSender, new FluentdIngester(new FluentdIngester.Config(), fluentdSender).getSender());
     }
 
     @Test
-    public void close()
+    void close()
             throws IOException
     {
         Ingester ingester = new FluentdIngester(new FluentdIngester.Config(), fluentdSender);

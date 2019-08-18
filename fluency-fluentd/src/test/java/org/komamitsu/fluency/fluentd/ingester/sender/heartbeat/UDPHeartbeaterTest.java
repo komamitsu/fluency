@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -27,13 +27,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UDPHeartbeaterTest
+class UDPHeartbeaterTest
 {
     @Test
-    public void testUDPHeartbeaterUp()
+    void testUDPHeartbeaterUp()
             throws IOException, InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -80,7 +80,7 @@ public class UDPHeartbeaterTest
     }
 
     @Test
-    public void testUDPHeartbeaterDown()
+    void testUDPHeartbeaterDown()
             throws IOException, InterruptedException
     {
         final DatagramChannel datagramChannel = DatagramChannel.open();

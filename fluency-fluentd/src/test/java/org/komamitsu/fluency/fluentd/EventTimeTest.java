@@ -19,19 +19,20 @@ package org.komamitsu.fluency.fluentd;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.EventTime;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.nio.ByteBuffer;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class EventTimeTest
+class EventTimeTest
 {
     @Test
-    public void instantiation()
+    void instantiation()
     {
         {
             long now = System.currentTimeMillis();
@@ -61,20 +62,24 @@ public class EventTimeTest
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void instantiationWithTooLargeSeconds()
+    @Test
+    void instantiationWithTooLargeSeconds()
     {
-        EventTime.fromEpoch(0x100000000L, 0L);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void instantiationWithTooLargeNanoSeconds()
-    {
-        EventTime.fromEpoch(0L, 0x100000000L);
+        assertThrows(IllegalArgumentException.class, () -> {
+            EventTime.fromEpoch(0x100000000L, 0L);
+        });
     }
 
     @Test
-    public void serialize()
+    void instantiationWithTooLargeNanoSeconds()
+    {
+        assertThrows(IllegalArgumentException.class, () -> {
+            EventTime.fromEpoch(0L, 0x100000000L);
+        });
+    }
+
+    @Test
+    void serialize()
             throws JsonProcessingException
     {
         {
