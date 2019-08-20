@@ -16,9 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -40,21 +40,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SSLSocketBuilderTest
+class SSLSocketBuilderTest
 {
     private SSLServerSocket serverSocket;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
             throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException
     {
         serverSocket = new SSLTestServerSocketFactory().create();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
             throws IOException
     {
         if (serverSocket != null) {
@@ -63,7 +63,7 @@ public class SSLSocketBuilderTest
     }
 
     @Test
-    public void testWithServer()
+    void testWithServer()
             throws IOException, InterruptedException, ExecutionException, TimeoutException
     {
         final AtomicInteger readLen = new AtomicInteger();

@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractFluentdServer
         extends MockTCPServer
@@ -51,7 +51,7 @@ public abstract class AbstractFluentdServer
     private static final Charset CHARSET = Charset.forName("UTF-8");
     private FluentdEventHandler fluentdEventHandler;
 
-    public AbstractFluentdServer(boolean sslEnabled)
+    AbstractFluentdServer(boolean sslEnabled)
     {
         super(sslEnabled);
     }
@@ -274,4 +274,3 @@ public abstract class AbstractFluentdServer
         }
     }
 }
-

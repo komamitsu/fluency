@@ -19,7 +19,7 @@ package org.komamitsu.fluency.buffer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
 import org.komamitsu.fluency.fluentd.ingester.sender.MockTCPSender;
@@ -45,21 +45,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BufferForFluentdTest
+class BufferForFluentdTest
 {
     private final FluentdRecordFormatter fluentdRecordFormatter =
             new FluentdRecordFormatter(new FluentdRecordFormatter.Config());
 
     @Test
-    public void withFluentdFormat()
+    void withFluentdFormat()
             throws IOException, InterruptedException
     {
-        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
+        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 100000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
                     new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,

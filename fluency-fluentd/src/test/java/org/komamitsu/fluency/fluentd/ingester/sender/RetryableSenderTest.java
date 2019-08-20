@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 
 import java.io.IOException;
@@ -25,11 +25,12 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class RetryableSenderTest
+class RetryableSenderTest
 {
     @Test
-    public void testSend()
+    void testSend()
             throws IOException
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
@@ -46,8 +47,8 @@ public class RetryableSenderTest
         assertThat(baseSender.getRetry(), is(3));
     }
 
-    @Test(expected = RetryableSender.RetryOverException.class)
-    public void testSendRetryOver()
+    @Test
+    void testSendRetryOver()
             throws IOException
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
@@ -60,7 +61,8 @@ public class RetryableSenderTest
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
         assertThat(baseSender.getRetry(), is(0));
-        sender.send(ByteBuffer.allocate(64));
+        assertThrows(RetryableSender.RetryOverException.class,
+                () -> sender.send(ByteBuffer.allocate(64)));
     }
 
     static class FailurableSender
@@ -69,7 +71,7 @@ public class RetryableSenderTest
         private final int maxFailures;
         private int retry;
 
-        public FailurableSender(int maxFailures)
+        FailurableSender(int maxFailures)
         {
             super(new FluentdSender.Config());
             this.maxFailures = maxFailures;
@@ -91,7 +93,7 @@ public class RetryableSenderTest
             }
         }
 
-        public int getRetry()
+        int getRetry()
         {
             return retry;
         }

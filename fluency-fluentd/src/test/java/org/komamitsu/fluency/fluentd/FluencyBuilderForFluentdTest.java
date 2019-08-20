@@ -16,7 +16,7 @@
 
 package org.komamitsu.fluency.fluentd;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
@@ -36,13 +36,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
-public class FluencyBuilderForFluentdTest
+class FluencyBuilderForFluentdTest
 {
     private void assertBuffer(Buffer buffer)
     {
@@ -90,7 +90,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void build()
+    void build()
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build()) {
@@ -105,7 +105,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithCustomPort()
+    void buildWithCustomPort()
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build(54321)) {
@@ -120,7 +120,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithCustomHostAndPort()
+    void buildWithCustomHostAndPort()
             throws IOException
     {
         try (Fluency fluency = new FluencyBuilderForFluentd().build("192.168.0.99", 54321)) {
@@ -135,7 +135,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithSsl()
+    void buildWithSsl()
             throws IOException
     {
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
@@ -152,7 +152,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithSslAndCustomPort()
+    void buildWithSslAndCustomPort()
             throws IOException
     {
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
@@ -169,7 +169,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithSslAndCustomHostAndPort()
+    void buildWithSslAndCustomHostAndPort()
             throws IOException
     {
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
@@ -186,7 +186,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithComplexConfig()
+    void buildWithComplexConfig()
             throws IOException
     {
         String tmpdir = System.getProperty("java.io.tmpdir");
@@ -281,7 +281,7 @@ public class FluencyBuilderForFluentdTest
     }
 
     @Test
-    public void buildWithSslAndComplexConfig()
+    void buildWithSslAndComplexConfig()
             throws IOException
     {
         String tmpdir = System.getProperty("java.io.tmpdir");
