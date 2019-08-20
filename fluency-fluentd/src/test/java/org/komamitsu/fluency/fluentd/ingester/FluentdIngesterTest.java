@@ -22,6 +22,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.MockitoAnnotations;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ImmutableArrayValue;
@@ -55,6 +56,7 @@ class FluentdIngesterTest
     void setUp()
             throws Exception
     {
+        MockitoAnnotations.initMocks(this);
         fluentdSender = mock(FluentdSender.class);
     }
 
