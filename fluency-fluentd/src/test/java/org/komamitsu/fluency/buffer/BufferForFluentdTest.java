@@ -59,7 +59,7 @@ class BufferForFluentdTest
     void withFluentdFormat()
             throws IOException, InterruptedException
     {
-        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 200000)) {
+        for (Integer loopCount : Arrays.asList(100, 1000, 10000, 100000)) {
             new BufferTestHelper().baseTestMessageBuffer(loopCount, true, true, false,
                     new Buffer(new Buffer.Config(), fluentdRecordFormatter));
             new BufferTestHelper().baseTestMessageBuffer(loopCount, false, true, false,
