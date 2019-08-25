@@ -200,7 +200,7 @@ For server side configuration, see https://docs.fluentd.org/v1.0/articles/in_for
 //   - Max retry of sending events is 12
 //   - Use JVM heap memory for buffer pool
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-builder.setFlushIntervalMillis(200);
+builder.setFlushAttemptIntervalMillis(200);
 builder.setSenderMaxRetryCount(12);
 builder.setJvmHeapBufferMode(true);
 Fluency fluency = builder.build(

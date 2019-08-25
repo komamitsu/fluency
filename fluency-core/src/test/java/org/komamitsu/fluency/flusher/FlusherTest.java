@@ -54,7 +54,7 @@ class FlusherTest
     void testAsyncFlusher()
             throws IOException, InterruptedException
     {
-        flusherConfig.setFlushIntervalMillis(500);
+        flusherConfig.setFlushAttemptIntervalMillis(500);
 
         Buffer buffer = spy(new Buffer(bufferConfig, new JsonRecordFormatter()));
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
@@ -92,13 +92,13 @@ class FlusherTest
 
         {
             Flusher.Config config = new Flusher.Config();
-            config.setFlushIntervalMillis(19);
+            config.setFlushAttemptIntervalMillis(19);
             assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
         }
 
         {
             Flusher.Config config = new Flusher.Config();
-            config.setFlushIntervalMillis(2001);
+            config.setFlushAttemptIntervalMillis(2001);
             assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
         }
 

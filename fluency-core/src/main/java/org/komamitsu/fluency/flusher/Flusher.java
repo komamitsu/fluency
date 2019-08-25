@@ -61,7 +61,7 @@ public class Flusher
         Boolean wakeup = null;
         do {
             try {
-                wakeup = eventQueue.poll(config.getFlushIntervalMillis(), TimeUnit.MILLISECONDS);
+                wakeup = eventQueue.poll(config.getFlushAttemptIntervalMillis(), TimeUnit.MILLISECONDS);
                 boolean force = wakeup != null;
                 buffer.flush(ingester, force);
             }
@@ -199,9 +199,18 @@ public class Flusher
         return ingester;
     }
 
+    /**
+     * @deprecated  As of release 2.3.3, replaced by {@link #getFlushAttemptIntervalMillis()}
+     */
+    @Deprecated
     public int getFlushIntervalMillis()
     {
-        return config.getFlushIntervalMillis();
+        return config.getFlushAttemptIntervalMillis();
+    }
+
+    public int getFlushAttemptIntervalMillis()
+    {
+        return config.getFlushAttemptIntervalMillis();
     }
 
     public int getWaitUntilBufferFlushed()
@@ -230,20 +239,38 @@ public class Flusher
     {
         @Min(20)
         @Max(2000)
-        private int flushIntervalMillis = 600;
+        private int flushAttemptIntervalMillis = 600;
         @Min(1)
         private int waitUntilBufferFlushed = 60;
         @Min(1)
         private int waitUntilTerminated = 60;
 
+        /**
+         * @deprecated  As of release 2.3.3, replaced by {@link #getFlushAttemptIntervalMillis()}
+         */
+        @Deprecated
         public int getFlushIntervalMillis()
         {
-            return flushIntervalMillis;
+            return flushAttemptIntervalMillis;
         }
 
-        public void setFlushIntervalMillis(int flushIntervalMillis)
+        /**
+         * @deprecated  As of release 2.3.3, replaced by {@link #setFlushAttemptIntervalMillis(int flushAttemptIntervalMillis)}
+         */
+        @Deprecated
+        public void setFlushIntervalMillis(int flushAttemptIntervalMillis)
         {
-            this.flushIntervalMillis = flushIntervalMillis;
+            this.flushAttemptIntervalMillis = flushAttemptIntervalMillis;
+        }
+
+        public int getFlushAttemptIntervalMillis()
+        {
+            return flushAttemptIntervalMillis;
+        }
+
+        public void setFlushAttemptIntervalMillis(int flushAttemptIntervalMillis)
+        {
+            this.flushAttemptIntervalMillis = flushAttemptIntervalMillis;
         }
 
         public int getWaitUntilBufferFlushed()
@@ -275,7 +302,7 @@ public class Flusher
         public String toString()
         {
             return "Config{" +
-                    "flushIntervalMillis=" + flushIntervalMillis +
+                    "flushAttemptIntervalMillis=" + flushAttemptIntervalMillis +
                     ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                     ", waitUntilTerminated=" + waitUntilTerminated +
                     '}';
