@@ -29,7 +29,7 @@ public class FluencyBuilder
     private Integer bufferChunkInitialSize;
     private Integer bufferChunkRetentionSize;
     private Integer bufferChunkRetentionTimeMillis;
-    private Integer flushIntervalMillis;
+    private Integer flushAttemptIntervalMillis;
     private String fileBackupDir;
     private Integer waitUntilBufferFlushed;
     private Integer waitUntilFlusherTerminated;
@@ -78,14 +78,32 @@ public class FluencyBuilder
         this.bufferChunkRetentionTimeMillis = bufferChunkRetentionTimeMillis;
     }
 
+    /**
+     * @deprecated  As of release 2.3.3, replaced by {@link #getFlushAttemptIntervalMillis()}
+     */
+    @Deprecated
     public Integer getFlushIntervalMillis()
     {
-        return flushIntervalMillis;
+        return flushAttemptIntervalMillis;
     }
 
-    public void setFlushIntervalMillis(Integer flushIntervalMillis)
+    /**
+     * @deprecated  As of release 2.3.3, replaced by {@link #setFlushAttemptIntervalMillis(Integer flushAttemptIntervalMillis)}
+     */
+    @Deprecated
+    public void setFlushIntervalMillis(Integer flushAttemptIntervalMillis)
     {
-        this.flushIntervalMillis = flushIntervalMillis;
+        this.flushAttemptIntervalMillis = flushAttemptIntervalMillis;
+    }
+
+    public Integer getFlushAttemptIntervalMillis()
+    {
+        return flushAttemptIntervalMillis;
+    }
+
+    public void setFlushAttemptIntervalMillis(Integer flushAttemptIntervalMillis)
+    {
+        this.flushAttemptIntervalMillis = flushAttemptIntervalMillis;
     }
 
     public String getFileBackupDir()
@@ -146,7 +164,7 @@ public class FluencyBuilder
                 ", bufferChunkInitialSize=" + bufferChunkInitialSize +
                 ", bufferChunkRetentionSize=" + bufferChunkRetentionSize +
                 ", bufferChunkRetentionTimeMillis=" + bufferChunkRetentionTimeMillis +
-                ", flushIntervalMillis=" + flushIntervalMillis +
+                ", flushAttemptIntervalMillis=" + flushAttemptIntervalMillis +
                 ", fileBackupDir='" + fileBackupDir + '\'' +
                 ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                 ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
@@ -207,8 +225,8 @@ public class FluencyBuilder
 
     protected void configureFlusherConfig(Flusher.Config flusherConfig)
     {
-        if (getFlushIntervalMillis() != null) {
-            flusherConfig.setFlushIntervalMillis(getFlushIntervalMillis());
+        if (getFlushAttemptIntervalMillis() != null) {
+            flusherConfig.setFlushAttemptIntervalMillis(getFlushAttemptIntervalMillis());
         }
 
         if (getWaitUntilBufferFlushed() != null) {

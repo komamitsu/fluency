@@ -130,7 +130,7 @@ class FluencyTest
     void testWaitUntilFlushingAllBuffer(int waitUntilFlusherTerm, boolean expected)
             throws IOException, InterruptedException
     {
-        flusherConfig.setFlushIntervalMillis(2000);
+        flusherConfig.setFlushAttemptIntervalMillis(2000);
 
         Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
@@ -151,7 +151,7 @@ class FluencyTest
         bufferConfig.setChunkExpandRatio(2);
         bufferConfig.setMaxBufferSize(256);
         bufferConfig.setChunkRetentionSize(196);
-        flusherConfig.setFlushIntervalMillis(1000);
+        flusherConfig.setFlushAttemptIntervalMillis(1000);
 
         Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, stuckIngester);

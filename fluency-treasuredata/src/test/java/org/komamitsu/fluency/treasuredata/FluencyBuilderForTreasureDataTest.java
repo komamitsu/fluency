@@ -53,7 +53,7 @@ public class FluencyBuilderForTreasureDataTest
     private void assertFlusher(Flusher flusher)
     {
         assertThat(flusher.isTerminated(), is(false));
-        assertThat(flusher.getFlushIntervalMillis(), is(600));
+        assertThat(flusher.getFlushAttemptIntervalMillis(), is(600));
         assertThat(flusher.getWaitUntilBufferFlushed(), is(60));
         assertThat(flusher.getWaitUntilTerminated(), is(60));
     }
@@ -144,7 +144,7 @@ public class FluencyBuilderForTreasureDataTest
         assertThat(tmpdir, is(notNullValue()));
 
         FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
-        builder.setFlushIntervalMillis(200);
+        builder.setFlushAttemptIntervalMillis(200);
         builder.setMaxBufferSize(Long.MAX_VALUE);
         builder.setBufferChunkInitialSize(7 * 1024 * 1024);
         builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
@@ -174,7 +174,7 @@ public class FluencyBuilderForTreasureDataTest
 
             Flusher flusher = fluency.getFlusher();
             assertThat(flusher.isTerminated(), is(false));
-            assertThat(flusher.getFlushIntervalMillis(), is(200));
+            assertThat(flusher.getFlushAttemptIntervalMillis(), is(200));
             assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
             assertThat(flusher.getWaitUntilTerminated(), is(24));
 
