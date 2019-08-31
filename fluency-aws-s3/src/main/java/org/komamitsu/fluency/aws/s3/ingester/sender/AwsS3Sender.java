@@ -47,7 +47,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.TimeUnit;
+import java.time.temporal.ChronoUnit;
 import java.util.zip.GZIPOutputStream;
 
 public class AwsS3Sender
@@ -68,8 +68,8 @@ public class AwsS3Sender
         config.validateValues();
         this.config = config;
         this.retryPolicy =
-                new RetryPolicy().
-                        retryOn(ex -> {
+                new RetryPolicy<Void>().
+                        handleIf(ex -> {
                             if (ex == null) {
                                 // Success. Shouldn't retry.
                                 return false;
@@ -90,7 +90,7 @@ public class AwsS3Sender
                         withBackoff(
                                 getRetryInternalMs(),
                                 getMaxRetryInternalMs(),
-                                TimeUnit.MILLISECONDS,
+                                ChronoUnit.MILLIS,
                                 getRetryFactor()).
                         withMaxRetries(getRetryMax());
 

@@ -44,6 +44,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
@@ -68,8 +69,8 @@ public class TreasureDataSender
         config.validateValues();
         this.config = config;
         this.retryPolicy =
-                new RetryPolicy().
-                        retryOn(ex -> {
+                new RetryPolicy<Void>().
+                        handleIf(ex -> {
                             if (ex == null) {
                                 // Success. Shouldn't retry.
                                 return false;
@@ -90,7 +91,7 @@ public class TreasureDataSender
                         withBackoff(
                                 getRetryInternalMs(),
                                 getMaxRetryInternalMs(),
-                                TimeUnit.MILLISECONDS,
+                                ChronoUnit.MILLIS,
                                 getRetryFactor()).
                         withMaxRetries(getRetryMax());
 
