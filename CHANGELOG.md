@@ -1,3 +1,18 @@
+## 2.4.0 (2019-08-31)
+
+Features:
+
+- Rename `flushIntervalMillis` to `flushAttemptIntervalMillis` in fluency-fluentd
+- Add `senderMaxRetryIntervalMillis` and `senderBaseRetryIntervalMillis` to `FluencyBuilderForFluentd
+
+Security:
+
+- Use jackson-dataformat-msgpack:2.9.9.3 through msgpack-java:0.8.18 to take care of some CVE
+
+Misc:
+
+- Replace JUnit4 tests with JUnit5
+
 ## 2.3.3 (2019-06-19)
 
 Security:
