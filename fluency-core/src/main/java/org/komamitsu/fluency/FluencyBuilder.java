@@ -79,7 +79,7 @@ public class FluencyBuilder
     }
 
     /**
-     * @deprecated  As of release 2.3.3, replaced by {@link #getFlushAttemptIntervalMillis()}
+     * @deprecated  As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()}
      */
     @Deprecated
     public Integer getFlushIntervalMillis()
@@ -88,7 +88,7 @@ public class FluencyBuilder
     }
 
     /**
-     * @deprecated  As of release 2.3.3, replaced by {@link #setFlushAttemptIntervalMillis(Integer flushAttemptIntervalMillis)}
+     * @deprecated  As of release 2.4.0, replaced by {@link #setFlushAttemptIntervalMillis(Integer flushAttemptIntervalMillis)}
      */
     @Deprecated
     public void setFlushIntervalMillis(Integer flushAttemptIntervalMillis)
