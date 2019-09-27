@@ -18,6 +18,7 @@ package org.komamitsu.fluency;
 
 import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.buffer.DefaultBuffer;
+import org.komamitsu.fluency.buffer.SyncBuffer;
 import org.komamitsu.fluency.flusher.Flusher;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.ErrorHandler;
@@ -35,6 +36,7 @@ public class FluencyBuilder
     private Integer waitUntilBufferFlushed;
     private Integer waitUntilFlusherTerminated;
     private Boolean jvmHeapBufferMode;
+    private Boolean useSyncBuffer = false;
     private ErrorHandler errorHandler;
 
     // TODO: Contain sender's retry setting here?
@@ -147,6 +149,16 @@ public class FluencyBuilder
         this.jvmHeapBufferMode = jvmHeapBufferMode;
     }
 
+    public Boolean getUseSyncBuffer()
+    {
+        return useSyncBuffer;
+    }
+
+    public void setUseSyncBuffer(Boolean useSyncBuffer)
+    {
+        this.useSyncBuffer = useSyncBuffer;
+    }
+
     public ErrorHandler getErrorHandler()
     {
         return errorHandler;
@@ -170,6 +182,7 @@ public class FluencyBuilder
                 ", waitUntilBufferFlushed=" + waitUntilBufferFlushed +
                 ", waitUntilFlusherTerminated=" + waitUntilFlusherTerminated +
                 ", jvmHeapBufferMode=" + jvmHeapBufferMode +
+                ", useSyncBuffer=" + useSyncBuffer +
                 ", errorHandler=" + errorHandler +
                 '}';
     }
@@ -186,9 +199,14 @@ public class FluencyBuilder
 
     public Fluency buildFromIngester(RecordFormatter recordFormatter, Ingester ingester)
     {
-        DefaultBuffer.Config bufferConfig = new DefaultBuffer.Config();
-        configureBufferConfig(bufferConfig);
-        Buffer buffer = new DefaultBuffer(bufferConfig, recordFormatter);
+        Buffer buffer;
+        if (useSyncBuffer == null || useSyncBuffer == false) {
+            DefaultBuffer.Config bufferConfig = new DefaultBuffer.Config();
+            configureBufferConfig(bufferConfig);
+            buffer = new DefaultBuffer(bufferConfig, recordFormatter);
+        } else {
+            buffer = new SyncBuffer(ingester, recordFormatter);
+        }
 
         Flusher.Config flusherConfig = new Flusher.Config();
         configureFlusherConfig(flusherConfig);

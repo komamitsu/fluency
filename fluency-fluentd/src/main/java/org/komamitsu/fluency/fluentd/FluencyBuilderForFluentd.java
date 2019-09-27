@@ -46,6 +46,7 @@ public class FluencyBuilderForFluentd
     private boolean sslEnabled;
     private Integer connectionTimeoutMilli;
     private Integer readTimeoutMilli;
+    private Integer backOffMaxIntervalMillis;
 
     public Integer getSenderMaxRetryCount()
     {
@@ -95,6 +96,14 @@ public class FluencyBuilderForFluentd
     public void setSslEnabled(boolean sslEnabled)
     {
         this.sslEnabled = sslEnabled;
+    }
+
+    public Integer getBackOffMaxIntervalMillis() {
+        return backOffMaxIntervalMillis;
+    }
+
+    public void setBackOffMaxIntervalMillis(Integer backOffMaxIntervalMillis) {
+        this.backOffMaxIntervalMillis = backOffMaxIntervalMillis;
     }
 
     public Integer getConnectionTimeoutMilli()
@@ -240,6 +249,10 @@ public class FluencyBuilderForFluentd
 
         if (getSenderMaxRetryIntervalMillis() != null) {
             retryStrategyConfig.setMaxIntervalMillis(getSenderMaxRetryIntervalMillis());
+        }
+
+        if (getBackOffMaxIntervalMillis() != null) {
+            retryStrategyConfig.setMaxIntervalMillis(getBackOffMaxIntervalMillis());
         }
 
         RetryableSender.Config senderConfig = new RetryableSender.Config();
