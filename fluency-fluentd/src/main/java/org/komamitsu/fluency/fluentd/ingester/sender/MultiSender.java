@@ -65,7 +65,7 @@ public class MultiSender
                     return;
                 }
                 catch (IOException e) {
-                    LOG.error("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
+                    LOG.warn("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
                 }
             }
         }
