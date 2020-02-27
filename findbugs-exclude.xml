@@ -18,4 +18,8 @@
     <Match>
         <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
     </Match>
+    <Match>
+        <!-- RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE is from a bug on JDK11? -->
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
 </FindBugsFilter>
