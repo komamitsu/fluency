@@ -83,7 +83,7 @@ public class TCPSender
     protected void sendBuffers(SocketChannel socketChannel, List<ByteBuffer> buffers)
             throws IOException
     {
-        socketChannel.write(buffers.toArray(new ByteBuffer[buffers.size()]));
+        socketChannel.write(buffers.toArray(new ByteBuffer[0]));
     }
 
     @Override

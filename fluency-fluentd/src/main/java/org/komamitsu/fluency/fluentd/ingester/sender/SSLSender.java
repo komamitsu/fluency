@@ -78,13 +78,13 @@ public class SSLSender
     {
         for (ByteBuffer buffer : buffers) {
             OutputStream outputStream = sslSocket.getOutputStream();
-            if (buffer.isDirect()) {
+            if (buffer.hasArray()) {
+                outputStream.write(buffer.array(), buffer.position(), buffer.remaining());
+            }
+            else {
                 byte[] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
                 outputStream.write(bytes);
-            }
-            else {
-                outputStream.write(buffer.array());
             }
         }
     }
