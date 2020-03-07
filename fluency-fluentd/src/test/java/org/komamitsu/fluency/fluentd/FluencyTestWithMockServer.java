@@ -139,41 +139,43 @@ class FluencyTestWithMockServer
     {
         return Stream.of(
                 // TCP
-                new Options(false, false, false, false, false, false), // Normal
-                new Options(true, false, false, false, false, false),  // Failover
-                new Options(false, true, false, true, false, false),   // File backup + Ack response
-                new Options(false, false, true, false, false, false),  // Close instead of flush
-                new Options(false, false, false, true, false, false),  // Ack response
-                new Options(false, false, false, false, true, false),  // Small buffer
-                new Options(true, false, false, false, true, false),   // Failover + Small buffer
-                new Options(false, false, true, false, true, false),   // Close instead of flush + Small buffer
-                new Options(false, false, false, true, true, false),   // Ack response + Small buffer
-                new Options(true, false, true, false, false, false),   // Failover + Close instead of flush
-                new Options(false, true, true, true, false, false),    // File backup + Ack response + Close instead of flush
-                new Options(false, false, true, true, false, false),   // Ack response + Close instead of flush
-                new Options(false, false, false, false, false, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
-                new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
-                new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
-                new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
-                new Options(false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, false, false), // Normal
+                new Options(true, false, false, false, false, false, false),  // Failover
+                new Options(false, true, false, true, false, false, false),   // File backup + Ack response
+                new Options(false, false, true, false, false, false, false),  // Close instead of flush
+                new Options(false, false, false, true, false, false, false),  // Ack response
+                new Options(false, false, false, false, true, false, false),  // Small buffer
+                new Options(false, false, false, false, false, false, true),  // JVM heap
+                new Options(true, false, false, false, true, false, false),   // Failover + Small buffer
+                new Options(false, false, true, false, true, false, false),   // Close instead of flush + Small buffer
+                new Options(false, false, false, true, true, false, false),   // Ack response + Small buffer
+                new Options(true, false, true, false, false, false, false),   // Failover + Close instead of flush
+                new Options(false, true, true, true, false, false, false),    // File backup + Ack response + Close instead of flush
+                new Options(false, false, true, true, false, false, false),   // Ack response + Close instead of flush
+                new Options(false, false, false, false, false, false, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
+                new Options(false, false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
+                new Options(false, false, false, false, false, false, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
                 // SSL
-                new Options(false, false, false, false, false, true), // Normal
-                new Options(true, false, false, false, false, true),  // Failover
-                new Options(false, true, false, true, false, true),   // File backup + Ack response
-                new Options(false, false, true, false, false, true),  // Close instead of flush
-                new Options(false, false, false, true, false, true),  // Ack response
-                new Options(false, false, false, false, true, true),  // Small buffer
-                new Options(true, false, false, false, true, true),   // Failover + Small buffer
-                new Options(false, false, true, false, true, true),   // Close instead of flush + Small buffer
-                new Options(false, false, false, true, true, true),   // Ack response + Small buffer
-                new Options(true, false, true, false, false, true),   // Failover + Close instead of flush
-                new Options(false, true, true, true, false, true),    // File backup + Ack response + Close instead of flush
-                new Options(false, false, true, true, false, true),   // Ack response + Close instead of flush
-                new Options(false, false, false, false, false, true, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
-                new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
-                new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
-                new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
-                new Options(false, false, false, false, false, true, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME) // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, true, false), // Normal
+                new Options(true, false, false, false, false, true, false),  // Failover
+                new Options(false, true, false, true, false, true, false),   // File backup + Ack response
+                new Options(false, false, true, false, false, true, false),  // Close instead of flush
+                new Options(false, false, false, true, false, true, false),  // Ack response
+                new Options(false, false, false, false, true, true, false),  // Small buffer
+                new Options(false, false, false, false, false, true, true),  // JVM heap
+                new Options(true, false, false, false, true, true, false),   // Failover + Small buffer
+                new Options(false, false, true, false, true, true, false),   // Close instead of flush + Small buffer
+                new Options(false, false, false, true, true, true, false),   // Ack response + Small buffer
+                new Options(true, false, true, false, false, true, false),   // Failover + Close instead of flush
+                new Options(false, true, true, true, false, true, false),    // File backup + Ack response + Close instead of flush
+                new Options(false, false, true, true, false, true, false),   // Ack response + Close instead of flush
+                new Options(false, false, false, false, false, true, false, EmitType.MAP_WITH_EVENT_TIME), // EmitType = MAP_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, true, false, EmitType.MSGPACK_MAP_VALUE_BYTES), // EmitType = MSGPACK_MAP_VALUE_BYTES
+                new Options(false, false, false, false, false, true, false, EmitType.MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME), // EmitType = MSGPACK_MAP_VALUE_BYTES_WITH_EVENT_TIME
+                new Options(false, false, false, false, false, true, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER), // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER
+                new Options(false, false, false, false, false, true, false, EmitType.MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME) // EmitType = MSGPACK_MAP_VALUE_BYTEBUFFER_WITH_EVENT_TIME
         );
     }
 
@@ -216,6 +218,9 @@ class FluencyTestWithMockServer
             if (options.fileBackup) {
                 bufferConfig.setFileBackupDir(TMPDIR);
                 bufferConfig.setFileBackupPrefix("testFluencyUsingAsyncFlusher" + options.hashCode());
+            }
+            if (options.jvmHeap) {
+                bufferConfig.setJvmHeapBufferMode(true);
             }
 
             Flusher.Config flusherConfig = new Flusher.Config();
@@ -524,6 +529,7 @@ class FluencyTestWithMockServer
         private final boolean ackResponse;
         private final boolean smallBuffer;
         private final boolean sslEnabled;
+        private final boolean jvmHeap;
         private final EmitType emitType;
 
         Options(
@@ -532,9 +538,10 @@ class FluencyTestWithMockServer
                 boolean closeInsteadOfFlush,
                 boolean ackResponse,
                 boolean smallBuffer,
-                boolean sslEnabled)
+                boolean sslEnabled,
+                boolean jvmHeap)
         {
-            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, sslEnabled, EmitType.MAP);
+            this(failover, fileBackup, closeInsteadOfFlush, ackResponse, smallBuffer, sslEnabled, jvmHeap, EmitType.MAP);
         }
 
         Options(
@@ -544,6 +551,7 @@ class FluencyTestWithMockServer
                 boolean ackResponse,
                 boolean smallBuffer,
                 boolean sslEnabled,
+                boolean jvmHeap,
                 EmitType emitType)
         {
             this.failover = failover;
@@ -552,6 +560,7 @@ class FluencyTestWithMockServer
             this.ackResponse = ackResponse;
             this.smallBuffer = smallBuffer;
             this.sslEnabled = sslEnabled;
+            this.jvmHeap = jvmHeap;
             this.emitType = emitType;
         }
 
