@@ -1,3 +1,9 @@
+## 2.4.1 (2020-03-08)
+
+Bugfixes:
+
+- Fix a bug SSLSender sends wrong size data with JVM heap mode enabled
+
 ## 2.4.0 (2019-08-31)
 
 Features:
