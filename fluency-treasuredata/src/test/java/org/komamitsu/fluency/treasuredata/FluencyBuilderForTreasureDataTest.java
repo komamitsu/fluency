@@ -28,48 +28,47 @@ import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FluencyBuilderForTreasureDataTest
+class FluencyBuilderForTreasureDataTest
 {
     private static final String APIKEY = "12345/1qaz2wsx3edc4rfv5tgb6yhn";
 
     private void assertBuffer(Buffer buffer)
     {
-        assertThat(buffer.getMaxBufferSize(), is(512 * 1024 * 1024L));
-        assertThat(buffer.getFileBackupDir(), is(nullValue()));
-        assertThat(buffer.bufferFormatType(), is("packed_forward"));
-        assertThat(buffer.getChunkExpandRatio(), is(2f));
-        assertThat(buffer.getChunkRetentionSize(), is(64 * 1024 * 1024));
-        assertThat(buffer.getChunkInitialSize(), is(4 * 1024 * 1024));
-        assertThat(buffer.getChunkRetentionTimeMillis(), is(30000));
-        assertThat(buffer.getJvmHeapBufferMode(), is(false));
+        assertEquals(512 * 1024 * 1024L, buffer.getMaxBufferSize());
+        assertNull(buffer.getFileBackupDir());
+        assertEquals("packed_forward", buffer.bufferFormatType());
+        assertEquals(2f, buffer.getChunkExpandRatio());
+        assertEquals(64 * 1024 * 1024, buffer.getChunkRetentionSize());
+        assertEquals(4 * 1024 * 1024, buffer.getChunkInitialSize());
+        assertEquals(30000, buffer.getChunkRetentionTimeMillis());
+        assertFalse(buffer.getJvmHeapBufferMode());
     }
 
     private void assertFlusher(Flusher flusher)
     {
-        assertThat(flusher.isTerminated(), is(false));
-        assertThat(flusher.getFlushAttemptIntervalMillis(), is(600));
-        assertThat(flusher.getWaitUntilBufferFlushed(), is(60));
-        assertThat(flusher.getWaitUntilTerminated(), is(60));
+        assertFalse(flusher.isTerminated());
+        assertEquals(600, flusher.getFlushAttemptIntervalMillis());
+        assertEquals(60, flusher.getWaitUntilBufferFlushed());
+        assertEquals(60, flusher.getWaitUntilTerminated());
     }
 
     private void assertDefaultFluentdSender(
             TreasureDataSender sender,
             String expectedEndpoint,
-            boolean expectedUseSsl,
-            String expectedApiKey)
+            boolean expectedUseSsl)
             throws NoSuchFieldException, IllegalAccessException
     {
-        assertThat(sender.getRetryInternalMs(), is(1000));
-        assertThat(sender.getMaxRetryInternalMs(), is(30000));
-        assertThat(sender.getRetryFactor(), is(2.0f));
-        assertThat(sender.getRetryMax(), is(10));
-        assertThat(sender.getWorkBufSize(), is(8192));
+        assertEquals(1000, sender.getRetryInternalMs());
+        assertEquals(30000, sender.getMaxRetryInternalMs());
+        assertEquals(2.0f, sender.getRetryFactor());
+        assertEquals(10, sender.getRetryMax());
+        assertEquals(8192, sender.getWorkBufSize());
 
         Field httpClientField = TDClient.class.getDeclaredField("httpClient");
         httpClientField.setAccessible(true);
@@ -79,13 +78,13 @@ public class FluencyBuilderForTreasureDataTest
         configField.setAccessible(true);
         TDClientConfig config = (TDClientConfig) configField.get(tdHttpClient);
 
-        assertThat(config.endpoint, is(expectedEndpoint));
-        assertThat(config.useSSL, is(expectedUseSsl));
-        assertThat(config.apiKey.get(), is(expectedApiKey));
+        assertEquals(expectedEndpoint, config.endpoint);
+        assertEquals(expectedUseSsl, config.useSSL);
+        assertEquals(FluencyBuilderForTreasureDataTest.APIKEY, config.apiKey.get());
     }
 
     @Test
-    public void build()
+    void build()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY)) {
@@ -93,12 +92,12 @@ public class FluencyBuilderForTreasureDataTest
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
-                    "api-import.treasuredata.com", true, APIKEY);
+                    "api-import.treasuredata.com", true);
         }
     }
 
     @Test
-    public void buildWithCustomHttpsEndpoint()
+    void buildWithCustomHttpsEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "https://custom.endpoint.org")) {
@@ -106,12 +105,12 @@ public class FluencyBuilderForTreasureDataTest
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
-                    "custom.endpoint.org", true, APIKEY);
+                    "custom.endpoint.org", true);
         }
     }
 
     @Test
-    public void buildWithCustomHttpsEndpointWithoutScheme()
+    void buildWithCustomHttpsEndpointWithoutScheme()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "custom.endpoint.org")) {
@@ -119,12 +118,12 @@ public class FluencyBuilderForTreasureDataTest
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
-                    "custom.endpoint.org", true, APIKEY);
+                    "custom.endpoint.org", true);
         }
     }
 
     @Test
-    public void buildWithCustomHttpEndpoint()
+    void buildWithCustomHttpEndpoint()
             throws IOException, NoSuchFieldException, IllegalAccessException
     {
         try (Fluency fluency = new FluencyBuilderForTreasureData().build(APIKEY, "http://custom.endpoint.org")) {
@@ -132,16 +131,16 @@ public class FluencyBuilderForTreasureDataTest
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender(
                     (TreasureDataSender) fluency.getFlusher().getIngester().getSender(),
-                    "custom.endpoint.org", false, APIKEY);
+                    "custom.endpoint.org", false);
         }
     }
 
     @Test
-    public void buildWithAllCustomConfig()
+    void buildWithAllCustomConfig()
             throws IOException
     {
         String tmpdir = System.getProperty("java.io.tmpdir");
-        assertThat(tmpdir, is(notNullValue()));
+        assertNotNull(tmpdir);
 
         FluencyBuilderForTreasureData builder = new FluencyBuilderForTreasureData();
         builder.setFlushAttemptIntervalMillis(200);
@@ -161,30 +160,30 @@ public class FluencyBuilderForTreasureDataTest
         ;
 
         try (Fluency fluency = builder.build(APIKEY)) {
-            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
+            assertEquals(Buffer.class, fluency.getBuffer().getClass());
             Buffer buffer = fluency.getBuffer();
-            assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
-            assertThat(buffer.getFileBackupDir(), is(tmpdir));
-            assertThat(buffer.bufferFormatType(), is("packed_forward"));
-            assertThat(buffer.getChunkRetentionTimeMillis(), is(19 * 1000));
-            assertThat(buffer.getChunkExpandRatio(), is(2f));
-            assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
-            assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
-            assertThat(buffer.getJvmHeapBufferMode(), is(true));
+            assertEquals(Long.MAX_VALUE, buffer.getMaxBufferSize());
+            assertEquals(tmpdir, buffer.getFileBackupDir());
+            assertEquals("packed_forward", buffer.bufferFormatType());
+            assertEquals(19 * 1000, buffer.getChunkRetentionTimeMillis());
+            assertEquals(2f, buffer.getChunkExpandRatio());
+            assertEquals(7 * 1024 * 1024, buffer.getChunkInitialSize());
+            assertEquals(13 * 1024 * 1024, buffer.getChunkRetentionSize());
+            assertTrue(buffer.getJvmHeapBufferMode());
 
             Flusher flusher = fluency.getFlusher();
-            assertThat(flusher.isTerminated(), is(false));
-            assertThat(flusher.getFlushAttemptIntervalMillis(), is(200));
-            assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
-            assertThat(flusher.getWaitUntilTerminated(), is(24));
+            assertFalse(flusher.isTerminated());
+            assertEquals(200, flusher.getFlushAttemptIntervalMillis());
+            assertEquals(42, flusher.getWaitUntilBufferFlushed());
+            assertEquals(24, flusher.getWaitUntilTerminated());
 
-            assertThat(flusher.getIngester().getSender(), instanceOf(TreasureDataSender.class));
+            assertEquals(TreasureDataSender.class, flusher.getIngester().getSender().getClass());
             TreasureDataSender sender = (TreasureDataSender) flusher.getIngester().getSender();
-            assertThat(sender.getRetryInternalMs(), is(1234));
-            assertThat(sender.getMaxRetryInternalMs(), is(345678));
-            assertThat(sender.getRetryFactor(), is(3.14f));
-            assertThat(sender.getRetryMax(), is(17));
-            assertThat(sender.getWorkBufSize(), is(123456));
+            assertEquals(1234, sender.getRetryInternalMs());
+            assertEquals(345678, sender.getMaxRetryInternalMs());
+            assertEquals(3.14f, sender.getRetryFactor());
+            assertEquals(17, sender.getRetryMax());
+            assertEquals(123456, sender.getWorkBufSize());
         }
     }
 }
