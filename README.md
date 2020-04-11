@@ -102,8 +102,12 @@ FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
 builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
 Fluency fluency = builder.build();
 ```
+#### Buffer configuration
 
-##### Buffer configuration for high throughput data ingestion with high latency
+Fluency has some parameters to configure a flush timing of buffer. This diagram may help to understand it.
+<img src="https://raw.githubusercontent.com/wiki/komamitsu/fluency/images/buffer-flush.png" alt="buffer-flush" width="640"/>
+
+###### For high throughput data ingestion with high latency
 
 ```java
 // Single Fluentd(xxx.xxx.xxx.xxx:24224)
