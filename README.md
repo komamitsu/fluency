@@ -102,7 +102,7 @@ FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
 builder.setFileBackupDir(System.getProperty("java.io.tmpdir"));
 Fluency fluency = builder.build();
 ```
-#### Buffer configuration
+##### Buffer configuration
 
 Fluency has some parameters to configure a flush timing of buffer. This diagram may help to understand it.
 <img src="https://raw.githubusercontent.com/wiki/komamitsu/fluency/images/buffer-flush.png" alt="buffer-flush" width="640"/>
@@ -123,6 +123,7 @@ Fluency fluency = builder.build("xxx.xxx.xxx.xxx", 24224);
 ```
 
 ##### Socket configuration
+
 ```java
 // Single Fluentd(localhost:24224)
 //   - Socket connection timeout is 15000 ms
@@ -146,6 +147,7 @@ Fluency fluency = builder.build();
 ```
 
 ##### Register Jackson modules
+
 ```java
 // Single Fluentd(localhost:24224)
 //   - SimpleModule that has FooSerializer is enabled
@@ -164,6 +166,7 @@ Fluency fluency = new FluencyBuilder().buildFromIngester(
 ```
 
 ##### Set a custom error handler
+
 ```java
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
 builder.setErrorHandler(ex -> {
@@ -237,6 +240,42 @@ EventTime eventTime = EventTime.fromEpoch(epochSeconds, nanoseconds);
 
 fluency.emit(tag, eventTime, event);
 ```
+
+#### Error handling
+
+`Fluency#emit` keeps buffered data in memory even if a retriable exception happens. But in case of buffer full, the method throws `org.komamitsu.fluency.BufferFullException`. There are 2 options to handle the exception.
+
+##### a) Ignore the exception so that main application isn't blocked
+
+```java
+try {
+    fluency.emit(tag, event);
+}
+catch (BufferFullException e) {
+    // Just log the error and move forward
+    logger.warn("Fluency's buffer is full", e);
+}
+```
+
+##### b) Retry until the data is successfully buffered
+
+```java
+// Considering maximum retry count would be also good
+while (true) {
+	try {
+	    fluency.emit(tag, event);
+	    break;
+	}
+	catch (BufferFullException e) {
+	    // Log the error, sleep and retry
+	    logger.warn("Fluency's buffer is full. Retrying", e);
+	    TimeUnit.SECONDS.sleep(5);
+	}
+}
+```
+
+Which to choose depends on how important the data is and how long the application can be blocked.
+
 
 #### Wait until buffered data is flushed and release resource 
 
@@ -427,6 +466,7 @@ Fluency fluency = builder.build();
 ```
 
 ##### AWS S3 configuration
+
 `fluency-aws-s3` follows [default credential provider chain](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html#credentials-default). If you want to explicitly specify credentials, use the following APIs.
 
 ```java
