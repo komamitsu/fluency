@@ -41,11 +41,12 @@ public class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
+    private static final int DEFAULT_EVENT_QUEUE_SIZE = 256;
     protected final Buffer buffer;
     protected final Ingester ingester;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
-    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>(DEFAULT_EVENT_QUEUE_SIZE);
     private final ExecutorService executorService = ExecutorServiceUtils.newSingleThreadDaemonExecutor();
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
@@ -97,13 +98,7 @@ public class Flusher
     @Override
     public void flush()
     {
-        try {
-            eventQueue.put(true);
-        }
-        catch (InterruptedException e) {
-            LOG.warn("Failed to force flushing buffer", e);
-            Thread.currentThread().interrupt();
-        }
+        eventQueue.offer(true);
     }
 
     private void flushBufferQuietly()
