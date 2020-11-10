@@ -22,6 +22,7 @@ import org.komamitsu.fluency.util.ExecutorServiceUtils;
 import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Max;
 import org.komamitsu.fluency.validation.annotation.Min;
+import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +42,13 @@ public class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
+    private static final int QUEUE_MAX_CAPACITY = 64;
+    private static final int QUEUE_AVAILABLE_CAPACITY = 16;
     protected final Buffer buffer;
     protected final Ingester ingester;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final Config config;
-    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Boolean> eventQueue = new LinkedBlockingQueue<>(QUEUE_MAX_CAPACITY);
     private final ExecutorService executorService = ExecutorServiceUtils.newSingleThreadDaemonExecutor();
 
     public Flusher(Config config, Buffer buffer, Ingester ingester)
@@ -94,10 +97,20 @@ public class Flusher
         return buffer;
     }
 
+    @VisibleForTesting
+    int queuedSize()
+    {
+        return QUEUE_MAX_CAPACITY - eventQueue.remainingCapacity();
+    }
+
     @Override
     public void flush()
     {
         try {
+            if (queuedSize() >= QUEUE_AVAILABLE_CAPACITY) {
+                // The queue has enough items to wake up already. Don't need to enqueue a new one.
+                return;
+            }
             eventQueue.put(true);
         }
         catch (InterruptedException e) {

@@ -25,7 +25,9 @@ import org.komamitsu.fluency.ingester.Ingester;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -112,6 +114,24 @@ class FlusherTest
             Flusher.Config config = new Flusher.Config();
             config.setWaitUntilTerminated(0);
             assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
+        }
+    }
+
+    @Test
+    void queueSizeShouldNotExceedLimit()
+    {
+        flusherConfig.setFlushAttemptIntervalMillis(1000);
+
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
+
+        // Just for checking Flusher#queuedSize
+        flusher.flush();
+        assertEquals(1, flusher.queuedSize());
+
+        for (int i = 0; i < 10000; i++) {
+            flusher.flush();
+            assertTrue(flusher.queuedSize() < 20);
         }
     }
 }
