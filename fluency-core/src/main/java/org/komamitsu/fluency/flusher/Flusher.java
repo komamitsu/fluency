@@ -81,7 +81,7 @@ public class Flusher
             // The above run loop can quit without force buffer flush in the following cases
             // - close() is called right after the repeated non-force buffer flush executed in the run loop
             //
-            // In these cases, remaining buffers wont't be flushed.
+            // In these cases, remaining buffers won't be flushed.
             // So force buffer flush is executed here just in case
             try {
                 buffer.flush(ingester, true);
