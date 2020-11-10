@@ -23,9 +23,11 @@ import org.komamitsu.fluency.buffer.Buffer;
 import org.komamitsu.fluency.ingester.Ingester;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -113,5 +115,39 @@ class FlusherTest
             config.setWaitUntilTerminated(0);
             assertThrows(IllegalArgumentException.class, () -> new Flusher(config, buffer, ingester));
         }
+    }
+
+    @Test
+    void queueSizeShouldNotExceedLimit() throws Exception
+    {
+        flusherConfig.setFlushAttemptIntervalMillis(200);
+
+        Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
+        Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
+
+        BlockingQueue<Boolean> eventQueue = (BlockingQueue<Boolean>) extractValue(flusher, "eventQueue");
+
+        int nonZeroCounts = 0;
+        for (int index = 0; index < 10_000; index++) {
+            flusher.flush();
+            if(!eventQueue.isEmpty()) {
+                nonZeroCounts++;
+            }
+            // The eventQueue will always have less that 16 elements (the default max size)
+            assertTrue(eventQueue.size() <= 16);
+        }
+        // The eventQueue will be non empty at least a couple of times
+        assertTrue(nonZeroCounts > 0);
+
+        // Wait for sufficiently long (amount of time > queue poll wait) and the queue should be polled completely to become empty
+        Thread.sleep(1000);
+        assertEquals(0, eventQueue.size());
+    }
+
+    private Object extractValue(Object object, String fieldName) throws Exception
+    {
+        Field field = object.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(object);
     }
 }

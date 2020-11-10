@@ -41,7 +41,7 @@ public class Flusher
         implements Flushable, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
-    private static final int DEFAULT_EVENT_QUEUE_SIZE = 256;
+    private static final int DEFAULT_EVENT_QUEUE_SIZE = 16;
     protected final Buffer buffer;
     protected final Ingester ingester;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
@@ -79,7 +79,7 @@ public class Flusher
             // The above run loop can quit without force buffer flush in the following cases
             // - close() is called right after the repeated non-force buffer flush executed in the run loop
             //
-            // In these cases, remaining buffers wont't be flushed.
+            // In these cases, remaining buffers won't be flushed.
             // So force buffer flush is executed here just in case
             try {
                 buffer.flush(ingester, true);
