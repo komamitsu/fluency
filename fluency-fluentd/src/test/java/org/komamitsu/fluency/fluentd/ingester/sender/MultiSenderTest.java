@@ -187,14 +187,14 @@ class MultiSenderTest
         if (sslEnabled) {
             SSLSender.Config senderConfig0 = new SSLSender.Config();
             senderConfig0.setPort(server0.getLocalPort());
-            senderConfig0.setReadTimeoutMilli(1000);
+            senderConfig0.setReadTimeoutMilli(500);
 
             UDPHeartbeater.Config hbConfig0 = new UDPHeartbeater.Config();
             hbConfig0.setPort(server0.getLocalPort());
 
             SSLSender.Config senderConfig1 = new SSLSender.Config();
             senderConfig1.setPort(server1.getLocalPort());
-            senderConfig1.setReadTimeoutMilli(1000);
+            senderConfig1.setReadTimeoutMilli(500);
 
             UDPHeartbeater.Config hbConfig1 = new UDPHeartbeater.Config();
             hbConfig1.setPort(server1.getLocalPort());
@@ -209,14 +209,14 @@ class MultiSenderTest
         else {
             TCPSender.Config senderConfig0 = new TCPSender.Config();
             senderConfig0.setPort(server0.getLocalPort());
-            senderConfig0.setReadTimeoutMilli(1000);
+            senderConfig0.setReadTimeoutMilli(500);
 
             UDPHeartbeater.Config hbConfig0 = new UDPHeartbeater.Config();
             hbConfig0.setPort(server0.getLocalPort());
 
             TCPSender.Config senderConfig1 = new TCPSender.Config();
             senderConfig1.setPort(server1.getLocalPort());
-            senderConfig1.setReadTimeoutMilli(1000);
+            senderConfig1.setReadTimeoutMilli(500);
 
             UDPHeartbeater.Config hbConfig1 = new UDPHeartbeater.Config();
             hbConfig1.setPort(server0.getLocalPort());
@@ -232,24 +232,29 @@ class MultiSenderTest
         final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
         final AtomicBoolean shouldFailOver = new AtomicBoolean(true);
         for (int i = 0; i < concurency; i++) {
-            senderExecutorService.execute(() -> {
-                try {
-                    byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
+            senderExecutorService.execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try {
+                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
 
-                    for (int j = 0; j < reqNum; j++) {
-                        if (j == reqNum / 2) {
-                            if (shouldFailOver.getAndSet(false)) {
-                                TimeUnit.MILLISECONDS.sleep(100);
-                                LOG.info("Failing over...");
-                                server0.stop();
+                        for (int j = 0; j < reqNum; j++) {
+                            if (j == reqNum / 2) {
+                                if (shouldFailOver.getAndSet(false)) {
+                                    TimeUnit.MILLISECONDS.sleep(100);
+                                    LOG.info("Failing over...");
+                                    server0.stop();
+                                }
                             }
+                            sender.send(ByteBuffer.wrap(bytes));
                         }
-                        sender.send(ByteBuffer.wrap(bytes));
+                        latch.countDown();
                     }
-                    latch.countDown();
-                }
-                catch (Exception e) {
-                    LOG.error("Failed to send", e);
+                    catch (Exception e) {
+                        LOG.error("Failed to send", e);
+                    }
                 }
             });
         }
