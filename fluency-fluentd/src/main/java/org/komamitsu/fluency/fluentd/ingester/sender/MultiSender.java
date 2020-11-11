@@ -53,7 +53,7 @@ public class MultiSender
     {
         for (FluentdSender sender : senders) {
             boolean isAvailable = sender.isAvailable();
-            LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
+//            LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
             if (isAvailable) {
                 try {
                     if (ackToken == null) {
