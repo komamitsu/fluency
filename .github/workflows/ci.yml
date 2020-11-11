@@ -29,4 +29,4 @@ jobs:
     - name: Run tests#1
       run: ./gradlew test -p fluency-fluentd --stacktrace --info --tests org.komamitsu.fluency.fluentd.ingester.sender.MultiSenderTest.testSSLSend
     - name: Run tests#2
-      run: ./gradlew test -p fluency-fluentd --stacktrace --info --tests org.komamitsu.fluency.fluentd.ingester.sender.MultiSenderTest.testSSLSend
+      run: ./gradlew clean test -p fluency-fluentd --stacktrace --info --tests org.komamitsu.fluency.fluentd.ingester.sender.MultiSenderTest.testSSLSend
