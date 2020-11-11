@@ -27,7 +27,7 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests
-      run: ./gradlew test --stacktrace --info --tests org.komamitsu.fluency.fluentd.ingester.sender.MultiSenderTest
+      run: ./gradlew test -p fluency-fluentd --stacktrace --info --tests org.komamitsu.fluency.fluentd.ingester.sender.MultiSenderTest
     - name: Report the results
       run: ./gradlew jacocoTestReport coveralls
 
