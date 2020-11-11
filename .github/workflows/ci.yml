@@ -1,0 +1,23 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java_version: [8, 11]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java_version }}
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Run tests
+      run: ./gradlew check --stacktrace --info
+    - name: Report the results
+      run: ./gradlew jacocoTestReport coveralls
+
