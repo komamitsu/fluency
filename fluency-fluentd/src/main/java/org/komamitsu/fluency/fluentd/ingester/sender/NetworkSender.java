@@ -96,8 +96,8 @@ public abstract class NetworkSender<T>
         long totalDataSize = buffers.stream().mapToInt(ByteBuffer::remaining).sum();
 
         try {
-            LOG.trace("send(): sender.host={}, sender.port={}, totalDataSize={}",
-                    getHost(), getPort(), totalDataSize);
+//            LOG.trace("send(): sender.host={}, sender.port={}, totalDataSize={}",
+//                    getHost(), getPort(), totalDataSize);
             final T socket = getOrCreateSocket();
             sendBuffers(socket, buffers);
 
