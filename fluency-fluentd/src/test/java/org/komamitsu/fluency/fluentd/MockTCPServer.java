@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -104,6 +105,7 @@ public class MockTCPServer
             throws InterruptedException
     {
         for (int i = 0; i < 20; i++) {
+            LOG.debug("lastEventTimeStamp: {}", Instant.ofEpochMilli(lastEventTimeStampMilli.get()));
             if (lastEventTimeStampMilli.get() + 2000 < System.currentTimeMillis()) {
                 return;
             }

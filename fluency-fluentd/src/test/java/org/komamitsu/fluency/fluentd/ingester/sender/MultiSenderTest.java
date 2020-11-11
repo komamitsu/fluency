@@ -263,10 +263,10 @@ class MultiSenderTest
             fail("Sending all requests is timed out");
         }
 
-        sender.close();
-
         server1.waitUntilEventsStop();
         server1.stop();
+
+        sender.close();
 
         int connectCount = 0;
         int closeCount = 0;
