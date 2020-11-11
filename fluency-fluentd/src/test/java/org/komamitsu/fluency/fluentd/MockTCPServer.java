@@ -106,7 +106,7 @@ public class MockTCPServer
     {
         for (int i = 0; i < 20; i++) {
             LOG.debug("lastEventTimeStamp: {}", Instant.ofEpochMilli(lastEventTimeStampMilli.get()));
-            if (lastEventTimeStampMilli.get() + 2000 < System.currentTimeMillis()) {
+            if (lastEventTimeStampMilli.get() + 5000 < System.currentTimeMillis()) {
                 return;
             }
             TimeUnit.MILLISECONDS.sleep(500);
