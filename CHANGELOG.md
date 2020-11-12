@@ -1,3 +1,9 @@
+## 2.5.0 (2020-11-12)
+
+Bugfixes:
+
+- Fix a potential memory leak that could happen when Fluentd keeps down for long time
+
 ## 2.4.1 (2020-03-08)
 
 Bugfixes:
