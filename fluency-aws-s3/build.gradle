@@ -1,7 +1,7 @@
 dependencies {
   implementation project(':fluency-core')
 
-  implementation 'software.amazon.awssdk:s3:2.5.15'
+  implementation 'software.amazon.awssdk:s3:2.15.26'
 }
 
 publishing {
