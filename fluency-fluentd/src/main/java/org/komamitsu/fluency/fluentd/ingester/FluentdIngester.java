@@ -24,13 +24,10 @@ import org.komamitsu.fluency.ingester.sender.Sender;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -38,8 +35,6 @@ import java.util.UUID;
 public class FluentdIngester
         implements Ingester
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FluentdIngester.class);
-    private static final Charset CHARSET = Charset.forName("ASCII");
     private final Config config;
     private final FluentdSender sender;
     private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
@@ -71,12 +66,15 @@ public class FluentdIngester
         ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
 
         if (config.isAckResponseMode()) {
-            byte[] uuidBytes = UUID.randomUUID().toString().getBytes(CHARSET);
-            ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, uuidBytes)));
+            // The spec says to encode a 128 bit value as base64, but fluent-bit currently
+            // uses a 32 char long hex string, so we do the same for now.
+            String token = UUID.randomUUID().toString().replace("-", "");
+
+            ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, token)));
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
             synchronized (sender) {
-                sender.sendWithAck(buffers, uuidBytes);
+                sender.sendWithAck(buffers, token);
             }
         }
         else {

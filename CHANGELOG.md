@@ -1,3 +1,9 @@
+## master - not yet released
+
+Bugfixes:
+
+- The ack token is now encoded as string and not as byte array. See https://github.com/komamitsu/fluency/issues/181 
+
 ## 2.5.0 (2020-11-12)
 
 Bugfixes:

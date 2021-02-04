@@ -32,10 +32,9 @@ import org.msgpack.value.ValueFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,9 +44,8 @@ import static org.mockito.Mockito.verify;
 
 class FluentdIngesterTest
 {
-    private static final Charset CHARSET = Charset.forName("UTF-8");
     private static final String TAG = "foo.bar";
-    private static final byte[] DATA = "hello, world".getBytes(CHARSET);
+    private static final byte[] DATA = "hello, world".getBytes(StandardCharsets.UTF_8);
     @Captor
     public ArgumentCaptor<List<ByteBuffer>> byteBuffersArgumentCaptor;
     private FluentdSender fluentdSender;
@@ -101,7 +99,7 @@ class FluentdIngesterTest
         Ingester ingester = new FluentdIngester(config, fluentdSender);
         ingester.ingest(TAG, ByteBuffer.wrap(DATA));
 
-        ArgumentCaptor<byte[]> ackTokenArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
+        ArgumentCaptor<String> ackTokenArgumentCaptor = ArgumentCaptor.forClass(String.class);
         verify(fluentdSender, times(1))
                 .sendWithAck(byteBuffersArgumentCaptor.capture(), ackTokenArgumentCaptor.capture());
         List<ByteBuffer> byteBuffers = byteBuffersArgumentCaptor.getAllValues().get(0);
@@ -116,12 +114,10 @@ class FluentdIngesterTest
         assertEquals(2, options.size());
         assertEquals(DATA.length, options.get(ValueFactory.newString("size")).asIntegerValue().asInt());
         String ackToken = options.get(ValueFactory.newString("chunk")).asRawValue().asString();
-        UUID uuidFromAckToken = UUID.fromString(ackToken);
 
-        List<byte[]> ackTokenArgumentCaptorAllValues = ackTokenArgumentCaptor.getAllValues();
+        List<String> ackTokenArgumentCaptorAllValues = ackTokenArgumentCaptor.getAllValues();
         assertEquals(1, ackTokenArgumentCaptorAllValues.size());
-        assertEquals(uuidFromAckToken,
-                UUID.fromString(new String(ackTokenArgumentCaptorAllValues.get(0), CHARSET)));
+        assertEquals(ackToken, ackTokenArgumentCaptorAllValues.get(0));
     }
 
     @Test

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -187,7 +188,7 @@ class TCPSenderTest
                 senderConfig.setReadTimeoutMilli(1000);
                 TCPSender sender = new TCPSender(senderConfig);
                 try {
-                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))), "Waiting ack forever".getBytes("UTF-8"));
+                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
                 }
                 catch (Throwable e) {
                     if (e instanceof SocketTimeoutException) {

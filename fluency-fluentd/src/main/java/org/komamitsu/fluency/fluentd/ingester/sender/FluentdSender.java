@@ -56,13 +56,13 @@ public abstract class FluentdSender
         sendInternalWithRestoreBufferPositions(buffers, null);
     }
 
-    public void sendWithAck(List<ByteBuffer> buffers, byte[] ackToken)
+    public void sendWithAck(List<ByteBuffer> buffers, String ackToken)
             throws IOException
     {
         sendInternalWithRestoreBufferPositions(buffers, ackToken);
     }
 
-    private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> buffers, byte[] ackToken)
+    private void sendInternalWithRestoreBufferPositions(List<ByteBuffer> buffers, String ackToken)
             throws IOException
     {
         List<Integer> positions = new ArrayList<>(buffers.size());
@@ -99,7 +99,7 @@ public abstract class FluentdSender
 
     public abstract boolean isAvailable();
 
-    abstract protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+    abstract protected void sendInternal(List<ByteBuffer> buffers, String ackToken)
             throws IOException;
 
     public static class Config

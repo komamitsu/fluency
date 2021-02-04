@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +39,6 @@ public abstract class NetworkSender<T>
         extends FluentdSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkSender.class);
-    private static final Charset CHARSET_FOR_ERRORLOG = Charset.forName("UTF-8");
     private final byte[] optionBuffer = new byte[256];
     private final ExecutorService executorService = ExecutorServiceUtils.newSingleThreadDaemonExecutor();
 
@@ -90,7 +87,7 @@ public abstract class NetworkSender<T>
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
             throws IOException
     {
         long totalDataSize = buffers.stream().mapToInt(ByteBuffer::remaining).sum();
@@ -128,9 +125,8 @@ public abstract class NetworkSender<T>
             }
 
             Response response = objectMapper.readValue(optionBuffer, Response.class);
-            byte[] unpackedToken = response.getAck();
-            if (!Arrays.equals(ackToken, unpackedToken)) {
-                throw new UnmatchedAckException("Ack tokens don't matched: expected=" + new String(ackToken, CHARSET_FOR_ERRORLOG) + ", got=" + new String(unpackedToken, CHARSET_FOR_ERRORLOG));
+            if (!ackToken.equals(response.getAck())) {
+                throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + response.getAck());
             }
         }
         catch (IOException e) {

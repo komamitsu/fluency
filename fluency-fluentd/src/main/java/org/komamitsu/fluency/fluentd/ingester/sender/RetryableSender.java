@@ -61,7 +61,7 @@ public class RetryableSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
             throws IOException
     {
         IOException firstException = null;
