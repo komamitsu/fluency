@@ -37,6 +37,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -48,7 +49,7 @@ public abstract class AbstractFluentdServer
         extends MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFluentdServer.class);
-    private static final Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
     private FluentdEventHandler fluentdEventHandler;
 
     AbstractFluentdServer(boolean sslEnabled)
@@ -90,22 +91,23 @@ public abstract class AbstractFluentdServer
             this.eventHandler = eventHandler;
         }
 
-        private void ack(Socket acceptSocket, byte[] ackResponseToken)
+        private void ack(Socket acceptSocket, String ackResponseToken)
                 throws IOException
         {
+            byte[] ackResponseTokenBytes = ackResponseToken.getBytes(CHARSET);
             ByteBuffer byteBuffer = ByteBuffer.allocate(
                     1 /* map header */ +
                             1 /* key header */ +
                             3 /* key body */ +
                             2 /* value header(including len) */ +
-                            ackResponseToken.length);
+                            ackResponseTokenBytes.length);
 
             byteBuffer.put((byte) 0x81); /* map header */
             byteBuffer.put((byte) 0xA3); /* key header */
             byteBuffer.put("ack".getBytes(CHARSET));    /* key body */
-            byteBuffer.put((byte) 0xC4);
-            byteBuffer.put((byte) ackResponseToken.length);
-            byteBuffer.put(ackResponseToken);
+            byteBuffer.put((byte) 0xD9);
+            byteBuffer.put((byte) ackResponseTokenBytes.length);
+            byteBuffer.put(ackResponseTokenBytes);
             byteBuffer.flip();
             acceptSocket.getOutputStream().write(byteBuffer.array());
         }
@@ -248,8 +250,7 @@ public abstract class AbstractFluentdServer
                         //    "chunk"
                         Value chunk = map.get(KEY_OPTION_CHUNK);
                         if (chunk != null) {
-                            RawValue ackResponseToken = chunk.asRawValue();
-                            ack(acceptSocket, ackResponseToken.asBinaryValue().asByteArray());
+                            ack(acceptSocket, chunk.asStringValue().asString());
                         }
                     }
 

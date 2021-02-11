@@ -48,7 +48,7 @@ public class MultiSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
             throws AllNodesUnavailableException
     {
         for (FluentdSender sender : senders) {

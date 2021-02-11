@@ -19,17 +19,15 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RequestOption
 {
     private final int size;
-    private final byte[] chunk;
+    private final String chunk;
 
     public RequestOption(
             @JsonProperty("size") int size,
-            @JsonProperty("chunk") byte[] chunk)
+            @JsonProperty("chunk") String chunk)
     {
         this.size = size;
         this.chunk = chunk;
@@ -42,7 +40,7 @@ public class RequestOption
     }
 
     @JsonProperty("chunk")
-    public byte[] getChunk()
+    public String getChunk()
     {
         return chunk;
     }
@@ -52,7 +50,7 @@ public class RequestOption
     {
         return "RequestOption{" +
                 "size=" + size +
-                ", chunk=" + Arrays.toString(chunk) +
+                ", chunk=" + chunk +
                 '}';
     }
 }

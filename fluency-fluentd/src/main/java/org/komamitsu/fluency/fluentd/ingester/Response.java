@@ -18,19 +18,17 @@ package org.komamitsu.fluency.fluentd.ingester;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-
 public class Response
 {
-    private final byte[] ack;
+    private final String ack;
 
-    public Response(@JsonProperty("ack") byte[] ack)
+    public Response(@JsonProperty("ack") String ack)
     {
         this.ack = ack;
     }
 
     @JsonProperty("ack")
-    public byte[] getAck()
+    public String getAck()
     {
         return ack;
     }
@@ -39,7 +37,7 @@ public class Response
     public String toString()
     {
         return "ResponseOption{" +
-                "ack=" + Arrays.toString(ack) +
+                "ack=" + ack +
                 '}';
     }
 }

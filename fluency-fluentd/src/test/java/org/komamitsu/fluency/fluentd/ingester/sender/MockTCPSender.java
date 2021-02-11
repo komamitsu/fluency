@@ -42,7 +42,7 @@ public class MockTCPSender
     }
 
     @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
             throws IOException
     {
         assertEquals(3, buffers.size());

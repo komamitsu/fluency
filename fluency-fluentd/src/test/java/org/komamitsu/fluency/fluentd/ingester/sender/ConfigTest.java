@@ -67,7 +67,7 @@ class ConfigTest
         }
 
         @Override
-        protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+        protected void sendInternal(List<ByteBuffer> buffers, String ackToken)
                 throws IOException
         {
             if (shouldFail) {

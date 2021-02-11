@@ -84,7 +84,7 @@ class RetryableSenderTest
         }
 
         @Override
-        protected void sendInternal(List<ByteBuffer> buffers, byte[] ackToken)
+        protected void sendInternal(List<ByteBuffer> buffers, String ackToken)
                 throws IOException
         {
             if (retry < maxFailures) {
