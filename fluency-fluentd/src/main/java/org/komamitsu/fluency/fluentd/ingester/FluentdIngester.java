@@ -66,9 +66,11 @@ public class FluentdIngester
         ByteBuffer headerBuffer = ByteBuffer.wrap(header.toByteArray());
 
         if (config.isAckResponseMode()) {
-            // The spec says to encode a 128 bit value as base64, but fluent-bit currently
-            // uses a 32 char long hex string, so we do the same for now.
-            String token = UUID.randomUUID().toString().replace("-", "");
+            // The spec (https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#entry)
+            // says to encode a 128 bit value as base64, but fluent-bit currently does something different
+            // and in fluent-bit and fluentd there is no validation. So for now we keep it simple, see
+            // discussion on issue #181.
+            String token = UUID.randomUUID().toString();
 
             ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, token)));
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
