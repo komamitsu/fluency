@@ -1,4 +1,4 @@
-## master - not yet released
+## 2.5.1 (2021-02-13)
 
 Bugfixes:
 
