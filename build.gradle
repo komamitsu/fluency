@@ -35,7 +35,7 @@ subprojects {
 
   group = 'org.komamitsu'
   archivesBaseName = 'fluency'
-  version = '2.5.2-SNAPSHOT'
+  apply from: '../version.gradle'
 
   def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
   def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
