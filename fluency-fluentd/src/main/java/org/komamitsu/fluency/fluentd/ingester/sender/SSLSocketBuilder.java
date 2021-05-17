@@ -16,19 +16,15 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 
 public class SSLSocketBuilder
 {
-    private static final String SSL_PROTOCOL = "TLSv1.2";
     private final String host;
     private final int port;
     private final int connectionTimeoutMilli;
@@ -45,29 +41,17 @@ public class SSLSocketBuilder
     public SSLSocket build()
             throws IOException
     {
+        Socket socket = SSLSocketFactory.getDefault().createSocket();
         try {
-            SSLContext sslContext = SSLContext.getInstance(SSL_PROTOCOL);
-            sslContext.init(null, null, new SecureRandom());
-            javax.net.ssl.SSLSocketFactory socketFactory = sslContext.getSocketFactory();
-            Socket socket = new Socket();
-            try {
-                socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
-                socket.setTcpNoDelay(true);
-                socket.setSoTimeout(readTimeoutMilli);
-
-                return (SSLSocket) socketFactory.createSocket(socket, host, port, true);
-            }
-            catch (Throwable e) {
-                socket.close();
-                throw e;
-            }
+            socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
+            socket.setTcpNoDelay(true);
+            socket.setSoTimeout(readTimeoutMilli);
         }
-        catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Failed to get SSLContext", e);
+        catch (Throwable e) {
+            socket.close();
+            throw e;
         }
-        catch (KeyManagementException e) {
-            throw new IllegalStateException("Failed to init SSLContext", e);
-        }
+        return (SSLSocket) socket;
     }
 
     @Override
