@@ -97,8 +97,9 @@ trap 'kill $(cat fluentd.pid)' EXIT
 
 pushd app
 ./gradlew installDist
-JAVA_OPTS='-Djavax.net.ssl.trustStore=../files/truststore.jks -Djavax.net.ssl.keyStorePassword=keypassword -Djavax.net.ssl.keyStore=../files/keystore.jks' \
-    && build/install/fluency-test-mutual-tls/bin/fluency-test-mutual-tls my-server 24224 fluency.test
+
+export JAVA_OPTS='-Djavax.net.ssl.trustStore=../files/truststore.jks -Djavax.net.ssl.keyStorePassword=keypassword -Djavax.net.ssl.keyStore=../files/keystore.jks'
+build/install/fluency-test-mutual-tls/bin/fluency-test-mutual-tls my-server 24224 fluency.test
 popd
 
 sleep 5
