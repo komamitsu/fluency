@@ -28,4 +28,10 @@ jobs:
       run: chmod +x gradlew
     - name: Run tests
       run: ./gradlew check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests using real Fluentd
+      run: |
+        ./gradlew publishToMavenLocal
+        apt-get install td-agent
+        echo "127.0.0.1 my-server" >> /etc/hosts
+        cd test/mutual-tls && ./run.sh
 
