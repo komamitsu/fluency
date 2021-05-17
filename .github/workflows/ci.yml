@@ -30,7 +30,7 @@ jobs:
       run: ./gradlew check jacocoTestReport coveralls --stacktrace --info
     - name: Run tests using real Fluentd
       run: |
-        ./gradlew publishToMavenLocal
+        ./gradlew publishToMavenLocal --stacktrace --info
         apt-get install td-agent
         echo "127.0.0.1 my-server" >> /etc/hosts
         cd test/mutual-tls && ./run.sh
