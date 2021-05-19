@@ -31,8 +31,8 @@ jobs:
     - name: Run tests using real Fluentd
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
-#       sudo apt-get update
-#       sudo apt-get install –no-install-recommends -y td-agent
+        # sudo apt-get update
+        # sudo apt-get install –no-install-recommends -y td-agent
         sudo gem install fluentd --no-doc
         echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd test/mutual-tls && ./run.sh
