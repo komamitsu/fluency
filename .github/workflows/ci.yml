@@ -31,7 +31,7 @@ jobs:
     - name: Run tests using real Fluentd
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
-        apt-get install td-agent
-        echo "127.0.0.1 my-server" >> /etc/hosts
+        sudo apt-get install td-agent
+        echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd test/mutual-tls && ./run.sh
 
