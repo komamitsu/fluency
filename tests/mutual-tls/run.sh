@@ -86,19 +86,19 @@ keytool \
     -file server.crt \
     -alias mytruststore \
     -keystore truststore.jks \
-    -storepass truststorepass
+    -storepass trustpassword
 
 popd
 
 # Start Fluentd as a daemon
 rm -f fluentd.log
 fluentd -d fluentd.pid -c fluentd.conf -l fluentd.log
-trap 'kill $(cat fluentd.pid)' EXIT
+trap 'pkill -F fluentd.pid' EXIT
 
 pushd app
 ./gradlew installDist
 
-export JAVA_OPTS='-Djavax.net.ssl.trustStore=../files/truststore.jks -Djavax.net.ssl.keyStorePassword=keypassword -Djavax.net.ssl.keyStore=../files/keystore.jks'
+export JAVA_OPTS='-Djavax.net.ssl.trustStore=../files/truststore.jks -Djavax.net.ssl.trustStorePassword=trustpassword -Djavax.net.ssl.keyStore=../files/keystore.jks -Djavax.net.ssl.keyStorePassword=keypassword'
 build/install/fluency-test-mutual-tls/bin/fluency-test-mutual-tls my-server 24224 fluency.test
 popd
 
