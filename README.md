@@ -198,6 +198,9 @@ $ keytool -import -file server.crt -alias mytruststore -keystore truststore.jks
 
 For server side configuration, see https://docs.fluentd.org/v1.0/articles/in_forward#how-to-enable-tls/ssl-encryption .
 
+##### Mutual TLS
+
+See [this project](tests/mutual-tls).
 
 ##### Other configurations
 
