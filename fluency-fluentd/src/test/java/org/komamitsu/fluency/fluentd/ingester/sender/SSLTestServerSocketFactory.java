@@ -35,7 +35,7 @@ import java.security.cert.CertificateException;
 
 public class SSLTestServerSocketFactory
 {
-    private static final String KEYSTORE_PASSWORD = "storepassword";
+    private static final String KEYSTORE_PASSWORD = "keypassword";
     private static final String KEY_PASSWORD = "keypassword";
 
     public SSLServerSocket create()
