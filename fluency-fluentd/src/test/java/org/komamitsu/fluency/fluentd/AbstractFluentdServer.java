@@ -150,14 +150,21 @@ public abstract class AbstractFluentdServer
         {
             eventHandler.onClose(acceptSocket);
             FluentdAcceptTask fluentdAcceptTask = fluentdTasks.remove(acceptSocket);
+            if (fluentdAcceptTask == null) {
+                return;
+            }
             try {
-                fluentdAcceptTask.getPipedInputStream().close();
+                if (fluentdAcceptTask.getPipedInputStream() != null) {
+                    fluentdAcceptTask.getPipedInputStream().close();
+                }
             }
             catch (IOException e) {
                 LOG.warn("Failed to close PipedInputStream");
             }
             try {
-                fluentdAcceptTask.getPipedOutputStream().close();
+                if (fluentdAcceptTask.getPipedOutputStream() != null) {
+                    fluentdAcceptTask.getPipedOutputStream().close();
+                }
             }
             catch (IOException e) {
                 LOG.warn("Failed to close PipedOutputStream");
