@@ -274,6 +274,10 @@ public class MockTCPServer
                                 eventHandler.onClose(acceptSocket);
                                 break;
                             }
+                            if (acceptSocket.isClosed()) {
+                                eventHandler.onClose(acceptSocket);
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }

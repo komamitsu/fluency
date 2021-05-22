@@ -28,4 +28,10 @@ jobs:
       run: chmod +x gradlew
     - name: Run tests
       run: ./gradlew check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests using real Fluentd
+      run: |
+        ./gradlew publishToMavenLocal --stacktrace --info
+        sudo gem install fluentd --no-doc
+        echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
+        cd tests/mutual-tls && ./run.sh
 
