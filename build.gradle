@@ -8,12 +8,11 @@ buildscript {
 plugins {
   id 'net.saliman.cobertura' version '4.0.0'
   id 'com.github.kt3k.coveralls' version '2.12.0'
-  // Gradle 5 doesn't support 6.x
-  id "com.github.johnrengelman.shadow" version "5.2.0"
+  id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 allprojects {
-  apply plugin: 'java'
+  apply plugin: 'java-library'
   apply plugin: 'jacoco'
   apply plugin: 'com.github.kt3k.coveralls'
 
@@ -58,37 +57,21 @@ subprojects {
     useJUnitPlatform()
   }
 
+  java {
+    withJavadocJar()
+    withSourcesJar()
+  }
+
   shadowJar {
     relocate 'com.fasterxml.jackson', 'org.komamitsu.thirdparty.jackson'
     classifier = 'shadow'
   }
 
-  task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-  }
-
-  task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-  }
-
-  artifacts {
-    archives javadocJar, sourcesJar, shadowJar
-  }
-
-  signing {
-    sign configurations.archives
-  }
-
   publishing {
     publications {
-      // TODO: Make these simpler...
       mavenJava(MavenPublication) {
         from components.java
-        artifact sourcesJar
-        artifact javadocJar
-        artifact shadowJar
+
         pom {
           name = 'fluency'
           description = "High throughput data ingestion logger to Fluentd and Treasure Data"
@@ -111,30 +94,6 @@ subprojects {
             developerConnection = 'scm:git:git@github.com:komamitsu/fluency.git'
             url = 'https://github.com/komamitsu/fluency'
           }
-          // TODO: Publishing to Nexus should fail without this property conversely
-          if (project.hasProperty('signing.gnupg.keyName')) {
-            withXml {
-              def pomFile = file("${project.buildDir}/generated-pom.xml")
-              writeTo(pomFile)
-              def pomAscFile = signing.sign(pomFile).signatureFiles[0]
-              artifact(pomAscFile) {
-                classifier = null
-                extension = 'pom.asc'
-              }
-            }
-            // create the signed artifacts
-            project.tasks.signArchives.signatureFiles.each {
-              artifact(it) {
-                def matcher = it.file =~ /-(sources|javadoc|shadow)\.jar\.asc$/
-                if (matcher.find()) {
-                  classifier = matcher.group(1)
-                } else {
-                  classifier = null
-                }
-                extension = 'jar.asc'
-              }
-            }
-          }
         }
       }
     }
@@ -150,13 +109,9 @@ subprojects {
       }
     }
   }
-  model {
-    tasks.generatePomFileForMavenJavaPublication {
-        destination = file("$buildDir/generated-pom.xml")
-    }
-    tasks.publishMavenJavaPublicationToMavenRepository {
-        dependsOn project.tasks.signArchives
-    }
+
+  signing {
+    sign publishing.publications.mavenJava
   }
 }
 
