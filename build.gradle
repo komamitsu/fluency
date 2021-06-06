@@ -1,7 +1,6 @@
 buildscript {
   repositories {
     mavenCentral()
-    jcenter()
   }
 }
 
@@ -11,10 +10,18 @@ plugins {
   id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-allprojects {
+subprojects {
   apply plugin: 'java-library'
+  apply plugin: 'idea'
+  apply plugin: 'maven-publish'
+  apply plugin: 'signing'
+  apply plugin: 'com.github.johnrengelman.shadow'
   apply plugin: 'jacoco'
   apply plugin: 'com.github.kt3k.coveralls'
+
+  group = 'org.komamitsu'
+  archivesBaseName = 'fluency'
+  apply from: '../version.gradle'
 
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
@@ -23,20 +30,6 @@ allprojects {
     mavenCentral()
     mavenLocal()
   }
-}
-
-subprojects {
-  apply plugin: 'idea'
-  apply plugin: 'maven-publish'
-  apply plugin: 'signing'
-  apply plugin: 'com.github.johnrengelman.shadow'
-
-  group = 'org.komamitsu'
-  archivesBaseName = 'fluency'
-  apply from: '../version.gradle'
-
-  def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
-  def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
 
   dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
@@ -101,6 +94,10 @@ subprojects {
       maven {
         def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
         def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+
+        def deployUsername = project.hasProperty('ossrhUsername') ? ossrhUsername : ''
+        def deployPassword = project.hasProperty('ossrhPassword') ? ossrhPassword : ''
+
         url = version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
         credentials {
           username = deployUsername
@@ -113,32 +110,32 @@ subprojects {
   signing {
     sign publishing.publications.mavenJava
   }
-}
 
-def publishedProjects = subprojects.findAll()
+  def publishedProjects = subprojects.findAll()
 
-task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
-  description = 'Generates an aggregate report from all subprojects'
+  task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
 
-  dependsOn(publishedProjects.test)
+    dependsOn(publishedProjects.test)
 
-  additionalSourceDirs.from = publishedProjects.sourceSets.main.allSource.srcDirs
-  sourceDirectories.from = publishedProjects.sourceSets.main.allSource.srcDirs
-  classDirectories.from = publishedProjects.sourceSets.main.output
-  executionData.from = files(executionData.findAll { it.exists() })
+    additionalSourceDirs.from = publishedProjects.sourceSets.main.allSource.srcDirs
+    sourceDirectories.from = publishedProjects.sourceSets.main.allSource.srcDirs
+    classDirectories.from = publishedProjects.sourceSets.main.output
+    executionData.from = files(executionData.findAll { it.exists() })
 
-  reports {
-    xml.enabled = true
-    html.enabled = true
+    reports {
+      xml.enabled = true
+      html.enabled = true
+    }
   }
-}
 
-coveralls {
-  sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
-  jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
-}
+  coveralls {
+    sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+  }
 
-tasks.coveralls {
-  dependsOn jacocoRootReport
+  tasks.coveralls {
+    dependsOn jacocoRootReport
+  }
 }
 
