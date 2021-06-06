@@ -170,11 +170,7 @@ task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
   additionalSourceDirs.from = publishedProjects.sourceSets.main.allSource.srcDirs
   sourceDirectories.from = publishedProjects.sourceSets.main.allSource.srcDirs
   classDirectories.from = publishedProjects.sourceSets.main.output
-  executionData.from = publishedProjects.jacocoTestReport.executionData
-
-  doFirst {
-    executionData = files(executionData.findAll { it.exists() })
-  }
+  executionData.from = files(executionData.findAll { it.exists() })
 
   reports {
     xml.enabled = true
