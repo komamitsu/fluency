@@ -111,6 +111,10 @@ subprojects {
     sign publishing.publications.mavenJava
   }
 
+  signMavenJavaPublication.onlyIf {
+    project.hasProperty('signing.gnupg.keyName')
+  }
+
   def publishedProjects = subprojects.findAll()
 
   task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
