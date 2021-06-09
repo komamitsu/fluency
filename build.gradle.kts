@@ -9,10 +9,9 @@ buildscript {
 plugins {
   `java-library`
   idea
-  signing
   jacoco
+  signing
   `maven-publish`
-  id("net.saliman.cobertura") version "4.0.0"
   id("com.github.kt3k.coveralls") version "2.12.0"
   id("com.github.johnrengelman.shadow") version "7.0.0"
 }
@@ -20,6 +19,13 @@ plugins {
 subprojects {
   group = "org.komamitsu"
   apply(from = "../version.gradle")
+  apply(plugin = "java-library")
+  apply(plugin = "idea")
+  apply(plugin = "com.github.johnrengelman.shadow")
+  apply(plugin = "signing")
+  apply(plugin = "maven-publish")
+  apply(plugin = "jacoco")
+  apply(plugin = "com.github.kt3k.coveralls")
 
   repositories {
     mavenCentral()
