@@ -3,11 +3,3 @@ dependencies {
 
   implementation("com.treasuredata.client:td-client:0.9.5")
 }
-
-publishing {
-  publications {
-    create<MavenPublication>("maven") {
-      artifactId = "fluency-treasuredata"
-    }
-  }
-}

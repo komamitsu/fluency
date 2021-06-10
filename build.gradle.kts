@@ -107,19 +107,16 @@ subprojects {
             "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
           })
 
-        val ossrhUsername: String by project
-        val ossrhPassword: String by project
-
         credentials {
           username = if (project.hasProperty("ossrhUsername")) {
-            ossrhUsername
+            project.property("ossrhUsername").toString()
           }
           else {
             ""
           }
 
           password = if (project.hasProperty("ossrhPassword")) {
-            ossrhPassword
+            project.property("ossrhPassword").toString()
           }
           else {
             ""
