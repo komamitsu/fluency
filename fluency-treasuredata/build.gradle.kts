@@ -1,5 +1,5 @@
 dependencies {
-  implementation(project(":fluency-core"))
+  implementation(projects.fluencyCore)
 
   implementation("com.treasuredata.client:td-client:0.9.5")
 }

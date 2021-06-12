@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.komamitsu.fluency.Fluency;
-import org.komamitsu.fluency.TestableFluencyBuilder;
+import org.komamitsu.fluency.FluencyBuilder;
 import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
@@ -245,7 +245,7 @@ class FluencyTest
         FluentdRecordFormatter.Config recordFormatterConfig = new FluentdRecordFormatter.Config();
         recordFormatterConfig.setJacksonModules(Collections.singletonList(simpleModule));
 
-        Fluency fluency = new TestableFluencyBuilder()
+        Fluency fluency = new FluencyBuilder()
                 .buildFromIngester(new FluentdRecordFormatter(recordFormatterConfig), ingester);
 
         Map<String, Object> event = new HashMap<>();
