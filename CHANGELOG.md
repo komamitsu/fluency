@@ -1,3 +1,13 @@
+## 2.6.0 (2021-06-27)
+
+Features:
+
+- Support mutual TLS authentication
+
+Misc:
+
+- Migrate Gradle build scripts to Kotlin DSL
+
 ## 2.5.1 (2021-02-13)
 
 Bugfixes:
