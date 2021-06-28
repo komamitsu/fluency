@@ -128,7 +128,8 @@ subprojects {
 
   signing {
     setRequired(project.hasProperty("signing.gnupg.keyName"))
-    sign("publishing.publications.maven")
+    sign(publishing.publications["maven"])
+    sign(configurations.archives.get())
   }
 
   val publishedProjects = project.subprojects
