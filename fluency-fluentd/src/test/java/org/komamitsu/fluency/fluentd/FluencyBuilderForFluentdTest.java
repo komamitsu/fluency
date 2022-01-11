@@ -30,6 +30,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFai
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
+import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.Flusher;
 
 import java.io.IOException;
@@ -355,5 +356,24 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
         }
+    }
+
+    @Test
+    void defaultRecordFormatter()
+    {
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        assertThat(builder.getRecordFormatter(), instanceOf(FluentdRecordFormatter.class));
+    }
+
+    @Test
+    void customRecordFormatter()
+    {
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setFluentdRecordFormatter(new CustomFluentdRecordFormatter());
+        assertThat(builder.getRecordFormatter(), instanceOf(CustomFluentdRecordFormatter.class));
+    }
+
+    private static class CustomFluentdRecordFormatter extends FluentdRecordFormatter
+    {
     }
 }

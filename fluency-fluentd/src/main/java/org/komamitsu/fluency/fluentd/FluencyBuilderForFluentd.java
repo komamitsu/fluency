@@ -30,7 +30,6 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -46,6 +45,7 @@ public class FluencyBuilderForFluentd
     private boolean sslEnabled;
     private Integer connectionTimeoutMilli;
     private Integer readTimeoutMilli;
+    private FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
 
     public Integer getSenderMaxRetryCount()
     {
@@ -117,24 +117,34 @@ public class FluencyBuilderForFluentd
         this.readTimeoutMilli = readTimeoutMilli;
     }
 
+    public FluentdRecordFormatter getRecordFormatter()
+    {
+        return recordFormatter;
+    }
+
+    public void setFluentdRecordFormatter(FluentdRecordFormatter recordFormatter)
+    {
+        this.recordFormatter = recordFormatter;
+    }
+
     public Fluency build(String host, int port)
     {
         return buildFromIngester(
-                buildRecordFormatter(),
+                recordFormatter,
                 buildIngester(createBaseSender(host, port)));
     }
 
     public Fluency build(int port)
     {
         return buildFromIngester(
-                buildRecordFormatter(),
+                recordFormatter,
                 buildIngester(createBaseSender(null, port)));
     }
 
     public Fluency build()
     {
         return buildFromIngester(
-                buildRecordFormatter(),
+                recordFormatter,
                 buildIngester(createBaseSender(null, null)));
     }
 
@@ -145,7 +155,7 @@ public class FluencyBuilderForFluentd
             senders.add(createBaseSender(server.getHostName(), server.getPort(), true));
         }
         return buildFromIngester(
-                buildRecordFormatter(),
+                recordFormatter,
                 buildIngester(new MultiSender(senders)));
     }
 
@@ -218,11 +228,6 @@ public class FluencyBuilderForFluentd
                 ", ackResponseMode=" + ackResponseMode +
                 ", sslEnabled=" + sslEnabled +
                 "} " + super.toString();
-    }
-
-    private RecordFormatter buildRecordFormatter()
-    {
-        return new FluentdRecordFormatter();
     }
 
     private Ingester buildIngester(FluentdSender baseSender)
