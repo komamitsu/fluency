@@ -122,7 +122,7 @@ public class FluencyBuilderForFluentd
         return recordFormatter;
     }
 
-    public void setFluentdRecordFormatter(FluentdRecordFormatter recordFormatter)
+    public void setRecordFormatter(FluentdRecordFormatter recordFormatter)
     {
         this.recordFormatter = recordFormatter;
     }

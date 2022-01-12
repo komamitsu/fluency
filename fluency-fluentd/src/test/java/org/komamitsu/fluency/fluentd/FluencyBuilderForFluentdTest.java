@@ -369,7 +369,7 @@ class FluencyBuilderForFluentdTest
     void customRecordFormatter()
     {
         FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-        builder.setFluentdRecordFormatter(new CustomFluentdRecordFormatter());
+        builder.setRecordFormatter(new CustomFluentdRecordFormatter());
         assertThat(builder.getRecordFormatter(), instanceOf(CustomFluentdRecordFormatter.class));
     }
 
