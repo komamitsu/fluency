@@ -36,7 +36,7 @@ subprojects {
     implementation("org.slf4j:slf4j-api:1.7.32")
     implementation("org.msgpack:jackson-dataformat-msgpack:0.9.0")
     implementation("org.komamitsu:phi-accural-failure-detector:0.0.5")
-    implementation("net.jodah:failsafe:2.4.0")
+    implementation("net.jodah:failsafe:2.4.4")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.2")
