@@ -44,7 +44,7 @@ subprojects {
     testImplementation("ch.qos.logback:logback-classic:1.2.5")
     testImplementation("org.hamcrest:hamcrest-all:1.3")
     testImplementation("org.mockito:mockito-core:4.2.0")
-    testImplementation("com.google.guava:guava:30.1.1-jre")
+    testImplementation("com.google.guava:guava:31.0.1-jre")
   }
 
   base {
