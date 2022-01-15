@@ -13,7 +13,7 @@ plugins {
   signing
   `maven-publish`
   id("com.github.kt3k.coveralls") version "2.12.0"
-  id("com.github.johnrengelman.shadow") version "7.0.0"
+  id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 subprojects {
