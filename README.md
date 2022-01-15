@@ -153,16 +153,14 @@ Fluency fluency = builder.build();
 //   - SimpleModule that has FooSerializer is enabled
 SimpleModule simpleModule = new SimpleModule();
 simpleModule.addSerializer(Foo.class, new FooSerializer());
-
 FluentdRecordFormatter.Config recordFormatterConfig =
 	new FluentdRecordFormatter.Config();
-
 recordFormatterConfig.setJacksonModules(
 	Collections.singletonList(simpleModule));
+FluencyBuilderForFluentd builder = new FluencyBuilder();
+builder.setRecordFormatter(new FluentdRecordFormatter(recordFormatterConfig));
 
-Fluency fluency = new FluencyBuilder().buildFromIngester(
-        new FluentdRecordFormatter(recordFormatterConfig),
-        new FluentdIngester(new TCPSender());
+Fluency fluency = builder.build();
 ```
 
 ##### Set a custom error handler
