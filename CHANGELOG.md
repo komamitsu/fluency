@@ -1,3 +1,9 @@
+## 2.6.1 (2022-01-15)
+
+Features:
+
+- Add `FluencyBuilderForFluentd#setRecordFormatter()`
+
 ## 2.6.0 (2021-06-27)
 
 Features:
