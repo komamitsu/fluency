@@ -39,7 +39,7 @@ subprojects {
     implementation("net.jodah:failsafe:2.4.4")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.8.2")
     testImplementation("ch.qos.logback:logback-classic:1.2.10")
     testImplementation("org.hamcrest:hamcrest-all:1.3")
