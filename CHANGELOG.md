@@ -1,3 +1,9 @@
+## 2.6.2 (2022-01-25)
+
+Bugfix:
+
+- Rebuild with Java 8
+
 ## 2.6.1 (2022-01-15)
 
 Features:
