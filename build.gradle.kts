@@ -65,6 +65,7 @@ subprojects {
 
   tasks.withType<ShadowJar> {
     relocate("com.fasterxml.jackson", "org.komamitsu.thirdparty.jackson")
+    relocate("org.msgpack.jackson", "org.komamitsu.thirdparty.msgpack.jackson")
     classifier = "shadow"
   }
 
