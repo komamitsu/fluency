@@ -1,3 +1,9 @@
+## 2.6.3 (2022-02-03)
+
+Misc:
+
+- Shade jackson-dataformat-msgpack
+
 ## 2.6.2 (2022-01-25)
 
 Bugfix:
