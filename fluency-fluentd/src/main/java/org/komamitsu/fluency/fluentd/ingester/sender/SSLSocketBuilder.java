@@ -30,15 +30,15 @@ public class SSLSocketBuilder
     private final int port;
     private final int connectionTimeoutMilli;
     private final int readTimeoutMilli;
-    private final SocketFactory sslSocketFactory;
+    private final SSLSocketFactory sslSocketFactory;
 
-    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SSLSocketFactory sslSocketFactory)
+    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SocketFactory sslSocketFactory)
     {
         this.host = host;
         this.port = port;
         this.connectionTimeoutMilli = connectionTimeoutMilli;
         this.readTimeoutMilli = readTimeoutMilli;
-        this.sslSocketFactory = sslSocketFactory;
+        this.sslSocketFactory = (SSLSocketFactory)sslSocketFactory;
     }
 
     public SSLSocket build()
