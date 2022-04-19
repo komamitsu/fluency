@@ -32,6 +32,7 @@ import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 
 import java.net.InetSocketAddress;
+import javax.net.SocketFactory;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +44,7 @@ public class FluencyBuilderForFluentd
     private Integer senderMaxRetryIntervalMillis;
     private boolean ackResponseMode;
     private boolean sslEnabled;
+    private SocketFactory sslSocketFactory;
     private Integer connectionTimeoutMilli;
     private Integer readTimeoutMilli;
     private FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
@@ -95,6 +97,10 @@ public class FluencyBuilderForFluentd
     public void setSslEnabled(boolean sslEnabled)
     {
         this.sslEnabled = sslEnabled;
+    }
+
+    public void setSslSocketFactory(SocketFactory sslSocketFactory) {
+        this.sslSocketFactory = sslSocketFactory;
     }
 
     public Integer getConnectionTimeoutMilli()
@@ -179,10 +185,18 @@ public class FluencyBuilderForFluentd
             if (port != null) {
                 senderConfig.setPort(port);
             }
+            if (sslSocketFactory != null) {
+                senderConfig.setSslSocketFactory(sslSocketFactory);
+            }
             if (withHeartBeater) {
                 SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config();
                 hbConfig.setHost(host);
                 hbConfig.setPort(port);
+
+                if (sslSocketFactory != null) {
+                    hbConfig.setSslSocketFactory(sslSocketFactory);
+                }
+
                 SSLHeartbeater heartbeater = new SSLHeartbeater(hbConfig);
                 failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
             }

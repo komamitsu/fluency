@@ -20,6 +20,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetect
 import org.komamitsu.fluency.validation.Validatable;
 
 import javax.net.ssl.SSLSocket;
+import javax.net.SocketFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,11 +55,13 @@ public class SSLSender
     {
         super(config, failureDetector);
         config.validateValues();
+
         socketBuilder = new SSLSocketBuilder(
                 config.getHost(),
                 config.getPort(),
                 config.getConnectionTimeoutMilli(),
-                config.getReadTimeoutMilli());
+                config.getReadTimeoutMilli(),
+                config.getSslSocketFactory());
         this.config = config;
     }
 
@@ -124,6 +127,16 @@ public class SSLSender
         void validateValues()
         {
             validate();
+        }
+
+        private SocketFactory sslSocketFactory = SocketFactory.getDefault();
+
+        public SocketFactory getSslSocketFactory() {
+            return sslSocketFactory;
+        }
+
+        public void setSslSocketFactory(SocketFactory sslSocketFactory) {
+            this.sslSocketFactory = sslSocketFactory;
         }
     }
 }
