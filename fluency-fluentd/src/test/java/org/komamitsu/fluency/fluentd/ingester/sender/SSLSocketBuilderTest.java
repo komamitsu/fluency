@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -82,7 +83,7 @@ class SSLSocketBuilderTest
             }
         });
 
-        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000).build();
+        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, (SSLSocketFactory) SSLSocketFactory.getDefault()).build();
 
         try {
             OutputStream outputStream = sslSocket.getOutputStream();

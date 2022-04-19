@@ -33,6 +33,7 @@ import org.komamitsu.fluency.ingester.Ingester;
 
 import java.net.InetSocketAddress;
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class FluencyBuilderForFluentd
     private Integer senderMaxRetryIntervalMillis;
     private boolean ackResponseMode;
     private boolean sslEnabled;
-    private SocketFactory sslSocketFactory;
+    private SSLSocketFactory sslSocketFactory;
     private Integer connectionTimeoutMilli;
     private Integer readTimeoutMilli;
     private FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
@@ -99,7 +100,7 @@ public class FluencyBuilderForFluentd
         this.sslEnabled = sslEnabled;
     }
 
-    public void setSslSocketFactory(SocketFactory sslSocketFactory) {
+    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
         this.sslSocketFactory = sslSocketFactory;
     }
 

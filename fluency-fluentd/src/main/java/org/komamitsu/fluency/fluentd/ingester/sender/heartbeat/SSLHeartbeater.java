@@ -104,13 +104,13 @@ public class SSLHeartbeater
             this.readTimeoutMilli = readTimeoutMilli;
         }
 
-        private SocketFactory sslSocketFactory = SSLSocketFactory.getDefault();
+        private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 
-        public SocketFactory getSslSocketFactory() {
+        public SSLSocketFactory getSslSocketFactory() {
             return sslSocketFactory;
         }
 
-        public void setSslSocketFactory(SocketFactory sslSocketFactory) {
+        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
             this.sslSocketFactory = sslSocketFactory;
         }
 

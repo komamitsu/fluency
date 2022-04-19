@@ -17,6 +17,7 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.SocketFactory;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class SSLSocketBuilder
     private final int readTimeoutMilli;
     private final SocketFactory sslSocketFactory;
 
-    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SocketFactory sslSocketFactory)
+    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SSLSocketFactory sslSocketFactory)
     {
         this.host = host;
         this.port = port;
