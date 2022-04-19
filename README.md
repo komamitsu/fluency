@@ -185,6 +185,10 @@ fluency.emit("foo.bar", event);
 //   - Enable SSL/TLS
 FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
 builder.setSslEnabled(true);
+
+// Or, provide your own SSLSocketFactory at runtime (replace with your own)
+builder.setSslSocketFactory(SSLSocketFactory.getDefault())
+
 Fluency fluency = builder.build();
 ```
 
