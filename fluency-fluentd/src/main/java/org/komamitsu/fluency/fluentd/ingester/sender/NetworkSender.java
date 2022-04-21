@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLSocketFactory;
 
 public abstract class NetworkSender<T>
         extends FluentdSender

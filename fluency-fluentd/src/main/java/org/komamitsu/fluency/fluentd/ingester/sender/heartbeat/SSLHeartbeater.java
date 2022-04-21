@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.SocketFactory;
 
 import java.io.IOException;
 
@@ -106,11 +105,13 @@ public class SSLHeartbeater
 
         private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 
-        public SSLSocketFactory getSslSocketFactory() {
+        public SSLSocketFactory getSslSocketFactory()
+        {
             return sslSocketFactory;
         }
 
-        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
+        {
             this.sslSocketFactory = sslSocketFactory;
         }
 

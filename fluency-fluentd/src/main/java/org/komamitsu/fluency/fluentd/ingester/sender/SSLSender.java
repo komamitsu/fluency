@@ -21,7 +21,6 @@ import org.komamitsu.fluency.validation.Validatable;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.SocketFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -132,11 +131,13 @@ public class SSLSender
 
         private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 
-        public SSLSocketFactory getSslSocketFactory() {
+        public SSLSocketFactory getSslSocketFactory()
+        {
             return sslSocketFactory;
         }
 
-        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
+        {
             this.sslSocketFactory = sslSocketFactory;
         }
     }

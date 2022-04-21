@@ -32,7 +32,6 @@ import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
 
 import java.net.InetSocketAddress;
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import java.util.ArrayList;
 import java.util.List;
