@@ -99,7 +99,8 @@ public class FluencyBuilderForFluentd
         this.sslEnabled = sslEnabled;
     }
 
-    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
+    {
         this.sslSocketFactory = sslSocketFactory;
     }
 
