@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import java.io.IOException;
 
@@ -44,10 +45,12 @@ public class SSLHeartbeater
         config.validateValues();
         this.config = config;
         sslSocketBuilder = new SSLSocketBuilder(
-                config.getHost(),
-                config.getPort(),
-                config.connectionTimeoutMilli,
-                config.readTimeoutMilli);
+            config.getHost(),
+            config.getPort(),
+            config.connectionTimeoutMilli,
+            config.readTimeoutMilli,
+            config.getSslSocketFactory()
+        );
     }
 
     @Override
@@ -98,6 +101,18 @@ public class SSLHeartbeater
         public void setReadTimeoutMilli(int readTimeoutMilli)
         {
             this.readTimeoutMilli = readTimeoutMilli;
+        }
+
+        private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+
+        public SSLSocketFactory getSslSocketFactory()
+        {
+            return sslSocketFactory;
+        }
+
+        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
+        {
+            this.sslSocketFactory = sslSocketFactory;
         }
 
         void validateValues()

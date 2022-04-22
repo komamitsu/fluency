@@ -18,6 +18,7 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.SocketFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,19 +30,21 @@ public class SSLSocketBuilder
     private final int port;
     private final int connectionTimeoutMilli;
     private final int readTimeoutMilli;
+    private final SSLSocketFactory sslSocketFactory;
 
-    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli)
+    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SocketFactory sslSocketFactory)
     {
         this.host = host;
         this.port = port;
         this.connectionTimeoutMilli = connectionTimeoutMilli;
         this.readTimeoutMilli = readTimeoutMilli;
+        this.sslSocketFactory = (SSLSocketFactory)sslSocketFactory;
     }
 
     public SSLSocket build()
             throws IOException
     {
-        Socket socket = SSLSocketFactory.getDefault().createSocket();
+        Socket socket = this.sslSocketFactory.createSocket();
         try {
             socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
             socket.setTcpNoDelay(true);

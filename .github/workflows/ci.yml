@@ -33,6 +33,7 @@ jobs:
     - name: Run tests using real Fluentd
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
+        sudo gem install yajl-ruby -v 1.4.1
         sudo gem install fluentd --no-doc
         echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd tests/mutual-tls && ./run.sh
