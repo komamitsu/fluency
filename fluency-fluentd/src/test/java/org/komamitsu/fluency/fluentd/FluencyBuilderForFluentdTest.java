@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency.fluentd;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
@@ -33,6 +34,8 @@ import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRet
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.flusher.Flusher;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -42,6 +45,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class FluencyBuilderForFluentdTest
 {
@@ -184,6 +194,26 @@ class FluencyBuilderForFluentdTest
                     54321,
                     SSLSender.class);
         }
+    }
+
+    @Test
+    void buildWithSslSocketFactory()
+            throws IOException
+    {
+        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+        builder.setSslEnabled(true);
+        SSLSocketFactory sslSocketFactory = mock(SSLSocketFactory.class);
+        SSLSocket socket = mock(SSLSocket.class);
+        RuntimeException expectedException = new RuntimeException("Expected");
+        doThrow(expectedException).when(socket).connect(any(InetSocketAddress.class), anyInt());
+        doNothing().when(socket).close();
+        doReturn(socket).when(sslSocketFactory).createSocket();
+        builder.setSslSocketFactory(sslSocketFactory);
+        builder.setSenderMaxRetryCount(0);
+        try (Fluency fluency = builder.build("192.168.0.99", 54321)) {
+            fluency.emit("mytag", ImmutableMap.of("hello", "world"));
+        }
+        verify(socket).connect(any(InetSocketAddress.class), anyInt());
     }
 
     @Test
