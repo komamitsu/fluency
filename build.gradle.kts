@@ -109,15 +109,15 @@ subprojects {
           })
 
         credentials {
-          username = if (project.hasProperty("org.gradle.project.ossrhUsername")) {
-            project.property("org.gradle.project.ossrhUsername").toString()
+          username = if (project.hasProperty("ossrhUsername")) {
+            project.property("ossrhUsername").toString()
           }
           else {
             ""
           }
 
-          password = if (project.hasProperty("org.gradle.project.ossrhPassword")) {
-            project.property("org.gradle.project.ossrhPassword").toString()
+          password = if (project.hasProperty("ossrhPassword")) {
+            project.property("ossrhPassword").toString()
           }
           else {
             ""
@@ -131,10 +131,10 @@ subprojects {
     if (project.hasProperty("signing.gnupg.keyName")) {
       setRequired(true)
     }
-    else if (project.hasProperty("org.gradle.project.signingKey")) {
-      val signingKeyId = project.property("org.gradle.project.signingKeyId").toString()
-      val signingKey = project.property("org.gradle.project.signingKey").toString()
-      val signingPassword = project.property("org.gradle.project.signingPassword").toString()
+    else if (project.hasProperty("signingKey")) {
+      val signingKeyId = project.property("signingKeyId").toString()
+      val signingKey = project.property("signingKey").toString()
+      val signingPassword = project.property("signingPassword").toString()
       useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
       setRequired(true)
     }
