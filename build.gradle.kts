@@ -109,15 +109,15 @@ subprojects {
           })
 
         credentials {
-          username = if (project.hasProperty("ossrhUsername")) {
-            project.property("ossrhUsername").toString()
+          username = if (project.hasProperty("org.gradle.project.ossrhUsername")) {
+            project.property("org.gradle.project.ossrhUsername").toString()
           }
           else {
             ""
           }
 
-          password = if (project.hasProperty("ossrhPassword")) {
-            project.property("ossrhPassword").toString()
+          password = if (project.hasProperty("org.gradle.project.ossrhPassword")) {
+            project.property("org.gradle.project.ossrhPassword").toString()
           }
           else {
             ""
@@ -131,14 +131,12 @@ subprojects {
     if (project.hasProperty("signing.gnupg.keyName")) {
       setRequired(true)
     }
-    else {
-      val signingKeyId: String? by project
-      val signingKey: String? by project
-      val signingPassword: String? by project
-      if (signingKeyId != null) {
-        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-        setRequired(true)
-      }
+    else if (project.hasProperty("org.gradle.project.signingKey")) {
+      val signingKeyId = project.property("org.gradle.project.signingKeyId").toString()
+      val signingKey = project.property("org.gradle.project.signingKey").toString()
+      val signingPassword = project.property("org.gradle.project.signingPassword").toString()
+      useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+      setRequired(true)
     }
     sign(publishing.publications["maven"])
     sign(configurations.archives.get())
