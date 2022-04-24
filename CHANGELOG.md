@@ -1,3 +1,9 @@
+## 2.6.4 (2022-04-24)
+
+Features:
+
+- Add `FluencyBuilderForFluentd#setSslSocketFactory()`
+
 ## 2.6.3 (2022-02-03)
 
 Misc:
