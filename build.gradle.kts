@@ -128,7 +128,19 @@ subprojects {
   }
 
   signing {
-    setRequired(project.hasProperty("signing.gnupg.keyName"))
+    if (project.hasProperty("signing.gnupg.keyName")) {
+      setRequired(true)
+    }
+    else if (project.hasProperty("signingKey")) {
+      val signingKeyId = project.property("signingKeyId").toString()
+      val signingKey = project.property("signingKey").toString()
+      val signingPassword = project.property("signingPassword").toString()
+      useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+      setRequired(true)
+    }
+    else {
+      setRequired(false)
+    }
     sign(publishing.publications["maven"])
     sign(configurations.archives.get())
   }

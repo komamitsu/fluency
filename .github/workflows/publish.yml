@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Apache Maven Central
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 8
+    - name: Publish to Apache Maven Central
+      run: ./gradlew publish
+      env:
+        ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
+        ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
+        ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PGP_KEY_ID }}
+        ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PGP_SECRET }}
+        ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PGP_PASSPHRASE }}
+
