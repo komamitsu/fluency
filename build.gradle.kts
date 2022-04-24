@@ -138,6 +138,9 @@ subprojects {
       useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
       setRequired(true)
     }
+    else {
+      setRequired(false)
+    }
     sign(publishing.publications["maven"])
     sign(configurations.archives.get())
   }
