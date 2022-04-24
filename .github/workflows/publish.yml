@@ -14,7 +14,7 @@ jobs:
         distribution: temurin
         java-version: 8
     - name: Publish to Apache Maven Central
-      run: ./gradlew publish
+      run: ./gradlew publish --info --stacktrace
       env:
         ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
         ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
