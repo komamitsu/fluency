@@ -1,6 +1,7 @@
 name: Release
 
-# TODO: Restict triggers
+# FIXME
+on: [push]
 
 jobs:
   build:
