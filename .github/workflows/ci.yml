@@ -8,9 +8,7 @@ on:
 
 jobs:
   build:
-    # With ubuntu-latest (20.04), some tests using self signed SSL cert suddenly failed at version 20210614.1.
-    # The issue may be fixed later, but I'll use ubuntu-18.04 for a while as a workaround.
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         java_version: [8, 11]
