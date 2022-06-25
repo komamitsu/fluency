@@ -63,7 +63,7 @@ subprojects {
     useJUnitPlatform()
 
     // jvmArgs("-Djavax.net.debug=ssl")
-    jvmArgs("-Djava.security.debug=all")
+    jvmArgs("-Djava.security.debug=certpath")
   }
 
   tasks.withType<ShadowJar> {
