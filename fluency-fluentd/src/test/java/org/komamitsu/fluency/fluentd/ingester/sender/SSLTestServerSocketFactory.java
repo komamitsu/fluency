@@ -25,12 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 
 public class SSLTestServerSocketFactory
@@ -38,8 +33,24 @@ public class SSLTestServerSocketFactory
     private static final String KEYSTORE_PASSWORD = "keypassword";
     private static final String KEY_PASSWORD = "keypassword";
 
-    public SSLServerSocket create()
-            throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException
+    private static final SSLContext SSL_CONTEXT;
+    private static final GeneralSecurityException SSL_CONTEXT_EXCEPTION;
+    static {
+        SSLContext sslContext = null;
+        GeneralSecurityException sslContextException = null;
+        try {
+            sslContext = sslContext();
+        } catch (IOException e) {
+            sslContextException = new KeyStoreException(e.getMessage(), e);
+        } catch (GeneralSecurityException e) {
+            sslContextException = e;
+        }
+        SSL_CONTEXT = sslContext;
+        SSL_CONTEXT_EXCEPTION = sslContextException;
+    }
+
+    private static SSLContext sslContext()
+            throws IOException, GeneralSecurityException
     {
         String trustStorePath = SSLSocketBuilder.class.getClassLoader().getResource("truststore.jks").getFile();
         System.getProperties().setProperty("javax.net.ssl.trustStore", trustStorePath);
@@ -49,7 +60,7 @@ public class SSLTestServerSocketFactory
         InputStream keystoreStream = null;
         try {
             KeyStore keystore = KeyStore.getInstance("JKS");
-            keystoreStream = new FileInputStream(new File(keyStorePath));
+            keystoreStream = new FileInputStream(keyStorePath);
 
             keystore.load(keystoreStream, KEYSTORE_PASSWORD.toCharArray());
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -59,16 +70,25 @@ public class SSLTestServerSocketFactory
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
 
-            SSLServerSocket serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket();
-            serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
-            serverSocket.bind(new InetSocketAddress(0));
-
-            return serverSocket;
+            return sslContext;
         }
         finally {
             if (keystoreStream != null) {
                 keystoreStream.close();
             }
         }
+    }
+
+    public SSLServerSocket create()
+            throws IOException, GeneralSecurityException
+    {
+        if (SSL_CONTEXT_EXCEPTION != null) {
+            throw SSL_CONTEXT_EXCEPTION;
+        }
+        SSLServerSocket serverSocket = (SSLServerSocket) SSL_CONTEXT.getServerSocketFactory().createServerSocket();
+        serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
+        serverSocket.bind(new InetSocketAddress(0));
+
+        return serverSocket;
     }
 }

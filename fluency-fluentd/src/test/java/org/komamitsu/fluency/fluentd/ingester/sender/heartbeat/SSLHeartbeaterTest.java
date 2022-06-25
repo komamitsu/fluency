@@ -24,10 +24,7 @@ import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -45,7 +42,7 @@ public class SSLHeartbeaterTest
 
     @BeforeEach
     void setUp()
-            throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException
+            throws IOException, GeneralSecurityException
     {
         sslServerSocket = new SSLTestServerSocketFactory().create();
 
