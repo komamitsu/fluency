@@ -100,50 +100,6 @@ class FluencyBuilderForFluentdTest
         assertThat(failureDetector, is(nullValue()));
     }
 
-    @Test
-    void build()
-            throws IOException
-    {
-        try (Fluency fluency = new FluencyBuilderForFluentd().build()) {
-            assertBuffer(fluency.getBuffer());
-            assertFlusher(fluency.getFlusher());
-            assertDefaultFluentdSender(
-                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
-                    "127.0.0.1",
-                    24224,
-                    TCPSender.class);
-        }
-    }
-
-    @Test
-    void buildWithCustomPort()
-            throws IOException
-    {
-        try (Fluency fluency = new FluencyBuilderForFluentd().build(54321)) {
-            assertBuffer(fluency.getBuffer());
-            assertFlusher(fluency.getFlusher());
-            assertDefaultFluentdSender(
-                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
-                    "127.0.0.1",
-                    54321,
-                    TCPSender.class);
-        }
-    }
-
-    @Test
-    void buildWithCustomHostAndPort()
-            throws IOException
-    {
-        try (Fluency fluency = new FluencyBuilderForFluentd().build("192.168.0.99", 54321)) {
-            assertBuffer(fluency.getBuffer());
-            assertFlusher(fluency.getFlusher());
-            assertDefaultFluentdSender(
-                    (FluentdSender) fluency.getFlusher().getIngester().getSender(),
-                    "192.168.0.99",
-                    54321,
-                    TCPSender.class);
-        }
-    }
 
     @Test
     void buildWithSsl()
@@ -214,101 +170,6 @@ class FluencyBuilderForFluentdTest
             fluency.emit("mytag", ImmutableMap.of("hello", "world"));
         }
         verify(socket).connect(any(InetSocketAddress.class), anyInt());
-    }
-
-    @Test
-    void buildWithComplexConfig()
-            throws IOException
-    {
-        String tmpdir = System.getProperty("java.io.tmpdir");
-        assertThat(tmpdir, is(notNullValue()));
-
-        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-        builder.setFlushAttemptIntervalMillis(200);
-        builder.setMaxBufferSize(Long.MAX_VALUE);
-        builder.setBufferChunkInitialSize(7 * 1024 * 1024);
-        builder.setBufferChunkRetentionSize(13 * 1024 * 1024);
-        builder.setBufferChunkRetentionTimeMillis(19 * 1000);
-        builder.setJvmHeapBufferMode(true);
-        builder.setSenderMaxRetryCount(99);
-        builder.setSenderBaseRetryIntervalMillis(20);
-        builder.setSenderMaxRetryIntervalMillis(100000);
-        builder.setConnectionTimeoutMilli(12345);
-        builder.setReadTimeoutMilli(9876);
-        builder.setAckResponseMode(true);
-        builder.setWaitUntilBufferFlushed(42);
-        builder.setWaitUntilFlusherTerminated(24);
-        builder.setFileBackupDir(tmpdir);
-
-        try (Fluency fluency = builder.build(
-                Arrays.asList(
-                        new InetSocketAddress("333.333.333.333", 11111),
-                        new InetSocketAddress("444.444.444.444", 22222)))) {
-
-            assertThat(fluency.getBuffer(), instanceOf(Buffer.class));
-            Buffer buffer = fluency.getBuffer();
-            assertThat(buffer.getMaxBufferSize(), is(Long.MAX_VALUE));
-            assertThat(buffer.getFileBackupDir(), is(tmpdir));
-            assertThat(buffer.bufferFormatType(), is("packed_forward"));
-            assertThat(buffer.getChunkRetentionTimeMillis(), is(19 * 1000));
-            assertThat(buffer.getChunkExpandRatio(), is(2f));
-            assertThat(buffer.getChunkInitialSize(), is(7 * 1024 * 1024));
-            assertThat(buffer.getChunkRetentionSize(), is(13 * 1024 * 1024));
-            assertThat(buffer.getJvmHeapBufferMode(), is(true));
-
-            Flusher flusher = fluency.getFlusher();
-            assertThat(flusher.isTerminated(), is(false));
-            assertThat(flusher.getFlushAttemptIntervalMillis(), is(200));
-            assertThat(flusher.getWaitUntilBufferFlushed(), is(42));
-            assertThat(flusher.getWaitUntilTerminated(), is(24));
-
-            assertThat(flusher.getIngester().getSender(), instanceOf(RetryableSender.class));
-            RetryableSender retryableSender = (RetryableSender) flusher.getIngester().getSender();
-            assertThat(retryableSender.getRetryStrategy(), instanceOf(ExponentialBackOffRetryStrategy.class));
-            ExponentialBackOffRetryStrategy retryStrategy = (ExponentialBackOffRetryStrategy) retryableSender.getRetryStrategy();
-            assertThat(retryStrategy.getMaxRetryCount(), is(99));
-            assertThat(retryStrategy.getBaseIntervalMillis(), is(20));
-            assertThat(retryStrategy.getMaxIntervalMillis(), is(100000));
-
-            assertThat(retryableSender.getBaseSender(), instanceOf(MultiSender.class));
-            MultiSender multiSender = (MultiSender) retryableSender.getBaseSender();
-            assertThat(multiSender.getSenders().size(), is(2));
-
-            assertThat(multiSender.getSenders().get(0), instanceOf(TCPSender.class));
-            {
-                TCPSender sender = (TCPSender) multiSender.getSenders().get(0);
-                assertThat(sender.getHost(), is("333.333.333.333"));
-                assertThat(sender.getPort(), is(11111));
-                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
-                assertThat(sender.getReadTimeoutMilli(), is(9876));
-
-                FailureDetector failureDetector = sender.getFailureDetector();
-                assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
-                assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
-                assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("333.333.333.333"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(11111));
-                assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
-            }
-
-            assertThat(multiSender.getSenders().get(1), instanceOf(TCPSender.class));
-            {
-                TCPSender sender = (TCPSender) multiSender.getSenders().get(1);
-                assertThat(sender.getHost(), is("444.444.444.444"));
-                assertThat(sender.getPort(), is(22222));
-                assertThat(sender.getConnectionTimeoutMilli(), is(12345));
-                assertThat(sender.getReadTimeoutMilli(), is(9876));
-
-
-                FailureDetector failureDetector = sender.getFailureDetector();
-                assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
-                assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
-                assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("444.444.444.444"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(22222));
-                assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
-            }
-        }
     }
 
     @Test
@@ -386,21 +247,6 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
         }
-    }
-
-    @Test
-    void defaultRecordFormatter()
-    {
-        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-        assertThat(builder.getRecordFormatter(), instanceOf(FluentdRecordFormatter.class));
-    }
-
-    @Test
-    void customRecordFormatter()
-    {
-        FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-        builder.setRecordFormatter(new CustomFluentdRecordFormatter());
-        assertThat(builder.getRecordFormatter(), instanceOf(CustomFluentdRecordFormatter.class));
     }
 
     private static class CustomFluentdRecordFormatter extends FluentdRecordFormatter
