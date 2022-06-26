@@ -124,7 +124,8 @@ public class SSLSender
             extends NetworkSender.Config
             implements Validatable
     {
-        private static final SSLSocketFactory DEFUALT_SSL_SOCKET_FACTORY = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        public static final SSLSocketFactory DEFUALT_SSL_SOCKET_FACTORY = (SSLSocketFactory) SSLSocketFactory.getDefault();
+
         void validateValues()
         {
             validate();

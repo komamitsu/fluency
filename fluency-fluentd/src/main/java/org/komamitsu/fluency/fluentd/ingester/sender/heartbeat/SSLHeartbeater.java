@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
+import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSocketBuilder;
 import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Min;
@@ -103,7 +104,8 @@ public class SSLHeartbeater
             this.readTimeoutMilli = readTimeoutMilli;
         }
 
-        private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        // private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        private SSLSocketFactory sslSocketFactory = SSLSender.Config.DEFUALT_SSL_SOCKET_FACTORY;
 
         public SSLSocketFactory getSslSocketFactory()
         {
