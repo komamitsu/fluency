@@ -87,6 +87,7 @@ public class MockTCPServer
         if (serverTask == null) {
             serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
                     sslEnabled ? new SSLTestServerSocketFactory().create() : new ServerSocket());
+Thread.sleep(1000);
             executorService.execute(serverTask);
         }
 
