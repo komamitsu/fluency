@@ -57,56 +57,6 @@ class MultiSenderTest
     }
 
     @Test
-    void testConstructorForTCPSender()
-            throws IOException
-    {
-        MultiSender multiSender = null;
-        try {
-            TCPSender.Config senderConfig0 = new TCPSender.Config();
-            senderConfig0.setPort(24225);
-
-            TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
-            hbConfig0.setPort(24225);
-
-            TCPSender.Config senderConfig1 = new TCPSender.Config();
-            senderConfig1.setHost("0.0.0.0");
-            senderConfig1.setPort(24226);
-
-            TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
-            hbConfig1.setHost("0.0.0.0");
-            hbConfig1.setPort(24226);
-
-            multiSender = new MultiSender(new MultiSender.Config(),
-                    Arrays.asList(
-                            new TCPSender(senderConfig0,
-                                    createFailureDetector(new TCPHeartbeater(hbConfig0))),
-                            new TCPSender(senderConfig1,
-                                    createFailureDetector(new TCPHeartbeater(hbConfig1)))));
-
-            assertThat(multiSender.toString().length(), greaterThan(0));
-
-            assertEquals(2, multiSender.getSenders().size());
-
-            TCPSender tcpSender = (TCPSender) multiSender.getSenders().get(0);
-            assertEquals("127.0.0.1", tcpSender.getHost());
-            assertEquals(24225, tcpSender.getPort());
-            assertEquals("127.0.0.1", tcpSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24225, tcpSender.getFailureDetector().getHeartbeater().getPort());
-
-            tcpSender = (TCPSender) multiSender.getSenders().get(1);
-            assertEquals("0.0.0.0", tcpSender.getHost());
-            assertEquals(24226, tcpSender.getPort());
-            assertEquals("0.0.0.0", tcpSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24226, tcpSender.getFailureDetector().getHeartbeater().getPort());
-        }
-        finally {
-            if (multiSender != null) {
-                multiSender.close();
-            }
-        }
-    }
-
-    @Test
     void testConstructorForSSLSender()
             throws IOException
     {
@@ -154,13 +104,6 @@ class MultiSenderTest
                 multiSender.close();
             }
         }
-    }
-
-    @Test
-    void testTCPSend()
-            throws Exception
-    {
-        testSend(false);
     }
 
     @Test
