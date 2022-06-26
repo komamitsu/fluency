@@ -16,6 +16,9 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -30,6 +33,7 @@ import java.security.cert.CertificateException;
 
 public class SSLTestServerSocketFactory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SSLTestServerSocketFactory.class);
     private static final String KEYSTORE_PASSWORD = "keypassword";
     private static final String KEY_PASSWORD = "keypassword";
 
@@ -41,8 +45,10 @@ public class SSLTestServerSocketFactory
         try {
             sslContext = sslContext();
         } catch (IOException e) {
+            LOG.error("Failed to initialize SSL context", e);
             sslContextException = new KeyStoreException(e.getMessage(), e);
         } catch (GeneralSecurityException e) {
+            LOG.error("Failed to initialize SSL context", e);
             sslContextException = e;
         }
         SSL_CONTEXT = sslContext;
@@ -52,6 +58,7 @@ public class SSLTestServerSocketFactory
     private static SSLContext sslContext()
             throws IOException, GeneralSecurityException
     {
+        LOG.info("Creating SSL context");
         String trustStorePath = SSLSocketBuilder.class.getClassLoader().getResource("truststore.jks").getFile();
         System.getProperties().setProperty("javax.net.ssl.trustStore", trustStorePath);
 
@@ -70,6 +77,8 @@ public class SSLTestServerSocketFactory
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
 
+            LOG.info("Created SSL context");
+
             return sslContext;
         }
         finally {
@@ -82,12 +91,16 @@ public class SSLTestServerSocketFactory
     public SSLServerSocket create()
             throws IOException, GeneralSecurityException
     {
+        LOG.info("Creating SSL server socket factory");
+
         if (SSL_CONTEXT_EXCEPTION != null) {
             throw SSL_CONTEXT_EXCEPTION;
         }
         SSLServerSocket serverSocket = (SSLServerSocket) SSL_CONTEXT.getServerSocketFactory().createServerSocket();
         serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
         serverSocket.bind(new InetSocketAddress(0));
+
+        LOG.info("Created SSL server socket factory");
 
         return serverSocket;
     }
