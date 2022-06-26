@@ -57,6 +57,56 @@ class MultiSenderTest
     }
 
     @Test
+    void testConstructorForSSLSender()
+            throws IOException
+    {
+        MultiSender multiSender = null;
+        try {
+            SSLSender.Config senderConfig0 = new SSLSender.Config();
+            senderConfig0.setPort(24225);
+
+            SSLHeartbeater.Config hbConfig0 = new SSLHeartbeater.Config();
+            hbConfig0.setPort(24225);
+
+            SSLSender.Config senderConfig1 = new SSLSender.Config();
+            senderConfig1.setHost("0.0.0.0");
+            senderConfig1.setPort(24226);
+
+            SSLHeartbeater.Config hbConfig1 = new SSLHeartbeater.Config();
+            hbConfig1.setHost("0.0.0.0");
+            hbConfig1.setPort(24226);
+
+            multiSender = new MultiSender(new MultiSender.Config(),
+                    Arrays.asList(
+                            new SSLSender(senderConfig0,
+                                    createFailureDetector(new SSLHeartbeater(hbConfig0))),
+                            new SSLSender(senderConfig1,
+                                    createFailureDetector(new SSLHeartbeater(hbConfig1)))));
+
+            assertThat(multiSender.toString().length(), greaterThan(0));
+
+            assertEquals(2, multiSender.getSenders().size());
+
+            SSLSender sslSender = (SSLSender) multiSender.getSenders().get(0);
+            assertEquals("127.0.0.1", sslSender.getHost());
+            assertEquals(24225, sslSender.getPort());
+            assertEquals("127.0.0.1", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24225, sslSender.getFailureDetector().getHeartbeater().getPort());
+
+            sslSender = (SSLSender) multiSender.getSenders().get(1);
+            assertEquals("0.0.0.0", sslSender.getHost());
+            assertEquals(24226, sslSender.getPort());
+            assertEquals("0.0.0.0", sslSender.getFailureDetector().getHeartbeater().getHost());
+            assertEquals(24226, sslSender.getFailureDetector().getHeartbeater().getPort());
+        }
+        finally {
+            if (multiSender != null) {
+                multiSender.close();
+            }
+        }
+    }
+
+    @Test
     void testSSLSend()
             throws Exception
     {
