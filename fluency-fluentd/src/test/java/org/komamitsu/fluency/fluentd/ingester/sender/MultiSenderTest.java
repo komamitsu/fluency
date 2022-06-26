@@ -56,7 +56,6 @@ class MultiSenderTest
         return new FailureDetector(new PhiAccrualFailureDetectStrategy(), hb);
     }
 
-    /*
     @Test
     void testConstructorForSSLSender()
             throws IOException
@@ -106,7 +105,6 @@ class MultiSenderTest
             }
         }
     }
-     */
 
     @Test
     void testSSLSend()
