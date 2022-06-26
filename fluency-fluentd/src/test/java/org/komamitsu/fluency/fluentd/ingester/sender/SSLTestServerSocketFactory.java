@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -94,9 +95,14 @@ public class SSLTestServerSocketFactory
         LOG.info("Creating SSL server socket factory");
 
         if (SSL_CONTEXT_EXCEPTION != null) {
+            LOG.warn("Throwing the error");
             throw SSL_CONTEXT_EXCEPTION;
         }
-        SSLServerSocket serverSocket = (SSLServerSocket) SSL_CONTEXT.getServerSocketFactory().createServerSocket();
+        SSLServerSocketFactory serverSocketFactory = SSL_CONTEXT.getServerSocketFactory();
+        LOG.info("The SSL context is " + SSL_CONTEXT);
+        LOG.info("The server socket factory is " + serverSocketFactory);
+        SSLServerSocket serverSocket = (SSLServerSocket) serverSocketFactory.createServerSocket();
+        LOG.info("The server socket is " + serverSocket);
         serverSocket.setEnabledCipherSuites(serverSocket.getSupportedCipherSuites());
         serverSocket.bind(new InetSocketAddress(0));
 
