@@ -27,6 +27,7 @@ import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -51,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class SSLSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
+    private static final SSLSocketFactory SSL_SOCKET_FACTORY = new SSLTestClientSocketFactory().create();
 
     @Test
     void testSend()
@@ -59,6 +61,7 @@ class SSLSenderTest
         testSendBase(port -> {
             SSLSender.Config config = new SSLSender.Config();
             config.setPort(port);
+            config.setSslSocketFactory(SSL_SOCKET_FACTORY);
             return new SSLSender(config);
         }, is(1), is(1));
     }
@@ -73,6 +76,7 @@ class SSLSenderTest
             hbConfig.setIntervalMillis(400);
             SSLSender.Config senderConfig = new SSLSender.Config();
             senderConfig.setPort(port);
+            senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
             return new SSLSender(senderConfig,
                     new FailureDetector(
                             new PhiAccrualFailureDetectStrategy(),
@@ -81,7 +85,7 @@ class SSLSenderTest
     }
 
     private void testSendBase(
-            SSLSenderCreater sslSenderCreater,
+            SSLSenderCreator sslSenderCreator,
             Matcher<? super Integer> connectCountMatcher,
             Matcher<? super Integer> closeCountMatcher)
             throws Exception
@@ -92,7 +96,7 @@ class SSLSenderTest
         int concurency = 20;
         final int reqNum = 5000;
         final CountDownLatch latch = new CountDownLatch(concurency);
-        SSLSender sender = sslSenderCreater.create(server.getLocalPort());
+        SSLSender sender = sslSenderCreator.create(server.getLocalPort());
 
         // To receive heartbeat at least once
         TimeUnit.MILLISECONDS.sleep(500);
@@ -157,6 +161,7 @@ class SSLSenderTest
             SSLSender.Config senderConfig = new SSLSender.Config();
             senderConfig.setHost("192.0.2.0");
             senderConfig.setConnectionTimeoutMilli(1000);
+            senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
             SSLSender sender = new SSLSender(senderConfig);
             try {
                 sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
@@ -187,6 +192,7 @@ class SSLSenderTest
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
                 senderConfig.setReadTimeoutMilli(1000);
+                senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
                 SSLSender sender = new SSLSender(senderConfig);
                 try {
                     sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
@@ -221,6 +227,7 @@ class SSLSenderTest
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
                 senderConfig.setWaitBeforeCloseMilli(1500);
+                senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
                 SSLSender sender = new SSLSender(senderConfig);
                 long start;
                 try {
@@ -273,7 +280,7 @@ class SSLSenderTest
         }
     }
 
-    interface SSLSenderCreater
+    interface SSLSenderCreator
     {
         SSLSender create(int port);
     }
