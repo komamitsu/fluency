@@ -43,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
 
 class SSLSocketBuilderTest
 {
@@ -84,7 +85,7 @@ class SSLSocketBuilderTest
             }
         });
 
-        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, SSLSocketFactory.getDefault()).build();
+        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, SSL_SOCKET_FACTORY).build();
 
         try {
             OutputStream outputStream = sslSocket.getOutputStream();
