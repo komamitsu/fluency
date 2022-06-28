@@ -27,7 +27,6 @@ import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -48,11 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
 
 class SSLSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLSenderTest.class);
-    private static final SSLSocketFactory SSL_SOCKET_FACTORY = new SSLTestClientSocketFactory().create();
 
     @Test
     void testSend()

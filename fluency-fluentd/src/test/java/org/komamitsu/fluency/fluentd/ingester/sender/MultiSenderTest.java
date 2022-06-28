@@ -29,7 +29,6 @@ import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -47,11 +46,11 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
 
 class MultiSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiSenderTest.class);
-    private static final SSLSocketFactory SSL_SOCKET_FACTORY = new SSLTestClientSocketFactory().create();
 
     private FailureDetector createFailureDetector(Heartbeater hb)
     {

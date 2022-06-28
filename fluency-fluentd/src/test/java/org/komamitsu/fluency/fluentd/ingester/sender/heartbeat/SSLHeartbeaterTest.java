@@ -19,7 +19,7 @@ package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
+import org.komamitsu.fluency.fluentd.SSLTestServerSocketFactory;
 
 import javax.net.ssl.SSLServerSocket;
 

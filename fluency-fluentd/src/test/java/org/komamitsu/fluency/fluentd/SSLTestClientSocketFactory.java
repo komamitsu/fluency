@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.komamitsu.fluency.fluentd.ingester.sender;
+package org.komamitsu.fluency.fluentd;
+
+import org.komamitsu.fluency.fluentd.ingester.sender.SSLSocketBuilder;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
@@ -24,6 +26,7 @@ import java.security.*;
 public class SSLTestClientSocketFactory
 {
     private static final String TRUSTSTORE_PASSWORD = "trustpassword";
+    public static final SSLSocketFactory SSL_SOCKET_FACTORY = new SSLTestClientSocketFactory().create();
 
     public SSLSocketFactory create()
     {

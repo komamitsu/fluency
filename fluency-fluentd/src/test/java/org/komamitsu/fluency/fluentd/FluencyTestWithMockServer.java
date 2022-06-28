@@ -37,7 +37,6 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -63,13 +62,13 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
 
 class FluencyTestWithMockServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(FluencyTestWithMockServer.class);
     private static final int SMALL_BUF_SIZE = 4 * 1024 * 1024;
     private static final String TMPDIR = System.getProperty("java.io.tmpdir");
-    private static final SSLSocketFactory SSL_SOCKET_FACTORY = new SSLTestClientSocketFactory().create();
 
     private FailureDetector createFailureDetector(Heartbeater hb)
     {
