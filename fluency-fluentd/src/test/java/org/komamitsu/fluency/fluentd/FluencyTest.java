@@ -57,7 +57,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 import static org.mockito.Mockito.mock;
 
 class FluencyTest
@@ -125,7 +125,7 @@ class FluencyTest
                     FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
                     builder.setSslEnabled(sslEnabled);
                     if (sslEnabled) {
-                        builder.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                        builder.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                     }
 
                     try (Fluency fluency = builder.build(serverPort)) {
@@ -157,7 +157,7 @@ class FluencyTest
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
                     if (sslEnabled) {
-                        builder.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                        builder.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                     }
 
                     try (Fluency fluency = builder.build(serverPort)) {
@@ -196,7 +196,7 @@ class FluencyTest
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
                     if (sslEnabled) {
-                        builder.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                        builder.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                     }
 
                     try (Fluency fluency = builder.build(serverPort)) {
@@ -236,7 +236,7 @@ class FluencyTest
                     builder.setSslEnabled(sslEnabled);
                     builder.setAckResponseMode(true);
                     if (sslEnabled) {
-                        builder.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                        builder.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                     }
 
                     try (Fluency fluency = builder.build(serverPort)) {

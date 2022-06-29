@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class SSLSenderTest
 {
@@ -60,7 +60,7 @@ class SSLSenderTest
         testSendBase(port -> {
             SSLSender.Config config = new SSLSender.Config();
             config.setPort(port);
-            config.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            config.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
             return new SSLSender(config);
         }, is(1), is(1));
     }
@@ -75,7 +75,7 @@ class SSLSenderTest
             hbConfig.setIntervalMillis(400);
             SSLSender.Config senderConfig = new SSLSender.Config();
             senderConfig.setPort(port);
-            senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
             return new SSLSender(senderConfig,
                     new FailureDetector(
                             new PhiAccrualFailureDetectStrategy(),
@@ -160,7 +160,7 @@ class SSLSenderTest
             SSLSender.Config senderConfig = new SSLSender.Config();
             senderConfig.setHost("192.0.2.0");
             senderConfig.setConnectionTimeoutMilli(1000);
-            senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
             SSLSender sender = new SSLSender(senderConfig);
             try {
                 sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
@@ -191,7 +191,7 @@ class SSLSenderTest
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
                 senderConfig.setReadTimeoutMilli(1000);
-                senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                 SSLSender sender = new SSLSender(senderConfig);
                 try {
                     sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
@@ -226,7 +226,7 @@ class SSLSenderTest
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
                 senderConfig.setWaitBeforeCloseMilli(1500);
-                senderConfig.setSslSocketFactory(SSL_SOCKET_FACTORY);
+                senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                 SSLSender sender = new SSLSender(senderConfig);
                 long start;
                 try {

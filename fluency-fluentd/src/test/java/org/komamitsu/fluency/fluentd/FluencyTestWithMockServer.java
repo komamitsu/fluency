@@ -62,7 +62,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class FluencyTestWithMockServer
 {
@@ -108,7 +108,7 @@ class FluencyTestWithMockServer
     {
         SSLSender.Config config = new SSLSender.Config();
         config.setPort(port);
-        config.setSslSocketFactory(SSL_SOCKET_FACTORY);
+        config.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
         return new SSLSender(config);
     }
 
@@ -116,14 +116,14 @@ class FluencyTestWithMockServer
     {
         SSLSender.Config config0 = new SSLSender.Config();
         config0.setPort(firstPort);
-        config0.setSslSocketFactory(SSL_SOCKET_FACTORY);
+        config0.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
         TCPHeartbeater.Config hbConfig0 = new TCPHeartbeater.Config();
         hbConfig0.setPort(firstPort);
 
         SSLSender.Config config1 = new SSLSender.Config();
         config1.setPort(secondPort);
-        config1.setSslSocketFactory(SSL_SOCKET_FACTORY);
+        config1.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
         TCPHeartbeater.Config hbConfig1 = new TCPHeartbeater.Config();
         hbConfig1.setPort(secondPort);

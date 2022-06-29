@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.komamitsu.fluency.fluentd.SSLTestClientSocketFactory.SSL_SOCKET_FACTORY;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class MultiSenderTest
 {
@@ -116,7 +116,7 @@ class MultiSenderTest
 
             SSLSender.Config senderConfig0 = new SSLSender.Config();
             senderConfig0.setPort(24225);
-            senderConfig0.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig0.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
             SSLHeartbeater.Config hbConfig0 = new SSLHeartbeater.Config();
             hbConfig0.setPort(24225);
@@ -124,7 +124,7 @@ class MultiSenderTest
             SSLSender.Config senderConfig1 = new SSLSender.Config();
             senderConfig1.setHost("0.0.0.0");
             senderConfig1.setPort(24226);
-            senderConfig1.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig1.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
             SSLHeartbeater.Config hbConfig1 = new SSLHeartbeater.Config();
             hbConfig1.setHost("0.0.0.0");
@@ -192,7 +192,7 @@ class MultiSenderTest
             SSLSender.Config senderConfig0 = new SSLSender.Config();
             senderConfig0.setPort(server0.getLocalPort());
             senderConfig0.setReadTimeoutMilli(500);
-            senderConfig0.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig0.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
             UDPHeartbeater.Config hbConfig0 = new UDPHeartbeater.Config();
             hbConfig0.setPort(server0.getLocalPort());
@@ -200,7 +200,7 @@ class MultiSenderTest
             SSLSender.Config senderConfig1 = new SSLSender.Config();
             senderConfig1.setPort(server1.getLocalPort());
             senderConfig1.setReadTimeoutMilli(500);
-            senderConfig1.setSslSocketFactory(SSL_SOCKET_FACTORY);
+            senderConfig1.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
 
             UDPHeartbeater.Config hbConfig1 = new UDPHeartbeater.Config();
             hbConfig1.setPort(server1.getLocalPort());

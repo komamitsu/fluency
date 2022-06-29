@@ -42,7 +42,7 @@ public class ConfigurableTestServer
 
         try {
             if (sslEnabled) {
-                serverSocket.set(new SSLTestServerSocketFactory().create());
+                serverSocket.set(SSLTestSocketFactories.createServerSocket());
             }
             else {
                 serverSocket.set(new ServerSocket(0));
