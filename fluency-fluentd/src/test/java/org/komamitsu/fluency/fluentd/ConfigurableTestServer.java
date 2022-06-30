@@ -16,8 +16,6 @@
 
 package org.komamitsu.fluency.fluentd;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Callable;
@@ -44,7 +42,7 @@ public class ConfigurableTestServer
 
         try {
             if (sslEnabled) {
-                serverSocket.set(new SSLTestServerSocketFactory().create());
+                serverSocket.set(SSLTestSocketFactories.createServerSocket());
             }
             else {
                 serverSocket.set(new ServerSocket(0));

@@ -19,7 +19,7 @@ package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
+import org.komamitsu.fluency.fluentd.SSLTestSocketFactories;
 
 import javax.net.ssl.SSLServerSocket;
 
@@ -47,7 +47,7 @@ public class SSLHeartbeaterTest
     void setUp()
             throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException
     {
-        sslServerSocket = new SSLTestServerSocketFactory().create();
+        sslServerSocket = SSLTestSocketFactories.createServerSocket();
 
         SSLHeartbeater.Config config = new SSLHeartbeater.Config();
         config.setPort(sslServerSocket.getLocalPort());

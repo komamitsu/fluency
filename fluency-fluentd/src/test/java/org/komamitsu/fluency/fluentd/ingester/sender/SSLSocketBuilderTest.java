@@ -19,10 +19,10 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.fluentd.SSLTestSocketFactories;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class SSLSocketBuilderTest
 {
@@ -51,7 +52,7 @@ class SSLSocketBuilderTest
     void setUp()
             throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException
     {
-        serverSocket = new SSLTestServerSocketFactory().create();
+        serverSocket = SSLTestSocketFactories.createServerSocket();
     }
 
     @AfterEach
@@ -83,7 +84,7 @@ class SSLSocketBuilderTest
             }
         });
 
-        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, SSLSocketFactory.getDefault()).build();
+        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, SSL_CLIENT_SOCKET_FACTORY).build();
 
         try {
             OutputStream outputStream = sslSocket.getOutputStream();

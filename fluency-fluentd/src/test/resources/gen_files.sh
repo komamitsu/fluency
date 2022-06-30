@@ -19,6 +19,7 @@ openssl x509 \
     -sha256 \
     -in test_server.csr \
     -signkey test_server.key \
+    -days 3650 \
     -out test_server.crt
 
 # Create Keystore for TLS server in tests

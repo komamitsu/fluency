@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLTestServerSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,7 @@ public class MockTCPServer
 
         if (serverTask == null) {
             serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
-                    sslEnabled ? new SSLTestServerSocketFactory().create() : new ServerSocket());
+                    sslEnabled ? SSLTestSocketFactories.createServerSocket() : new ServerSocket());
             executorService.execute(serverTask);
         }
 
