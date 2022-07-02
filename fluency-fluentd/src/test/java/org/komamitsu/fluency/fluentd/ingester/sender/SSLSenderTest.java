@@ -28,16 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.Locale;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -206,6 +204,54 @@ class SSLSenderTest
                 }
             });
             assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
+        }
+        finally {
+            server.stop();
+        }
+    }
+
+    private Throwable extractRootCause(Throwable exception)
+    {
+        Throwable e = exception;
+        while (e.getCause() != null) {
+            e = e.getCause();
+        }
+        return e;
+    }
+
+    @Test
+    void testDisconnBeforeRecv()
+            throws Exception
+    {
+        final MockTCPServer server = new MockTCPServer(true);
+        server.start();
+
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            executorService.execute(() -> {
+                SSLSender.Config senderConfig = new SSLSender.Config();
+                senderConfig.setPort(server.getLocalPort());
+                senderConfig.setReadTimeoutMilli(2000);
+                SSLSender sender = new SSLSender(senderConfig);
+                try {
+                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
+                }
+                catch (Throwable e) {
+                    Throwable rootCause = extractRootCause(e);
+                    if (rootCause instanceof SocketException && rootCause.getMessage().toLowerCase().contains("disconnected")) {
+                        latch.countDown();
+                    }
+                    else {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+
+            TimeUnit.MILLISECONDS.sleep(500);
+            server.stop();
+
+            assertTrue(latch.await(4000, TimeUnit.MILLISECONDS));
         }
         finally {
             server.stop();

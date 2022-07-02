@@ -69,7 +69,7 @@ public class TCPSender
                 socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
             }
             catch (Throwable e) {
-                // In case of java.net.UnknownHostException and so on, the internal socket can be leak.
+                // In case of java.net.UnknownHostException and so on, the internal socket can be leaked.
                 // So the SocketChannel should be closed here to avoid a socket leak.
                 socketChannel.close();
                 throw e;
