@@ -25,27 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class MockTCPServerWithMetrics
         extends MockTCPServer
 {
-    private final List<Tuple<Type, Integer>> events = new CopyOnWriteArrayList<Tuple<Type, Integer>>();
-    private final EventHandler eventHandler = new EventHandler()
-    {
-        @Override
-        public void onConnect(Socket acceptSocket)
-        {
-            events.add(new Tuple<Type, Integer>(Type.CONNECT, null));
-        }
-
-        @Override
-        public void onReceive(Socket acceptSocket, int len, byte[] data)
-        {
-            events.add(new Tuple<Type, Integer>(Type.RECEIVE, len));
-        }
-
-        @Override
-        public void onClose(Socket acceptSocket)
-        {
-            events.add(new Tuple<Type, Integer>(Type.CLOSE, null));
-        }
-    };
+    private final List<Tuple<Type, Integer>> events = new CopyOnWriteArrayList<>();
 
     public MockTCPServerWithMetrics(boolean sslEnabled)
     {
@@ -55,7 +35,26 @@ public class MockTCPServerWithMetrics
     @Override
     protected EventHandler getEventHandler()
     {
-        return eventHandler;
+        return new EventHandler()
+        {
+            @Override
+            public void onConnect(Socket acceptSocket)
+            {
+                events.add(new Tuple<>(Type.CONNECT, null));
+            }
+
+            @Override
+            public void onReceive(Socket acceptSocket, int len, byte[] data)
+            {
+                events.add(new Tuple<>(Type.RECEIVE, len));
+            }
+
+            @Override
+            public void onClose(Socket acceptSocket)
+            {
+                events.add(new Tuple<>(Type.CLOSE, null));
+            }
+        };
     }
 
     public List<Tuple<Type, Integer>> getEvents()
