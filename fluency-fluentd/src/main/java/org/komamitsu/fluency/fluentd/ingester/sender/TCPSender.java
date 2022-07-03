@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
@@ -69,7 +70,7 @@ public class TCPSender
                 socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
             }
             catch (Throwable e) {
-                // In case of java.net.UnknownHostException and so on, the internal socket can be leak.
+                // In case of java.net.UnknownHostException and so on, the internal socket can be leaked.
                 // So the SocketChannel should be closed here to avoid a socket leak.
                 socketChannel.close();
                 throw e;
@@ -90,7 +91,10 @@ public class TCPSender
     protected void recvResponse(SocketChannel socketChannel, ByteBuffer buffer)
             throws IOException
     {
-        socketChannel.read(buffer);
+        int read = socketChannel.read(buffer);
+        if (read < 0) {
+            throw new SocketException("The connection is disconnected by the peer");
+        }
     }
 
     @Override

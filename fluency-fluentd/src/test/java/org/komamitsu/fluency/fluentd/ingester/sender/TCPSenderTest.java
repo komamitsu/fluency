@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -46,6 +47,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class TCPSenderTest
 {
@@ -200,6 +202,54 @@ class TCPSenderTest
                 }
             });
             assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
+        }
+        finally {
+            server.stop();
+        }
+    }
+
+    private Throwable extractRootCause(Throwable exception)
+    {
+        Throwable e = exception;
+        while (e.getCause() != null) {
+            e = e.getCause();
+        }
+        return e;
+    }
+
+    @Test
+    void testDisconnBeforeRecv()
+            throws Exception
+    {
+        final MockTCPServer server = new MockTCPServer(false);
+        server.start();
+
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            executorService.execute(() -> {
+                TCPSender.Config senderConfig = new TCPSender.Config();
+                senderConfig.setPort(server.getLocalPort());
+                senderConfig.setReadTimeoutMilli(4000);
+                TCPSender sender = new TCPSender(senderConfig);
+                try {
+                    sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
+                }
+                catch (Throwable e) {
+                    Throwable rootCause = extractRootCause(e);
+                    if (rootCause instanceof SocketException && rootCause.getMessage().toLowerCase().contains("disconnected")) {
+                        latch.countDown();
+                    }
+                    else {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+
+            TimeUnit.MILLISECONDS.sleep(1000);
+            server.stop(true);
+
+            assertTrue(latch.await(8000, TimeUnit.MILLISECONDS));
         }
         finally {
             server.stop();

@@ -18,6 +18,8 @@ package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.validation.Validatable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -25,6 +27,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SSLSender
         extends NetworkSender<SSLSocket>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
     private final SSLSocketBuilder socketBuilder;
     private final Config config;
@@ -99,6 +103,9 @@ public class SSLSender
         InputStream inputStream = sslSocket.getInputStream();
         byte[] tempBuf = new byte[buffer.remaining()];
         int read = inputStream.read(tempBuf);
+        if (read < 0) {
+            throw new SocketException("The connection is disconnected by the peer");
+        }
         buffer.put(tempBuf, 0, read);
     }
 

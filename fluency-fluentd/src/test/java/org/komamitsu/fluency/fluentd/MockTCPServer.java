@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -42,6 +44,8 @@ public class MockTCPServer
     private final AtomicInteger threadSeqNum = new AtomicInteger();
     private ExecutorService executorService;
     private ServerTask serverTask;
+    // TODO Make this class immutable
+    private List<Runnable> tasks = new ArrayList<>();
 
     public MockTCPServer(boolean sslEnabled)
     {
@@ -85,8 +89,9 @@ public class MockTCPServer
 
         if (serverTask == null) {
             serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
-                    sslEnabled ? SSLTestSocketFactories.createServerSocket() : new ServerSocket());
+                    sslEnabled ? SSLTestSocketFactories.createServerSocket() : new ServerSocket(), tasks);
             executorService.execute(serverTask);
+            tasks.add(serverTask);
         }
 
         for (int i = 0; i < 10; i++) {
@@ -128,6 +133,12 @@ public class MockTCPServer
     public synchronized void stop()
             throws IOException
     {
+        stop(false);
+    }
+
+    public synchronized void stop(boolean immediate)
+            throws IOException
+    {
         if (executorService == null) {
             return;
         }
@@ -135,6 +146,7 @@ public class MockTCPServer
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                LOG.debug("Shutting down MockTCPServer and child tasks... {}", this);
                 executorService.shutdownNow();
             }
         }
@@ -142,6 +154,18 @@ public class MockTCPServer
             LOG.warn("ExecutorService.shutdown() was failed: {}", this, e);
             Thread.currentThread().interrupt();
         }
+
+        if (immediate) {
+            LOG.debug("Closing related sockets {}", this);
+            for (Runnable runnable : tasks) {
+                if (runnable instanceof ServerTask) {
+                    ((ServerTask) runnable).close();
+                } else if (runnable instanceof ServerTask.AcceptTask) {
+                    ((ServerTask.AcceptTask) runnable).close();
+                }
+            }
+        }
+
         executorService = null;
         serverTask = null;
     }
@@ -162,12 +186,15 @@ public class MockTCPServer
         private final ExecutorService serverExecutorService;
         private final EventHandler eventHandler;
         private final AtomicLong lastEventTimeStampMilli;
+        private final List<Runnable> tasks;
 
         private ServerTask(
                 ExecutorService executorService,
                 AtomicLong lastEventTimeStampMilli,
                 EventHandler eventHandler,
-                ServerSocket serverSocket)
+                ServerSocket serverSocket,
+                List<Runnable> tasks
+                )
                 throws IOException
         {
             this.serverExecutorService = executorService;
@@ -177,6 +204,7 @@ public class MockTCPServer
             if (!serverSocket.isBound()) {
                 serverSocket.bind(null);
             }
+            this.tasks = tasks;
         }
 
         public int getLocalPort()
@@ -200,8 +228,9 @@ public class MockTCPServer
                     LOG.debug("ServerTask: accepting... this={}, local.port={}", this, getLocalPort());
                     Socket acceptSocket = serverSocket.accept();
                     LOG.debug("ServerTask: accepted. this={}, local.port={}, remote.port={}", this, getLocalPort(), acceptSocket.getPort());
-                    serverExecutorService.execute(
-                            new AcceptTask(serverExecutorService, lastEventTimeStampMilli, eventHandler, acceptSocket));
+                    AcceptTask acceptTask = new AcceptTask(serverExecutorService, lastEventTimeStampMilli, eventHandler, acceptSocket);
+                    serverExecutorService.execute(acceptTask);
+                    tasks.add(acceptTask);
                 }
                 catch (RejectedExecutionException e) {
                     LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
@@ -222,6 +251,12 @@ public class MockTCPServer
             LOG.info("ServerTask: Finishing ServerTask...: this={}", this);
         }
 
+        private void close()
+                throws IOException
+        {
+            serverSocket.close();
+        }
+
         private static class AcceptTask
                 implements Runnable
         {
@@ -236,6 +271,12 @@ public class MockTCPServer
                 this.lastEventTimeStampMilli = lastEventTimeStampMilli;
                 this.eventHandler = eventHandler;
                 this.acceptSocket = acceptSocket;
+            }
+
+            private void close()
+                    throws IOException
+            {
+                acceptSocket.close();
             }
 
             @Override
