@@ -1,3 +1,9 @@
+## 2.6.5 (2022-07-03)
+
+Bugfix:
+
+- Improve error handling for disconnection in TCPSender and SSLSender
+
 ## 2.6.4 (2022-04-24)
 
 Features:
