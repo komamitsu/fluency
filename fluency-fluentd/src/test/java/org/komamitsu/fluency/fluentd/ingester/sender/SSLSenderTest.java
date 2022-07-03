@@ -249,7 +249,7 @@ class SSLSenderTest
             });
 
             TimeUnit.MILLISECONDS.sleep(1000);
-            server.stop();
+            server.stop(true);
 
             assertTrue(latch.await(8000, TimeUnit.MILLISECONDS));
         }

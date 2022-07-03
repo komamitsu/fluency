@@ -133,6 +133,12 @@ public class MockTCPServer
     public synchronized void stop()
             throws IOException
     {
+        stop(false);
+    }
+
+    public synchronized void stop(boolean immediate)
+            throws IOException
+    {
         if (executorService == null) {
             return;
         }
@@ -149,12 +155,13 @@ public class MockTCPServer
             Thread.currentThread().interrupt();
         }
 
-        for (Runnable runnable : tasks) {
-            if (runnable instanceof ServerTask) {
-                ((ServerTask) runnable).close();
-            }
-            else if (runnable instanceof ServerTask.AcceptTask) {
-                ((ServerTask.AcceptTask) runnable).close();
+        if (immediate) {
+            for (Runnable runnable : tasks) {
+                if (runnable instanceof ServerTask) {
+                    ((ServerTask) runnable).close();
+                } else if (runnable instanceof ServerTask.AcceptTask) {
+                    ((ServerTask.AcceptTask) runnable).close();
+                }
             }
         }
 
