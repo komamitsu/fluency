@@ -233,6 +233,7 @@ class SSLSenderTest
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
                 senderConfig.setReadTimeoutMilli(4000);
+                senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
                 SSLSender sender = new SSLSender(senderConfig);
                 try {
                     sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
