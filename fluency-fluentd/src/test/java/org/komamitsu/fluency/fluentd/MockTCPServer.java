@@ -26,12 +26,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
-import java.security.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,22 +42,14 @@ public class MockTCPServer
     private final boolean sslEnabled;
     private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
     private final AtomicInteger threadSeqNum = new AtomicInteger();
-    private final ExecutorService executorService;
-    private final ServerTask serverTask;
-    private final List<Runnable> tasks = new ArrayList<>();
+    private ExecutorService executorService;
+    private ServerTask serverTask;
+    // TODO Make this class immutable
+    private List<Runnable> tasks = new ArrayList<>();
 
     public MockTCPServer(boolean sslEnabled)
     {
         this.sslEnabled = sslEnabled;
-        this.executorService = Executors.newCachedThreadPool(r -> new Thread(r, String.format("accepted-socket-worker-%d", threadSeqNum.getAndAdd(1))));
-        try {
-            serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
-                    sslEnabled ? SSLTestSocketFactories.createServerSocket() : new ServerSocket(), tasks);
-        }
-        catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException("Failed to initialize MockTCPServer", e);
-        }
-        tasks.add(serverTask);
     }
 
     protected EventHandler getEventHandler()
@@ -84,7 +76,23 @@ public class MockTCPServer
     public synchronized void start()
             throws Exception
     {
-        executorService.execute(serverTask);
+        if (executorService == null) {
+            this.executorService = Executors.newCachedThreadPool(new ThreadFactory()
+            {
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return new Thread(r, String.format("accepted-socket-worker-%d", threadSeqNum.getAndAdd(1)));
+                }
+            });
+        }
+
+        if (serverTask == null) {
+            serverTask = new ServerTask(executorService, lastEventTimeStampMilli, getEventHandler(),
+                    sslEnabled ? SSLTestSocketFactories.createServerSocket() : new ServerSocket(), tasks);
+            executorService.execute(serverTask);
+            tasks.add(serverTask);
+        }
 
         for (int i = 0; i < 10; i++) {
             int localPort = serverTask.getLocalPort();
@@ -157,6 +165,9 @@ public class MockTCPServer
                 }
             }
         }
+
+        executorService = null;
+        serverTask = null;
     }
 
     public interface EventHandler
@@ -221,7 +232,10 @@ public class MockTCPServer
                     serverExecutorService.execute(acceptTask);
                     tasks.add(acceptTask);
                 }
-                catch (RejectedExecutionException | ClosedByInterruptException e) {
+                catch (RejectedExecutionException e) {
+                    LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
+                }
+                catch (ClosedByInterruptException e) {
                     LOG.debug("ServerTask: ServerSocket.accept() failed[{}]: this={}", e.getMessage(), this);
                 }
                 catch (IOException e) {
