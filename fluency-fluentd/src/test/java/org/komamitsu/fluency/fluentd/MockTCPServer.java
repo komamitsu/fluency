@@ -156,6 +156,7 @@ public class MockTCPServer
         }
 
         if (immediate) {
+            LOG.debug("Closing related sockets {}", this);
             for (Runnable runnable : tasks) {
                 if (runnable instanceof ServerTask) {
                     ((ServerTask) runnable).close();
