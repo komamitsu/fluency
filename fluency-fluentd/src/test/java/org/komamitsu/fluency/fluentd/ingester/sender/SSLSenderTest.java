@@ -232,7 +232,7 @@ class SSLSenderTest
             executorService.execute(() -> {
                 SSLSender.Config senderConfig = new SSLSender.Config();
                 senderConfig.setPort(server.getLocalPort());
-                senderConfig.setReadTimeoutMilli(2000);
+                senderConfig.setReadTimeoutMilli(4000);
                 SSLSender sender = new SSLSender(senderConfig);
                 try {
                     sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
@@ -248,10 +248,10 @@ class SSLSenderTest
                 }
             });
 
-            TimeUnit.MILLISECONDS.sleep(500);
+            TimeUnit.MILLISECONDS.sleep(1000);
             server.stop();
 
-            assertTrue(latch.await(4000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(8000, TimeUnit.MILLISECONDS));
         }
         finally {
             server.stop();
