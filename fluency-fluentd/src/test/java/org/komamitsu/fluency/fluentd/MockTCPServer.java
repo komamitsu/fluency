@@ -36,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.msgpack.core.Preconditions.checkNotNull;
-
 public class MockTCPServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockTCPServer.class);
@@ -184,17 +182,18 @@ public class MockTCPServer
                 AtomicLong lastEventTimeStampMilli,
                 EventHandler eventHandler,
                 ServerSocket serverSocket,
-                List<Runnable> tasks)
+                List<Runnable> tasks
+                )
                 throws IOException
         {
-            this.serverExecutorService = checkNotNull(executorService);
-            this.lastEventTimeStampMilli = checkNotNull(lastEventTimeStampMilli);
-            this.eventHandler = checkNotNull(eventHandler);
-            this.serverSocket = checkNotNull(serverSocket);
+            this.serverExecutorService = executorService;
+            this.lastEventTimeStampMilli = lastEventTimeStampMilli;
+            this.eventHandler = eventHandler;
+            this.serverSocket = serverSocket;
             if (!serverSocket.isBound()) {
                 serverSocket.bind(null);
             }
-            this.tasks = checkNotNull(tasks);
+            this.tasks = tasks;
         }
 
         public int getLocalPort()
@@ -254,10 +253,10 @@ public class MockTCPServer
 
             private AcceptTask(ExecutorService serverExecutorService, AtomicLong lastEventTimeStampMilli, EventHandler eventHandler, Socket acceptSocket)
             {
-                this.serverExecutorService = checkNotNull(serverExecutorService);
-                this.lastEventTimeStampMilli = checkNotNull(lastEventTimeStampMilli);
-                this.eventHandler = checkNotNull(eventHandler);
-                this.acceptSocket = checkNotNull(acceptSocket);
+                this.serverExecutorService = serverExecutorService;
+                this.lastEventTimeStampMilli = lastEventTimeStampMilli;
+                this.eventHandler = eventHandler;
+                this.acceptSocket = acceptSocket;
             }
 
             private void close()
