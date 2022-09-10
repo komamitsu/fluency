@@ -203,9 +203,12 @@ public class Buffer
             throws IOException
     {
         synchronized (retentionBuffers) {
+            RetentionBuffer retentionBuffer = retentionBuffers.get(tag);
+            if (retentionBuffer != null) {
+                moveRetentionBufferIfNeeded(tag, retentionBuffer, src.remaining());
+            }
             RetentionBuffer buffer = prepareBuffer(tag, src.remaining());
             buffer.getByteBuffer().put(src);
-            moveRetentionBufferIfNeeded(tag, buffer);
         }
     }
 
@@ -301,10 +304,10 @@ public class Buffer
         appendMessagePackMapValueInternal(tag, timestamp, mapValue);
     }
 
-    private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer)
+    private void moveRetentionBufferIfNeeded(String tag, RetentionBuffer buffer, int additionalSize)
             throws IOException
     {
-        if (buffer.getByteBuffer().position() > config.getChunkRetentionSize()) {
+        if (buffer.getByteBuffer().position() + additionalSize > config.getChunkRetentionSize()) {
             moveRetentionBufferToFlushable(tag, buffer);
         }
     }

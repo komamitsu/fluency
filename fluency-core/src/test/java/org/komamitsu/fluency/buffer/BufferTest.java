@@ -27,6 +27,8 @@ import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class BufferTest
 {
@@ -110,6 +110,62 @@ class BufferTest
         assertEquals(0, buffer.getAllocatedSize());
         assertEquals(0, buffer.getBufferedDataSize());
         assertEquals(0, buffer.getBufferUsage(), 0.001);
+    }
+
+    @Test
+    void testStrictBufferRetentionSizeManagement()
+            throws IOException
+    {
+        int recordSize = 20; // '{"name":"komamitsu"}'
+        int initSize = 15;
+        float allocRatio = 2f;
+        // 15 -> 30 -> 60 -> 120 -> 240
+        int maxAllocSize = (int) (initSize * allocRatio * allocRatio * allocRatio * allocRatio);
+        String tag = "foodb.bartbl";
+
+        int retentionSize = 60;
+
+        bufferConfig.setChunkInitialSize(initSize);
+        bufferConfig.setChunkExpandRatio(allocRatio);
+        bufferConfig.setMaxBufferSize(maxAllocSize);
+        bufferConfig.setChunkRetentionSize(retentionSize);
+        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "komamitsu");
+
+        // Buffered data size is 0 and additional 20 bytes data will be buffered (total size: 20 bytes).
+        buffer.append(tag, 1420070400, data);
+        buffer.flush(ingester, false);
+        verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(20, buffer.getBufferedDataSize());
+
+        // Buffered data size is 20 and additional 20 bytes data will be buffered (total size: 40 bytes).
+        buffer.append(tag, 1420070400, data);
+        buffer.flush(ingester, false);
+        verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(40, buffer.getBufferedDataSize());
+
+        // Buffered data size is 40 and additional 20 bytes data will be buffered (total size: 60 bytes).
+        buffer.append(tag, 1420070400, data);
+        buffer.flush(ingester, false);
+        verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(60, buffer.getBufferedDataSize());
+
+        // Buffered data size is 60 and additional 20 bytes exceeds the retention size.
+        // The buffered 60 bytes data will be flushed and the additional data will be buffered (total size: 20 bytes).
+        doAnswer(invocation -> {
+            String receivedTag = invocation.getArgument(0);
+            ByteBuffer receivedBuffer = invocation.getArgument(1);
+            assertEquals(tag, receivedTag);
+            assertEquals(60, receivedBuffer.remaining());
+            return null;
+        }).when(ingester).ingest(anyString(), any(ByteBuffer.class));
+
+        buffer.append(tag, 1420070400, data);
+        buffer.flush(ingester, false);
+        verify(ingester, times(1)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(20, buffer.getBufferedDataSize());
     }
 
     @Test
