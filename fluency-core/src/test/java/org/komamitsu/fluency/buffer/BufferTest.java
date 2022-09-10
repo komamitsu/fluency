@@ -134,22 +134,26 @@ class BufferTest
         Map<String, Object> data = new HashMap<>();
         data.put("name", "komamitsu");
 
-        // buffered size: 20
+        // Buffered data size is 0 and additional 20 bytes data will be buffered (total size: 20 bytes).
         buffer.append(tag, 1420070400, data);
         buffer.flush(ingester, false);
         verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(20, buffer.getBufferedDataSize());
 
-        // buffered size: 40
+        // Buffered data size is 20 and additional 20 bytes data will be buffered (total size: 40 bytes).
         buffer.append(tag, 1420070400, data);
         buffer.flush(ingester, false);
         verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(40, buffer.getBufferedDataSize());
 
-        // buffered size: 60
+        // Buffered data size is 40 and additional 20 bytes data will be buffered (total size: 60 bytes).
         buffer.append(tag, 1420070400, data);
         buffer.flush(ingester, false);
         verify(ingester, times(0)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(60, buffer.getBufferedDataSize());
 
-        // buffered size: 80
+        // Buffered data size is 60 and additional 20 bytes exceeds the retention size.
+        // The buffered 60 bytes data will be flushed and the additional data will be buffered (total size: 20 bytes).
         doAnswer(invocation -> {
             String receivedTag = invocation.getArgument(0);
             ByteBuffer receivedBuffer = invocation.getArgument(1);
@@ -161,6 +165,7 @@ class BufferTest
         buffer.append(tag, 1420070400, data);
         buffer.flush(ingester, false);
         verify(ingester, times(1)).ingest(anyString(), any(ByteBuffer.class));
+        assertEquals(20, buffer.getBufferedDataSize());
     }
 
     @Test
