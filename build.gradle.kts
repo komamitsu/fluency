@@ -59,6 +59,10 @@ subprojects {
     withSourcesJar()
   }
 
+  tasks.withType(JavaCompile) {
+    options.release.set(8)
+  }
+
   tasks.withType<Test> {
     useJUnitPlatform()
   }

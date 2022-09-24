@@ -35,21 +35,22 @@ jobs:
   # Fluency uses java.nio.ByteBuffer which can cause inconsistent method signature issue between JDK 8 and 9.
   # We've created Fluency jars using JDK 8 for that and we need to confirm an application built with JDK 9 or later
   # can use Fluecy jars built with JDK 8 without any problem.
+  # We're using --release option to build source code with JDK 8. So JDK 11 should work here.
   prepare_for_integration_test:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 8
+    - name: Set up JDK 11
       uses: actions/setup-java@v3
       with:
         distribution: temurin
-        java-version: 8
+        java-version: 11
     - uses: actions/cache@v3
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-8-gradle-${{ hashFiles('**/*.gradle*') }}
+        key: ${{ runner.os }}-11-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Install local maven package
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
