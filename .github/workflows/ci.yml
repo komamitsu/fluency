@@ -37,16 +37,13 @@ jobs:
   # can use Fluecy jars built with JDK 8 without any problem.
   prepare_for_integration_test:
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        java_version: 8
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK ${{ matrix.java_version }}
+    - name: Set up JDK 8
       uses: actions/setup-java@v3
       with:
         distribution: temurin
-        java-version: ${{ matrix.java_version }}
+        java-version: 8
     - uses: actions/cache@v3
       with:
         path: |
