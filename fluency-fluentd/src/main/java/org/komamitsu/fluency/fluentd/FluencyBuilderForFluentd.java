@@ -45,9 +45,9 @@ public class FluencyBuilderForFluentd
     private boolean ackResponseMode;
     private boolean sslEnabled;
     private SSLSocketFactory sslSocketFactory;
-    private Integer connectionTimeoutMilli;
-    private Integer readTimeoutMilli;
-    private FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
+    protected Integer connectionTimeoutMilli;
+    protected Integer readTimeoutMilli;
+    protected FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
 
     public Integer getSenderMaxRetryCount()
     {
@@ -245,7 +245,7 @@ public class FluencyBuilderForFluentd
                 "} " + super.toString();
     }
 
-    private Ingester buildIngester(FluentdSender baseSender)
+    protected Ingester buildIngester(FluentdSender baseSender)
     {
         ExponentialBackOffRetryStrategy.Config retryStrategyConfig =
                 new ExponentialBackOffRetryStrategy.Config();
