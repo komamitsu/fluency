@@ -31,10 +31,53 @@ jobs:
       run: chmod +x gradlew
     - name: Run tests
       run: ./gradlew check jacocoTestReport coveralls --stacktrace --info
-    - name: Run tests using real Fluentd
+
+  # Fluency uses java.nio.ByteBuffer which can cause inconsistent method signature issue between JDK 8 and 9.
+  # We've created Fluency jars using JDK 8 for that and we need to confirm an application built with JDK 9 or later
+  # can use Fluecy jars built with JDK 8 without any problem.
+  prepare_for_integration_test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java_version: 8
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java_version }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.m2
+        key: ${{ runner.os }}-8-maven-${{ hashFiles('**/*.gradle*') }}
+    - name: Install local maven package
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
-        sudo gem install yajl-ruby -v 1.4.1
+
+  integration_test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java_version: [8, 11]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java_version }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        # Use the previously installed local maven package built with JDK 8
+        key: ${{ runner.os }}-8-maven-${{ hashFiles('**/*.gradle*') }}
+    - name: Run tests using real Fluentd
+      run: |
+        sudo gem install yajl-ruby --no-doc -v 1.4.1
         sudo gem install fluentd --no-doc
         echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd tests/mutual-tls && ./run.sh
