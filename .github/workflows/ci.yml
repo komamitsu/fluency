@@ -78,10 +78,13 @@ jobs:
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - name: Remove m2 directory just in case
+      run: rm -rf ~/.m2
     - name: Download local Maven package prepared above
       uses: actions/download-artifact@v3
       with:
         name: local-m2
+        path: ~/.m2
     - name: Run tests using real Fluentd
       run: |
         sudo gem install yajl-ruby --no-doc -v 1.4.1
