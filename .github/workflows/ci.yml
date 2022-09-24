@@ -54,10 +54,10 @@ jobs:
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
     - name: Upload local Maven package just installed
-        uses: actions/upload-artifact@v3
-        with:
-          name: local-m2
-          path: ~/.m2
+      uses: actions/upload-artifact@v3
+      with:
+        name: local-m2
+        path: ~/.m2
 
   integration_test:
     runs-on: ubuntu-18.04
@@ -78,9 +78,9 @@ jobs:
           ~/.gradle/wrapper
         key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Download local Maven package prepared above
-        uses: actions/download-artifact@v3
-        with:
-          name: local-m2
+      uses: actions/download-artifact@v3
+      with:
+        name: local-m2
     - name: Run tests using real Fluentd
       run: |
         sudo gem install yajl-ruby --no-doc -v 1.4.1
