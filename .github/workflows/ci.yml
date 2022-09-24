@@ -61,6 +61,7 @@ jobs:
 
   integration_test:
     runs-on: ubuntu-18.04
+    needs: prepare_for_integration_test
     strategy:
       matrix:
         java_version: [8, 11]
