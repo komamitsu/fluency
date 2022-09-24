@@ -47,8 +47,14 @@ jobs:
     - uses: actions/cache@v3
       with:
         path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - uses: actions/cache@v3
+      with:
+        path: |
           ~/.m2
-        key: ${{ runner.os }}-8-maven-${{ hashFiles('**/*.gradle*') }}
+        key: ${{ runner.os }}-8-maven-${{ github.sha }}
     - name: Install local maven package
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
@@ -70,8 +76,13 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
+        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.m2
         # Use the previously installed local maven package built with JDK 8
-        key: ${{ runner.os }}-8-maven-${{ hashFiles('**/*.gradle*') }}
+        key: ${{ runner.os }}-8-maven-${{ github.sha }}
     - name: Run tests using real Fluentd
       run: |
         sudo gem install yajl-ruby --no-doc -v 1.4.1
