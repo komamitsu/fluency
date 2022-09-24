@@ -59,6 +59,12 @@ subprojects {
     withSourcesJar()
   }
 
+  tasks.withType<JavaCompile> {
+    if (JavaVersion.current() >= JavaVersion.VERSION_1_9) {
+      options.release.set(8)
+    }
+  }
+
   tasks.withType<Test> {
     useJUnitPlatform()
   }
