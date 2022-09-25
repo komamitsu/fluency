@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SSLSender
-        extends NetworkSender<SSLSocket>
+        extends InetSocketSender<SSLSocket>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
@@ -128,7 +128,7 @@ public class SSLSender
     }
 
     public static class Config
-            extends NetworkSender.Config
+            extends InetSocketSender.Config
             implements Validatable
     {
         void validateValues()

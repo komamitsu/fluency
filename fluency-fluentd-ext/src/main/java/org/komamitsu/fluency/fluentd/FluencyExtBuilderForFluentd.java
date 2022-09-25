@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mitsunori Komatsu (komamitsu)
+ * Copyright 2022 Mitsunori Komatsu (komamitsu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import java.util.List;
 public class FluencyExtBuilderForFluentd
         extends FluencyBuilderForFluentd
 {
-    public Fluency buildWithUnixDomainSockets(List<UnixDomainSocketAddress> servers)
+    public Fluency buildForUnixDomainSockets(List<UnixDomainSocketAddress> servers)
     {
         List<FluentdSender> senders = new ArrayList<>();
         for (UnixDomainSocketAddress server : servers) {
@@ -48,13 +48,11 @@ public class FluencyExtBuilderForFluentd
         UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
         FailureDetector failureDetector = null;
         if (path != null) {
-            // FIXME
-            senderConfig.setHost(path.toAbsolutePath().toString());
+            senderConfig.setPath(path.toAbsolutePath().toString());
         }
         if (withHeartBeater) {
             UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
-            // FIXME
-            hbConfig.setHost(path.toAbsolutePath().toString());
+            hbConfig.setPath(path.toAbsolutePath().toString());
             UnixSocketHeartbeater heartbeater = new UnixSocketHeartbeater(hbConfig);
             failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mitsunori Komatsu (komamitsu)
+ * Copyright 2022 Mitsunori Komatsu (komamitsu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class UnixSocketHeartbeater
@@ -44,9 +44,8 @@ public class UnixSocketHeartbeater
     protected void invoke()
             throws IOException
     {
-        try (SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()))) {
-            LOG.trace("TCPHeartbeat: remotePort={}, localPort={}",
-                    socketChannel.socket().getPort(), socketChannel.socket().getLocalPort());
+        try (SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(config.getPath()))) {
+            LOG.trace("UnixSocketHeartbeat: {}", socketChannel);
             pong();
         }
     }
@@ -54,7 +53,7 @@ public class UnixSocketHeartbeater
     @Override
     public String toString()
     {
-        return "TCPHeartbeater{" +
+        return "UnixSocketHeartbeater{" +
                 "config=" + config +
                 "} " + super.toString();
     }
@@ -62,6 +61,17 @@ public class UnixSocketHeartbeater
     public static class Config
             extends Heartbeater.Config
     {
+        private String path;
+
+        public String getPath()
+        {
+            return path;
+        }
+
+        public void setPath(String path)
+        {
+            this.path = path;
+        }
     }
 }
 

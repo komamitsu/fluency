@@ -28,7 +28,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 
 public class SSLHeartbeater
-        extends Heartbeater
+        extends InetSocketHeartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(SSLHeartbeater.class);
     private final Config config;
@@ -75,7 +75,7 @@ public class SSLHeartbeater
     }
 
     public static class Config
-            extends Heartbeater.Config
+            extends InetSocketHeartbeater.Config
             implements Validatable
     {
         @Min(10)

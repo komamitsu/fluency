@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mitsunori Komatsu (komamitsu)
+ * Copyright 2022 Mitsunori Komatsu (komamitsu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
@@ -65,7 +66,7 @@ public class UnixSocketSender
         if (channel.get() == null) {
             SocketChannel socketChannel = SocketChannel.open();
             try {
-                socketChannel.socket().connect(new InetSocketAddress(config.getHost(), config.getPort()), config.getConnectionTimeoutMilli());
+                socketChannel.socket().connect(UnixDomainSocketAddress.of(config.getPath()), config.getConnectionTimeoutMilli());
                 socketChannel.socket().setTcpNoDelay(true);
                 socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
             }
@@ -119,9 +120,21 @@ public class UnixSocketSender
             extends NetworkSender.Config
             implements Validatable
     {
+        private String path;
+
         void validateValues()
         {
             validate();
+        }
+
+        public String getPath()
+        {
+            return path;
+        }
+
+        public void setPath(String path)
+        {
+            this.path = path;
         }
     }
 }
