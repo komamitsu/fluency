@@ -21,10 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.Heartbeater;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.UDPHeartbeater;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.*;
 import org.komamitsu.fluency.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +41,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class MultiSenderTest
@@ -91,14 +87,22 @@ class MultiSenderTest
             TCPSender tcpSender = (TCPSender) multiSender.getSenders().get(0);
             assertEquals("127.0.0.1", tcpSender.getHost());
             assertEquals(24225, tcpSender.getPort());
-            assertEquals("127.0.0.1", tcpSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24225, tcpSender.getFailureDetector().getHeartbeater().getPort());
+            assertTrue(tcpSender.getFailureDetector().getHeartbeater() instanceof InetSocketHeartbeater);
+            {
+                InetSocketHeartbeater hb = (InetSocketHeartbeater) tcpSender.getFailureDetector().getHeartbeater();
+                assertEquals("127.0.0.1", hb.getHost());
+                assertEquals(24225, hb.getPort());
+            }
 
             tcpSender = (TCPSender) multiSender.getSenders().get(1);
             assertEquals("0.0.0.0", tcpSender.getHost());
             assertEquals(24226, tcpSender.getPort());
-            assertEquals("0.0.0.0", tcpSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24226, tcpSender.getFailureDetector().getHeartbeater().getPort());
+            assertTrue(tcpSender.getFailureDetector().getHeartbeater() instanceof InetSocketHeartbeater);
+            {
+                InetSocketHeartbeater hb = (InetSocketHeartbeater) tcpSender.getFailureDetector().getHeartbeater();
+                assertEquals("0.0.0.0", hb.getHost());
+                assertEquals(24226, hb.getPort());
+            }
         }
         finally {
             if (multiSender != null) {
@@ -144,14 +148,22 @@ class MultiSenderTest
             SSLSender sslSender = (SSLSender) multiSender.getSenders().get(0);
             assertEquals("127.0.0.1", sslSender.getHost());
             assertEquals(24225, sslSender.getPort());
-            assertEquals("127.0.0.1", sslSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24225, sslSender.getFailureDetector().getHeartbeater().getPort());
+            assertTrue(sslSender.getFailureDetector().getHeartbeater() instanceof InetSocketHeartbeater);
+            {
+                InetSocketHeartbeater hb = (InetSocketHeartbeater) sslSender.getFailureDetector().getHeartbeater();
+                assertEquals("127.0.0.1", hb.getHost());
+                assertEquals(24225, hb.getPort());
+            }
 
             sslSender = (SSLSender) multiSender.getSenders().get(1);
             assertEquals("0.0.0.0", sslSender.getHost());
             assertEquals(24226, sslSender.getPort());
-            assertEquals("0.0.0.0", sslSender.getFailureDetector().getHeartbeater().getHost());
-            assertEquals(24226, sslSender.getFailureDetector().getHeartbeater().getPort());
+            assertTrue(sslSender.getFailureDetector().getHeartbeater() instanceof InetSocketHeartbeater);
+            {
+                InetSocketHeartbeater hb = (InetSocketHeartbeater) sslSender.getFailureDetector().getHeartbeater();
+                assertEquals("0.0.0.0", hb.getHost());
+                assertEquals(24226, hb.getPort());
+            }
         }
         finally {
             if (multiSender != null) {
