@@ -30,13 +30,13 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-core
-      run: ./gradlew fluency-core:check jacocoTestReport coveralls --stacktrace --info
+      run: ./gradlew -p fluency-core check jacocoTestReport coveralls --stacktrace --info
     - name: Run tests fluency-fluentd
-      run: ./gradlew fluency-fluentd:check jacocoTestReport coveralls --stacktrace --info
+      run: ./gradlew -p fluency-fluentd check jacocoTestReport coveralls --stacktrace --info
     - name: Run tests fluency-treasuredata
-      run: ./gradlew fluency-treasuredata:check jacocoTestReport coveralls --stacktrace --info
+      run: ./gradlew -p fluency-treasuredata check jacocoTestReport coveralls --stacktrace --info
     - name: Run tests fluency-aws-s3
-      run: ./gradlew fluency-aws-s3:check jacocoTestReport coveralls --stacktrace --info
+      run: ./gradlew -p fluency-aws-s3 check jacocoTestReport coveralls --stacktrace --info
 
   build-ext:
     runs-on: ubuntu-18.04
@@ -59,7 +59,7 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-fluentd-ext
-      run: ./gradlew fluency-fluentd:-extcheck jacocoTestReport coveralls --stacktrace --info
+      run: ./gradlew -p fluency-fluentd-ext check jacocoTestReport coveralls --stacktrace --info
 
   # Fluency uses java.nio.ByteBuffer which can cause inconsistent method signature issue between JDK 8 and 9.
   # We've created Fluency jars using JDK 8 for that and we need to confirm an application built with JDK 9 or later
@@ -82,7 +82,8 @@ jobs:
         key: ${{ runner.os }}-11-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Install local maven package
       run: |
-        ./gradlew publishToMavenLocal --stacktrace --info
+        ./gradlew -p fluency-core publishToMavenLocal --stacktrace --info
+        ./gradlew -p fluency-fluentd publishToMavenLocal --stacktrace --info
     - name: Upload local Maven package just installed
       uses: actions/upload-artifact@v3
       with:
