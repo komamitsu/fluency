@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 
 public class UnixSocketHeartbeater
         extends Heartbeater
@@ -61,14 +62,14 @@ public class UnixSocketHeartbeater
     public static class Config
             extends Heartbeater.Config
     {
-        private String path;
+        private Path path;
 
-        public String getPath()
+        public Path getPath()
         {
             return path;
         }
 
-        public void setPath(String path)
+        public void setPath(Path path)
         {
             this.path = path;
         }

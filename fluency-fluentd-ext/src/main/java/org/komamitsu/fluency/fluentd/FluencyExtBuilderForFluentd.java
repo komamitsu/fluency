@@ -52,7 +52,7 @@ public class FluencyExtBuilderForFluentd
         }
         if (withHeartBeater) {
             UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
-            hbConfig.setPath(path.toAbsolutePath().toString());
+            hbConfig.setPath(path.toAbsolutePath());
             UnixSocketHeartbeater heartbeater = new UnixSocketHeartbeater(hbConfig);
             failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
         }
