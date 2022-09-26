@@ -24,9 +24,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,11 +66,10 @@ public class UnixSocketSender
             throws IOException
     {
         if (channel.get() == null) {
-            SocketChannel socketChannel = SocketChannel.open();
+            UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(config.getPath());
+            SocketChannel socketChannel = SocketChannel.open(socketAddress);
             try {
-                socketChannel.socket().connect(UnixDomainSocketAddress.of(config.getPath()), config.getConnectionTimeoutMilli());
-                socketChannel.socket().setTcpNoDelay(true);
-                socketChannel.socket().setSoTimeout(config.getReadTimeoutMilli());
+//                socketChannel.connect(UnixDomainSocketAddress.of(config.getPath()));
             }
             catch (Throwable e) {
                 // In case of java.net.UnknownHostException and so on, the internal socket can be leaked.
@@ -111,7 +112,7 @@ public class UnixSocketSender
     @Override
     public String toString()
     {
-        return "TCPSender{" +
+        return "UnixSocketSender{" +
                 "config=" + config +
                 "} " + super.toString();
     }
@@ -120,19 +121,19 @@ public class UnixSocketSender
             extends NetworkSender.Config
             implements Validatable
     {
-        private String path;
+        private Path path;
 
         void validateValues()
         {
             validate();
         }
 
-        public String getPath()
+        public Path getPath()
         {
             return path;
         }
 
-        public void setPath(String path)
+        public void setPath(Path path)
         {
             this.path = path;
         }

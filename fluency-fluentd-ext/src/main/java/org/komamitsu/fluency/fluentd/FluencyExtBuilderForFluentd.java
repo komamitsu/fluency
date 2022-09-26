@@ -48,7 +48,7 @@ public class FluencyExtBuilderForFluentd
         UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
         FailureDetector failureDetector = null;
         if (path != null) {
-            senderConfig.setPath(path.toAbsolutePath().toString());
+            senderConfig.setPath(path.toAbsolutePath());
         }
         if (withHeartBeater) {
             UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
