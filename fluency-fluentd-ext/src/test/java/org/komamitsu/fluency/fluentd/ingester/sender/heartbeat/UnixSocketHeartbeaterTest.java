@@ -16,6 +16,7 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -50,6 +52,13 @@ class UnixSocketHeartbeaterTest
 
         serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
         serverSocketChannel.bind(socketAddress);
+    }
+
+    @AfterEach
+    void tearDown()
+            throws IOException
+    {
+        Files.deleteIfExists(socketPath);
     }
 
     @Test
