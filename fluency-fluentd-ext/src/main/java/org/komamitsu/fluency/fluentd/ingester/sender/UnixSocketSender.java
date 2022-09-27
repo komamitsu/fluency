@@ -67,17 +67,7 @@ public class UnixSocketSender
     {
         if (channel.get() == null) {
             UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(config.getPath());
-            SocketChannel socketChannel = SocketChannel.open(socketAddress);
-            try {
-//                socketChannel.connect(UnixDomainSocketAddress.of(config.getPath()));
-            }
-            catch (Throwable e) {
-                // In case of java.net.UnknownHostException and so on, the internal socket can be leaked.
-                // So the SocketChannel should be closed here to avoid a socket leak.
-                socketChannel.close();
-                throw e;
-            }
-            channel.set(socketChannel);
+            channel.set(SocketChannel.open(socketAddress));
         }
         return channel.get();
     }
@@ -136,6 +126,13 @@ public class UnixSocketSender
         public void setPath(Path path)
         {
             this.path = path;
+        }
+
+        @Override
+        public String toString() {
+            return "Config{" +
+                    "path=" + path +
+                    "} " + super.toString();
         }
     }
 }

@@ -30,10 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -52,26 +50,12 @@ class UnixSocketSenderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnixSocketSenderTest.class);
 
-    private Path socketPath;
-    private ServerSocketChannel serverSocketChannel;
-
-    @BeforeEach
-    void setUp()
-            throws IOException
-    {
-        socketPath = Paths.get(System.getProperty("java.io.tmpdir"),
-                String.format("fluency-unixsocket-hb-test-%s", UUID.randomUUID()));
-        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(socketPath);
-
-        serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
-        serverSocketChannel.bind(socketAddress);
-    }
 
     @Test
     void testSend()
             throws Exception
     {
-        testSendBase(() -> {
+        testSendBase(socketPath -> {
             UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
             senderConfig.setPath(socketPath);
             return new UnixSocketSender(senderConfig);
@@ -82,7 +66,7 @@ class UnixSocketSenderTest
     void testSendWithHeartbeart()
             throws Exception
     {
-        testSendBase(() -> {
+        testSendBase(socketPath -> {
             UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
             hbConfig.setPath(socketPath);
             hbConfig.setIntervalMillis(400);
@@ -98,7 +82,7 @@ class UnixSocketSenderTest
     }
 
     private void testSendBase(
-            SenderCreater senderCreater,
+            SenderCreator senderCreator,
             Matcher<? super Integer> connectCountMatcher,
             Matcher<? super Integer> closeCountMatcher)
             throws Exception
@@ -109,7 +93,7 @@ class UnixSocketSenderTest
             int concurency = 20;
             final int reqNum = 5000;
             final CountDownLatch latch = new CountDownLatch(concurency);
-            UnixSocketSender sender = senderCreater.create();
+            UnixSocketSender sender = senderCreator.create(server.getSocketPath());
 
             // To receive heartbeat at least once
             TimeUnit.MILLISECONDS.sleep(500);
@@ -163,32 +147,6 @@ class UnixSocketSenderTest
     }
 
     @Test
-    void testConnectionTimeout()
-            throws InterruptedException
-    {
-        final CountDownLatch latch = new CountDownLatch(1);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(() -> {
-            UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-            senderConfig.setPath(socketPath);
-            senderConfig.setConnectionTimeoutMilli(1000);
-            UnixSocketSender sender = new UnixSocketSender(senderConfig);
-            try {
-                sender.send(ByteBuffer.wrap("hello, world".getBytes("UTF-8")));
-            }
-            catch (Throwable e) {
-                if (e instanceof SocketTimeoutException) {
-                    latch.countDown();
-                }
-                else {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
-    }
-
-    @Test
     void testReadTimeout()
             throws Exception
     {
@@ -200,7 +158,7 @@ class UnixSocketSenderTest
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.execute(() -> {
                     UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(socketPath);
+                    senderConfig.setPath(server.getSocketPath());
                     senderConfig.setReadTimeoutMilli(1000);
                     UnixSocketSender sender = new UnixSocketSender(senderConfig);
                     try {
@@ -241,7 +199,7 @@ class UnixSocketSenderTest
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.execute(() -> {
                     UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(socketPath);
+                    senderConfig.setPath(server.getSocketPath());
                     senderConfig.setReadTimeoutMilli(4000);
                     UnixSocketSender sender = new UnixSocketSender(senderConfig);
                     try {
@@ -278,7 +236,7 @@ class UnixSocketSenderTest
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 Future<Void> future = executorService.submit(() -> {
                     UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(socketPath);
+                    senderConfig.setPath(server.getSocketPath());
                     senderConfig.setWaitBeforeCloseMilli(1500);
                     UnixSocketSender sender = new UnixSocketSender(senderConfig);
                     long start;
@@ -331,8 +289,8 @@ class UnixSocketSenderTest
         }
     }
 
-    interface SenderCreater
+    interface SenderCreator
     {
-        UnixSocketSender create();
+        UnixSocketSender create(Path socketPath);
     }
 }

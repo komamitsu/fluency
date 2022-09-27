@@ -42,6 +42,9 @@ public class MockUnixSocketServer
     implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(MockUnixSocketServer.class);
+    private Path socketPath = Paths.get(System.getProperty("java.io.tmpdir"),
+        String.format("fluency-mock-unixsocket-server-%s", UUID.randomUUID()));
+
     private final AtomicLong lastEventTimeStampMilli = new AtomicLong();
     private final AtomicInteger threadSeqNum = new AtomicInteger();
     private ExecutorService executorService;
@@ -92,12 +95,14 @@ public class MockUnixSocketServer
         };
     }
 
+    public Path getSocketPath()
+    {
+        return socketPath;
+    }
+
     public synchronized void start()
             throws Exception
     {
-        Path socketPath = Paths.get(System.getProperty("java.io.tmpdir"),
-                String.format("fluency-mock-unixsocket-server-%s", UUID.randomUUID()));
-
         if (executorService == null) {
             this.executorService = Executors.newCachedThreadPool(r ->
                     new Thread(r, String.format("accepted-socket-worker-%d", threadSeqNum.getAndAdd(1))));
@@ -185,6 +190,15 @@ public class MockUnixSocketServer
         private final AtomicLong lastEventTimeStampMilli;
         private final List<Runnable> tasks;
         private final UnixDomainSocketAddress socketAddress;
+
+        @Override
+        public String toString() {
+            return "ServerTask{" +
+                    "serverSocketChannel=" + serverSocketChannel +
+                    ", lastEventTimeStampMilli=" + lastEventTimeStampMilli +
+                    ", socketAddress=" + socketAddress +
+                    '}';
+        }
 
         private ServerTask(
                 ExecutorService executorService,
