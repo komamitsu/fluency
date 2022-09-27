@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockUnixSocketServer;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
@@ -30,14 +29,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -90,8 +85,9 @@ class UnixSocketSenderTest
         try (MockUnixSocketServer server = new MockUnixSocketServer()) {
             server.start();
 
-            int concurency = 20;
-            final int reqNum = 5000;
+            int concurency = 10;
+//            final int reqNum = 5000;
+            final int reqNum = 50;
             final CountDownLatch latch = new CountDownLatch(concurency);
             UnixSocketSender sender = senderCreator.create(server.getSocketPath());
 
@@ -102,14 +98,14 @@ class UnixSocketSenderTest
             for (int i = 0; i < concurency; i++) {
                 senderExecutorService.execute(() -> {
                     try {
-                        byte[] bytes = "0123456789".getBytes(Charset.forName("UTF-8"));
+                        byte[] bytes = "0123456789".getBytes();
 
                         for (int j = 0; j < reqNum; j++) {
                             sender.send(ByteBuffer.wrap(bytes));
                         }
                         latch.countDown();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOG.error("Failed to send data", e);
                     }
                 });
             }

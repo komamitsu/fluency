@@ -78,19 +78,19 @@ public class MockUnixSocketServer
             @Override
             public void onConnect(SocketChannel acceptSocketChannel)
             {
-                events.add(new Tuple<>(Type.RECEIVE, null));
+                events.add(new Tuple<>(Type.CONNECT, null));
             }
 
             @Override
             public void onReceive(SocketChannel acceptSocketChannel, ByteBuffer byteBuffer)
             {
-                events.add(new Tuple<>(Type.RECEIVE, null));
+                events.add(new Tuple<>(Type.RECEIVE, byteBuffer.flip().remaining()));
             }
 
             @Override
             public void onClose(SocketChannel acceptSocketChannel)
             {
-                events.add(new Tuple<>(Type.RECEIVE, null));
+                events.add(new Tuple<>(Type.CLOSE, null));
             }
         };
     }
@@ -114,10 +114,6 @@ public class MockUnixSocketServer
             executorService.execute(serverTask);
             tasks.add(serverTask);
         }
-
-        // TODO: Wait until a new connection is established
-        TimeUnit.MILLISECONDS.sleep(500);
-        // throw new IllegalStateException("Local port open timeout");
     }
 
     public void waitUntilEventsStop()
@@ -274,6 +270,15 @@ public class MockUnixSocketServer
                 this.acceptSocketChannel = acceptSocketChannel;
             }
 
+            @Override
+            public String toString()
+            {
+                return "AcceptTask{" +
+                        "acceptSocketChannel=" + acceptSocketChannel +
+                        ", lastEventTimeStampMilli=" + lastEventTimeStampMilli +
+                        '}';
+            }
+
             private void close()
                     throws IOException
             {
@@ -291,7 +296,7 @@ public class MockUnixSocketServer
                         try {
                             int len = acceptSocketChannel.read(byteBuffer);
                             if (len <= 0) {
-                                LOG.debug("AcceptTask: closed. this={}, remote={}", this, acceptSocketChannel);
+                                LOG.debug("AcceptTask: closed. len={}, this={}, remote={}", len, this, acceptSocketChannel);
                                 eventHandler.onClose(acceptSocketChannel);
                                 try {
                                     close();
