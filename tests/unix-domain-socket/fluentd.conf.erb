@@ -1,0 +1,10 @@
+<source>
+  @type unix
+  path <%= unix_domain_socket_path %>
+
+  add_tag_prefix forwarded
+</source>
+
+<match forwarded.**>
+  @type stdout
+</match>

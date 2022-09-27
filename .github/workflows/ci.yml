@@ -38,7 +38,7 @@ jobs:
     - name: Run tests fluency-aws-s3
       run: ./gradlew -p fluency-aws-s3 check jacocoTestReport coveralls --stacktrace --info
 
-  build-ext:
+  build_ext:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -122,4 +122,31 @@ jobs:
         sudo gem install fluentd --no-doc
         echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd tests/mutual-tls && ./run.sh
+
+  integration_ext_test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java_version: [17]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java_version }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - name: Install local maven package
+      run: |
+        ./gradlew publishToMavenLocal --stacktrace --info
+    - name: Run tests using real Fluentd
+      run: |
+        sudo gem install yajl-ruby --no-doc -v 1.4.1
+        sudo gem install fluentd --no-doc
+        cd tests/unix-domain-socket && ./run.sh
 
