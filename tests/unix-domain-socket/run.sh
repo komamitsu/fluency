@@ -4,6 +4,8 @@ set -eu
 
 unix_domain_socket_path=/tmp/fluency-test-unix-domain-socket
 
+rm -f $unix_domain_socket_path
+
 # Start Fluentd as a daemon
 rm -f fluentd.log
 ruby -rerb -e "unix_domain_socket_path = '$unix_domain_socket_path'; puts ERB.new(File.read('fluentd.conf.erb')).result(binding)" > fluentd.conf
@@ -18,7 +20,7 @@ popd
 
 sleep 5
 
-if grep 'forwarded.fluency.test:' fluentd.log; then
+if grep 'fluency.test:' fluentd.log; then
     exit 0
 fi
 

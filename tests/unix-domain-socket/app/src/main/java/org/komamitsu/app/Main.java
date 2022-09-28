@@ -35,7 +35,7 @@ public class Main {
         FluencyExtBuilderForFluentd builder = new FluencyExtBuilderForFluentd();
         builder.setWaitUntilBufferFlushed(5000);
         builder.setWaitUntilFlusherTerminated(5000);
-        builder.setSenderMaxRetryCount(4);
+        builder.setSenderMaxRetryCount(8);
         Fluency fluency = builder.buildForUnixDomainSockets(Arrays.asList(socketAddress));
 
         Map<String, Object> event = new HashMap<>();

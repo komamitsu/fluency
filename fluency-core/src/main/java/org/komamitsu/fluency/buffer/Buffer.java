@@ -116,7 +116,7 @@ public class Buffer
     public void close()
     {
         try {
-            LOG.debug("Saving all buffers");
+            LOG.debug("Saving all buffers if needed");
             saveAllBuffersToFile();
         }
         catch (Exception e) {
