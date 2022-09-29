@@ -70,6 +70,11 @@ public class UnixSocketSender
         return channel.get();
     }
 
+    public Path getPath()
+    {
+        return config.getPath();
+    }
+
     @Override
     protected void sendBuffers(SocketChannel socketChannel, List<ByteBuffer> buffers)
             throws IOException

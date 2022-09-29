@@ -32,15 +32,19 @@ import java.util.List;
 public class FluencyExtBuilderForFluentd
         extends FluencyBuilderForFluentd
 {
-    public Fluency buildForUnixDomainSockets(List<UnixDomainSocketAddress> servers)
+    public Fluency buildFromUnixSocketPath(Path socketPath)
     {
-        List<FluentdSender> senders = new ArrayList<>();
-        for (UnixDomainSocketAddress server : servers) {
-            senders.add(createBaseSender(server.getPath(), true));
-        }
         return buildFromIngester(
                 recordFormatter,
-                buildIngester(new MultiSender(senders)));
+                buildIngester(createBaseSender(socketPath, false)));
+    }
+
+    public Fluency buildFromUnixSocketPaths(List<Path> socketPaths)
+    {
+        return buildFromIngester(
+                recordFormatter,
+                buildIngester(new MultiSender(
+                        socketPaths.stream().map(path -> createBaseSender(path, true)).toList())));
     }
 
     private FluentdSender createBaseSender(Path path, boolean withHeartBeater)

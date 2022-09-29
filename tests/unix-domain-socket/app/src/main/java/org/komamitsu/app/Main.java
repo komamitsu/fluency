@@ -37,7 +37,7 @@ public class Main {
         builder.setWaitUntilBufferFlushed(5000);
         builder.setWaitUntilFlusherTerminated(5000);
         builder.setSenderMaxRetryCount(8);
-        Fluency fluency = builder.buildForUnixDomainSockets(Arrays.asList(socketAddress));
+        Fluency fluency = builder.buildFromUnixSocketPaths(Arrays.asList(socketAddress));
 
         Map<String, Object> event = new HashMap<>();
         event.put("name", "komamitsu");

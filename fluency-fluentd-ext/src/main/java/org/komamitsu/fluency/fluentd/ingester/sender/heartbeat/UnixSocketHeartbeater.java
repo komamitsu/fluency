@@ -51,6 +51,11 @@ public class UnixSocketHeartbeater
         }
     }
 
+    public Path getPath()
+    {
+        return config.getPath();
+    }
+
     @Override
     public String toString()
     {
