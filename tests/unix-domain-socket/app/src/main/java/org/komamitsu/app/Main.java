@@ -21,6 +21,7 @@ import org.komamitsu.fluency.fluentd.FluencyExtBuilderForFluentd;
 
 import java.io.IOException;
 import java.net.UnixDomainSocketAddress;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) throws IOException {
         String host = args[0];
-        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(Paths.get(args[1]));
+        Path socketPath = Paths.get(args[1]);
         String tag = args[2];
         int count = Integer.parseInt(args[3]);
 
@@ -37,7 +38,7 @@ public class Main {
         builder.setWaitUntilBufferFlushed(5000);
         builder.setWaitUntilFlusherTerminated(5000);
         builder.setSenderMaxRetryCount(8);
-        Fluency fluency = builder.buildFromUnixSocketPaths(Arrays.asList(socketAddress));
+        Fluency fluency = builder.buildFromUnixSocketPaths(Arrays.asList(socketPath));
 
         Map<String, Object> event = new HashMap<>();
         event.put("name", "komamitsu");
