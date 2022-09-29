@@ -31,6 +31,7 @@ public class Main {
         String host = args[0];
         UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(Paths.get(args[1]));
         String tag = args[2];
+        int count = Integer.parseInt(args[3]);
 
         FluencyExtBuilderForFluentd builder = new FluencyExtBuilderForFluentd();
         builder.setWaitUntilBufferFlushed(5000);
@@ -41,7 +42,9 @@ public class Main {
         Map<String, Object> event = new HashMap<>();
         event.put("name", "komamitsu");
         event.put("comment", "zzz");
-        fluency.emit(tag, event);
+        for (int i = 0; i < count; i++) {
+            fluency.emit(tag, event);
+        }
         fluency.close();
     }
 }

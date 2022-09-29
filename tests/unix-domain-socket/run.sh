@@ -3,6 +3,7 @@
 set -eu
 
 unix_domain_socket_path=/tmp/fluency-test-unix-domain-socket
+record_count=100000
 
 rm -f $unix_domain_socket_path
 
@@ -15,12 +16,14 @@ trap 'pkill -F fluentd.pid' EXIT
 pushd app
 ./gradlew installDist
 
-build/install/fluency-test-unix-domain-socket/bin/fluency-test-unix-domain-socket my-server $unix_domain_socket_path fluency.test
+build/install/fluency-test-unix-domain-socket/bin/fluency-test-unix-domain-socket my-server $unix_domain_socket_path fluency.test $record_count
 popd
 
 sleep 5
 
-if grep 'fluency.test:' fluentd.log; then
+sum=$(grep 'fluency.test_count' fluentd.log | cut -d' ' -f5 | jq '."fluency.test_count"' | awk '{sum += $1} END {print sum}')
+
+if [[ $sum = $record_count ]]; then
     exit 0
 fi
 

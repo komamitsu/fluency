@@ -4,5 +4,13 @@
 </source>
 
 <match fluency.**>
+  @type flowcounter
+  unit second
+  aggregate tag
+  tag count
+</match>
+
+<match count.**>
   @type stdout
 </match>
+

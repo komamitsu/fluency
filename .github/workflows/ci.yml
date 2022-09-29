@@ -148,5 +148,6 @@ jobs:
       run: |
         sudo gem install yajl-ruby --no-doc -v 1.4.1
         sudo gem install fluentd --no-doc
+        sudo gem install fluent-plugin-flowcounter --no-doc
         cd tests/unix-domain-socket && ./run.sh
 
