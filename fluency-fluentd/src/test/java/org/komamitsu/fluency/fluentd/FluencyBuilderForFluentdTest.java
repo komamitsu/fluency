@@ -20,12 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.buffer.Buffer;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.NetworkSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.*;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
@@ -38,20 +33,14 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class FluencyBuilderForFluentdTest
 {
@@ -90,7 +79,8 @@ class FluencyBuilderForFluentdTest
         RetryableSender retryableSender = (RetryableSender) sender;
         assertDefaultRetryableSender(retryableSender, expectedBaseClass);
 
-        NetworkSender networkSender = (NetworkSender) retryableSender.getBaseSender();
+        assertThat(retryableSender.getBaseSender(), instanceOf(InetSocketSender.class));
+        InetSocketSender<SocketChannel> networkSender = (InetSocketSender) retryableSender.getBaseSender();
         assertThat(networkSender.getHost(), is(expectedHost));
         assertThat(networkSender.getPort(), is(expectedPort));
         assertThat(networkSender.getConnectionTimeoutMilli(), is(5000));
@@ -286,8 +276,11 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
                 assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
                 assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("333.333.333.333"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(11111));
+                {
+                    TCPHeartbeater hb = (TCPHeartbeater) failureDetector.getHeartbeater();
+                    assertThat(hb.getHost(), is("333.333.333.333"));
+                    assertThat(hb.getPort(), is(11111));
+                }
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
 
@@ -304,8 +297,11 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
                 assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
                 assertThat(failureDetector.getHeartbeater(), instanceOf(TCPHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("444.444.444.444"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(22222));
+                {
+                    TCPHeartbeater hb = (TCPHeartbeater) failureDetector.getHeartbeater();
+                    assertThat(hb.getHost(), is("444.444.444.444"));
+                    assertThat(hb.getPort(), is(22222));
+                }
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
         }
@@ -364,8 +360,11 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
                 assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
                 assertThat(failureDetector.getHeartbeater(), instanceOf(SSLHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("333.333.333.333"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(11111));
+                {
+                    SSLHeartbeater hb = (SSLHeartbeater) failureDetector.getHeartbeater();
+                    assertThat(hb.getHost(), is("333.333.333.333"));
+                    assertThat(hb.getPort(), is(11111));
+                }
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
 
@@ -381,8 +380,11 @@ class FluencyBuilderForFluentdTest
                 assertThat(failureDetector.getFailureIntervalMillis(), is(3 * 1000));
                 assertThat(failureDetector.getFailureDetectStrategy(), instanceOf(PhiAccrualFailureDetectStrategy.class));
                 assertThat(failureDetector.getHeartbeater(), instanceOf(SSLHeartbeater.class));
-                assertThat(failureDetector.getHeartbeater().getHost(), is("444.444.444.444"));
-                assertThat(failureDetector.getHeartbeater().getPort(), is(22222));
+                {
+                    SSLHeartbeater hb = (SSLHeartbeater) failureDetector.getHeartbeater();
+                    assertThat(hb.getHost(), is("444.444.444.444"));
+                    assertThat(hb.getPort(), is(22222));
+                }
                 assertThat(failureDetector.getHeartbeater().getIntervalMillis(), is(1000));
             }
         }

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TCPSender
-        extends NetworkSender<SocketChannel>
+        extends InetSocketSender<SocketChannel>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
     private final AtomicReference<SocketChannel> channel = new AtomicReference<>();
@@ -116,7 +116,7 @@ public class TCPSender
     }
 
     public static class Config
-            extends NetworkSender.Config
+            extends InetSocketSender.Config
             implements Validatable
     {
         void validateValues()

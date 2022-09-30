@@ -1,0 +1,4 @@
+files/*
+fluentd.log
+fluentd.pid
+fluentd.conf

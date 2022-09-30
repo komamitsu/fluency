@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.fluentd.ingester.Response;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
+import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Min;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
@@ -93,8 +94,7 @@ public abstract class NetworkSender<T>
         long totalDataSize = buffers.stream().mapToInt(ByteBuffer::remaining).sum();
 
         try {
-            LOG.trace("send(): sender.host={}, sender.port={}, totalDataSize={}",
-                    getHost(), getPort(), totalDataSize);
+            LOG.trace("send(): sender={}, totalDataSize={}", this, totalDataSize);
             final T socket = getOrCreateSocket();
             sendBuffers(socket, buffers);
 
@@ -106,7 +106,7 @@ public abstract class NetworkSender<T>
             final ByteBuffer byteBuffer = ByteBuffer.wrap(optionBuffer);
 
             Future<Void> future = executorService.submit(() -> {
-                LOG.trace("recv(): sender.host={}, sender.port={}", getHost(), getPort());
+                LOG.trace("recv(): sender={}", this);
                 recvResponse(socket, byteBuffer);
                 return null;
             });
@@ -168,16 +168,6 @@ public abstract class NetworkSender<T>
         }
     }
 
-    public String getHost()
-    {
-        return config.getHost();
-    }
-
-    public int getPort()
-    {
-        return config.getPort();
-    }
-
     public int getConnectionTimeoutMilli()
     {
         return config.getConnectionTimeoutMilli();
@@ -214,34 +204,12 @@ public abstract class NetworkSender<T>
     public static class Config
             extends FluentdSender.Config
     {
-        private String host = "127.0.0.1";
-        private int port = 24224;
         @Min(10)
         private int connectionTimeoutMilli = 5000;
         @Min(10)
         private int readTimeoutMilli = 5000;
         @Min(0)
         private int waitBeforeCloseMilli = 1000;
-
-        public String getHost()
-        {
-            return host;
-        }
-
-        public void setHost(String host)
-        {
-            this.host = host;
-        }
-
-        public int getPort()
-        {
-            return port;
-        }
-
-        public void setPort(int port)
-        {
-            this.port = port;
-        }
 
         public int getConnectionTimeoutMilli()
         {
@@ -277,9 +245,7 @@ public abstract class NetworkSender<T>
         public String toString()
         {
             return "Config{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    ", connectionTimeoutMilli=" + connectionTimeoutMilli +
+                    "connectionTimeoutMilli=" + connectionTimeoutMilli +
                     ", readTimeoutMilli=" + readTimeoutMilli +
                     ", waitBeforeCloseMilli=" + waitBeforeCloseMilli +
                     "} " + super.toString();

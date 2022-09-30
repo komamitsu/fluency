@@ -1,0 +1,16 @@
+<source>
+  @type unix
+  path <%= unix_domain_socket_path %>
+</source>
+
+<match fluency.**>
+  @type flowcounter
+  unit second
+  aggregate tag
+  tag count
+</match>
+
+<match count.**>
+  @type stdout
+</match>
+

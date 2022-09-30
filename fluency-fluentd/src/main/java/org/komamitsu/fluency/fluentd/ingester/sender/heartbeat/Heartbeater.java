@@ -88,16 +88,6 @@ public abstract class Heartbeater
         ExecutorServiceUtils.finishExecutorService(executorService);
     }
 
-    public String getHost()
-    {
-        return config.getHost();
-    }
-
-    public int getPort()
-    {
-        return config.getPort();
-    }
-
     public int getIntervalMillis()
     {
         return config.getIntervalMillis();
@@ -121,30 +111,8 @@ public abstract class Heartbeater
     public static class Config
             implements Validatable
     {
-        private String host = "127.0.0.1";
-        private int port = 24224;
         @Min(100)
         private int intervalMillis = 1000;
-
-        public String getHost()
-        {
-            return host;
-        }
-
-        public void setHost(String host)
-        {
-            this.host = host;
-        }
-
-        public int getPort()
-        {
-            return port;
-        }
-
-        public void setPort(int port)
-        {
-            this.port = port;
-        }
 
         public int getIntervalMillis()
         {
@@ -165,9 +133,7 @@ public abstract class Heartbeater
         public String toString()
         {
             return "Config{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    ", intervalMillis=" + intervalMillis +
+                    "intervalMillis=" + intervalMillis +
                     '}';
         }
     }

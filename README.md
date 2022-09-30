@@ -300,6 +300,67 @@ LOG.debug("Memory size allocated by Fluency is {}", fluency.getAllocatedBufferSi
 LOG.debug("Unsent data size buffered by Fluency in memory is {}", fluency.getBufferedDataSize());
 ```
 
+## Ingestion to Fluentd to use extra features with Java 16 or later
+
+### Features
+
+* UNIX domain socket support
+
+### Install
+
+#### Gradle
+
+```groovy
+dependencies {
+    compile "org.komamitsu:fluency-core:${fluency.version}"
+    compile "org.komamitsu:fluency-fluentd:${fluency.version}"
+    compile "org.komamitsu:fluency-fluentd-ext:${fluency.version}"
+}
+```
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency-core</artifactId>
+    <version>${fluency.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency-fluentd</artifactId>
+    <version>${fluency.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.komamitsu</groupId>
+    <artifactId>fluency-fluentd-ext</artifactId>
+    <version>${fluency.version}</version>
+</dependency>
+```
+
+### Usage
+
+#### Create Fluency instance to communicate with Fluentd via UNIX domain socket
+
+```java
+// Single Fluentd(UNIX socket path: /tmp/fluentd/ingest.socket)
+//   - UNIX domain socket heartbeat (by default)
+//   - Asynchronous flush (by default)
+//   - Without ack response (by default)
+//   - Flush attempt interval is 600ms (by default)
+//   - Initial chunk buffer size is 1MB (by default)
+//   - Threshold chunk buffer size to flush is 4MB (by default)
+//   - Threshold chunk buffer retention time to flush is 1000 ms (by default)
+//   - Max total buffer size is 512MB (by default)
+//   - Use off heap memory for buffer pool (by default)
+//   - Max retries of sending events is 8 (by default)
+//   - Max wait until all buffers are flushed is 10 seconds (by default)
+//   - Max wait until the flusher is terminated is 10 seconds (by default)
+Fluency fluency = new FluencyExtBuilderForFluentd().build(Paths.get("/tmp/fluentd/ingest.socket");
+```
+
 ## Ingestion to Treasure Data
 
 ### Features

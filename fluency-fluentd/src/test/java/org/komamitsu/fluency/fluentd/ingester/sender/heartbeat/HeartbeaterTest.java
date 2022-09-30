@@ -71,7 +71,7 @@ public class HeartbeaterTest
     }
 
     private static class TestableHeartbeater
-            extends Heartbeater
+            extends InetSocketHeartbeater
     {
         private final Config config;
         private List<Tuple3<Long, String, Integer>> pongedRecords = new ArrayList<>();
@@ -99,7 +99,7 @@ public class HeartbeaterTest
         }
 
         private static class Config
-                extends Heartbeater.Config
+                extends InetSocketHeartbeater.Config
         {
         }
     }

@@ -29,22 +29,51 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Run tests
-      run: ./gradlew check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests fluency-core
+      run: ./gradlew -p fluency-core check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests fluency-fluentd
+      run: ./gradlew -p fluency-fluentd check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests fluency-treasuredata
+      run: ./gradlew -p fluency-treasuredata check jacocoTestReport coveralls --stacktrace --info
+    - name: Run tests fluency-aws-s3
+      run: ./gradlew -p fluency-aws-s3 check jacocoTestReport coveralls --stacktrace --info
+
+  build_ext:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java_version: [16, 17]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java_version }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Run tests fluency-fluentd-ext
+      run: ./gradlew -p fluency-fluentd-ext check jacocoTestReport coveralls --stacktrace --info
 
   # Fluency uses java.nio.ByteBuffer which can cause inconsistent method signature issue between JDK 8 and 9.
   # We've created Fluency jars using JDK 8 for that and we need to confirm an application built with JDK 9 or later
   # can use Fluecy jars built with JDK 8 without any problem.
-  # We're using --release option to build source code with JDK 8. So JDK 11 should work here.
+  # We're using --release option to build source code with JDK 8. So JDK 17 should work here.
   prepare_for_integration_test:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 11
+    - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
         distribution: temurin
-        java-version: 11
+        java-version: 17
     - uses: actions/cache@v3
       with:
         path: |
@@ -53,7 +82,8 @@ jobs:
         key: ${{ runner.os }}-11-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Install local maven package
       run: |
-        ./gradlew publishToMavenLocal --stacktrace --info
+        ./gradlew -p fluency-core publishToMavenLocal --stacktrace --info
+        ./gradlew -p fluency-fluentd publishToMavenLocal --stacktrace --info
     - name: Upload local Maven package just installed
       uses: actions/upload-artifact@v3
       with:
@@ -65,7 +95,7 @@ jobs:
     needs: prepare_for_integration_test
     strategy:
       matrix:
-        java_version: [8, 11]
+        java_version: [8, 11, 17]
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK ${{ matrix.java_version }}
@@ -92,4 +122,32 @@ jobs:
         sudo gem install fluentd --no-doc
         echo "127.0.0.1 my-server" | sudo tee -a /etc/hosts
         cd tests/mutual-tls && ./run.sh
+
+  integration_ext_test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java_version: [16, 17]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK ${{ matrix.java_version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.java_version }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+    - name: Install local maven package
+      run: |
+        ./gradlew publishToMavenLocal --stacktrace --info
+    - name: Run tests using real Fluentd
+      run: |
+        sudo gem install yajl-ruby --no-doc -v 1.4.1
+        sudo gem install fluentd --no-doc
+        sudo gem install fluent-plugin-flowcounter --no-doc
+        cd tests/unix-domain-socket && ./run.sh
 

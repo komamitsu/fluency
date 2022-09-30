@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class TCPHeartbeater
-        extends Heartbeater
+        extends InetSocketHeartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
     private final Config config;
@@ -60,7 +60,7 @@ public class TCPHeartbeater
     }
 
     public static class Config
-            extends Heartbeater.Config
+            extends InetSocketHeartbeater.Config
     {
     }
 }

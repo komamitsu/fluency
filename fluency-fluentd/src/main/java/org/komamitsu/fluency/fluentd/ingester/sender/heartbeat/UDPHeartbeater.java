@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
 public class UDPHeartbeater
-        extends Heartbeater
+        extends InetSocketHeartbeater
 {
     private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
     private final SocketAddress socketAddress;
@@ -63,7 +63,7 @@ public class UDPHeartbeater
     }
 
     public static class Config
-            extends Heartbeater.Config
+            extends InetSocketHeartbeater.Config
     {
     }
 }
