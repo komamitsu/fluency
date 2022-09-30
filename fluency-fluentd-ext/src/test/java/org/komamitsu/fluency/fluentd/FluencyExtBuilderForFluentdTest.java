@@ -88,36 +88,14 @@ class FluencyExtBuilderForFluentdTest
     }
 
     @Test
-    void buildFromUnixDomainSocket()
+    void build()
             throws IOException
     {
         Path socketPath = Paths.get(System.getProperty("java.io.tmpdir"), "foo/bar.socket");
-        try (Fluency fluency = new FluencyExtBuilderForFluentd().buildFromUnixSocketPath(socketPath)) {
+        try (Fluency fluency = new FluencyExtBuilderForFluentd().build(socketPath)) {
             assertBuffer(fluency.getBuffer());
             assertFlusher(fluency.getFlusher());
             assertDefaultFluentdSender((FluentdSender) fluency.getFlusher().getIngester().getSender(), socketPath);
-        }
-    }
-
-    @Test
-    void buildFromUnixDomainSockets()
-            throws IOException
-    {
-        String tmpdir = System.getProperty("java.io.tmpdir");
-        List<Path> socketPaths = Stream.of("aaa", "bbb", "ccc").map(part -> Paths.get(tmpdir, String.format("foo/bar/%s.socket", part))).toList();
-        try (Fluency fluency = new FluencyExtBuilderForFluentd().buildFromUnixSocketPaths(socketPaths)) {
-            assertBuffer(fluency.getBuffer());
-            assertFlusher(fluency.getFlusher());
-            assertThat(fluency.getFlusher().getIngester().getSender(), instanceOf(RetryableSender.class));
-            FluentdSender baseSender = ((RetryableSender) fluency.getFlusher().getIngester().getSender()).getBaseSender();
-            assertThat(baseSender, instanceOf(MultiSender.class));
-            List<FluentdSender> senders = ((MultiSender) baseSender).getSenders();
-            assertEquals(socketPaths.size(), senders.size());
-            for (int i = 0; i < socketPaths.size(); i++) {
-                FluentdSender sender = senders.get(i);
-                assertThat(sender, instanceOf(UnixSocketSender.class));
-                assertUnixSocketSender((UnixSocketSender) sender, socketPaths.get(i), true);
-            }
         }
     }
 }

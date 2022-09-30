@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.UnixDomainSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +37,7 @@ public class Main {
         builder.setWaitUntilBufferFlushed(5000);
         builder.setWaitUntilFlusherTerminated(5000);
         builder.setSenderMaxRetryCount(8);
-        Fluency fluency = builder.buildFromUnixSocketPaths(Arrays.asList(socketPath));
+        Fluency fluency = builder.build(socketPath);
 
         Map<String, Object> event = new HashMap<>();
         event.put("name", "komamitsu");
