@@ -1,3 +1,18 @@
+## 2.7.0 (2022-09-30)
+
+Improvements:
+
+- Avoid sending buffer chunks larger than `BufferChunkRetentionSize`
+
+Misc:
+
+- Build and publish Maven packages using Java 17 with `--release 8` option
+- Add a new artifact `fluency-fluentd-ext` for Java 16 or later
+
+Features:
+
+- Support UNIX domain socket in `fluency-fluentd-ext`
+
 ## 2.6.5 (2022-07-03)
 
 Bugfix:
