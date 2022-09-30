@@ -85,17 +85,16 @@ class UnixSocketSenderTest
         try (MockUnixSocketServer server = new MockUnixSocketServer()) {
             server.start();
 
-            int concurency = 10;
-//            final int reqNum = 5000;
-            final int reqNum = 50;
-            final CountDownLatch latch = new CountDownLatch(concurency);
+            int concurrency = 10;
+            final int reqNum = 5000;
+            final CountDownLatch latch = new CountDownLatch(concurrency);
             UnixSocketSender sender = senderCreator.create(server.getSocketPath());
 
             // To receive heartbeat at least once
             TimeUnit.MILLISECONDS.sleep(500);
 
             final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
-            for (int i = 0; i < concurency; i++) {
+            for (int i = 0; i < concurrency; i++) {
                 senderExecutorService.execute(() -> {
                     try {
                         byte[] bytes = "0123456789".getBytes();
@@ -137,7 +136,7 @@ class UnixSocketSenderTest
             LOG.debug("recvCount={}", recvCount);
 
             assertThat(connectCount, connectCountMatcher);
-            assertThat(recvLen, is((long) concurency * reqNum * 10));
+            assertThat(recvLen, is((long) concurrency * reqNum * 10));
             assertThat(closeCount, closeCountMatcher);
         }
     }
