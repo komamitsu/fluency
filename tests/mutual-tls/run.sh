@@ -96,7 +96,7 @@ fluentd -d fluentd.pid -c fluentd.conf -l fluentd.log
 trap 'pkill -F fluentd.pid' EXIT
 
 pushd app
-./gradlew installDist
+./gradlew installDist --info --stacktrace
 
 export JAVA_OPTS='-Djavax.net.ssl.trustStore=../files/truststore.jks -Djavax.net.ssl.trustStorePassword=trustpassword -Djavax.net.ssl.keyStore=../files/keystore.jks -Djavax.net.ssl.keyStorePassword=keypassword'
 build/install/fluency-test-mutual-tls/bin/fluency-test-mutual-tls my-server 24224 fluency.test
