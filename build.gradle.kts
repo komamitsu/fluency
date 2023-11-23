@@ -36,14 +36,14 @@ subprojects {
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("org.msgpack:jackson-dataformat-msgpack:0.9.6")
     implementation("org.komamitsu:phi-accural-failure-detector:0.0.5")
-    implementation("dev.jodah:failsafe:3.3.2")
+    implementation("net.jodah:failsafe:2.4.4")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
     testImplementation("ch.qos.logback:logback-classic:1.4.11")
     testImplementation("org.hamcrest:hamcrest-all:1.3")
-    testImplementation("org.mockito:mockito-core:5.7.0")
+    testImplementation("org.mockito:mockito-core:4.11.0")
     testImplementation("com.google.guava:guava:32.1.3-jre")
   }
 
