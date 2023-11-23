@@ -48,7 +48,7 @@ subprojects {
   }
 
   base {
-    archivesBaseName = "fluency"
+    archivesName.set("fluency")
   }
 
   java {
@@ -72,7 +72,7 @@ subprojects {
   tasks.withType<ShadowJar> {
     relocate("com.fasterxml.jackson", "org.komamitsu.thirdparty.jackson")
     relocate("org.msgpack.jackson", "org.komamitsu.thirdparty.msgpack.jackson")
-    classifier = "shadow"
+    archiveClassifier.set("shadow")
   }
 
   publishing {
@@ -170,8 +170,8 @@ subprojects {
     }
 
     reports {
-      xml.isEnabled = true
-      html.isEnabled = true
+      xml.required.set(true)
+      html.required.set(true)
     }
   }
 
