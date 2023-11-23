@@ -77,7 +77,7 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-11-gradle-${{ hashFiles('**/*.gradle*') }}
+        key: ${{ runner.os }}-17-gradle-${{ hashFiles('**/*.gradle*') }}
     - name: Install local maven package
       run: |
         ./gradlew -p fluency-core publishToMavenLocal --stacktrace --info
