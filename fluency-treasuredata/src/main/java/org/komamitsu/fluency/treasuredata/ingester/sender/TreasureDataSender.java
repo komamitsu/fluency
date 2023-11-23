@@ -17,7 +17,6 @@
 package org.komamitsu.fluency.treasuredata.ingester.sender;
 
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
-import com.google.common.annotations.VisibleForTesting;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientBuilder;
 import com.treasuredata.client.TDClientHttpException;
@@ -31,6 +30,7 @@ import org.komamitsu.fluency.ingester.sender.Sender;
 import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.DecimalMin;
 import org.komamitsu.fluency.validation.annotation.Min;
+import org.msgpack.core.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
