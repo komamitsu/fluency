@@ -13,7 +13,7 @@ plugins {
   signing
   `maven-publish`
   id("com.github.kt3k.coveralls") version "2.12.0"
-  id("com.github.johnrengelman.shadow") version "7.1.2"
+  id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 subprojects {
@@ -33,22 +33,22 @@ subprojects {
   }
 
   dependencies {
-    implementation("org.slf4j:slf4j-api:2.0.6")
-    implementation("org.msgpack:jackson-dataformat-msgpack:0.9.3")
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.msgpack:jackson-dataformat-msgpack:0.9.6")
     implementation("org.komamitsu:phi-accural-failure-detector:0.0.5")
     implementation("net.jodah:failsafe:2.4.4")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.1")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.1")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.1")
-    testImplementation("ch.qos.logback:logback-classic:1.2.11")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
+    testImplementation("ch.qos.logback:logback-classic:1.2.12")
     testImplementation("org.hamcrest:hamcrest-all:1.3")
-    testImplementation("org.mockito:mockito-core:4.9.0")
-    testImplementation("com.google.guava:guava:31.1-jre")
+    testImplementation("org.mockito:mockito-core:4.11.0")
+    testImplementation("com.google.guava:guava:32.1.3-jre")
   }
 
   base {
-    archivesBaseName = "fluency"
+    archivesName.set("fluency")
   }
 
   java {
@@ -72,7 +72,7 @@ subprojects {
   tasks.withType<ShadowJar> {
     relocate("com.fasterxml.jackson", "org.komamitsu.thirdparty.jackson")
     relocate("org.msgpack.jackson", "org.komamitsu.thirdparty.msgpack.jackson")
-    classifier = "shadow"
+    archiveClassifier.set("shadow")
   }
 
   publishing {
@@ -170,8 +170,8 @@ subprojects {
     }
 
     reports {
-      xml.isEnabled = true
-      html.isEnabled = true
+      xml.required.set(true)
+      html.required.set(true)
     }
   }
 
