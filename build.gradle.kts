@@ -12,7 +12,7 @@ plugins {
   jacoco
   signing
   `maven-publish`
-  id("com.github.kt3k.coveralls") version "2.12.0"
+  id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
