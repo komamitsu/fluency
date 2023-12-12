@@ -1,5 +1,5 @@
 dependencies {
   implementation(projects.fluencyCore)
 
-  implementation("software.amazon.awssdk:s3:2.21.37")
+  implementation("software.amazon.awssdk:s3:2.21.43")
 }
