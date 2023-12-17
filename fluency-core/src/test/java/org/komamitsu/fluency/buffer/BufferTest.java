@@ -27,7 +27,6 @@ import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 import org.komamitsu.fluency.util.Tuple;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -190,6 +190,43 @@ class BufferTest
         buffer.flush(ingester, true);
 
         verify(ingester, times(1)).ingest(eq("foodb.bartbl"), any(ByteBuffer.class));
+    }
+
+    @Test
+    void flushWithInterrupt()
+            throws IOException
+    {
+        Buffer buffer = new Buffer(bufferConfig, recordFormatter);
+
+        Ingester ingester = mock(Ingester.class);
+        AtomicReference<ByteBuffer> receivedBuffer = new AtomicReference<>();
+        doAnswer((Answer<Void>) invocation -> {
+            receivedBuffer.set(((ByteBuffer)invocation.getArgument(1)).duplicate());
+            return null;
+        }).when(ingester).ingest(anyString(), any(ByteBuffer.class));
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "komamitsu");
+        buffer.append("foodb.bartbl", 1420070400, data);
+
+        try {
+            Thread.currentThread().interrupt();
+            buffer.flush(ingester, true);
+            fail();
+        }
+        catch (IOException e) {
+            // Caused by interruption. This is expected.
+        }
+
+        // Retry
+        buffer.flush(ingester, true);
+
+        verify(ingester, times(1)).ingest(eq("foodb.bartbl"), any(ByteBuffer.class));
+        ObjectMapper objectMapper = new ObjectMapper();
+        byte[] receivedData = new byte[receivedBuffer.get().remaining()];
+        receivedBuffer.get().get(receivedData);
+        Map<String, Object> deserialized = objectMapper.readValue(receivedData, new TypeReference<Map<String, Object>>() {});
+        System.out.println(deserialized);
     }
 
     @Test
