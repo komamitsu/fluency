@@ -189,8 +189,9 @@ public class Buffer
 
         RetentionBuffer newBuffer = new RetentionBuffer(acquiredBuffer, System.currentTimeMillis());
         if (retentionBuffer != null) {
-            retentionBuffer.getByteBuffer().flip();
-            newBuffer.getByteBuffer().put(retentionBuffer.getByteBuffer());
+            ByteBuffer buf = retentionBuffer.getByteBuffer().duplicate();
+            buf.flip();
+            newBuffer.getByteBuffer().put(buf);
             bufferPool.returnBuffer(retentionBuffer.getByteBuffer());
         }
         LOG.trace("prepareBuffer(): allocate a new buffer. tag={}, buffer={}", tag, newBuffer);
@@ -334,8 +335,9 @@ public class Buffer
     {
         try {
             LOG.trace("moveRetentionBufferToFlushable(): tag={}, buffer={}", tag, buffer);
-            buffer.getByteBuffer().flip();
-            flushableBuffers.put(new TaggableBuffer(tag, buffer.getByteBuffer()));
+            ByteBuffer buf = buffer.getByteBuffer().duplicate();
+            buf.flip();
+            flushableBuffers.put(new TaggableBuffer(tag, buf));
             retentionBuffers.put(tag, null);
         }
         catch (InterruptedException e) {
