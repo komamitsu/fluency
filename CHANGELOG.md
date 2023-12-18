@@ -1,3 +1,9 @@
+## 2.7.1 (2023-12-18)
+
+Bugfix:
+
+- Fix potential data loss
+
 ## 2.7.0 (2022-09-30)
 
 Improvements:
