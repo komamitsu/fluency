@@ -124,6 +124,10 @@ public abstract class NetworkSender<T>
                 throw new SocketTimeoutException("Socket read timeout");
             }
 
+            if (byteBuffer.position() == 0) {
+                throw new UnmatchedAckException("Ack token hasn't been received");
+            }
+
             Response response = objectMapper.readValue(optionBuffer, Response.class);
             if (!ackToken.equals(response.getAck())) {
                 throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + response.getAck());
