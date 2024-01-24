@@ -9,4 +9,5 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-
+    assignees:
+      - "komamitsu"
