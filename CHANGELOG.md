@@ -1,3 +1,9 @@
+## 2.7.2 (2024-07-14)
+
+Misc:
+
+- Upgrade dependency versions
+
 ## 2.7.1 (2023-12-18)
 
 Bugfix:
