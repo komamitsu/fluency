@@ -33,7 +33,7 @@ subprojects {
   }
 
   dependencies {
-    implementation("org.slf4j:slf4j-api:2.0.12")
+    implementation("org.slf4j:slf4j-api:2.0.15")
     implementation("org.msgpack:jackson-dataformat-msgpack:0.9.6")
     implementation("org.komamitsu:phi-accural-failure-detector:0.0.5")
     implementation("net.jodah:failsafe:2.4.4")
