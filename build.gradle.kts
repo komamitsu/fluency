@@ -41,7 +41,7 @@ subprojects {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.2")
-    testImplementation("ch.qos.logback:logback-classic:1.3.14")
+    testImplementation("ch.qos.logback:logback-classic:1.5.8")
     testImplementation("org.hamcrest:hamcrest-all:1.3")
     testImplementation("org.mockito:mockito-core:4.11.0")
     testImplementation("com.google.guava:guava:33.1.0-jre")
