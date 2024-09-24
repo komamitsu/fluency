@@ -16,14 +16,12 @@
 
 package org.komamitsu.fluency.fluentd.ingester;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.RequestOption;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
+import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,7 +35,6 @@ public class FluentdIngester
 {
     private final Config config;
     private final FluentdSender sender;
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 
     public FluentdIngester(FluentdSender sender)
     {
@@ -72,7 +69,7 @@ public class FluentdIngester
             // discussion on issue #181.
             String token = UUID.randomUUID().toString();
 
-            ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, token)));
+            ByteBuffer optionBuffer = packRequestOption(dataLength, token);
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
             synchronized (sender) {
@@ -80,13 +77,24 @@ public class FluentdIngester
             }
         }
         else {
-            ByteBuffer optionBuffer = ByteBuffer.wrap(objectMapper.writeValueAsBytes(new RequestOption(dataLength, null)));
+            ByteBuffer optionBuffer = packRequestOption(dataLength, null);
             List<ByteBuffer> buffers = Arrays.asList(headerBuffer, dataBuffer, optionBuffer);
 
             synchronized (sender) {
                 sender.send(buffers);
             }
         }
+    }
+
+    private static ByteBuffer packRequestOption(int dataLength, String token) throws IOException {
+        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        packer.packMapHeader(token == null ? 1 : 2);
+        packer.packString("size").packInt(dataLength);
+        if (token != null) {
+            packer.packString("chunk").packString(token);
+        }
+        packer.close();
+        return ByteBuffer.wrap(packer.toByteArray());
     }
 
     @Override

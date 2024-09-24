@@ -16,13 +16,11 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.fluentd.ingester.Response;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.util.ExecutorServiceUtils;
-import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Min;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageUnpacker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +28,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public abstract class NetworkSender<T>
         extends FluentdSender
@@ -45,7 +39,7 @@ public abstract class NetworkSender<T>
 
     private final Config config;
     private final FailureDetector failureDetector;
-    private final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
 
     NetworkSender(FailureDetector failureDetector)
     {
@@ -124,9 +118,13 @@ public abstract class NetworkSender<T>
                 throw new SocketTimeoutException("Socket read timeout");
             }
 
-            Response response = objectMapper.readValue(optionBuffer, Response.class);
-            if (!ackToken.equals(response.getAck())) {
-                throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + response.getAck());
+            try (MessageUnpacker responseUnpacker = MessagePack.newDefaultUnpacker(optionBuffer)) {
+                responseUnpacker.unpackMapHeader();
+                responseUnpacker.unpackString();
+                String responseAckToken = responseUnpacker.unpackString();
+                if (!ackToken.equals(responseAckToken)) {
+                    throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + responseAckToken);
+                }
             }
         }
         catch (IOException e) {

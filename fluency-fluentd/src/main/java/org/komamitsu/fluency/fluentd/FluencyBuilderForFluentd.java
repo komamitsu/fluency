@@ -18,11 +18,7 @@ package org.komamitsu.fluency.fluentd;
 
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
-import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.RetryableSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.SSLSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.TCPSender;
+import org.komamitsu.fluency.fluentd.ingester.sender.*;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.SSLHeartbeater;
@@ -30,9 +26,10 @@ import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.TCPHeartbeater;
 import org.komamitsu.fluency.fluentd.ingester.sender.retry.ExponentialBackOffRetryStrategy;
 import org.komamitsu.fluency.fluentd.recordformat.FluentdRecordFormatter;
 import org.komamitsu.fluency.ingester.Ingester;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
 
-import java.net.InetSocketAddress;
 import javax.net.ssl.SSLSocketFactory;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +44,14 @@ public class FluencyBuilderForFluentd
     private SSLSocketFactory sslSocketFactory;
     protected Integer connectionTimeoutMilli;
     protected Integer readTimeoutMilli;
-    protected FluentdRecordFormatter recordFormatter = new FluentdRecordFormatter();
+    protected RecordFormatter recordFormatter;
+
+    public FluencyBuilderForFluentd() {
+        this(new FluentdRecordFormatter());
+    }
+    public FluencyBuilderForFluentd (RecordFormatter recordFormatter) {
+        this.recordFormatter = recordFormatter;
+    }
 
     public Integer getSenderMaxRetryCount()
     {
@@ -124,12 +128,12 @@ public class FluencyBuilderForFluentd
         this.readTimeoutMilli = readTimeoutMilli;
     }
 
-    public FluentdRecordFormatter getRecordFormatter()
+    public RecordFormatter getRecordFormatter()
     {
         return recordFormatter;
     }
 
-    public void setRecordFormatter(FluentdRecordFormatter recordFormatter)
+    public void setRecordFormatter(RecordFormatter recordFormatter)
     {
         this.recordFormatter = recordFormatter;
     }
