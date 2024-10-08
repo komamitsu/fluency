@@ -119,13 +119,20 @@ public abstract class NetworkSender<T>
             }
 
             try (MessageUnpacker responseUnpacker = MessagePack.newDefaultUnpacker(optionBuffer)) {
-                responseUnpacker.unpackMapHeader();
-                responseUnpacker.unpackString();
-                String responseAckToken = responseUnpacker.unpackString();
-                if (!ackToken.equals(responseAckToken)) {
-                    throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + responseAckToken);
+                for (int i=0;i<responseUnpacker.unpackMapHeader();i++) {
+                    if (!"ack".equalsIgnoreCase(responseUnpacker.unpackString())) {
+                        responseUnpacker.skipValue();
+                    } else {
+                        String responseAckToken = responseUnpacker.unpackString();
+                        if (ackToken.equals(responseAckToken)) {
+                            return;
+                        } else {
+                            throw new UnmatchedAckException("Ack tokens don't matched: expected=" + ", got=" + responseAckToken);
+                        }
+                    }
                 }
             }
+            throw new IOException("Missing `ack` attribute in the response!");
         }
         catch (IOException e) {
             LOG.error("Failed to send {} bytes data", totalDataSize);

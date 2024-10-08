@@ -49,7 +49,8 @@ public class FluencyBuilderForFluentd
     public FluencyBuilderForFluentd() {
         this(new FluentdRecordFormatter());
     }
-    public FluencyBuilderForFluentd (RecordFormatter recordFormatter) {
+
+    public FluencyBuilderForFluentd(RecordFormatter recordFormatter) {
         this.recordFormatter = recordFormatter;
     }
 

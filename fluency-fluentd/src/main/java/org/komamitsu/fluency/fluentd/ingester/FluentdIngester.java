@@ -87,14 +87,14 @@ public class FluentdIngester
     }
 
     private static ByteBuffer packRequestOption(int dataLength, String token) throws IOException {
-        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
-        packer.packMapHeader(token == null ? 1 : 2);
-        packer.packString("size").packInt(dataLength);
-        if (token != null) {
-            packer.packString("chunk").packString(token);
+        try (MessageBufferPacker packer = MessagePack.newDefaultBufferPacker()) {
+            packer.packMapHeader(token == null ? 1 : 2);
+            packer.packString("size").packInt(dataLength);
+            if (token != null) {
+                packer.packString("chunk").packString(token);
+            }
+            return ByteBuffer.wrap(packer.toByteArray());
         }
-        packer.close();
-        return ByteBuffer.wrap(packer.toByteArray());
     }
 
     @Override
