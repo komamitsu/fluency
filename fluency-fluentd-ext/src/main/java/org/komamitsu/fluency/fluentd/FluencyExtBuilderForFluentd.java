@@ -18,16 +18,12 @@ package org.komamitsu.fluency.fluentd;
 
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.UnixSocketSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.UnixSocketHeartbeater;
 
-import java.net.UnixDomainSocketAddress;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class FluencyExtBuilderForFluentd
         extends FluencyBuilderForFluentd
@@ -35,7 +31,7 @@ public class FluencyExtBuilderForFluentd
     public Fluency build(Path socketPath)
     {
         return buildFromIngester(
-                recordFormatter,
+                prepareRecordFormatter(),
                 buildIngester(createBaseSender(socketPath, false)));
     }
 
