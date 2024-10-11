@@ -119,7 +119,7 @@ public abstract class NetworkSender<T>
             }
 
             try (MessageUnpacker responseUnpacker = MessagePack.newDefaultUnpacker(optionBuffer)) {
-                for (int i=0;i<responseUnpacker.unpackMapHeader();i++) {
+                for (int i = 0; i < responseUnpacker.unpackMapHeader(); i++) {
                     if (!"ack".equalsIgnoreCase(responseUnpacker.unpackString())) {
                         responseUnpacker.skipValue();
                     } else {
