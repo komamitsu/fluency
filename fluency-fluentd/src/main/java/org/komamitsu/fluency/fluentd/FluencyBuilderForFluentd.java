@@ -44,15 +44,7 @@ public class FluencyBuilderForFluentd
     private SSLSocketFactory sslSocketFactory;
     protected Integer connectionTimeoutMilli;
     protected Integer readTimeoutMilli;
-    protected RecordFormatter recordFormatter;
-
-    public FluencyBuilderForFluentd() {
-        this(new FluentdRecordFormatter());
-    }
-
-    public FluencyBuilderForFluentd(RecordFormatter recordFormatter) {
-        this.recordFormatter = recordFormatter;
-    }
+    private RecordFormatter recordFormatter;
 
     public Integer getSenderMaxRetryCount()
     {
@@ -139,24 +131,33 @@ public class FluencyBuilderForFluentd
         this.recordFormatter = recordFormatter;
     }
 
+    protected RecordFormatter prepareRecordFormatter() {
+        if (recordFormatter != null) {
+            return recordFormatter;
+        }
+        else {
+            return new FluentdRecordFormatter();
+        }
+    }
+
     public Fluency build(String host, int port)
     {
         return buildFromIngester(
-                recordFormatter,
+                prepareRecordFormatter(),
                 buildIngester(createBaseSender(host, port)));
     }
 
     public Fluency build(int port)
     {
         return buildFromIngester(
-                recordFormatter,
+                prepareRecordFormatter(),
                 buildIngester(createBaseSender(null, port)));
     }
 
     public Fluency build()
     {
         return buildFromIngester(
-                recordFormatter,
+                prepareRecordFormatter(),
                 buildIngester(createBaseSender(null, null)));
     }
 
@@ -167,7 +168,7 @@ public class FluencyBuilderForFluentd
             senders.add(createBaseSender(server.getHostName(), server.getPort(), true));
         }
         return buildFromIngester(
-                recordFormatter,
+                prepareRecordFormatter(),
                 buildIngester(new MultiSender(senders)));
     }
 
