@@ -54,7 +54,7 @@ public class FileBackup
         this.backupDir = backupDir;
         this.userBuffer = userBuffer;
         this.prefix = prefix;
-        this.pattern = Pattern.compile(userBuffer.bufferFormatType() + prefix() + PARAM_DELIM_IN_FILENAME + "([\\w\\." + PARAM_DELIM_IN_FILENAME + "]+)" + EXT_FILENAME);
+        this.pattern = Pattern.compile(userBuffer.bufferFormatType() + prefix() + PARAM_DELIM_IN_FILENAME + "([\\w\\.\\-" + PARAM_DELIM_IN_FILENAME + "]+)" + EXT_FILENAME);
         LOG.debug(this.toString());
     }
 
