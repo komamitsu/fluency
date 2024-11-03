@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,11 +26,10 @@ class FileBackupTest {
     tempfilePath.toFile().deleteOnExit();
   }
 
-  private void assertSavedBuffer(FileBackup.SavedBuffer savedBuffer, Path expectedPath, byte[] expectedContent, String ... expectedParams) {
+  private void assertSavedBuffer(FileBackup.SavedBuffer savedBuffer, Path expectedPath, byte[] expectedContent, String... expectedParams) {
     assertThat(savedBuffer.getPath()).isEqualTo(expectedPath);
     savedBuffer.open((params, channel) -> {
-      // FIXME
-      assertThat(params).isEqualTo(Arrays.stream(expectedParams).limit(expectedParams.length - 1).collect(Collectors.toList()));
+      assertThat(params.toArray()).isEqualTo(expectedParams);
       try {
         long size = channel.size();
         ByteBuffer buf = ByteBuffer.allocate((int) size);
@@ -41,13 +41,33 @@ class FileBackupTest {
     });
   }
 
+  private void assertSavedFile(File savedFile,
+                               String bufferFormatType,
+                               String prefix,
+                               long startNanos,
+                               long endNanos,
+                               String param1,
+                               String param2,
+                               byte[] expectedContent) throws IOException {
+    String fileName = savedFile.toPath().getFileName().toString();
+    assertThat(fileName).endsWith(".buf");
+
+    String[] partsOfPath = fileName.substring(0, fileName.length() - ".buf".length()).split("#");
+    assertThat(partsOfPath).hasSize(4);
+    assertThat(partsOfPath[0]).isEqualTo(bufferFormatType + "_" + prefix);
+    assertThat(partsOfPath[1]).isEqualTo(param1);
+    assertThat(partsOfPath[2]).isEqualTo(param2);
+    assertThat(Long.valueOf(partsOfPath[3])).isBetween(startNanos, endNanos);
+    assertThat(Files.readAllBytes(savedFile.toPath())).isEqualTo(expectedContent);
+  }
+
   @Test
   void getSavedFiles_GivenEmptyFiles_ShouldReturnEmpty() throws IOException {
     File backupDir = Files.createTempDirectory("test").toFile();
+    backupDir.deleteOnExit();
     Buffer buffer = mock(Buffer.class);
     String prefix = "my_prefix";
     FileBackup fileBackup = new FileBackup(backupDir, buffer, prefix);
-
     assertThat(fileBackup.getSavedFiles()).isEmpty();
   }
 
@@ -59,27 +79,38 @@ class FileBackupTest {
     File backupDir = Files.createTempDirectory("test").toFile();
     backupDir.deleteOnExit();
     createTempFile(backupDir,
-        String.format("xmy_buf_type_my_prefix#%d#param_a#param_b.buf", System.nanoTime()), "ignored");
+        String.format("xmy_buf_type_my_prefix#param_a#param_b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("xmy_buf_type_my_prefix#%d#param_a#param_b.buf", System.nanoTime()), "ignored");
+        String.format("xmy_buf_type_my_prefix#param_a#param_b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("y_buf_type_my_prefix#%d#param_a#param_b.buf", System.nanoTime()), "ignored");
+        String.format("y_buf_type_my_prefix#param_a#param_b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#paramA#paramB.buf", nanoSeconds1), "content1");
+        String.format("my_buf_type_my_prefix#1paramA#1paramB#%d.buf", nanoSeconds1),
+        "content1");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#param-a#param-b.buf", nanoSeconds2), "content2");
+        String.format("my_buf_type_my_prefix#2param-a#2param-b#%d.buf", nanoSeconds2),
+        "content2");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#param_a#param_b.buf", nanoSeconds3), "content3");
+        String.format("my_buf_type_my_prefix#3param_a#3param_b#%d.buf", nanoSeconds3),
+        "content3");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefixz#%d#param_a#param_b.buf", System.nanoTime()), "ignored");
+        String.format("my_buf_type_my_prefixz#param_a#param_b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefi#%d#param_a#param_b.buf", System.nanoTime()), "ignored");
+        String.format("my_buf_type_my_prefi#param_a#param_b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#param:a#param:b.buf", System.nanoTime()), "ignored");
+        String.format("my_buf_type_my_prefix#param:a#param:b#%d.buf", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#param_a#param_b", System.nanoTime()), "ignored");
+        String.format("my_buf_type_my_prefix#param_a#param_b#%d", System.nanoTime()),
+        "ignored");
     createTempFile(backupDir,
-        String.format("my_buf_type_my_prefix#%d#param_a#param_b.buff", System.nanoTime()), "ignored");
+        String.format("my_buf_type_my_prefix#param_a#param_b#%d.buff", System.nanoTime()),
+        "ignored");
     Buffer buffer = mock(Buffer.class);
     doReturn("my_buf_type").when(buffer).bufferFormatType();
     String prefix = "my_prefix";
@@ -89,26 +120,70 @@ class FileBackupTest {
         Comparator.comparing(FileBackup.SavedBuffer::getPath)).collect(Collectors.toList());
     System.out.println(savedFiles);
     assertThat(savedFiles).size().isEqualTo(3);
-
     assertSavedBuffer(savedFiles.get(0),
-        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#%d#paramA#paramB.buf", nanoSeconds1)),
+        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#1paramA#1paramB#%d.buf", nanoSeconds1)),
         "content1".getBytes(StandardCharsets.UTF_8),
-        String.valueOf(nanoSeconds1),
-        "paramA",
-        "paramB");
-
+        "1paramA",
+        "1paramB");
     assertSavedBuffer(savedFiles.get(1),
-        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#%d#param-a#param-b.buf", nanoSeconds2)),
+        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#2param-a#2param-b#%d.buf", nanoSeconds2)),
         "content2".getBytes(StandardCharsets.UTF_8),
-        String.valueOf(nanoSeconds2),
-        "param-a",
-        "param-b");
-
+        "2param-a",
+        "2param-b");
     assertSavedBuffer(savedFiles.get(2),
-        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#%d#param_a#param_b.buf", nanoSeconds3)),
+        backupDir.toPath().resolve(String.format("my_buf_type_my_prefix#3param_a#3param_b#%d.buf", nanoSeconds3)),
         "content3".getBytes(StandardCharsets.UTF_8),
-        String.valueOf(nanoSeconds3),
-        "param_a",
-        "param_b");
+        "3param_a",
+        "3param_b");
+  }
+
+  @Test
+  void saveBuffer() throws IOException {
+    File backupDir = Files.createTempDirectory("test").toFile();
+    backupDir.deleteOnExit();
+    Buffer buffer = mock(Buffer.class);
+    doReturn("my_buf_type").when(buffer).bufferFormatType();
+    String prefix = "my_prefix";
+    FileBackup fileBackup = new FileBackup(backupDir, buffer, prefix);
+    long startNanos = System.nanoTime();
+    fileBackup.saveBuffer(
+        Arrays.asList("1paramA", "1paramB"),
+        ByteBuffer.wrap("content1".getBytes(StandardCharsets.UTF_8)));
+    fileBackup.saveBuffer(
+        Arrays.asList("2param-a", "2param-b"),
+        ByteBuffer.wrap("content2".getBytes(StandardCharsets.UTF_8)));
+    fileBackup.saveBuffer(
+        Arrays.asList("3param_a", "3param_b"),
+        ByteBuffer.wrap("content3".getBytes(StandardCharsets.UTF_8)));
+    long endNanos = System.nanoTime();
+
+    List<File> savedFiles = Arrays.stream(Objects.requireNonNull(backupDir.listFiles()))
+        .sorted(Comparator.comparing(File::toString))
+        .collect(Collectors.toList());
+    assertThat(savedFiles).size().isEqualTo(3);
+    assertSavedFile(savedFiles.get(0),
+        "my_buf_type",
+        "my_prefix",
+        startNanos,
+        endNanos,
+        "1paramA",
+        "1paramB",
+        "content1".getBytes(StandardCharsets.UTF_8));
+    assertSavedFile(savedFiles.get(1),
+        "my_buf_type",
+        "my_prefix",
+        startNanos,
+        endNanos,
+        "2param-a",
+        "2param-b",
+        "content2".getBytes(StandardCharsets.UTF_8));
+    assertSavedFile(savedFiles.get(2),
+        "my_buf_type",
+        "my_prefix",
+        startNanos,
+        endNanos,
+        "3param_a",
+        "3param_b",
+        "content3".getBytes(StandardCharsets.UTF_8));
   }
 }
