@@ -55,7 +55,7 @@ public class FileBackup
         this.backupDir = backupDir;
         this.userBuffer = userBuffer;
         this.prefix = prefix;
-        this.pattern = Pattern.compile("^" + userBuffer.bufferFormatType() + prefix() + PARAM_DELIM_IN_FILENAME + "([\\w\\.\\-" + PARAM_DELIM_IN_FILENAME + "]+)" + EXT_FILENAME + "$");
+        this.pattern = Pattern.compile(String.format("^%s%s%s([\\w.\\-%s]+)%s$", userBuffer.bufferFormatType(), prefix(), PARAM_DELIM_IN_FILENAME, PARAM_DELIM_IN_FILENAME, EXT_FILENAME));
         LOG.debug(this.toString());
     }
 
@@ -84,7 +84,7 @@ public class FileBackup
         }
 
         LOG.debug("Checking backup files. files.length={}", files.length);
-        ArrayList<SavedBuffer> savedBuffers = new ArrayList<>();
+        List<SavedBuffer> savedBuffers = new ArrayList<>();
         for (File f : files) {
             Matcher matcher = pattern.matcher(f.toPath().getFileName().toString());
             if (matcher.find()) {
@@ -134,7 +134,7 @@ public class FileBackup
             channel.write(buffer);
         }
         catch (Exception e) {
-            LOG.error("Failed to save buffer to file: params=" + copiedParams + ", path=" + file.getAbsolutePath() + ", buffer=" + buffer, e);
+            LOG.error("Failed to save buffer to file: params={}, path={}, buffer={}", copiedParams, file.getAbsolutePath(), buffer, e);
         }
         finally {
             if (channel != null) {
@@ -142,7 +142,7 @@ public class FileBackup
                     channel.close();
                 }
                 catch (IOException e) {
-                    LOG.warn("Failed to close Channel: channel=" + channel);
+                    LOG.warn("Failed to close Channel: channel={}", channel);
                 }
             }
         }
@@ -169,14 +169,14 @@ public class FileBackup
                 success();
             }
             catch (Exception e) {
-                LOG.error("Failed to process file. Skipping the file: file=" + savedFile, e);
+                LOG.error("Failed to process file. Skipping the file: file={}", savedFile, e);
             }
             finally {
                 try {
                     close();
                 }
                 catch (IOException e) {
-                    LOG.warn("Failed to close file: file=" + savedFile, e);
+                    LOG.warn("Failed to close file: file={}", savedFile, e);
                 }
             }
         }
@@ -184,7 +184,7 @@ public class FileBackup
         public void remove()
         {
             if (!savedFile.delete()) {
-                LOG.warn("Failed to delete file: file=" + savedFile);
+                LOG.warn("Failed to delete file: file={}", savedFile);
             }
         }
 
@@ -194,7 +194,7 @@ public class FileBackup
                 close();
             }
             catch (IOException e) {
-                LOG.warn("Failed to close file: file=" + savedFile, e);
+                LOG.warn("Failed to close file: file={}", savedFile, e);
             }
             finally {
                 remove();
