@@ -55,10 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -474,21 +471,21 @@ class FluencyTestWithMockServer
             secondaryFluentd.stop();
 
             if (options.failover) {
-                assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));
-                assertThat(fluentd.connectCounter.get(), is(lessThanOrEqualTo(10L)));
-                assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
-                assertThat(fluentd.closeCounter.get(), is(lessThanOrEqualTo(10L)));
+                assertThat(fluentd.connectCounter.get()).isGreaterThan(0L);
+                assertThat(fluentd.connectCounter.get()).isLessThanOrEqualTo(10L);
+                assertThat(fluentd.closeCounter.get()).isGreaterThan(0L);
+                assertThat(fluentd.closeCounter.get()).isLessThanOrEqualTo(10L);
             }
             else {
-                assertThat(fluentd.connectCounter.get(), is(greaterThan(0L)));
-                assertThat(fluentd.connectCounter.get(), is(lessThanOrEqualTo(2L)));
+                assertThat(fluentd.connectCounter.get()).isGreaterThan(0L);
+                assertThat(fluentd.connectCounter.get()).isLessThanOrEqualTo(2L);
                 if (options.closeInsteadOfFlush) {
-                    assertThat(fluentd.closeCounter.get(), is(greaterThan(0L)));
+                    assertThat(fluentd.closeCounter.get()).isGreaterThan(0L);
                 }
                 else {
-                    assertThat(fluentd.closeCounter.get(), is(0L));
+                    assertThat(fluentd.closeCounter.get()).isEqualTo(0L);
                 }
-                assertThat(fluentd.closeCounter.get(), is(lessThanOrEqualTo(2L)));
+                assertThat(fluentd.closeCounter.get()).isLessThanOrEqualTo(2L);
             }
 
             assertEquals((long) concurrency * reqNum, fluentd.ageEventsCounter.get());

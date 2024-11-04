@@ -23,8 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ConfigTest
@@ -38,14 +37,14 @@ class ConfigTest
         config.setErrorHandler(e -> errorOccurred.set(true));
 
         new DummySender(config, false).send(ByteBuffer.allocate(8));
-        assertThat(errorOccurred.get(), is(false));
+        assertThat(errorOccurred.get()).isEqualTo(false);
 
         try {
             new DummySender(config, true).send(ByteBuffer.allocate(8));
             fail();
         }
         catch (Exception e) {
-            assertThat(errorOccurred.get(), is(true));
+            assertThat(errorOccurred.get()).isEqualTo(true);
         }
     }
 

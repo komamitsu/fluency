@@ -35,8 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -83,9 +82,9 @@ class FluencyTest
         Buffer buffer = new Buffer(bufferConfig, new JsonRecordFormatter());
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
-            assertThat(fluency.getAllocatedBufferSize(), is(0L));
+            assertThat(fluency.getAllocatedBufferSize()).isEqualTo(0L);
             fluency.emit("foodb.bartbl", ImmutableMap.of("comment", "hello, world"));
-            assertThat(fluency.getAllocatedBufferSize(), is(1024L));
+            assertThat(fluency.getAllocatedBufferSize()).isEqualTo(1024L);
         }
     }
 
@@ -122,7 +121,7 @@ class FluencyTest
 
         fluency.emit("foo.bar", new HashMap<>());
         fluency.close();
-        assertThat(fluency.waitUntilFlusherTerminated(waitUntilFlusherTerm), is(expected));
+        assertThat(fluency.waitUntilFlusherTerminated(waitUntilFlusherTerm)).isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -136,7 +135,7 @@ class FluencyTest
         Flusher flusher = new Flusher(flusherConfig, buffer, ingester);
         try (Fluency fluency = new Fluency(buffer, flusher)) {
             fluency.emit("foo.bar", new HashMap<>());
-            assertThat(fluency.waitUntilAllBufferFlushed(waitUntilFlusherTerm), is(expected));
+            assertThat(fluency.waitUntilAllBufferFlushed(waitUntilFlusherTerm)).isEqualTo(expected);
         }
     }
 

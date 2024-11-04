@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RetryableSenderTest
@@ -42,9 +41,9 @@ class RetryableSenderTest
                 new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
+        assertThat(baseSender.getRetry()).isEqualTo(0);
         sender.send(ByteBuffer.allocate(64));
-        assertThat(baseSender.getRetry(), is(3));
+        assertThat(baseSender.getRetry()).isEqualTo(3);
     }
 
     @Test
@@ -60,7 +59,7 @@ class RetryableSenderTest
                 new FailurableSender(3), new ExponentialBackOffRetryStrategy(retryStrategyConfig));
 
         FailurableSender baseSender = (FailurableSender) sender.getBaseSender();
-        assertThat(baseSender.getRetry(), is(0));
+        assertThat(baseSender.getRetry()).isEqualTo(0);
         assertThrows(RetryableSender.RetryOverException.class,
                 () -> sender.send(ByteBuffer.allocate(64)));
     }

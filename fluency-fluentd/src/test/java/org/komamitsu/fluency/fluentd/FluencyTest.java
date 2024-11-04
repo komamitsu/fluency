@@ -51,9 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -96,7 +94,7 @@ class FluencyTest
                 throw new AssertionError("Timeout");
             }
 
-            assertThat(errorContainer.get(), is(instanceOf(RetryableSender.RetryOverException.class)));
+            assertThat(errorContainer.get()).isInstanceOf(RetryableSender.RetryOverException.class);
         }
     }
 
@@ -267,7 +265,7 @@ class FluencyTest
         event.put("foo", foo);
         fluency.emit("tag", event);
 
-        assertThat(serialized.get(), is(true));
+        assertThat(serialized.get()).isEqualTo(true);
     }
 
     static class Foo

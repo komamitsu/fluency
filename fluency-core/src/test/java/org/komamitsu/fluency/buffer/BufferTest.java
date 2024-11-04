@@ -40,10 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.number.OrderingComparison.greaterThan;
-import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -337,13 +334,13 @@ class BufferTest
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
         try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
-            assertThat(buffer.getAllocatedSize(), is(0L));
+            assertThat(buffer.getAllocatedSize()).isEqualTo(0L);
             Map<String, Object> map = new HashMap<>();
             map.put("name", "komamitsu");
             for (int i = 0; i < 10; i++) {
                 buffer.append("foo.bar", new Date().getTime(), map);
             }
-            assertThat(buffer.getAllocatedSize(), is(256 * 1024L));
+            assertThat(buffer.getAllocatedSize()).isEqualTo(256 * 1024L);
         }
     }
 
@@ -353,18 +350,18 @@ class BufferTest
     {
         bufferConfig.setChunkInitialSize(256 * 1024);
         try (Buffer buffer = new Buffer(bufferConfig, recordFormatter)) {
-            assertThat(buffer.getBufferedDataSize(), is(0L));
+            assertThat(buffer.getBufferedDataSize()).isEqualTo(0L);
 
             Map<String, Object> map = new HashMap<>();
             map.put("name", "komamitsu");
             for (int i = 0; i < 10; i++) {
                 buffer.append("foo.bar", new Date().getTime(), map);
             }
-            assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
-            assertThat(buffer.getBufferedDataSize(), is(lessThan(512L)));
+            assertThat(buffer.getBufferedDataSize()).isGreaterThan(0L);
+            assertThat(buffer.getBufferedDataSize()).isLessThan(512L);
 
             buffer.flush(ingester, true);
-            assertThat(buffer.getBufferedDataSize(), is(0L));
+            assertThat(buffer.getBufferedDataSize()).isEqualTo(0L);
         }
     }
 

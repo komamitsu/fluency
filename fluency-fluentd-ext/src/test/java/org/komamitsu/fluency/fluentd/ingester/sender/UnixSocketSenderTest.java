@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockUnixSocketServer;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
@@ -35,10 +34,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UnixSocketSenderTest
@@ -51,10 +49,12 @@ class UnixSocketSenderTest
             throws Exception
     {
         testSendBase(socketPath -> {
-            UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-            senderConfig.setPath(socketPath);
-            return new UnixSocketSender(senderConfig);
-        }, is(1), is(1));
+                UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+                senderConfig.setPath(socketPath);
+                return new UnixSocketSender(senderConfig);
+            },
+            count -> assertThat(count).isEqualTo(1),
+            count -> assertThat(count).isEqualTo(1));
     }
 
     @Test
@@ -62,24 +62,26 @@ class UnixSocketSenderTest
             throws Exception
     {
         testSendBase(socketPath -> {
-            UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
-            hbConfig.setPath(socketPath);
-            hbConfig.setIntervalMillis(400);
+                UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
+                hbConfig.setPath(socketPath);
+                hbConfig.setIntervalMillis(400);
 
-            UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-            senderConfig.setPath(socketPath);
+                UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+                senderConfig.setPath(socketPath);
 
-            return new UnixSocketSender(senderConfig,
+                return new UnixSocketSender(senderConfig,
                     new FailureDetector(
-                            new PhiAccrualFailureDetectStrategy(),
-                            new UnixSocketHeartbeater(hbConfig)));
-        }, greaterThan(1), greaterThan(1));
+                        new PhiAccrualFailureDetectStrategy(),
+                        new UnixSocketHeartbeater(hbConfig)));
+            },
+            count -> assertThat(count).isGreaterThan(1),
+            count -> assertThat(count).isGreaterThan(1));
     }
 
     private void testSendBase(
             SenderCreator senderCreator,
-            Matcher<? super Integer> connectCountMatcher,
-            Matcher<? super Integer> closeCountMatcher)
+            Consumer<Integer> connectCountAssertion,
+            Consumer<Integer> closeCountAssertion)
             throws Exception
     {
         try (MockUnixSocketServer server = new MockUnixSocketServer()) {
@@ -135,9 +137,9 @@ class UnixSocketSenderTest
             }
             LOG.debug("recvCount={}", recvCount);
 
-            assertThat(connectCount, connectCountMatcher);
-            assertThat(recvLen, is((long) concurrency * reqNum * 10));
-            assertThat(closeCount, closeCountMatcher);
+            connectCountAssertion.accept(connectCount);
+            assertThat(recvLen).isEqualTo((long) concurrency * reqNum * 10);
+            closeCountAssertion.accept(closeCount);
         }
     }
 

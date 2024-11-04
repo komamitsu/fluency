@@ -18,7 +18,6 @@ package org.komamitsu.fluency.buffer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.EventTime;
 import org.komamitsu.fluency.fluentd.ingester.FluentdIngester;
@@ -44,9 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -108,9 +105,9 @@ class BufferForFluentdTest
         void baseTestMessageBuffer(final int loopCount, final boolean multiTags, final boolean syncFlush, final boolean eventTime, final Buffer buffer)
                 throws IOException, InterruptedException
         {
-            assertThat(buffer.getBufferUsage(), is(0f));
-            assertThat(buffer.getAllocatedSize(), is(0L));
-            assertThat(buffer.getBufferedDataSize(), is(0L));
+            assertThat(buffer.getBufferUsage()).isEqualTo(0f);
+            assertThat(buffer.getAllocatedSize()).isEqualTo(0L);
+            assertThat(buffer.getBufferedDataSize()).isEqualTo(0L);
 
             final int concurrency = 4;
             final CountDownLatch latch = new CountDownLatch(concurrency);
@@ -167,9 +164,9 @@ class BufferForFluentdTest
                 executorService.execute(emitTask);
             }
             assertTrue(latch.await(10, TimeUnit.SECONDS));
-            assertThat(buffer.getBufferUsage(), is(greaterThan(0f)));
-            assertThat(buffer.getAllocatedSize(), is(greaterThan(0L)));
-            assertThat(buffer.getBufferedDataSize(), is(greaterThan(0L)));
+            assertThat(buffer.getBufferUsage()).isGreaterThan(0f);
+            assertThat(buffer.getAllocatedSize()).isGreaterThan(0L);
+            assertThat(buffer.getBufferedDataSize()).isGreaterThan(0L);
 
             buffer.flush(ingester, true);
             buffer.close();
@@ -186,9 +183,9 @@ class BufferForFluentdTest
                 flushService.shutdownNow();
             }
             buffer.close();     // Just in case
-            assertThat(buffer.getBufferUsage(), is(0f));
-            assertThat(buffer.getAllocatedSize(), is(0L));
-            assertThat(buffer.getBufferedDataSize(), is(0L));
+            assertThat(buffer.getBufferUsage()).isEqualTo(0f);
+            assertThat(buffer.getAllocatedSize()).isEqualTo(0L);
+            assertThat(buffer.getBufferedDataSize()).isEqualTo(0L);
 
             int totalLoopCount = concurrency * loopCount;
 
@@ -260,17 +257,17 @@ class BufferForFluentdTest
             tagCounts.put(tag, count + 1);
 
             if (eventTime) {
-                assertThat(timestamp.isExtensionValue(), is(true));
+                assertThat(timestamp.isExtensionValue()).isTrue();
                 ExtensionValue tsInEventTime = timestamp.asExtensionValue();
-                assertThat(tsInEventTime.getType(), CoreMatchers.is((byte) 0x00));
+                assertThat(tsInEventTime.getType()).isEqualTo((byte) 0x00);
                 ByteBuffer secondsAndNanoSeconds = ByteBuffer.wrap(tsInEventTime.getData());
                 int seconds = secondsAndNanoSeconds.getInt();
                 int nanoSeconds = secondsAndNanoSeconds.getInt();
                 assertTrue(start / 1000 <= seconds && seconds <= end / 1000);
-                assertThat(nanoSeconds, is(999999999));
+                assertThat(nanoSeconds).isEqualTo(999999999);
             }
             else {
-                assertThat(timestamp.isIntegerValue(), is(true));
+                assertThat(timestamp.isIntegerValue()).isTrue();
                 long tsInEpochMilli = timestamp.asIntegerValue().asLong();
                 assertTrue(start <= tsInEpochMilli && tsInEpochMilli <= end);
             }
