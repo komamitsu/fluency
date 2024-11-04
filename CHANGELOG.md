@@ -1,3 +1,9 @@
+## 2.7.3 (2024-11-04)
+
+Improvements:
+
+- Support hyphens in the backup file name pattern
+
 ## 2.7.2 (2024-07-14)
 
 Misc:
