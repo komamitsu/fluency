@@ -36,11 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
@@ -80,7 +76,7 @@ class MultiSenderTest
                             new TCPSender(senderConfig1,
                                     createFailureDetector(new TCPHeartbeater(hbConfig1)))));
 
-            assertThat(multiSender.toString().length(), greaterThan(0));
+            assertThat(multiSender.toString().length()).isGreaterThan(0);
 
             assertEquals(2, multiSender.getSenders().size());
 
@@ -141,7 +137,7 @@ class MultiSenderTest
                             new SSLSender(senderConfig1,
                                     createFailureDetector(new SSLHeartbeater(hbConfig1)))));
 
-            assertThat(multiSender.toString().length(), greaterThan(0));
+            assertThat(multiSender.toString().length()).isGreaterThan(0);
 
             assertEquals(2, multiSender.getSenders().size());
 
@@ -314,8 +310,8 @@ class MultiSenderTest
         // But w/o ack responses, Sender can't detect dropped requests. So some margin for expected result is allowed here.
         long minExpectedRecvLen = ((long) (concurency * (sslEnabled ? 0.5 : 0.8)) * reqNum) * 10;
         long maxExpectedRecvLen = ((long) concurency * reqNum) * 10;
-        assertThat(recvLen, is(greaterThanOrEqualTo(minExpectedRecvLen)));
-        assertThat(recvLen, is(lessThanOrEqualTo(maxExpectedRecvLen)));
+        assertThat(recvLen).isGreaterThanOrEqualTo(minExpectedRecvLen);
+        assertThat(recvLen).isLessThanOrEqualTo(maxExpectedRecvLen);
         assertEquals(1, closeCount);
     }
 }

@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
@@ -34,13 +33,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,11 +53,13 @@ class SSLSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            SSLSender.Config config = new SSLSender.Config();
-            config.setPort(port);
-            config.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
-            return new SSLSender(config);
-        }, is(1), is(1));
+                SSLSender.Config config = new SSLSender.Config();
+                config.setPort(port);
+                config.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
+                return new SSLSender(config);
+            },
+            count -> assertThat(count).isEqualTo(1),
+            count -> assertThat(count).isEqualTo(1));
     }
 
     @Test
@@ -68,23 +67,25 @@ class SSLSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config();
-            hbConfig.setPort(port);
-            hbConfig.setIntervalMillis(400);
-            SSLSender.Config senderConfig = new SSLSender.Config();
-            senderConfig.setPort(port);
-            senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
-            return new SSLSender(senderConfig,
+                SSLHeartbeater.Config hbConfig = new SSLHeartbeater.Config();
+                hbConfig.setPort(port);
+                hbConfig.setIntervalMillis(400);
+                SSLSender.Config senderConfig = new SSLSender.Config();
+                senderConfig.setPort(port);
+                senderConfig.setSslSocketFactory(SSL_CLIENT_SOCKET_FACTORY);
+                return new SSLSender(senderConfig,
                     new FailureDetector(
-                            new PhiAccrualFailureDetectStrategy(),
-                            new SSLHeartbeater(hbConfig)));
-        }, greaterThan(1), greaterThan(1));
+                        new PhiAccrualFailureDetectStrategy(),
+                        new SSLHeartbeater(hbConfig)));
+            },
+            count -> assertThat(count).isGreaterThan(1),
+            count -> assertThat(count).isGreaterThan(1));
     }
 
     private void testSendBase(
             SSLSenderCreator sslSenderCreator,
-            Matcher<? super Integer> connectCountMatcher,
-            Matcher<? super Integer> closeCountMatcher)
+            Consumer<Integer> connectCountAssertion,
+            Consumer<Integer> closeCountAssertion)
             throws Exception
     {
         MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(true);
@@ -143,9 +144,9 @@ class SSLSenderTest
         }
         LOG.debug("recvCount={}", recvCount);
 
-        assertThat(connectCount, connectCountMatcher);
-        assertThat(recvLen, is((long) concurency * reqNum * 10));
-        assertThat(closeCount, closeCountMatcher);
+        connectCountAssertion.accept(connectCount);
+        assertThat(recvLen).isEqualTo((long) concurency * reqNum * 10);
+        closeCountAssertion.accept(closeCount);
     }
 
     @Test

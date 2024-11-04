@@ -18,15 +18,13 @@ package org.komamitsu.fluency.fluentd;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.EventTime;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EventTimeTest
@@ -37,28 +35,28 @@ class EventTimeTest
         {
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpoch(now / 1000);
-            assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoseconds(), is(0L));
+            assertThat(eventTime.getSeconds()).isEqualTo(now / 1000);
+            assertThat(eventTime.getNanoseconds()).isEqualTo(0L);
         }
 
         {
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpoch(now / 1000, 999999999L);
-            assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoseconds(), is(999999999L));
+            assertThat(eventTime.getSeconds()).isEqualTo(now / 1000);
+            assertThat(eventTime.getNanoseconds()).isEqualTo(999999999L);
         }
 
         {
             long now = System.currentTimeMillis();
             EventTime eventTime = EventTime.fromEpochMilli(now);
-            assertThat(eventTime.getSeconds(), is(now / 1000));
-            assertThat(eventTime.getNanoseconds(), Matchers.is(now % 1000 * 1000000));
+            assertThat(eventTime.getSeconds()).isEqualTo(now / 1000);
+            assertThat(eventTime.getNanoseconds()).isEqualTo(now % 1000 * 1000000);
         }
 
         {
             EventTime eventTime = EventTime.fromEpoch(0xFFFFFFFFL, 0xFFFFFFFFL);
-            assertThat(eventTime.getSeconds(), is(0xFFFFFFFFL));
-            assertThat(eventTime.getNanoseconds(), is(0xFFFFFFFFL));
+            assertThat(eventTime.getSeconds()).isEqualTo(0xFFFFFFFFL);
+            assertThat(eventTime.getNanoseconds()).isEqualTo(0xFFFFFFFFL);
         }
     }
 
@@ -88,10 +86,10 @@ class EventTimeTest
             ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
             byte[] bytes = objectMapper.writeValueAsBytes(eventTime);
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            assertThat(byteBuffer.get(), is((byte) 0xD7));
-            assertThat(byteBuffer.get(), is((byte) 0x00));
-            assertThat(byteBuffer.getInt(), is((int) (now / 1000)));
-            assertThat(byteBuffer.getInt(), is(999999999));
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xD7);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0x00);
+            assertThat(byteBuffer.getInt()).isEqualTo((int) (now / 1000));
+            assertThat(byteBuffer.getInt()).isEqualTo(999999999);
         }
 
         {
@@ -99,18 +97,18 @@ class EventTimeTest
             ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
             byte[] bytes = objectMapper.writeValueAsBytes(eventTime);
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            assertThat(byteBuffer.get(), is((byte) 0xD7));
-            assertThat(byteBuffer.get(), is((byte) 0x00));
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xD7);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0x00);
 
-            assertThat(byteBuffer.get(), is((byte) 0xFF));
-            assertThat(byteBuffer.get(), is((byte) 0xEE));
-            assertThat(byteBuffer.get(), is((byte) 0xDD));
-            assertThat(byteBuffer.get(), is((byte) 0xCC));
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xFF);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xEE);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xDD);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xCC);
 
-            assertThat(byteBuffer.get(), is((byte) 0xFE));
-            assertThat(byteBuffer.get(), is((byte) 0xDC));
-            assertThat(byteBuffer.get(), is((byte) 0xBA));
-            assertThat(byteBuffer.get(), is((byte) 0x98));
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xFE);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xDC);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0xBA);
+            assertThat(byteBuffer.get()).isEqualTo((byte) 0x98);
         }
     }
 }

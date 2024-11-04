@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
 import org.komamitsu.fluency.fluentd.MockTCPServerWithMetrics;
@@ -40,14 +39,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 class TCPSenderTest
 {
@@ -58,10 +55,12 @@ class TCPSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            TCPSender.Config senderConfig = new TCPSender.Config();
-            senderConfig.setPort(port);
-            return new TCPSender(senderConfig);
-        }, is(1), is(1));
+                TCPSender.Config senderConfig = new TCPSender.Config();
+                senderConfig.setPort(port);
+                return new TCPSender(senderConfig);
+            },
+            count -> assertThat(count).isEqualTo(1),
+            count -> assertThat(count).isEqualTo(1));
     }
 
     @Test
@@ -69,24 +68,26 @@ class TCPSenderTest
             throws Exception
     {
         testSendBase(port -> {
-            TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config();
-            hbConfig.setPort(port);
-            hbConfig.setIntervalMillis(400);
+                TCPHeartbeater.Config hbConfig = new TCPHeartbeater.Config();
+                hbConfig.setPort(port);
+                hbConfig.setIntervalMillis(400);
 
-            TCPSender.Config senderConfig = new TCPSender.Config();
-            senderConfig.setPort(port);
+                TCPSender.Config senderConfig = new TCPSender.Config();
+                senderConfig.setPort(port);
 
-            return new TCPSender(senderConfig,
+                return new TCPSender(senderConfig,
                     new FailureDetector(
-                            new PhiAccrualFailureDetectStrategy(),
-                            new TCPHeartbeater(hbConfig)));
-        }, greaterThan(1), greaterThan(1));
+                        new PhiAccrualFailureDetectStrategy(),
+                        new TCPHeartbeater(hbConfig)));
+            },
+            count -> assertThat(count).isGreaterThan(1),
+            count -> assertThat(count).isGreaterThan(1));
     }
 
     private void testSendBase(
             TCPSenderCreater senderCreater,
-            Matcher<? super Integer> connectCountMatcher,
-            Matcher<? super Integer> closeCountMatcher)
+            Consumer<Integer> connectCountAssertion,
+            Consumer<Integer> closeCountAssertion)
             throws Exception
     {
         MockTCPServerWithMetrics server = new MockTCPServerWithMetrics(false);
@@ -143,9 +144,9 @@ class TCPSenderTest
         }
         LOG.debug("recvCount={}", recvCount);
 
-        assertThat(connectCount, connectCountMatcher);
-        assertThat(recvLen, is((long) concurency * reqNum * 10));
-        assertThat(closeCount, closeCountMatcher);
+        connectCountAssertion.accept(connectCount);
+        assertThat(recvLen).isEqualTo((long) concurency * reqNum * 10);
+        closeCountAssertion.accept(closeCount);
     }
 
     @Test
