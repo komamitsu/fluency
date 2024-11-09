@@ -16,88 +16,67 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+public abstract class InetSocketHeartbeater extends Heartbeater {
+  private static final Logger LOG = LoggerFactory.getLogger(InetSocketHeartbeater.class);
+  private final Config config;
 
-public abstract class InetSocketHeartbeater
-    extends Heartbeater
-{
-    private static final Logger LOG = LoggerFactory.getLogger(InetSocketHeartbeater.class);
-    private final Config config;
+  protected InetSocketHeartbeater(Config config) {
+    super(config);
+    this.config = config;
+  }
 
-    protected InetSocketHeartbeater(Config config)
-    {
-        super(config);
-        this.config = config;
+  protected abstract void invoke() throws IOException;
+
+  public String getHost() {
+    return config.getHost();
+  }
+
+  public int getPort() {
+    return config.getPort();
+  }
+
+  public int getIntervalMillis() {
+    return config.getIntervalMillis();
+  }
+
+  @Override
+  public String toString() {
+    return "InetHeartbeater{" + "config=" + config + '}';
+  }
+
+  public interface Callback {
+    void onHeartbeat();
+
+    void onFailure(Throwable cause);
+  }
+
+  public static class Config extends Heartbeater.Config {
+    private String host = "127.0.0.1";
+    private int port = 24224;
+
+    public String getHost() {
+      return host;
     }
 
-    protected abstract void invoke()
-            throws IOException;
-
-    public String getHost()
-    {
-        return config.getHost();
+    public void setHost(String host) {
+      this.host = host;
     }
 
-    public int getPort()
-    {
-        return config.getPort();
+    public int getPort() {
+      return port;
     }
 
-    public int getIntervalMillis()
-    {
-        return config.getIntervalMillis();
+    public void setPort(int port) {
+      this.port = port;
     }
 
     @Override
-    public String toString()
-    {
-        return "InetHeartbeater{" +
-                "config=" + config +
-                '}';
+    public String toString() {
+      return "Config{" + "host='" + host + '\'' + ", port=" + port + "} " + super.toString();
     }
-
-    public interface Callback
-    {
-        void onHeartbeat();
-
-        void onFailure(Throwable cause);
-    }
-
-    public static class Config
-        extends Heartbeater.Config
-    {
-        private String host = "127.0.0.1";
-        private int port = 24224;
-
-        public String getHost()
-        {
-            return host;
-        }
-
-        public void setHost(String host)
-        {
-            this.host = host;
-        }
-
-        public int getPort()
-        {
-            return port;
-        }
-
-        public void setPort(int port)
-        {
-            this.port = port;
-        }
-
-        @Override
-        public String toString() {
-            return "Config{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    "} " + super.toString();
-        }
-    }
+  }
 }

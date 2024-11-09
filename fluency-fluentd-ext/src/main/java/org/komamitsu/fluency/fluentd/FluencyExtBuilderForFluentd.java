@@ -16,48 +16,37 @@
 
 package org.komamitsu.fluency.fluentd;
 
+import java.nio.file.Path;
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.fluentd.ingester.sender.FluentdSender;
-import org.komamitsu.fluency.fluentd.ingester.sender.MultiSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.UnixSocketSender;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
 import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
 import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.UnixSocketHeartbeater;
 
-import java.net.UnixDomainSocketAddress;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+public class FluencyExtBuilderForFluentd extends FluencyBuilderForFluentd {
+  public Fluency build(Path socketPath) {
+    return buildFromIngester(recordFormatter, buildIngester(createBaseSender(socketPath, false)));
+  }
 
-public class FluencyExtBuilderForFluentd
-        extends FluencyBuilderForFluentd
-{
-    public Fluency build(Path socketPath)
-    {
-        return buildFromIngester(
-                recordFormatter,
-                buildIngester(createBaseSender(socketPath, false)));
+  private FluentdSender createBaseSender(Path path, boolean withHeartBeater) {
+    UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+    FailureDetector failureDetector = null;
+    if (path != null) {
+      senderConfig.setPath(path.toAbsolutePath());
     }
-
-    private FluentdSender createBaseSender(Path path, boolean withHeartBeater)
-    {
-        UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-        FailureDetector failureDetector = null;
-        if (path != null) {
-            senderConfig.setPath(path.toAbsolutePath());
-        }
-        if (withHeartBeater) {
-            UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
-            hbConfig.setPath(path.toAbsolutePath());
-            UnixSocketHeartbeater heartbeater = new UnixSocketHeartbeater(hbConfig);
-            failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
-        }
-        if (connectionTimeoutMilli != null) {
-            senderConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
-        }
-        if (readTimeoutMilli != null) {
-            senderConfig.setReadTimeoutMilli(readTimeoutMilli);
-        }
-        return new UnixSocketSender(senderConfig, failureDetector);
+    if (withHeartBeater) {
+      UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
+      hbConfig.setPath(path.toAbsolutePath());
+      UnixSocketHeartbeater heartbeater = new UnixSocketHeartbeater(hbConfig);
+      failureDetector = new FailureDetector(new PhiAccrualFailureDetectStrategy(), heartbeater);
     }
+    if (connectionTimeoutMilli != null) {
+      senderConfig.setConnectionTimeoutMilli(connectionTimeoutMilli);
+    }
+    if (readTimeoutMilli != null) {
+      senderConfig.setReadTimeoutMilli(readTimeoutMilli);
+    }
+    return new UnixSocketSender(senderConfig, failureDetector);
+  }
 }

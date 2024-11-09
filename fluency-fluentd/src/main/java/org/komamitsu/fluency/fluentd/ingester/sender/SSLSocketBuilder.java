@@ -16,53 +16,48 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.SocketFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
-public class SSLSocketBuilder
-{
-    private final String host;
-    private final int port;
-    private final int connectionTimeoutMilli;
-    private final int readTimeoutMilli;
-    private final SSLSocketFactory sslSocketFactory;
+public class SSLSocketBuilder {
+  private final String host;
+  private final int port;
+  private final int connectionTimeoutMilli;
+  private final int readTimeoutMilli;
+  private final SSLSocketFactory sslSocketFactory;
 
-    public SSLSocketBuilder(String host, Integer port, int connectionTimeoutMilli, int readTimeoutMilli, SocketFactory sslSocketFactory)
-    {
-        this.host = host;
-        this.port = port;
-        this.connectionTimeoutMilli = connectionTimeoutMilli;
-        this.readTimeoutMilli = readTimeoutMilli;
-        this.sslSocketFactory = (SSLSocketFactory)sslSocketFactory;
+  public SSLSocketBuilder(
+      String host,
+      Integer port,
+      int connectionTimeoutMilli,
+      int readTimeoutMilli,
+      SocketFactory sslSocketFactory) {
+    this.host = host;
+    this.port = port;
+    this.connectionTimeoutMilli = connectionTimeoutMilli;
+    this.readTimeoutMilli = readTimeoutMilli;
+    this.sslSocketFactory = (SSLSocketFactory) sslSocketFactory;
+  }
+
+  public SSLSocket build() throws IOException {
+    Socket socket = this.sslSocketFactory.createSocket();
+    try {
+      socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
+      socket.setTcpNoDelay(true);
+      socket.setSoTimeout(readTimeoutMilli);
+    } catch (Throwable e) {
+      socket.close();
+      throw e;
     }
+    return (SSLSocket) socket;
+  }
 
-    public SSLSocket build()
-            throws IOException
-    {
-        Socket socket = this.sslSocketFactory.createSocket();
-        try {
-            socket.connect(new InetSocketAddress(host, port), connectionTimeoutMilli);
-            socket.setTcpNoDelay(true);
-            socket.setSoTimeout(readTimeoutMilli);
-        }
-        catch (Throwable e) {
-            socket.close();
-            throw e;
-        }
-        return (SSLSocket) socket;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "SSLSocketBuilder{" +
-                "host='" + host + '\'' +
-                ", port=" + port +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "SSLSocketBuilder{" + "host='" + host + '\'' + ", port=" + port + '}';
+  }
 }

@@ -17,106 +17,85 @@
 package org.komamitsu.fluency.fluentd.recordformat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
+import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class FluentdRecordFormatter
-        extends AbstractRecordFormatter
-        implements RecordFormatter
-{
-    private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
+public class FluentdRecordFormatter extends AbstractRecordFormatter implements RecordFormatter {
+  private static final Logger LOG = LoggerFactory.getLogger(FluentdRecordFormatter.class);
 
-    public FluentdRecordFormatter()
-    {
-        this(new Config());
+  public FluentdRecordFormatter() {
+    this(new Config());
+  }
+
+  public FluentdRecordFormatter(Config config) {
+    super(config);
+  }
+
+  @Override
+  public byte[] format(String tag, Object timestamp, Map<String, Object> data) {
+    try {
+      return objectMapperForMessagePack.writeValueAsBytes(Arrays.asList(timestamp, data));
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
+              e.getMessage(), tag, timestamp, data.size()));
     }
+  }
 
-    public FluentdRecordFormatter(Config config)
-    {
-        super(config);
+  @Override
+  public byte[] formatFromMessagePack(
+      String tag, Object timestamp, byte[] mapValue, int offset, int len) {
+    try {
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      // 2 items array
+      outputStream.write(0x92);
+      objectMapperForMessagePack.writeValue(outputStream, timestamp);
+      outputStream.write(mapValue, offset, len);
+      outputStream.close();
+
+      return outputStream.toByteArray();
+    } catch (IOException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+              e.getMessage(), tag, timestamp, mapValue.length));
     }
+  }
 
-    @Override
-    public byte[] format(String tag, Object timestamp, Map<String, Object> data)
-    {
-        try {
-            return objectMapperForMessagePack.writeValueAsBytes(Arrays.asList(timestamp, data));
-        }
-        catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
-                            e.getMessage(),
-                            tag, timestamp, data.size())
-            );
-        }
+  @Override
+  public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue) {
+    int mapValueLen = mapValue.remaining();
+    try {
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      // 2 items array
+      outputStream.write(0x92);
+      objectMapperForMessagePack.writeValue(outputStream, timestamp);
+      while (mapValue.hasRemaining()) {
+        outputStream.write(mapValue.get());
+      }
+      outputStream.close();
+
+      return outputStream.toByteArray();
+    } catch (IOException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
+              e.getMessage(), tag, timestamp, mapValueLen));
     }
+  }
 
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
-    {
-        try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            // 2 items array
-            outputStream.write(0x92);
-            objectMapperForMessagePack.writeValue(outputStream, timestamp);
-            outputStream.write(mapValue, offset, len);
-            outputStream.close();
+  @Override
+  public String formatName() {
+    return "fluentd-packedforward";
+  }
 
-            return outputStream.toByteArray();
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, mapValue.length)
-            );
-        }
-    }
-
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
-    {
-        int mapValueLen = mapValue.remaining();
-        try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            // 2 items array
-            outputStream.write(0x92);
-            objectMapperForMessagePack.writeValue(outputStream, timestamp);
-            while (mapValue.hasRemaining()) {
-                outputStream.write(mapValue.get());
-            }
-            outputStream.close();
-
-            return outputStream.toByteArray();
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Failed to convert the record to MessagePack format: cause=%s, tag=%s, timestamp=%s, dataSize=%s",
-                            e.getMessage(),
-                            tag, timestamp, mapValueLen)
-            );
-        }
-    }
-
-    @Override
-    public String formatName()
-    {
-        return "fluentd-packedforward";
-    }
-
-    public static class Config
-            extends RecordFormatter.Config
-    {
-    }
+  public static class Config extends RecordFormatter.Config {}
 }

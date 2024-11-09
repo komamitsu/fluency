@@ -14,6 +14,7 @@ plugins {
   `maven-publish`
   id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.github.johnrengelman.shadow") version "8.1.1"
+  id("com.diffplug.spotless") version "6.13.0"
 }
 
 subprojects {
@@ -26,6 +27,7 @@ subprojects {
   apply(plugin = "maven-publish")
   apply(plugin = "jacoco")
   apply(plugin = "com.github.kt3k.coveralls")
+  apply(plugin = "com.diffplug.spotless")
 
   repositories {
     mavenCentral()
@@ -186,6 +188,15 @@ subprojects {
 
   tasks.coveralls {
     dependsOn(jacocoRootReport)
+  }
+
+  spotless {
+    java {
+      target("src/*/java/**/*.java")
+      importOrder()
+      removeUnusedImports()
+      googleJavaFormat("1.7")
+    }
   }
 }
 

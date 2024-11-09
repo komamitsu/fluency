@@ -16,38 +16,34 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
-
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ConstantRetryStrategyTest
-{
-    @Test
-    void testGetNextIntervalMillis()
-    {
-        ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
-        config.setRetryIntervalMillis(600);
-        config.setMaxRetryCount(6);
-        RetryStrategy strategy = new ConstantRetryStrategy(config);
+import org.junit.jupiter.api.Test;
 
-        assertEquals(600, strategy.getNextIntervalMillis(0));
-        assertEquals(600, strategy.getNextIntervalMillis(1));
-        assertEquals(600, strategy.getNextIntervalMillis(2));
-        assertEquals(600, strategy.getNextIntervalMillis(6));
-        assertFalse(strategy.isRetriedOver(6));
-        assertEquals(600, strategy.getNextIntervalMillis(7));
-        assertTrue(strategy.isRetriedOver(7));
-    }
+class ConstantRetryStrategyTest {
+  @Test
+  void testGetNextIntervalMillis() {
+    ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
+    config.setRetryIntervalMillis(600);
+    config.setMaxRetryCount(6);
+    RetryStrategy strategy = new ConstantRetryStrategy(config);
 
-    @Test
-    void validateConfig()
-    {
-        ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
-        config.setRetryIntervalMillis(9);
-        assertThrows(IllegalArgumentException.class, () -> new ConstantRetryStrategy(config));
-    }
+    assertEquals(600, strategy.getNextIntervalMillis(0));
+    assertEquals(600, strategy.getNextIntervalMillis(1));
+    assertEquals(600, strategy.getNextIntervalMillis(2));
+    assertEquals(600, strategy.getNextIntervalMillis(6));
+    assertFalse(strategy.isRetriedOver(6));
+    assertEquals(600, strategy.getNextIntervalMillis(7));
+    assertTrue(strategy.isRetriedOver(7));
+  }
+
+  @Test
+  void validateConfig() {
+    ConstantRetryStrategy.Config config = new ConstantRetryStrategy.Config();
+    config.setRetryIntervalMillis(9);
+    assertThrows(IllegalArgumentException.class, () -> new ConstantRetryStrategy(config));
+  }
 }

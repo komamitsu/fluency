@@ -16,15 +16,6 @@
 
 package org.komamitsu.fluency.aws.s3.ingester;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,42 +24,46 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class AwsS3IngesterTest
-{
-    private AwsS3Sender s3Sender;
-    private S3DestinationDecider destinationDecider;
-    private AwsS3Ingester ingester;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 
-    @BeforeEach
-            void setUp()
-    {
-        s3Sender = mock(AwsS3Sender.class);
+class AwsS3IngesterTest {
+  private AwsS3Sender s3Sender;
+  private S3DestinationDecider destinationDecider;
+  private AwsS3Ingester ingester;
 
-        destinationDecider = mock(S3DestinationDecider.class);
-        doReturn(new S3DestinationDecider.S3Destination("mybucket", "my/key/base.data"))
-                .when(destinationDecider).decide(anyString(), any(Instant.class));
+  @BeforeEach
+  void setUp() {
+    s3Sender = mock(AwsS3Sender.class);
 
-        ingester = new AwsS3Ingester(s3Sender, destinationDecider);
-    }
+    destinationDecider = mock(S3DestinationDecider.class);
+    doReturn(new S3DestinationDecider.S3Destination("mybucket", "my/key/base.data"))
+        .when(destinationDecider)
+        .decide(anyString(), any(Instant.class));
 
-    @Test
-    void ingest()
-            throws IOException
-    {
-        ingester.ingest("foo.bar",
-                ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8)));
+    ingester = new AwsS3Ingester(s3Sender, destinationDecider);
+  }
 
-        verify(s3Sender, times(1))
-                .send(eq("mybucket"),
-                        eq("my/key/base.data"),
-                        eq(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))));
-    }
+  @Test
+  void ingest() throws IOException {
+    ingester.ingest("foo.bar", ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8)));
 
-    @Test
-    void close()
-    {
-        ingester.close();
+    verify(s3Sender, times(1))
+        .send(
+            eq("mybucket"),
+            eq("my/key/base.data"),
+            eq(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))));
+  }
 
-        verify(s3Sender, times(1)).close();
-    }
+  @Test
+  void close() {
+    ingester.close();
+
+    verify(s3Sender, times(1)).close();
+  }
 }

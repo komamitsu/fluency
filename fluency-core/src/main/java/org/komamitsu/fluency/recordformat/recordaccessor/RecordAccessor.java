@@ -16,16 +16,14 @@
 
 package org.komamitsu.fluency.recordformat.recordaccessor;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public interface RecordAccessor
-{
-    String getAsString(String key);
+public interface RecordAccessor {
+  String getAsString(String key);
 
-    void setTimestamp(long timestamp);
+  void setTimestamp(long timestamp);
 
-    byte[] toMessagePack(ObjectMapper objectMapperForMessagePack);
+  byte[] toMessagePack(ObjectMapper objectMapperForMessagePack);
 
-    String toJson(ObjectMapper objectMapperForJson);
+  String toJson(ObjectMapper objectMapperForJson);
 }

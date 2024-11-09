@@ -18,55 +18,45 @@ package org.komamitsu.fluency.recordformat.recordaccessor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.HashMap;
 import java.util.Map;
 
-public class MapRecordAccessor
-        implements RecordAccessor
-{
-    private Map<String, Object> map;
+public class MapRecordAccessor implements RecordAccessor {
+  private Map<String, Object> map;
 
-    public MapRecordAccessor(Map<String, Object> map)
-    {
-        this.map = new HashMap<>(map);
-    }
+  public MapRecordAccessor(Map<String, Object> map) {
+    this.map = new HashMap<>(map);
+  }
 
-    @Override
-    public String getAsString(String key)
-    {
-        Object value = map.get(key);
-        if (value == null) {
-            return null;
-        }
-        return value.toString();
+  @Override
+  public String getAsString(String key) {
+    Object value = map.get(key);
+    if (value == null) {
+      return null;
     }
+    return value.toString();
+  }
 
-    @Override
-    public void setTimestamp(long timestamp)
-    {
-        map.putIfAbsent("time", timestamp);
-    }
+  @Override
+  public void setTimestamp(long timestamp) {
+    map.putIfAbsent("time", timestamp);
+  }
 
-    @Override
-    public byte[] toMessagePack(ObjectMapper objectMapperForMessagePack)
-    {
-        try {
-            return objectMapperForMessagePack.writeValueAsBytes(map);
-        }
-        catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize the map to MessagePack format", e);
-        }
+  @Override
+  public byte[] toMessagePack(ObjectMapper objectMapperForMessagePack) {
+    try {
+      return objectMapperForMessagePack.writeValueAsBytes(map);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to serialize the map to MessagePack format", e);
     }
+  }
 
-    @Override
-    public String toJson(ObjectMapper objectMapperForJson)
-    {
-        try {
-            return objectMapperForJson.writeValueAsString(map);
-        }
-        catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize the map to JSON format", e);
-        }
+  @Override
+  public String toJson(ObjectMapper objectMapperForJson) {
+    try {
+      return objectMapperForJson.writeValueAsString(map);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to serialize the map to JSON format", e);
     }
+  }
 }

@@ -16,23 +16,17 @@
 
 package org.komamitsu.fluency.aws.s3.recordformat;
 
-
 public class MessagePackRecordFormatter
-        extends org.komamitsu.fluency.recordformat.MessagePackRecordFormatter
-        implements AwsS3RecordFormatter
-{
-    public MessagePackRecordFormatter()
-    {
-        this(new Config());
-    }
+    extends org.komamitsu.fluency.recordformat.MessagePackRecordFormatter
+    implements AwsS3RecordFormatter {
+  public MessagePackRecordFormatter() {
+    this(new Config());
+  }
 
-    public MessagePackRecordFormatter(Config config)
-    {
-        super(config);
-    }
+  public MessagePackRecordFormatter(Config config) {
+    super(config);
+  }
 
-    public static class Config
-         extends org.komamitsu.fluency.recordformat.MessagePackRecordFormatter.Config
-    {
-    }
+  public static class Config
+      extends org.komamitsu.fluency.recordformat.MessagePackRecordFormatter.Config {}
 }

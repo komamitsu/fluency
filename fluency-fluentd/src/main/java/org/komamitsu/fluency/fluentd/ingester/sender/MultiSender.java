@@ -16,107 +16,84 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class MultiSender
-        extends FluentdSender
-{
-    private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
-    private final List<FluentdSender> senders;
+public class MultiSender extends FluentdSender {
+  private static final Logger LOG = LoggerFactory.getLogger(MultiSender.class);
+  private final List<FluentdSender> senders;
 
-    public MultiSender(List<FluentdSender> senders)
-    {
-        this(new Config(), senders);
-    }
+  public MultiSender(List<FluentdSender> senders) {
+    this(new Config(), senders);
+  }
 
-    public MultiSender(Config config, List<FluentdSender> senders)
-    {
-        super(config);
-        this.senders = senders;
-    }
+  public MultiSender(Config config, List<FluentdSender> senders) {
+    super(config);
+    this.senders = senders;
+  }
 
-    @Override
-    public boolean isAvailable()
-    {
-        return true;
-    }
+  @Override
+  public boolean isAvailable() {
+    return true;
+  }
 
-    @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
-            throws AllNodesUnavailableException
-    {
-        for (FluentdSender sender : senders) {
-            boolean isAvailable = sender.isAvailable();
-            LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
-            if (isAvailable) {
-                try {
-                    if (ackToken == null) {
-                        sender.send(buffers);
-                    }
-                    else {
-                        sender.sendWithAck(buffers, ackToken);
-                    }
-                    return;
-                }
-                catch (IOException e) {
-                    LOG.warn("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
-                }
-            }
+  @Override
+  protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
+      throws AllNodesUnavailableException {
+    for (FluentdSender sender : senders) {
+      boolean isAvailable = sender.isAvailable();
+      LOG.trace("send(): sender={}, isAvailable={}", sender, isAvailable);
+      if (isAvailable) {
+        try {
+          if (ackToken == null) {
+            sender.send(buffers);
+          } else {
+            sender.sendWithAck(buffers, ackToken);
+          }
+          return;
+        } catch (IOException e) {
+          LOG.warn("Failed to send: sender=" + sender + ". Trying to use next sender...", e);
         }
-        throw new AllNodesUnavailableException("All nodes are unavailable");
+      }
     }
+    throw new AllNodesUnavailableException("All nodes are unavailable");
+  }
 
-    @Override
-    public void close()
-            throws IOException
-    {
-        IOException firstException = null;
-        for (FluentdSender sender : senders) {
-            try {
-                sender.close();
-            }
-            catch (IOException e) {
-                if (firstException == null) {
-                    firstException = e;
-                }
-            }
+  @Override
+  public void close() throws IOException {
+    IOException firstException = null;
+    for (FluentdSender sender : senders) {
+      try {
+        sender.close();
+      } catch (IOException e) {
+        if (firstException == null) {
+          firstException = e;
         }
-        if (firstException != null) {
-            throw firstException;
-        }
+      }
     }
+    if (firstException != null) {
+      throw firstException;
+    }
+  }
 
-    public List<FluentdSender> getSenders()
-    {
-        return Collections.unmodifiableList(senders);
-    }
+  public List<FluentdSender> getSenders() {
+    return Collections.unmodifiableList(senders);
+  }
 
-    @Override
-    public String toString()
-    {
-        return "MultiSender{" +
-                "senders=" + senders +
-                "} " + super.toString();
-    }
+  @Override
+  public String toString() {
+    return "MultiSender{" + "senders=" + senders + "} " + super.toString();
+  }
 
-    public static class AllNodesUnavailableException
-            extends IOException
-    {
-        public AllNodesUnavailableException(String s)
-        {
-            super(s);
-        }
+  public static class AllNodesUnavailableException extends IOException {
+    public AllNodesUnavailableException(String s) {
+      super(s);
     }
+  }
 
-    public static class Config
-            extends FluentdSender.Config
-    {
-    }
+  public static class Config extends FluentdSender.Config {}
 }
-

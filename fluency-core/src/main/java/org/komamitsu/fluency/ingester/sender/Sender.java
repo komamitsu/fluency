@@ -16,28 +16,21 @@
 
 package org.komamitsu.fluency.ingester.sender;
 
-public interface Sender
-{
-    class Config
-    {
-        private ErrorHandler errorHandler;
+public interface Sender {
+  class Config {
+    private ErrorHandler errorHandler;
 
-        public ErrorHandler getErrorHandler()
-        {
-            return errorHandler;
-        }
-
-        public void setErrorHandler(ErrorHandler errorHandler)
-        {
-            this.errorHandler = errorHandler;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "senderErrorHandler=" + errorHandler +
-                    '}';
-        }
+    public ErrorHandler getErrorHandler() {
+      return errorHandler;
     }
+
+    public void setErrorHandler(ErrorHandler errorHandler) {
+      this.errorHandler = errorHandler;
+    }
+
+    @Override
+    public String toString() {
+      return "Config{" + "senderErrorHandler=" + errorHandler + '}';
+    }
+  }
 }

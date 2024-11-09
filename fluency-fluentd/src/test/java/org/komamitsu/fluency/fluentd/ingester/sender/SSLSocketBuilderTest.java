@@ -16,13 +16,8 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.fluentd.SSLTestSocketFactories;
-
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,65 +35,65 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.fluentd.SSLTestSocketFactories;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.komamitsu.fluency.fluentd.SSLTestSocketFactories.SSL_CLIENT_SOCKET_FACTORY;
+class SSLSocketBuilderTest {
+  private SSLServerSocket serverSocket;
 
-class SSLSocketBuilderTest
-{
-    private SSLServerSocket serverSocket;
+  @BeforeEach
+  void setUp()
+      throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException,
+          KeyStoreException, KeyManagementException {
+    serverSocket = SSLTestSocketFactories.createServerSocket();
+  }
 
-    @BeforeEach
-    void setUp()
-            throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException
-    {
-        serverSocket = SSLTestSocketFactories.createServerSocket();
+  @AfterEach
+  void tearDown() throws IOException {
+    if (serverSocket != null) {
+      serverSocket.close();
     }
+  }
 
-    @AfterEach
-    void tearDown()
-            throws IOException
-    {
-        if (serverSocket != null) {
-            serverSocket.close();
-        }
-    }
+  @Test
+  void testWithServer()
+      throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    final AtomicInteger readLen = new AtomicInteger();
+    final byte[] buf = new byte[256];
 
-    @Test
-    void testWithServer()
-            throws IOException, InterruptedException, ExecutionException, TimeoutException
-    {
-        final AtomicInteger readLen = new AtomicInteger();
-        final byte[] buf = new byte[256];
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(new Callable<Void>()
-        {
-            @Override
-            public Void call()
-                    throws Exception
-            {
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    Future<Void> future =
+        executorService.submit(
+            new Callable<Void>() {
+              @Override
+              public Void call() throws Exception {
                 Socket clientSocket = serverSocket.accept();
                 readLen.set(clientSocket.getInputStream().read(buf));
                 return null;
-            }
-        });
+              }
+            });
 
-        SSLSocket sslSocket = new SSLSocketBuilder("localhost", serverSocket.getLocalPort(), 5000, 5000, SSL_CLIENT_SOCKET_FACTORY).build();
+    SSLSocket sslSocket =
+        new SSLSocketBuilder(
+                "localhost", serverSocket.getLocalPort(), 5000, 5000, SSL_CLIENT_SOCKET_FACTORY)
+            .build();
 
-        try {
-            OutputStream outputStream = sslSocket.getOutputStream();
-            outputStream.write("hello".getBytes("ASCII"));
-            outputStream.flush();
-        }
-        finally {
-            sslSocket.close();
-        }
-
-        future.get(10, TimeUnit.SECONDS);
-        executorService.shutdown();
-        executorService.awaitTermination(10, TimeUnit.SECONDS);
-
-        assertEquals(new String(buf, 0, readLen.get(), "ASCII"), "hello");
+    try {
+      OutputStream outputStream = sslSocket.getOutputStream();
+      outputStream.write("hello".getBytes("ASCII"));
+      outputStream.flush();
+    } finally {
+      sslSocket.close();
     }
+
+    future.get(10, TimeUnit.SECONDS);
+    executorService.shutdown();
+    executorService.awaitTermination(10, TimeUnit.SECONDS);
+
+    assertEquals(new String(buf, 0, readLen.get(), "ASCII"), "hello");
+  }
 }

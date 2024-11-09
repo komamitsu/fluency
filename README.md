@@ -621,3 +621,17 @@ Fluency fluency = builder.build();
 ##### Other configurations
 
 Some of other usages are same as ingestion to Fluentd. See `Ingestion to Fluentd > Usage` above.
+
+## Development
+
+### Pre-commit hook
+
+This project uses [pre-commit](https://pre-commit.com/) to automate code format and so on as much as possible. If you're interested in the development of this project, please [install pre-commit](https://pre-commit.com/#installation) and the git hook script as follows.
+
+```
+$ ls -a .pre-commit-config.yaml
+.pre-commit-config.yaml
+$ pre-commit install
+```
+
+The code formatter is automatically executed when committing files. A commit will fail and be formatted by the formatter when any invalid code format is detected. Try to commit the change again.

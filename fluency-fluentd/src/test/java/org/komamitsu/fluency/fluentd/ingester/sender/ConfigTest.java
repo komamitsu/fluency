@@ -16,68 +16,54 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+class ConfigTest {
+  @Test
+  void errorHandler() throws IOException {
+    final AtomicBoolean errorOccurred = new AtomicBoolean();
+    FluentdSender.Config config = new FluentdSender.Config();
+    config.setErrorHandler(e -> errorOccurred.set(true));
 
-class ConfigTest
-{
-    @Test
-    void errorHandler()
-            throws IOException
-    {
-        final AtomicBoolean errorOccurred = new AtomicBoolean();
-        FluentdSender.Config config = new FluentdSender.Config();
-        config.setErrorHandler(e -> errorOccurred.set(true));
+    new DummySender(config, false).send(ByteBuffer.allocate(8));
+    assertThat(errorOccurred.get()).isEqualTo(false);
 
-        new DummySender(config, false).send(ByteBuffer.allocate(8));
-        assertThat(errorOccurred.get()).isEqualTo(false);
+    try {
+      new DummySender(config, true).send(ByteBuffer.allocate(8));
+      fail();
+    } catch (Exception e) {
+      assertThat(errorOccurred.get()).isEqualTo(true);
+    }
+  }
 
-        try {
-            new DummySender(config, true).send(ByteBuffer.allocate(8));
-            fail();
-        }
-        catch (Exception e) {
-            assertThat(errorOccurred.get()).isEqualTo(true);
-        }
+  static class DummySender extends FluentdSender {
+    private final boolean shouldFail;
+
+    protected DummySender(Config config, boolean shouldFail) {
+      super(config);
+      this.shouldFail = shouldFail;
     }
 
-    static class DummySender
-            extends FluentdSender
-    {
-        private final boolean shouldFail;
-
-        protected DummySender(Config config, boolean shouldFail)
-        {
-            super(config);
-            this.shouldFail = shouldFail;
-        }
-
-        @Override
-        public boolean isAvailable()
-        {
-            return true;
-        }
-
-        @Override
-        protected void sendInternal(List<ByteBuffer> buffers, String ackToken)
-                throws IOException
-        {
-            if (shouldFail) {
-                throw new RuntimeException("Unexpected scheduled error occurred");
-            }
-        }
-
-        @Override
-        public void close()
-                throws IOException
-        {
-        }
+    @Override
+    public boolean isAvailable() {
+      return true;
     }
+
+    @Override
+    protected void sendInternal(List<ByteBuffer> buffers, String ackToken) throws IOException {
+      if (shouldFail) {
+        throw new RuntimeException("Unexpected scheduled error occurred");
+      }
+    }
+
+    @Override
+    public void close() throws IOException {}
+  }
 }

@@ -16,54 +16,54 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ExponentialBackOffRetryStrategyTest
-{
-    @Test
-    void testGetNextIntervalMillis()
-    {
-        ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
-        config.setBaseIntervalMillis(400);
-        config.setMaxIntervalMillis(30000);
-        config.setMaxRetryCount(7);
-        RetryStrategy strategy = new ExponentialBackOffRetryStrategy(config);
+import org.junit.jupiter.api.Test;
 
-        assertEquals(400, strategy.getNextIntervalMillis(0));
-        assertEquals(800, strategy.getNextIntervalMillis(1));
-        assertEquals(1600, strategy.getNextIntervalMillis(2));
-        assertEquals(3200, strategy.getNextIntervalMillis(3));
-        assertEquals(25600, strategy.getNextIntervalMillis(6));
-        assertEquals(30000, strategy.getNextIntervalMillis(7));
-        assertFalse(strategy.isRetriedOver(7));
-        assertEquals(30000, strategy.getNextIntervalMillis(8));
-        assertTrue(strategy.isRetriedOver(8));
+class ExponentialBackOffRetryStrategyTest {
+  @Test
+  void testGetNextIntervalMillis() {
+    ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
+    config.setBaseIntervalMillis(400);
+    config.setMaxIntervalMillis(30000);
+    config.setMaxRetryCount(7);
+    RetryStrategy strategy = new ExponentialBackOffRetryStrategy(config);
+
+    assertEquals(400, strategy.getNextIntervalMillis(0));
+    assertEquals(800, strategy.getNextIntervalMillis(1));
+    assertEquals(1600, strategy.getNextIntervalMillis(2));
+    assertEquals(3200, strategy.getNextIntervalMillis(3));
+    assertEquals(25600, strategy.getNextIntervalMillis(6));
+    assertEquals(30000, strategy.getNextIntervalMillis(7));
+    assertFalse(strategy.isRetriedOver(7));
+    assertEquals(30000, strategy.getNextIntervalMillis(8));
+    assertTrue(strategy.isRetriedOver(8));
+  }
+
+  @Test
+  void validateConfig() {
+    {
+      ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
+      config.setMaxRetryCount(-1);
+      assertThrows(
+          IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
     }
 
-    @Test
-    void validateConfig()
     {
-        {
-            ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
-            config.setMaxRetryCount(-1);
-            assertThrows(IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
-        }
-
-        {
-            ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
-            config.setBaseIntervalMillis(9);
-            assertThrows(IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
-        }
-
-        {
-            ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
-            config.setMaxIntervalMillis(9);
-            assertThrows(IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
-        }
+      ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
+      config.setBaseIntervalMillis(9);
+      assertThrows(
+          IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
     }
+
+    {
+      ExponentialBackOffRetryStrategy.Config config = new ExponentialBackOffRetryStrategy.Config();
+      config.setMaxIntervalMillis(9);
+      assertThrows(
+          IllegalArgumentException.class, () -> new ExponentialBackOffRetryStrategy(config));
+    }
+  }
 }

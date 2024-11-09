@@ -16,125 +16,107 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.komamitsu.fluency.fluentd.ingester.sender.retry.RetryStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class RetryableSender
-        extends FluentdSender
-{
-    private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
-    private final FluentdSender baseSender;
-    private final AtomicBoolean isClosed = new AtomicBoolean();
-    private RetryStrategy retryStrategy;
+public class RetryableSender extends FluentdSender {
+  private static final Logger LOG = LoggerFactory.getLogger(RetryableSender.class);
+  private final FluentdSender baseSender;
+  private final AtomicBoolean isClosed = new AtomicBoolean();
+  private RetryStrategy retryStrategy;
 
-    public RetryableSender(FluentdSender baseSender, RetryStrategy retryStrategy)
-    {
-        this(new Config(), baseSender, retryStrategy);
-    }
+  public RetryableSender(FluentdSender baseSender, RetryStrategy retryStrategy) {
+    this(new Config(), baseSender, retryStrategy);
+  }
 
-    public RetryableSender(Config config, FluentdSender baseSender, RetryStrategy retryStrategy)
-    {
-        super(config);
-        this.baseSender = baseSender;
-        this.retryStrategy = retryStrategy;
-    }
+  public RetryableSender(Config config, FluentdSender baseSender, RetryStrategy retryStrategy) {
+    super(config);
+    this.baseSender = baseSender;
+    this.retryStrategy = retryStrategy;
+  }
 
-    @Override
-    public void close()
-            throws IOException
-    {
-        baseSender.close();
-        isClosed.set(true);
-    }
+  @Override
+  public void close() throws IOException {
+    baseSender.close();
+    isClosed.set(true);
+  }
 
-    @Override
-    public boolean isAvailable()
-    {
-        return true;
-    }
+  @Override
+  public boolean isAvailable() {
+    return true;
+  }
 
-    @Override
-    protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
-            throws IOException
-    {
-        IOException firstException = null;
+  @Override
+  protected synchronized void sendInternal(List<ByteBuffer> buffers, String ackToken)
+      throws IOException {
+    IOException firstException = null;
 
-        int retry = 0;
-        while (!retryStrategy.isRetriedOver(retry)) {
-            if (isClosed.get()) {
-                throw new RetryOverException("This sender is already closed", firstException);
-            }
+    int retry = 0;
+    while (!retryStrategy.isRetriedOver(retry)) {
+      if (isClosed.get()) {
+        throw new RetryOverException("This sender is already closed", firstException);
+      }
 
-            try {
-                if (ackToken == null) {
-                    baseSender.send(buffers);
-                }
-                else {
-                    baseSender.sendWithAck(buffers, ackToken);
-                }
-                return;
-            }
-            catch (IOException e) {
-                firstException = e;
-                LOG.warn("Sender failed to send data. sender=" + this + ", retry=" + retry, e);
-            }
-
-            try {
-                TimeUnit.MILLISECONDS.sleep(retryStrategy.getNextIntervalMillis(retry));
-            }
-            catch (InterruptedException e) {
-                LOG.debug("Interrupted while waiting", e);
-                Thread.currentThread().interrupt();
-            }
-            retry++;
+      try {
+        if (ackToken == null) {
+          baseSender.send(buffers);
+        } else {
+          baseSender.sendWithAck(buffers, ackToken);
         }
+        return;
+      } catch (IOException e) {
+        firstException = e;
+        LOG.warn("Sender failed to send data. sender=" + this + ", retry=" + retry, e);
+      }
 
-        throw new RetryOverException("Sending data was retried over", firstException);
+      try {
+        TimeUnit.MILLISECONDS.sleep(retryStrategy.getNextIntervalMillis(retry));
+      } catch (InterruptedException e) {
+        LOG.debug("Interrupted while waiting", e);
+        Thread.currentThread().interrupt();
+      }
+      retry++;
     }
 
-    public FluentdSender getBaseSender()
-    {
-        return baseSender;
-    }
+    throw new RetryOverException("Sending data was retried over", firstException);
+  }
 
-    public RetryStrategy getRetryStrategy()
-    {
-        return retryStrategy;
-    }
+  public FluentdSender getBaseSender() {
+    return baseSender;
+  }
 
-    public boolean isClosed()
-    {
-        return isClosed.get();
-    }
+  public RetryStrategy getRetryStrategy() {
+    return retryStrategy;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "RetryableSender{" +
-                "baseSender=" + baseSender +
-                ", retryStrategy=" + retryStrategy +
-                ", isClosed=" + isClosed +
-                "} " + super.toString();
-    }
+  public boolean isClosed() {
+    return isClosed.get();
+  }
 
-    public static class RetryOverException
-            extends IOException
-    {
-        public RetryOverException(String s, Throwable throwable)
-        {
-            super(s, throwable);
-        }
-    }
+  @Override
+  public String toString() {
+    return "RetryableSender{"
+        + "baseSender="
+        + baseSender
+        + ", retryStrategy="
+        + retryStrategy
+        + ", isClosed="
+        + isClosed
+        + "} "
+        + super.toString();
+  }
 
-    public static class Config
-            extends FluentdSender.Config
-    {
+  public static class RetryOverException extends IOException {
+    public RetryOverException(String s, Throwable throwable) {
+      super(s, throwable);
     }
+  }
+
+  public static class Config extends FluentdSender.Config {}
 }

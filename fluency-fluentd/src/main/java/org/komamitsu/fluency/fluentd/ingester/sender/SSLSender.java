@@ -16,14 +16,6 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.validation.Validatable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,121 +23,104 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.validation.Validatable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class SSLSender
-        extends InetSocketSender<SSLSocket>
-{
-    private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
-    private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
-    private final SSLSocketBuilder socketBuilder;
-    private final Config config;
+public class SSLSender extends InetSocketSender<SSLSocket> {
+  private static final Logger LOG = LoggerFactory.getLogger(TCPSender.class);
+  private final AtomicReference<SSLSocket> socket = new AtomicReference<>();
+  private final SSLSocketBuilder socketBuilder;
+  private final Config config;
 
-    public SSLSender()
-    {
-        this(new Config());
+  public SSLSender() {
+    this(new Config());
+  }
+
+  public SSLSender(Config config) {
+    this(config, null);
+  }
+
+  public SSLSender(FailureDetector failureDetector) {
+    this(new Config(), failureDetector);
+  }
+
+  public SSLSender(Config config, FailureDetector failureDetector) {
+    super(config, failureDetector);
+    config.validateValues();
+
+    socketBuilder =
+        new SSLSocketBuilder(
+            config.getHost(),
+            config.getPort(),
+            config.getConnectionTimeoutMilli(),
+            config.getReadTimeoutMilli(),
+            config.getSslSocketFactory());
+    this.config = config;
+  }
+
+  @Override
+  protected SSLSocket getOrCreateSocketInternal() throws IOException {
+    if (socket.get() == null) {
+      socket.set(socketBuilder.build());
+    }
+    return socket.get();
+  }
+
+  @Override
+  protected void sendBuffers(SSLSocket sslSocket, List<ByteBuffer> buffers) throws IOException {
+    for (ByteBuffer buffer : buffers) {
+      OutputStream outputStream = sslSocket.getOutputStream();
+      if (buffer.hasArray()) {
+        outputStream.write(buffer.array(), buffer.position(), buffer.remaining());
+      } else {
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        outputStream.write(bytes);
+      }
+    }
+  }
+
+  @Override
+  protected void recvResponse(SSLSocket sslSocket, ByteBuffer buffer) throws IOException {
+    InputStream inputStream = sslSocket.getInputStream();
+    byte[] tempBuf = new byte[buffer.remaining()];
+    int read = inputStream.read(tempBuf);
+    if (read < 0) {
+      throw new SocketException("The connection is disconnected by the peer");
+    }
+    buffer.put(tempBuf, 0, read);
+  }
+
+  @Override
+  protected void closeSocket() throws IOException {
+    SSLSocket existingSocket;
+    if ((existingSocket = socket.getAndSet(null)) != null) {
+      existingSocket.close();
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "SSLSender{" + "config=" + config + "} " + super.toString();
+  }
+
+  public static class Config extends InetSocketSender.Config implements Validatable {
+    void validateValues() {
+      validate();
     }
 
-    public SSLSender(Config config)
-    {
-        this(config, null);
+    private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+
+    public SSLSocketFactory getSslSocketFactory() {
+      return sslSocketFactory;
     }
 
-    public SSLSender(FailureDetector failureDetector)
-    {
-        this(new Config(), failureDetector);
+    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+      this.sslSocketFactory = sslSocketFactory;
     }
-
-    public SSLSender(Config config, FailureDetector failureDetector)
-    {
-        super(config, failureDetector);
-        config.validateValues();
-
-        socketBuilder = new SSLSocketBuilder(
-                config.getHost(),
-                config.getPort(),
-                config.getConnectionTimeoutMilli(),
-                config.getReadTimeoutMilli(),
-                config.getSslSocketFactory());
-        this.config = config;
-    }
-
-    @Override
-    protected SSLSocket getOrCreateSocketInternal()
-            throws IOException
-    {
-        if (socket.get() == null) {
-            socket.set(socketBuilder.build());
-        }
-        return socket.get();
-    }
-
-    @Override
-    protected void sendBuffers(SSLSocket sslSocket, List<ByteBuffer> buffers)
-            throws IOException
-    {
-        for (ByteBuffer buffer : buffers) {
-            OutputStream outputStream = sslSocket.getOutputStream();
-            if (buffer.hasArray()) {
-                outputStream.write(buffer.array(), buffer.position(), buffer.remaining());
-            }
-            else {
-                byte[] bytes = new byte[buffer.remaining()];
-                buffer.get(bytes);
-                outputStream.write(bytes);
-            }
-        }
-    }
-
-    @Override
-    protected void recvResponse(SSLSocket sslSocket, ByteBuffer buffer)
-            throws IOException
-    {
-        InputStream inputStream = sslSocket.getInputStream();
-        byte[] tempBuf = new byte[buffer.remaining()];
-        int read = inputStream.read(tempBuf);
-        if (read < 0) {
-            throw new SocketException("The connection is disconnected by the peer");
-        }
-        buffer.put(tempBuf, 0, read);
-    }
-
-    @Override
-    protected void closeSocket()
-            throws IOException
-    {
-        SSLSocket existingSocket;
-        if ((existingSocket = socket.getAndSet(null)) != null) {
-            existingSocket.close();
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "SSLSender{" +
-                "config=" + config +
-                "} " + super.toString();
-    }
-
-    public static class Config
-            extends InetSocketSender.Config
-            implements Validatable
-    {
-        void validateValues()
-        {
-            validate();
-        }
-
-        private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-
-        public SSLSocketFactory getSslSocketFactory()
-        {
-            return sslSocketFactory;
-        }
-
-        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
-        {
-            this.sslSocketFactory = sslSocketFactory;
-        }
-    }
+  }
 }

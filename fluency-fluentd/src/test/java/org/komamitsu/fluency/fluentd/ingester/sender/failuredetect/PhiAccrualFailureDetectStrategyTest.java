@@ -16,25 +16,25 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-class PhiAccrualFailureDetectStrategyTest
-{
-    @Test
-    void validateConfig()
-    {
-        {
-            PhiAccrualFailureDetectStrategy.Config config = new PhiAccrualFailureDetectStrategy.Config();
-            config.setPhiThreshold(0);
-            assertThrows(IllegalArgumentException.class, () -> new PhiAccrualFailureDetectStrategy(config));
-        }
+import org.junit.jupiter.api.Test;
 
-        {
-            PhiAccrualFailureDetectStrategy.Config config = new PhiAccrualFailureDetectStrategy.Config();
-            config.setArrivalWindowSize(0);
-            assertThrows(IllegalArgumentException.class, () -> new PhiAccrualFailureDetectStrategy(config));
-        }
+class PhiAccrualFailureDetectStrategyTest {
+  @Test
+  void validateConfig() {
+    {
+      PhiAccrualFailureDetectStrategy.Config config = new PhiAccrualFailureDetectStrategy.Config();
+      config.setPhiThreshold(0);
+      assertThrows(
+          IllegalArgumentException.class, () -> new PhiAccrualFailureDetectStrategy(config));
     }
+
+    {
+      PhiAccrualFailureDetectStrategy.Config config = new PhiAccrualFailureDetectStrategy.Config();
+      config.setArrivalWindowSize(0);
+      assertThrows(
+          IllegalArgumentException.class, () -> new PhiAccrualFailureDetectStrategy(config));
+    }
+  }
 }

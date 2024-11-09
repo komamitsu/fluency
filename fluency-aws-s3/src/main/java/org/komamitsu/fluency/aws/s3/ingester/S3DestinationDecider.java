@@ -18,29 +18,24 @@ package org.komamitsu.fluency.aws.s3.ingester;
 
 import java.time.Instant;
 
-public interface S3DestinationDecider
-{
-    class S3Destination
-    {
-        private final String bucket;
-        private final String key;
+public interface S3DestinationDecider {
+  class S3Destination {
+    private final String bucket;
+    private final String key;
 
-        public S3Destination(String bucket, String key)
-        {
-            this.bucket = bucket;
-            this.key = key;
-        }
-
-        public String getBucket()
-        {
-            return bucket;
-        }
-
-        public String getKey()
-        {
-            return key;
-        }
+    public S3Destination(String bucket, String key) {
+      this.bucket = bucket;
+      this.key = key;
     }
 
-    S3Destination decide(String tag, Instant time);
+    public String getBucket() {
+      return bucket;
+    }
+
+    public String getKey() {
+      return key;
+    }
+  }
+
+  S3Destination decide(String tag, Instant time);
 }

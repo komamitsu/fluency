@@ -16,14 +16,8 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender;
 
-import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.fluentd.MockUnixSocketServer;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
-import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
-import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.UnixSocketHeartbeater;
-import org.komamitsu.fluency.util.Tuple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -35,259 +29,259 @@ import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.fluentd.MockUnixSocketServer;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetector;
+import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.PhiAccrualFailureDetectStrategy;
+import org.komamitsu.fluency.fluentd.ingester.sender.heartbeat.UnixSocketHeartbeater;
+import org.komamitsu.fluency.util.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+class UnixSocketSenderTest {
+  private static final Logger LOG = LoggerFactory.getLogger(UnixSocketSenderTest.class);
 
-class UnixSocketSenderTest
-{
-    private static final Logger LOG = LoggerFactory.getLogger(UnixSocketSenderTest.class);
+  @Test
+  void testSend() throws Exception {
+    testSendBase(
+        socketPath -> {
+          UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+          senderConfig.setPath(socketPath);
+          return new UnixSocketSender(senderConfig);
+        },
+        count -> assertThat(count).isEqualTo(1),
+        count -> assertThat(count).isEqualTo(1));
+  }
 
+  @Test
+  void testSendWithHeartbeart() throws Exception {
+    testSendBase(
+        socketPath -> {
+          UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
+          hbConfig.setPath(socketPath);
+          hbConfig.setIntervalMillis(400);
 
-    @Test
-    void testSend()
-            throws Exception
-    {
-        testSendBase(socketPath -> {
-                UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                senderConfig.setPath(socketPath);
-                return new UnixSocketSender(senderConfig);
-            },
-            count -> assertThat(count).isEqualTo(1),
-            count -> assertThat(count).isEqualTo(1));
-    }
+          UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+          senderConfig.setPath(socketPath);
 
-    @Test
-    void testSendWithHeartbeart()
-            throws Exception
-    {
-        testSendBase(socketPath -> {
-                UnixSocketHeartbeater.Config hbConfig = new UnixSocketHeartbeater.Config();
-                hbConfig.setPath(socketPath);
-                hbConfig.setIntervalMillis(400);
+          return new UnixSocketSender(
+              senderConfig,
+              new FailureDetector(
+                  new PhiAccrualFailureDetectStrategy(), new UnixSocketHeartbeater(hbConfig)));
+        },
+        count -> assertThat(count).isGreaterThan(1),
+        count -> assertThat(count).isGreaterThan(1));
+  }
 
-                UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                senderConfig.setPath(socketPath);
+  private void testSendBase(
+      SenderCreator senderCreator,
+      Consumer<Integer> connectCountAssertion,
+      Consumer<Integer> closeCountAssertion)
+      throws Exception {
+    try (MockUnixSocketServer server = new MockUnixSocketServer()) {
+      server.start();
 
-                return new UnixSocketSender(senderConfig,
-                    new FailureDetector(
-                        new PhiAccrualFailureDetectStrategy(),
-                        new UnixSocketHeartbeater(hbConfig)));
-            },
-            count -> assertThat(count).isGreaterThan(1),
-            count -> assertThat(count).isGreaterThan(1));
-    }
+      int concurrency = 10;
+      final int reqNum = 5000;
+      final CountDownLatch latch = new CountDownLatch(concurrency);
+      UnixSocketSender sender = senderCreator.create(server.getSocketPath());
 
-    private void testSendBase(
-            SenderCreator senderCreator,
-            Consumer<Integer> connectCountAssertion,
-            Consumer<Integer> closeCountAssertion)
-            throws Exception
-    {
-        try (MockUnixSocketServer server = new MockUnixSocketServer()) {
-            server.start();
+      // To receive heartbeat at least once
+      TimeUnit.MILLISECONDS.sleep(500);
 
-            int concurrency = 10;
-            final int reqNum = 5000;
-            final CountDownLatch latch = new CountDownLatch(concurrency);
-            UnixSocketSender sender = senderCreator.create(server.getSocketPath());
+      final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
+      for (int i = 0; i < concurrency; i++) {
+        senderExecutorService.execute(
+            () -> {
+              try {
+                byte[] bytes = "0123456789".getBytes();
 
-            // To receive heartbeat at least once
-            TimeUnit.MILLISECONDS.sleep(500);
-
-            final ExecutorService senderExecutorService = Executors.newCachedThreadPool();
-            for (int i = 0; i < concurrency; i++) {
-                senderExecutorService.execute(() -> {
-                    try {
-                        byte[] bytes = "0123456789".getBytes();
-
-                        for (int j = 0; j < reqNum; j++) {
-                            sender.send(ByteBuffer.wrap(bytes));
-                        }
-                        latch.countDown();
-                    } catch (IOException e) {
-                        LOG.error("Failed to send data", e);
-                    }
-                });
-            }
-
-            assertTrue(latch.await(4, TimeUnit.SECONDS));
-            sender.close();
-
-            server.waitUntilEventsStop();
-            server.stop();
-
-            int connectCount = 0;
-            int closeCount = 0;
-            long recvCount = 0;
-            long recvLen = 0;
-            for (Tuple<MockUnixSocketServer.Type, Integer> event : server.getEvents()) {
-                switch (event.getFirst()) {
-                    case CONNECT:
-                        connectCount++;
-                        break;
-                    case CLOSE:
-                        closeCount++;
-                        break;
-                    case RECEIVE:
-                        recvCount++;
-                        recvLen += event.getSecond();
-                        break;
+                for (int j = 0; j < reqNum; j++) {
+                  sender.send(ByteBuffer.wrap(bytes));
                 }
-            }
-            LOG.debug("recvCount={}", recvCount);
+                latch.countDown();
+              } catch (IOException e) {
+                LOG.error("Failed to send data", e);
+              }
+            });
+      }
 
-            connectCountAssertion.accept(connectCount);
-            assertThat(recvLen).isEqualTo((long) concurrency * reqNum * 10);
-            closeCountAssertion.accept(closeCount);
+      assertTrue(latch.await(4, TimeUnit.SECONDS));
+      sender.close();
+
+      server.waitUntilEventsStop();
+      server.stop();
+
+      int connectCount = 0;
+      int closeCount = 0;
+      long recvCount = 0;
+      long recvLen = 0;
+      for (Tuple<MockUnixSocketServer.Type, Integer> event : server.getEvents()) {
+        switch (event.getFirst()) {
+          case CONNECT:
+            connectCount++;
+            break;
+          case CLOSE:
+            closeCount++;
+            break;
+          case RECEIVE:
+            recvCount++;
+            recvLen += event.getSecond();
+            break;
         }
+      }
+      LOG.debug("recvCount={}", recvCount);
+
+      connectCountAssertion.accept(connectCount);
+      assertThat(recvLen).isEqualTo((long) concurrency * reqNum * 10);
+      closeCountAssertion.accept(closeCount);
     }
+  }
 
-    @Test
-    void testReadTimeout()
-            throws Exception
-    {
-        try (MockUnixSocketServer server = new MockUnixSocketServer()) {
-            server.start();
+  @Test
+  void testReadTimeout() throws Exception {
+    try (MockUnixSocketServer server = new MockUnixSocketServer()) {
+      server.start();
 
-            try {
-                final CountDownLatch latch = new CountDownLatch(1);
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                executorService.execute(() -> {
-                    UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(server.getSocketPath());
-                    senderConfig.setReadTimeoutMilli(1000);
-                    UnixSocketSender sender = new UnixSocketSender(senderConfig);
-                    try {
-                        sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
-                    } catch (Throwable e) {
-                        if (e instanceof SocketTimeoutException) {
-                            latch.countDown();
-                        } else {
-                            throw new RuntimeException(e);
-                        }
-                    }
+      try {
+        final CountDownLatch latch = new CountDownLatch(1);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(
+            () -> {
+              UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+              senderConfig.setPath(server.getSocketPath());
+              senderConfig.setReadTimeoutMilli(1000);
+              UnixSocketSender sender = new UnixSocketSender(senderConfig);
+              try {
+                sender.sendWithAck(
+                    Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))),
+                    "Waiting ack forever");
+              } catch (Throwable e) {
+                if (e instanceof SocketTimeoutException) {
+                  latch.countDown();
+                } else {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+        assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
+      } finally {
+        server.stop();
+      }
+    }
+  }
+
+  private Throwable extractRootCause(Throwable exception) {
+    Throwable e = exception;
+    while (e.getCause() != null) {
+      e = e.getCause();
+    }
+    return e;
+  }
+
+  @Test
+  void testDisconnBeforeRecv() throws Exception {
+    try (MockUnixSocketServer server = new MockUnixSocketServer()) {
+      server.start();
+
+      try {
+        final CountDownLatch latch = new CountDownLatch(1);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(
+            () -> {
+              UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+              senderConfig.setPath(server.getSocketPath());
+              senderConfig.setReadTimeoutMilli(4000);
+              UnixSocketSender sender = new UnixSocketSender(senderConfig);
+              try {
+                sender.sendWithAck(
+                    Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))),
+                    "Waiting ack forever");
+              } catch (Throwable e) {
+                Throwable rootCause = extractRootCause(e);
+                if (rootCause instanceof SocketException
+                    && rootCause.getMessage().toLowerCase().contains("disconnected")) {
+                  latch.countDown();
+                } else {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+
+        TimeUnit.MILLISECONDS.sleep(1000);
+        server.stop(true);
+
+        assertTrue(latch.await(8000, TimeUnit.MILLISECONDS));
+      } finally {
+        server.stop();
+      }
+    }
+  }
+
+  @Test
+  void testClose() throws Exception {
+    try (MockUnixSocketServer server = new MockUnixSocketServer()) {
+      server.start();
+
+      try {
+        final AtomicLong duration = new AtomicLong();
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<Void> future =
+            executorService.submit(
+                () -> {
+                  UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
+                  senderConfig.setPath(server.getSocketPath());
+                  senderConfig.setWaitBeforeCloseMilli(1500);
+                  UnixSocketSender sender = new UnixSocketSender(senderConfig);
+                  long start;
+                  try {
+                    sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
+                    start = System.currentTimeMillis();
+                    sender.close();
+                    duration.set(System.currentTimeMillis() - start);
+                  } catch (Exception e) {
+                    LOG.error("Unexpected exception", e);
+                  }
+
+                  return null;
                 });
-                assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
-            } finally {
-                server.stop();
-            }
-        }
+        future.get(3000, TimeUnit.MILLISECONDS);
+        assertTrue(duration.get() > 1000 && duration.get() < 2000);
+      } finally {
+        server.stop();
+      }
     }
+  }
 
-    private Throwable extractRootCause(Throwable exception)
+  @Test
+  void testConfig() {
+    UnixSocketSender.Config config = new UnixSocketSender.Config();
+    assertEquals(1000, config.getWaitBeforeCloseMilli());
+    // TODO: Add others later
+  }
+
+  @Test
+  void validateConfig() {
     {
-        Throwable e = exception;
-        while (e.getCause() != null) {
-            e = e.getCause();
-        }
-        return e;
+      UnixSocketSender.Config config = new UnixSocketSender.Config();
+      config.setConnectionTimeoutMilli(9);
+      assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
     }
 
-    @Test
-    void testDisconnBeforeRecv()
-            throws Exception
     {
-        try (MockUnixSocketServer server = new MockUnixSocketServer()) {
-            server.start();
-
-            try {
-                final CountDownLatch latch = new CountDownLatch(1);
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                executorService.execute(() -> {
-                    UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(server.getSocketPath());
-                    senderConfig.setReadTimeoutMilli(4000);
-                    UnixSocketSender sender = new UnixSocketSender(senderConfig);
-                    try {
-                        sender.sendWithAck(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes(StandardCharsets.UTF_8))), "Waiting ack forever");
-                    } catch (Throwable e) {
-                        Throwable rootCause = extractRootCause(e);
-                        if (rootCause instanceof SocketException && rootCause.getMessage().toLowerCase().contains("disconnected")) {
-                            latch.countDown();
-                        } else {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
-
-                TimeUnit.MILLISECONDS.sleep(1000);
-                server.stop(true);
-
-                assertTrue(latch.await(8000, TimeUnit.MILLISECONDS));
-            } finally {
-                server.stop();
-            }
-        }
+      UnixSocketSender.Config config = new UnixSocketSender.Config();
+      config.setReadTimeoutMilli(9);
+      assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
     }
 
-    @Test
-    void testClose()
-            throws Exception
     {
-        try (MockUnixSocketServer server = new MockUnixSocketServer()) {
-            server.start();
-
-            try {
-                final AtomicLong duration = new AtomicLong();
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                Future<Void> future = executorService.submit(() -> {
-                    UnixSocketSender.Config senderConfig = new UnixSocketSender.Config();
-                    senderConfig.setPath(server.getSocketPath());
-                    senderConfig.setWaitBeforeCloseMilli(1500);
-                    UnixSocketSender sender = new UnixSocketSender(senderConfig);
-                    long start;
-                    try {
-                        sender.send(Arrays.asList(ByteBuffer.wrap("hello, world".getBytes("UTF-8"))));
-                        start = System.currentTimeMillis();
-                        sender.close();
-                        duration.set(System.currentTimeMillis() - start);
-                    } catch (Exception e) {
-                        LOG.error("Unexpected exception", e);
-                    }
-
-                    return null;
-                });
-                future.get(3000, TimeUnit.MILLISECONDS);
-                assertTrue(duration.get() > 1000 && duration.get() < 2000);
-            } finally {
-                server.stop();
-            }
-        }
+      UnixSocketSender.Config config = new UnixSocketSender.Config();
+      config.setWaitBeforeCloseMilli(-1);
+      assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
     }
+  }
 
-    @Test
-    void testConfig()
-    {
-        UnixSocketSender.Config config = new UnixSocketSender.Config();
-        assertEquals(1000, config.getWaitBeforeCloseMilli());
-        // TODO: Add others later
-    }
-
-    @Test
-    void validateConfig()
-    {
-        {
-            UnixSocketSender.Config config = new UnixSocketSender.Config();
-            config.setConnectionTimeoutMilli(9);
-            assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
-        }
-
-        {
-            UnixSocketSender.Config config = new UnixSocketSender.Config();
-            config.setReadTimeoutMilli(9);
-            assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
-        }
-
-        {
-            UnixSocketSender.Config config = new UnixSocketSender.Config();
-            config.setWaitBeforeCloseMilli(-1);
-            assertThrows(IllegalArgumentException.class, () -> new UnixSocketSender(config));
-        }
-    }
-
-    interface SenderCreator
-    {
-        UnixSocketSender create(Path socketPath);
-    }
+  interface SenderCreator {
+    UnixSocketSender create(Path socketPath);
+  }
 }
