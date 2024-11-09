@@ -55,12 +55,8 @@ public class SSLTestSocketFactories {
   }
 
   public static SSLServerSocket createServerSocket()
-      throws IOException,
-          CertificateException,
-          NoSuchAlgorithmException,
-          UnrecoverableKeyException,
-          KeyStoreException,
-          KeyManagementException {
+      throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException,
+          KeyStoreException, KeyManagementException {
     String trustStorePath =
         SSLSocketBuilder.class.getClassLoader().getResource("truststore.jks").getFile();
     System.getProperties().setProperty("javax.net.ssl.trustStore", trustStorePath);

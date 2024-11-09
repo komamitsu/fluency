@@ -173,9 +173,7 @@ public class Flusher implements Flushable, Closeable {
     return ingester;
   }
 
-  /**
-   * @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()}
-   */
+  /** @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()} */
   @Deprecated
   public int getFlushIntervalMillis() {
     return config.getFlushAttemptIntervalMillis();
@@ -218,9 +216,7 @@ public class Flusher implements Flushable, Closeable {
     @Min(1)
     private int waitUntilTerminated = 60;
 
-    /**
-     * @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()}
-     */
+    /** @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()} */
     @Deprecated
     public int getFlushIntervalMillis() {
       return flushAttemptIntervalMillis;

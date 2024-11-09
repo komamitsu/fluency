@@ -14,7 +14,7 @@ plugins {
   `maven-publish`
   id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.github.johnrengelman.shadow") version "8.1.1"
-  id("com.diffplug.spotless") version "6.25.0"
+  id("com.diffplug.spotless") version "6.13.0"
 }
 
 subprojects {
@@ -195,7 +195,7 @@ subprojects {
       target("src/*/java/**/*.java")
       importOrder()
       removeUnusedImports()
-      googleJavaFormat()
+      googleJavaFormat("1.7")
     }
   }
 }

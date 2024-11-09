@@ -69,9 +69,7 @@ public class FluencyBuilder {
     this.bufferChunkRetentionTimeMillis = bufferChunkRetentionTimeMillis;
   }
 
-  /**
-   * @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()}
-   */
+  /** @deprecated As of release 2.4.0, replaced by {@link #getFlushAttemptIntervalMillis()} */
   @Deprecated
   public Integer getFlushIntervalMillis() {
     return flushAttemptIntervalMillis;

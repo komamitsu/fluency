@@ -85,9 +85,7 @@ public class EventTime {
     return nanoseconds;
   }
 
-  /**
-   * @deprecated As of release 1.9, replaced by {@link #getNanoseconds()}
-   */
+  /** @deprecated As of release 1.9, replaced by {@link #getNanoseconds()} */
   @Deprecated
   public long getNanoSeconds() {
     return nanoseconds;

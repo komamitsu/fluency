@@ -42,12 +42,8 @@ public class SSLHeartbeaterTest {
 
   @BeforeEach
   void setUp()
-      throws CertificateException,
-          UnrecoverableKeyException,
-          NoSuchAlgorithmException,
-          IOException,
-          KeyManagementException,
-          KeyStoreException {
+      throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException,
+          KeyManagementException, KeyStoreException {
     sslServerSocket = SSLTestSocketFactories.createServerSocket();
 
     SSLHeartbeater.Config config = new SSLHeartbeater.Config();

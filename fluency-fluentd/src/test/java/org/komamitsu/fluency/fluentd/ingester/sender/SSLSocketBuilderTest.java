@@ -47,12 +47,8 @@ class SSLSocketBuilderTest {
 
   @BeforeEach
   void setUp()
-      throws IOException,
-          CertificateException,
-          NoSuchAlgorithmException,
-          UnrecoverableKeyException,
-          KeyStoreException,
-          KeyManagementException {
+      throws IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException,
+          KeyStoreException, KeyManagementException {
     serverSocket = SSLTestSocketFactories.createServerSocket();
   }
 
