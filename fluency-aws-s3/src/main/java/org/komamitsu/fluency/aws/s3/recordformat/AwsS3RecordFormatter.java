@@ -18,7 +18,4 @@ package org.komamitsu.fluency.aws.s3.recordformat;
 
 import org.komamitsu.fluency.recordformat.RecordFormatter;
 
-public interface AwsS3RecordFormatter
-    extends RecordFormatter
-{
-}
+public interface AwsS3RecordFormatter extends RecordFormatter {}

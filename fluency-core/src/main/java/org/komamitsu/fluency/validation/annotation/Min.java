@@ -25,8 +25,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Min
-{
-    long value();
-    boolean inclusive() default true;
+public @interface Min {
+  long value();
+
+  boolean inclusive() default true;
 }

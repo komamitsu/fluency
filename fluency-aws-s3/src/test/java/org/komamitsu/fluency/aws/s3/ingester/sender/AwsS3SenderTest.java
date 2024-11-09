@@ -16,7 +16,24 @@
 
 package org.komamitsu.fluency.aws.s3.ingester.sender;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.io.ByteStreams;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,151 +46,129 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
+class AwsS3SenderTest {
+  @Test
+  void buildClientWithDefaults() {
+    AwsS3Sender.Config config = new AwsS3Sender.Config();
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+    S3Client s3Client = mock(S3Client.class);
+    S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
+    doReturn(s3Client).when(s3ClientBuilder).build();
 
-class AwsS3SenderTest
-{
-    @Test
-    void buildClientWithDefaults()
-    {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
+    new AwsS3Sender(s3ClientBuilder, config);
 
-        S3Client s3Client = mock(S3Client.class);
-        S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
-        doReturn(s3Client).when(s3ClientBuilder).build();
+    verify(s3ClientBuilder, times(1)).build();
+    verify(s3ClientBuilder, times(0)).endpointOverride(any());
+    verify(s3ClientBuilder, times(0)).region(any());
+    verify(s3ClientBuilder, times(0)).credentialsProvider(any());
+  }
 
-        new AwsS3Sender(s3ClientBuilder, config);
+  @Test
+  void buildClientWithCustomizedConfig() {
+    AwsS3Sender.Config config = new AwsS3Sender.Config();
+    config.setEndpoint("https://another.s3endpoi.nt");
+    config.setRegion("ap-northeast-1");
+    config.setAwsAccessKeyId("foo");
+    config.setAwsSecretAccessKey("bar");
 
-        verify(s3ClientBuilder, times(1)).build();
-        verify(s3ClientBuilder, times(0)).endpointOverride(any());
-        verify(s3ClientBuilder, times(0)).region(any());
-        verify(s3ClientBuilder, times(0)).credentialsProvider(any());
-    }
+    S3Client s3Client = mock(S3Client.class);
+    S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
+    doReturn(s3Client).when(s3ClientBuilder).build();
+    doAnswer(
+            invocation -> {
+              AwsCredentialsProvider provider = invocation.getArgument(0);
+              AwsCredentials awsCredentials = provider.resolveCredentials();
+              assertEquals("foo", awsCredentials.accessKeyId());
+              assertEquals("bar", awsCredentials.secretAccessKey());
+              return null;
+            })
+        .when(s3ClientBuilder)
+        .credentialsProvider(any());
 
-    @Test
-    void buildClientWithCustomizedConfig()
-    {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setEndpoint("https://another.s3endpoi.nt");
-        config.setRegion("ap-northeast-1");
-        config.setAwsAccessKeyId("foo");
-        config.setAwsSecretAccessKey("bar");
+    new AwsS3Sender(s3ClientBuilder, config);
 
-        S3Client s3Client = mock(S3Client.class);
-        S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
-        doReturn(s3Client).when(s3ClientBuilder).build();
-        doAnswer(invocation -> {
-            AwsCredentialsProvider provider = invocation.getArgument(0);
-            AwsCredentials awsCredentials = provider.resolveCredentials();
-            assertEquals("foo", awsCredentials.accessKeyId());
-            assertEquals("bar", awsCredentials.secretAccessKey());
-            return null;
-        }).when(s3ClientBuilder).credentialsProvider(any());
+    verify(s3ClientBuilder, times(1)).build();
+    verify(s3ClientBuilder, times(1))
+        .endpointOverride(eq(URI.create("https://another.s3endpoi.nt")));
+    verify(s3ClientBuilder, times(1)).region(eq(Region.AP_NORTHEAST_1));
+    verify(s3ClientBuilder, times(1)).credentialsProvider(any());
+  }
 
-        new AwsS3Sender(s3ClientBuilder, config);
+  private void testSend(AwsS3Sender.Config config, boolean gzipCompressed, int failures)
+      throws IOException {
+    S3Client s3Client = mock(S3Client.class);
+    S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
+    doReturn(s3Client).when(s3ClientBuilder).build();
 
-        verify(s3ClientBuilder, times(1)).build();
-        verify(s3ClientBuilder, times(1)).endpointOverride(eq(URI.create("https://another.s3endpoi.nt")));
-        verify(s3ClientBuilder, times(1)).region(eq(Region.AP_NORTHEAST_1));
-        verify(s3ClientBuilder, times(1)).credentialsProvider(any());
-    }
+    AtomicInteger retryCount = new AtomicInteger();
+    doAnswer(
+            invocation -> {
+              PutObjectRequest request = invocation.getArgument(0);
 
-    private void testSend(
-            AwsS3Sender.Config config,
-            boolean gzipCompressed,
-            int failures)
-            throws IOException
-    {
-        S3Client s3Client = mock(S3Client.class);
-        S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
-        doReturn(s3Client).when(s3ClientBuilder).build();
+              assertEquals("hello.world", request.bucket());
+              assertEquals("2345/01/31/23/59-59-99999.data", request.key());
 
-        AtomicInteger retryCount = new AtomicInteger();
-        doAnswer(invocation -> {
-            PutObjectRequest request = invocation.getArgument(0);
-
-            assertEquals("hello.world", request.bucket());
-            assertEquals("2345/01/31/23/59-59-99999.data", request.key());
-
-            RequestBody body = invocation.getArgument(1);
-            try (InputStream s3In = body.contentStreamProvider().newStream();
-                    InputStream in = gzipCompressed ? new GZIPInputStream(s3In) : s3In) {
+              RequestBody body = invocation.getArgument(1);
+              try (InputStream s3In = body.contentStreamProvider().newStream();
+                  InputStream in = gzipCompressed ? new GZIPInputStream(s3In) : s3In) {
                 byte[] content = ByteStreams.toByteArray(in);
                 assertEquals("0123456789", new String(content, StandardCharsets.UTF_8));
-            }
+              }
 
-            if (retryCount.getAndIncrement() < failures) {
+              if (retryCount.getAndIncrement() < failures) {
                 throw new RuntimeException("Something happened");
-            }
+              }
 
-            return null;
-        }).when(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+              return null;
+            })
+        .when(s3Client)
+        .putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
-        AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder, config);
+    AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder, config);
 
-        sender.send("hello.world", "2345/01/31/23/59-59-99999.data",
-                ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8)));
+    sender.send(
+        "hello.world",
+        "2345/01/31/23/59-59-99999.data",
+        ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8)));
 
-        verify(s3Client, times(failures + 1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    verify(s3Client, times(failures + 1))
+        .putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
-        sender.close();
-    }
+    sender.close();
+  }
 
-    @ParameterizedTest
-    @ValueSource(ints={0, 2})
-    void send(int failures)
-            throws IOException
-    {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
-        testSend(config, true, failures);
-    }
+  @ParameterizedTest
+  @ValueSource(ints = {0, 2})
+  void send(int failures) throws IOException {
+    AwsS3Sender.Config config = new AwsS3Sender.Config();
+    testSend(config, true, failures);
+  }
 
-    @ParameterizedTest
-    @ValueSource(ints={0, 2})
-    void sendWithoutCompression(int failures)
-            throws IOException
-    {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setCompressionEnabled(false);
+  @ParameterizedTest
+  @ValueSource(ints = {0, 2})
+  void sendWithoutCompression(int failures) throws IOException {
+    AwsS3Sender.Config config = new AwsS3Sender.Config();
+    config.setCompressionEnabled(false);
 
-        testSend(config, false, failures);
-    }
+    testSend(config, false, failures);
+  }
 
-    @Test
-    void sendButRetryOver()
-    {
-        AwsS3Sender.Config config = new AwsS3Sender.Config();
-        config.setRetryMax(2);
-        assertThrows(RetryableException.class, () -> testSend(config, true, 3));
-    }
+  @Test
+  void sendButRetryOver() {
+    AwsS3Sender.Config config = new AwsS3Sender.Config();
+    config.setRetryMax(2);
+    assertThrows(RetryableException.class, () -> testSend(config, true, 3));
+  }
 
-    @Test
-    void close()
-    {
-        S3Client s3Client = mock(S3Client.class);
-        S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
-        doReturn(s3Client).when(s3ClientBuilder).build();
+  @Test
+  void close() {
+    S3Client s3Client = mock(S3Client.class);
+    S3ClientBuilder s3ClientBuilder = mock(S3ClientBuilder.class);
+    doReturn(s3Client).when(s3ClientBuilder).build();
 
-        AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder);
-        sender.close();
+    AwsS3Sender sender = new AwsS3Sender(s3ClientBuilder);
+    sender.close();
 
-        verify(s3Client, times(1)).close();
-    }
-
+    verify(s3Client, times(1)).close();
+  }
 }

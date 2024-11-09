@@ -16,24 +16,6 @@
 
 package org.komamitsu.fluency.treasuredata.ingester.sender;
 
-import com.treasuredata.client.TDClient;
-import com.treasuredata.client.TDClientHttpConflictException;
-import com.treasuredata.client.TDClientHttpNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.NonRetryableException;
-import org.mockito.ArgumentCaptor;
-
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,174 +30,191 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class TreasureDataSenderTest
-{
-    private final static Charset CHARSET = Charset.forName("UTF-8");
-    private final static String DB = "foodb";
-    private final static String TABLE = "bartbl";
-    private final static String DB_AND_TABLE = "foodb.bartbl";
-    private final static byte[] DATA = "hello, world".getBytes(CHARSET);
-    private TDClient client;
-    private TreasureDataSender sender;
+import com.treasuredata.client.TDClient;
+import com.treasuredata.client.TDClientHttpConflictException;
+import com.treasuredata.client.TDClientHttpNotFoundException;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.NonRetryableException;
+import org.mockito.ArgumentCaptor;
 
-    @BeforeEach
-    void setUp()
-    {
-        client = mock(TDClient.class);
-        sender = new TreasureDataSender(new TreasureDataSender.Config())
-        {
-            @Override
-            protected TDClient buildClient()
-            {
-                return client;
-            }
+class TreasureDataSenderTest {
+  private static final Charset CHARSET = Charset.forName("UTF-8");
+  private static final String DB = "foodb";
+  private static final String TABLE = "bartbl";
+  private static final String DB_AND_TABLE = "foodb.bartbl";
+  private static final byte[] DATA = "hello, world".getBytes(CHARSET);
+  private TDClient client;
+  private TreasureDataSender sender;
+
+  @BeforeEach
+  void setUp() {
+    client = mock(TDClient.class);
+    sender =
+        new TreasureDataSender(new TreasureDataSender.Config()) {
+          @Override
+          protected TDClient buildClient() {
+            return client;
+          }
         };
+  }
+
+  private void assertImportedFile(File file) throws IOException {
+    try (FileInputStream fileInputStream = new FileInputStream(file);
+        GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+        DataInputStream dataInputStream = new DataInputStream(gzipInputStream)) {
+      byte[] data = new byte[DATA.length];
+      dataInputStream.readFully(data);
+      assertArrayEquals(DATA, data);
     }
+  }
 
-    private void assertImportedFile(File file)
-            throws IOException
-    {
-        try (FileInputStream fileInputStream = new FileInputStream(file);
-                GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
-                DataInputStream dataInputStream = new DataInputStream(gzipInputStream)) {
-            byte[] data = new byte[DATA.length];
-            dataInputStream.readFully(data);
-            assertArrayEquals(DATA, data);
-        }
-    }
+  @Test
+  void send() throws IOException {
+    doAnswer(
+            invocation -> {
+              assertImportedFile(invocation.getArgument(2));
+              return null;
+            })
+        .when(client)
+        .importFile(anyString(), anyString(), any(File.class), anyString());
 
-    @Test
-    void send()
-            throws IOException
-    {
-        doAnswer(invocation -> {
-            assertImportedFile(invocation.getArgument(2));
-            return null;
-        }).when(client).importFile(anyString(), anyString(), any(File.class), anyString());
+    sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
+    ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(client, times(1))
+        .importFile(eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
+    verify(client, times(0)).createDatabase(anyString());
+    verify(client, times(0)).createTable(anyString(), anyString());
+    UUID.fromString(uniqueIdArgumentCaptor.getValue());
+  }
 
-        sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
-        ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(client, times(1)).importFile(
-                eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
-        verify(client, times(0)).createDatabase(anyString());
-        verify(client, times(0)).createTable(anyString(), anyString());
-        UUID.fromString(uniqueIdArgumentCaptor.getValue());
-    }
-
-    @Test
-    void sendWithCreatingTable()
-            throws IOException
-    {
-        AtomicInteger importToTableCalls = new AtomicInteger();
-        doAnswer(invocation -> {
-            if (importToTableCalls.getAndIncrement() == 0) {
+  @Test
+  void sendWithCreatingTable() throws IOException {
+    AtomicInteger importToTableCalls = new AtomicInteger();
+    doAnswer(
+            invocation -> {
+              if (importToTableCalls.getAndIncrement() == 0) {
                 throw new TDClientHttpNotFoundException("Not Found!!!!");
-            }
-            assertImportedFile(invocation.getArgument(2));
-            return null;
-        }).when(client).importFile(anyString(), anyString(), any(File.class), anyString());
+              }
+              assertImportedFile(invocation.getArgument(2));
+              return null;
+            })
+        .when(client)
+        .importFile(anyString(), anyString(), any(File.class), anyString());
 
-        sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
-        ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(client, times(2)).importFile(
-                eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
-        verify(client, times(0)).createDatabase(anyString());
-        verify(client, times(1)).createTable(eq(DB), eq(TABLE));
-        UUID.fromString(uniqueIdArgumentCaptor.getValue());
-    }
+    sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
+    ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(client, times(2))
+        .importFile(eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
+    verify(client, times(0)).createDatabase(anyString());
+    verify(client, times(1)).createTable(eq(DB), eq(TABLE));
+    UUID.fromString(uniqueIdArgumentCaptor.getValue());
+  }
 
-    @Test
-    void sendWithCreatingDatabase()
-            throws IOException
-    {
-        AtomicInteger importToTableCalls = new AtomicInteger();
-        doAnswer(invocation -> {
-            if (importToTableCalls.getAndIncrement() == 0) {
+  @Test
+  void sendWithCreatingDatabase() throws IOException {
+    AtomicInteger importToTableCalls = new AtomicInteger();
+    doAnswer(
+            invocation -> {
+              if (importToTableCalls.getAndIncrement() == 0) {
                 throw new TDClientHttpNotFoundException("Not Found!!!!");
-            }
-            assertImportedFile(invocation.getArgument(2));
-            return null;
-        }).when(client).importFile(anyString(), anyString(), any(File.class), anyString());
+              }
+              assertImportedFile(invocation.getArgument(2));
+              return null;
+            })
+        .when(client)
+        .importFile(anyString(), anyString(), any(File.class), anyString());
 
-        AtomicInteger createTableCalls = new AtomicInteger();
-        doAnswer(invocation -> {
-            if (createTableCalls.getAndIncrement() == 0) {
+    AtomicInteger createTableCalls = new AtomicInteger();
+    doAnswer(
+            invocation -> {
+              if (createTableCalls.getAndIncrement() == 0) {
                 throw new TDClientHttpNotFoundException("Not Found!!!!");
-            }
-            return null;
-        }).when(client).createTable(anyString(), anyString());
+              }
+              return null;
+            })
+        .when(client)
+        .createTable(anyString(), anyString());
 
-        sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
-        ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(client, times(2)).importFile(
-                eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
-        verify(client, times(1)).createDatabase(eq(DB));
-        verify(client, times(2)).createTable(eq(DB), eq(TABLE));
-        UUID.fromString(uniqueIdArgumentCaptor.getValue());
+    sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
+    ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(client, times(2))
+        .importFile(eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
+    verify(client, times(1)).createDatabase(eq(DB));
+    verify(client, times(2)).createTable(eq(DB), eq(TABLE));
+    UUID.fromString(uniqueIdArgumentCaptor.getValue());
+  }
+
+  @Test
+  public void sendWithLackOfPermissionOnDatabase() throws IOException {
+    doThrow(new TDClientHttpNotFoundException("Not Found!!!!"))
+        .when(client)
+        .importFile(anyString(), anyString(), any(File.class), anyString());
+
+    doThrow(new TDClientHttpNotFoundException("Not Found!!!!"))
+        .when(client)
+        .createTable(anyString(), anyString());
+
+    doThrow(new TDClientHttpConflictException("Conflict!!!!"))
+        .when(client)
+        .createDatabase(anyString());
+
+    doReturn(false).when(client).existsDatabase(anyString());
+
+    try {
+      sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
+      fail();
+    } catch (NonRetryableException e) {
+      assertTrue(true);
     }
+    ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
+    verify(client, times(1))
+        .importFile(eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
+    verify(client, times(4)).createDatabase(eq(DB));
+    verify(client, times(4)).existsDatabase(eq(DB));
+    verify(client, times(1)).createTable(eq(DB), eq(TABLE));
+    UUID.fromString(uniqueIdArgumentCaptor.getValue());
+  }
 
-    @Test
-    public void sendWithLackOfPermissionOnDatabase()
-            throws IOException
+  @Test
+  void validateConfig() {
     {
-        doThrow(new TDClientHttpNotFoundException("Not Found!!!!"))
-                .when(client).importFile(anyString(), anyString(), any(File.class), anyString());
-
-        doThrow(new TDClientHttpNotFoundException("Not Found!!!!"))
-                .when(client).createTable(anyString(), anyString());
-
-        doThrow(new TDClientHttpConflictException("Conflict!!!!"))
-                .when(client).createDatabase(anyString());
-
-        doReturn(false).when(client).existsDatabase(anyString());
-
-        try {
-            sender.send(DB_AND_TABLE, ByteBuffer.wrap(DATA));
-            fail();
-        }
-        catch (NonRetryableException e) {
-            assertTrue(true);
-        }
-        ArgumentCaptor<String> uniqueIdArgumentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(client, times(1)).importFile(
-                eq(DB), eq(TABLE), any(File.class), uniqueIdArgumentCaptor.capture());
-        verify(client, times(4)).createDatabase(eq(DB));
-        verify(client, times(4)).existsDatabase(eq(DB));
-        verify(client, times(1)).createTable(eq(DB), eq(TABLE));
-        UUID.fromString(uniqueIdArgumentCaptor.getValue());
+      TreasureDataSender.Config config = new TreasureDataSender.Config();
+      config.setRetryIntervalMs(9);
+      assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
     }
 
-    @Test
-    void validateConfig()
     {
-        {
-            TreasureDataSender.Config config = new TreasureDataSender.Config();
-            config.setRetryIntervalMs(9);
-            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
-        }
-
-        {
-            TreasureDataSender.Config config = new TreasureDataSender.Config();
-            config.setMaxRetryIntervalMs(9);
-            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
-        }
-
-        {
-            TreasureDataSender.Config config = new TreasureDataSender.Config();
-            config.setRetryMax(-1);
-            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
-        }
-
-        {
-            TreasureDataSender.Config config = new TreasureDataSender.Config();
-            config.setRetryFactor(0.9f);
-            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
-        }
-
-        {
-            TreasureDataSender.Config config = new TreasureDataSender.Config();
-            config.setWorkBufSize(1023);
-            assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
-        }
+      TreasureDataSender.Config config = new TreasureDataSender.Config();
+      config.setMaxRetryIntervalMs(9);
+      assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
     }
+
+    {
+      TreasureDataSender.Config config = new TreasureDataSender.Config();
+      config.setRetryMax(-1);
+      assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+    }
+
+    {
+      TreasureDataSender.Config config = new TreasureDataSender.Config();
+      config.setRetryFactor(0.9f);
+      assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+    }
+
+    {
+      TreasureDataSender.Config config = new TreasureDataSender.Config();
+      config.setWorkBufSize(1023);
+      assertThrows(IllegalArgumentException.class, () -> new TreasureDataSender(config));
+    }
+  }
 }

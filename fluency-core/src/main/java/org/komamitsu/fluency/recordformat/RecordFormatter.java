@@ -17,34 +17,29 @@
 package org.komamitsu.fluency.recordformat;
 
 import com.fasterxml.jackson.databind.Module;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public interface RecordFormatter
-{
-    byte[] format(String tag, Object timestamp, Map<String, Object> data);
+public interface RecordFormatter {
+  byte[] format(String tag, Object timestamp, Map<String, Object> data);
 
-    byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len);
+  byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len);
 
-    byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
+  byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue);
 
-    String formatName();
+  String formatName();
 
-    class Config
-    {
-        private List<Module> jacksonModules = Collections.emptyList();
+  class Config {
+    private List<Module> jacksonModules = Collections.emptyList();
 
-        public List<Module> getJacksonModules()
-        {
-            return jacksonModules;
-        }
-
-        public void setJacksonModules(List<Module> jacksonModules)
-        {
-            this.jacksonModules = jacksonModules;
-        }
+    public List<Module> getJacksonModules() {
+      return jacksonModules;
     }
+
+    public void setJacksonModules(List<Module> jacksonModules) {
+      this.jacksonModules = jacksonModules;
+    }
+  }
 }

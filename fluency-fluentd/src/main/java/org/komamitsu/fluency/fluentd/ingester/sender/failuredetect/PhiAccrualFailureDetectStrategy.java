@@ -21,90 +21,77 @@ import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.DecimalMin;
 import org.komamitsu.fluency.validation.annotation.Min;
 
-public class PhiAccrualFailureDetectStrategy
-        extends FailureDetectStrategy
-{
-    private final PhiAccuralFailureDetector failureDetector;
-    private final Config config;
+public class PhiAccrualFailureDetectStrategy extends FailureDetectStrategy {
+  private final PhiAccuralFailureDetector failureDetector;
+  private final Config config;
 
-    public PhiAccrualFailureDetectStrategy()
-    {
-        this(new Config());
+  public PhiAccrualFailureDetectStrategy() {
+    this(new Config());
+  }
+
+  public PhiAccrualFailureDetectStrategy(Config config) {
+    super(config);
+    config.validateValues();
+    this.config = config;
+    failureDetector =
+        new PhiAccuralFailureDetector.Builder()
+            .setThreshold(config.getPhiThreshold())
+            .setMaxSampleSize(config.getArrivalWindowSize())
+            .build();
+  }
+
+  @Override
+  public void heartbeat(long now) {
+    failureDetector.heartbeat(now);
+  }
+
+  @Override
+  public boolean isAvailable() {
+    return failureDetector.isAvailable();
+  }
+
+  public double getPhiThreshold() {
+    return config.getPhiThreshold();
+  }
+
+  public int getArrivalWindowSize() {
+    return config.getArrivalWindowSize();
+  }
+
+  @Override
+  public String toString() {
+    return "PhiAccrualFailureDetectStrategy{"
+        + "failureDetector="
+        + failureDetector
+        + "} "
+        + super.toString();
+  }
+
+  public static class Config extends FailureDetectStrategy.Config implements Validatable {
+    @DecimalMin(value = "0", inclusive = false)
+    private double phiThreshold = 16;
+
+    @Min(value = 0, inclusive = false)
+    private int arrivalWindowSize = 100;
+
+    public double getPhiThreshold() {
+      return phiThreshold;
     }
 
-    public PhiAccrualFailureDetectStrategy(Config config)
-    {
-        super(config);
-        config.validateValues();
-        this.config = config;
-        failureDetector = new PhiAccuralFailureDetector.Builder().
-                setThreshold(config.getPhiThreshold()).
-                setMaxSampleSize(config.getArrivalWindowSize()).
-                build();
+    public void setPhiThreshold(float phiThreshold) {
+      this.phiThreshold = phiThreshold;
     }
 
-    @Override
-    public void heartbeat(long now)
-    {
-        failureDetector.heartbeat(now);
+    public int getArrivalWindowSize() {
+      return arrivalWindowSize;
     }
 
-    @Override
-    public boolean isAvailable()
-    {
-        return failureDetector.isAvailable();
+    void validateValues() {
+      validate();
     }
 
-    public double getPhiThreshold()
-    {
-        return config.getPhiThreshold();
+    public void setArrivalWindowSize(int arrivalWindowSize) {
+      this.arrivalWindowSize = arrivalWindowSize;
     }
-
-    public int getArrivalWindowSize()
-    {
-        return config.getArrivalWindowSize();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PhiAccrualFailureDetectStrategy{" +
-                "failureDetector=" + failureDetector +
-                "} " + super.toString();
-    }
-
-    public static class Config
-            extends FailureDetectStrategy.Config
-            implements Validatable
-    {
-        @DecimalMin(value = "0", inclusive = false)
-        private double phiThreshold = 16;
-        @Min(value = 0, inclusive = false)
-        private int arrivalWindowSize = 100;
-
-        public double getPhiThreshold()
-        {
-            return phiThreshold;
-        }
-
-        public void setPhiThreshold(float phiThreshold)
-        {
-            this.phiThreshold = phiThreshold;
-        }
-
-        public int getArrivalWindowSize()
-        {
-            return arrivalWindowSize;
-        }
-
-        void validateValues()
-        {
-            validate();
-        }
-
-        public void setArrivalWindowSize(int arrivalWindowSize)
-        {
-            this.arrivalWindowSize = arrivalWindowSize;
-        }
-    }
+  }
 }

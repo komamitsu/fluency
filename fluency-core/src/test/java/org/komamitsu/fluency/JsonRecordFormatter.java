@@ -18,47 +18,39 @@ package org.komamitsu.fluency;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.komamitsu.fluency.recordformat.AbstractRecordFormatter;
 
-public class JsonRecordFormatter
-        extends AbstractRecordFormatter
-{
-    private ObjectMapper objectMapper = new ObjectMapper();
+public class JsonRecordFormatter extends AbstractRecordFormatter {
+  private ObjectMapper objectMapper = new ObjectMapper();
 
-    public JsonRecordFormatter()
-    {
-        super(new Config());
+  public JsonRecordFormatter() {
+    super(new Config());
+  }
+
+  @Override
+  public byte[] format(String tag, Object timestamp, Map<String, Object> data) {
+    try {
+      return objectMapper.writeValueAsBytes(data);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    @Override
-    public byte[] format(String tag, Object timestamp, Map<String, Object> data)
-    {
-        try {
-            return objectMapper.writeValueAsBytes(data);
-        }
-        catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
+  @Override
+  public byte[] formatFromMessagePack(
+      String tag, Object timestamp, byte[] mapValue, int offset, int len) {
+    throw new RuntimeException("Shouldn't be called");
+  }
 
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
-    {
-        throw new RuntimeException("Shouldn't be called");
-    }
+  @Override
+  public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue) {
+    throw new RuntimeException("Shouldn't be called");
+  }
 
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
-    {
-        throw new RuntimeException("Shouldn't be called");
-    }
-
-    @Override
-    public String formatName()
-    {
-        return "json";
-    }
+  @Override
+  public String formatName() {
+    return "json";
+  }
 }

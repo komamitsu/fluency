@@ -20,37 +20,27 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RequestOption
-{
-    private final int size;
-    private final String chunk;
+public class RequestOption {
+  private final int size;
+  private final String chunk;
 
-    public RequestOption(
-            @JsonProperty("size") int size,
-            @JsonProperty("chunk") String chunk)
-    {
-        this.size = size;
-        this.chunk = chunk;
-    }
+  public RequestOption(@JsonProperty("size") int size, @JsonProperty("chunk") String chunk) {
+    this.size = size;
+    this.chunk = chunk;
+  }
 
-    @JsonProperty("size")
-    public int getSize()
-    {
-        return size;
-    }
+  @JsonProperty("size")
+  public int getSize() {
+    return size;
+  }
 
-    @JsonProperty("chunk")
-    public String getChunk()
-    {
-        return chunk;
-    }
+  @JsonProperty("chunk")
+  public String getChunk() {
+    return chunk;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "RequestOption{" +
-                "size=" + size +
-                ", chunk=" + chunk +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "RequestOption{" + "size=" + size + ", chunk=" + chunk + '}';
+  }
 }

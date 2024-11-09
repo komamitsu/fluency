@@ -16,17 +16,13 @@
 
 package org.komamitsu.fluency.ingester;
 
-import org.komamitsu.fluency.ingester.sender.Sender;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.komamitsu.fluency.ingester.sender.Sender;
 
-public interface Ingester
-        extends Closeable
-{
-    void ingest(String tag, ByteBuffer dataBuffer)
-            throws IOException;
+public interface Ingester extends Closeable {
+  void ingest(String tag, ByteBuffer dataBuffer) throws IOException;
 
-    Sender getSender();
+  Sender getSender();
 }

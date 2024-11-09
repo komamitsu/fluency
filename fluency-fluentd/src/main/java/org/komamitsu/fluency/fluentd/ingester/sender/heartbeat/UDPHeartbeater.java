@@ -16,54 +16,41 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class UDPHeartbeater
-        extends InetSocketHeartbeater
-{
-    private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
-    private final SocketAddress socketAddress;
+public class UDPHeartbeater extends InetSocketHeartbeater {
+  private static final Logger LOG = LoggerFactory.getLogger(UDPHeartbeater.class);
+  private final SocketAddress socketAddress;
 
-    public UDPHeartbeater()
-    {
-        this(new Config());
+  public UDPHeartbeater() {
+    this(new Config());
+  }
+
+  public UDPHeartbeater(final Config config) {
+    super(config);
+    socketAddress = new InetSocketAddress(config.getHost(), config.getPort());
+  }
+
+  @Override
+  protected void invoke() throws IOException {
+    try (DatagramChannel datagramChannel = DatagramChannel.open()) {
+      ByteBuffer byteBuffer = ByteBuffer.allocate(0);
+      datagramChannel.send(byteBuffer, socketAddress);
+      datagramChannel.receive(byteBuffer);
+      pong();
     }
+  }
 
-    public UDPHeartbeater(final Config config)
-    {
-        super(config);
-        socketAddress = new InetSocketAddress(config.getHost(), config.getPort());
-    }
+  @Override
+  public String toString() {
+    return "UDPHeartbeater{" + "socketAddress=" + socketAddress + "} " + super.toString();
+  }
 
-    @Override
-    protected void invoke()
-            throws IOException
-    {
-        try (DatagramChannel datagramChannel = DatagramChannel.open()) {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(0);
-            datagramChannel.send(byteBuffer, socketAddress);
-            datagramChannel.receive(byteBuffer);
-            pong();
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "UDPHeartbeater{" +
-                "socketAddress=" + socketAddress +
-                "} " + super.toString();
-    }
-
-    public static class Config
-            extends InetSocketHeartbeater.Config
-    {
-    }
+  public static class Config extends InetSocketHeartbeater.Config {}
 }

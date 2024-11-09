@@ -16,55 +16,46 @@
 
 package org.komamitsu.fluency.aws.s3.ingester;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Instant;
 import org.komamitsu.fluency.aws.s3.ingester.sender.AwsS3Sender;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Instant;
+public class AwsS3Ingester implements Ingester {
+  private static final Logger LOG = LoggerFactory.getLogger(AwsS3Ingester.class);
+  private final AwsS3Sender sender;
+  private final S3DestinationDecider s3DestinationDecider;
 
-public class AwsS3Ingester
-        implements Ingester
-{
-    private static final Logger LOG = LoggerFactory.getLogger(AwsS3Ingester.class);
-    private final AwsS3Sender sender;
-    private final S3DestinationDecider s3DestinationDecider;
+  public AwsS3Ingester(AwsS3Sender sender, S3DestinationDecider s3DestinationDecider) {
+    this.sender = sender;
+    this.s3DestinationDecider = s3DestinationDecider;
+  }
 
-    public AwsS3Ingester(AwsS3Sender sender, S3DestinationDecider s3DestinationDecider)
-    {
-        this.sender = sender;
-        this.s3DestinationDecider = s3DestinationDecider;
-    }
+  @Override
+  public void ingest(String tag, ByteBuffer dataBuffer) throws IOException {
+    S3DestinationDecider.S3Destination s3Destination =
+        s3DestinationDecider.decide(tag, Instant.now());
+    String bucket = s3Destination.getBucket();
+    String key = s3Destination.getKey();
 
-    @Override
-    public void ingest(String tag, ByteBuffer dataBuffer)
-            throws IOException
-    {
-        S3DestinationDecider.S3Destination s3Destination =
-                s3DestinationDecider.decide(tag, Instant.now());
-        String bucket = s3Destination.getBucket();
-        String key = s3Destination.getKey();
+    sender.send(bucket, key, dataBuffer);
+  }
 
-        sender.send(bucket, key, dataBuffer);
-    }
+  @Override
+  public Sender getSender() {
+    return sender;
+  }
 
-    @Override
-    public Sender getSender()
-    {
-        return sender;
-    }
+  public S3DestinationDecider getS3DestinationDecider() {
+    return s3DestinationDecider;
+  }
 
-    public S3DestinationDecider getS3DestinationDecider()
-    {
-        return s3DestinationDecider;
-    }
-
-    @Override
-    public void close()
-    {
-        sender.close();
-    }
+  @Override
+  public void close() {
+    sender.close();
+  }
 }

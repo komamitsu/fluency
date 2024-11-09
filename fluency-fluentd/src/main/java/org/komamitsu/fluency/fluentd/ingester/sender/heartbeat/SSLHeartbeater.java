@@ -16,109 +16,96 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
+import java.io.IOException;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import org.komamitsu.fluency.fluentd.ingester.sender.SSLSocketBuilder;
 import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
+public class SSLHeartbeater extends InetSocketHeartbeater {
+  private static final Logger LOG = LoggerFactory.getLogger(SSLHeartbeater.class);
+  private final Config config;
+  private final SSLSocketBuilder sslSocketBuilder;
 
-import java.io.IOException;
+  public SSLHeartbeater() {
+    this(new Config());
+  }
 
-public class SSLHeartbeater
-        extends InetSocketHeartbeater
-{
-    private static final Logger LOG = LoggerFactory.getLogger(SSLHeartbeater.class);
-    private final Config config;
-    private final SSLSocketBuilder sslSocketBuilder;
-
-    public SSLHeartbeater()
-    {
-        this(new Config());
-    }
-
-    public SSLHeartbeater(final Config config)
-    {
-        super(config);
-        config.validateValues();
-        this.config = config;
-        sslSocketBuilder = new SSLSocketBuilder(
+  public SSLHeartbeater(final Config config) {
+    super(config);
+    config.validateValues();
+    this.config = config;
+    sslSocketBuilder =
+        new SSLSocketBuilder(
             config.getHost(),
             config.getPort(),
             config.connectionTimeoutMilli,
             config.readTimeoutMilli,
-            config.getSslSocketFactory()
-        );
+            config.getSslSocketFactory());
+  }
+
+  @Override
+  protected void invoke() throws IOException {
+    try (SSLSocket sslSocket = sslSocketBuilder.build()) {
+      LOG.trace(
+          "SSLHeartbeat: remotePort={}, localPort={}",
+          sslSocket.getPort(),
+          sslSocket.getLocalPort());
+      // Try SSL handshake
+      sslSocket.getSession();
+      pong();
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "SSLHeartbeater{"
+        + "config="
+        + config
+        + ", sslSocketBuilder="
+        + sslSocketBuilder
+        + "} "
+        + super.toString();
+  }
+
+  public static class Config extends InetSocketHeartbeater.Config implements Validatable {
+    @Min(10)
+    private int connectionTimeoutMilli = 5000;
+
+    @Min(10)
+    private int readTimeoutMilli = 5000;
+
+    public int getConnectionTimeoutMilli() {
+      return connectionTimeoutMilli;
     }
 
-    @Override
-    protected void invoke()
-            throws IOException
-    {
-        try (SSLSocket sslSocket = sslSocketBuilder.build()) {
-            LOG.trace("SSLHeartbeat: remotePort={}, localPort={}", sslSocket.getPort(), sslSocket.getLocalPort());
-            // Try SSL handshake
-            sslSocket.getSession();
-            pong();
-        }
+    public void setConnectionTimeoutMilli(int connectionTimeoutMilli) {
+      this.connectionTimeoutMilli = connectionTimeoutMilli;
     }
 
-    @Override
-    public String toString()
-    {
-        return "SSLHeartbeater{" +
-                "config=" + config +
-                ", sslSocketBuilder=" + sslSocketBuilder +
-                "} " + super.toString();
+    public int getReadTimeoutMilli() {
+      return readTimeoutMilli;
     }
 
-    public static class Config
-            extends InetSocketHeartbeater.Config
-            implements Validatable
-    {
-        @Min(10)
-        private int connectionTimeoutMilli = 5000;
-        @Min(10)
-        private int readTimeoutMilli = 5000;
-
-        public int getConnectionTimeoutMilli()
-        {
-            return connectionTimeoutMilli;
-        }
-
-        public void setConnectionTimeoutMilli(int connectionTimeoutMilli)
-        {
-            this.connectionTimeoutMilli = connectionTimeoutMilli;
-        }
-
-        public int getReadTimeoutMilli()
-        {
-            return readTimeoutMilli;
-        }
-
-        public void setReadTimeoutMilli(int readTimeoutMilli)
-        {
-            this.readTimeoutMilli = readTimeoutMilli;
-        }
-
-        private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-
-        public SSLSocketFactory getSslSocketFactory()
-        {
-            return sslSocketFactory;
-        }
-
-        public void setSslSocketFactory(SSLSocketFactory sslSocketFactory)
-        {
-            this.sslSocketFactory = sslSocketFactory;
-        }
-
-        void validateValues()
-        {
-            validate();
-        }
+    public void setReadTimeoutMilli(int readTimeoutMilli) {
+      this.readTimeoutMilli = readTimeoutMilli;
     }
+
+    private SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+
+    public SSLSocketFactory getSslSocketFactory() {
+      return sslSocketFactory;
+    }
+
+    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+      this.sslSocketFactory = sslSocketFactory;
+    }
+
+    void validateValues() {
+      validate();
+    }
+  }
 }
-

@@ -20,69 +20,51 @@ import org.komamitsu.fluency.fluentd.ingester.sender.failuredetect.FailureDetect
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class InetSocketSender<T>
-        extends NetworkSender<T>
-{
-    private static final Logger LOG = LoggerFactory.getLogger(InetSocketSender.class);
-    private final Config config;
+public abstract class InetSocketSender<T> extends NetworkSender<T> {
+  private static final Logger LOG = LoggerFactory.getLogger(InetSocketSender.class);
+  private final Config config;
 
-    public InetSocketSender(Config config, FailureDetector failureDetector)
-    {
-        super(config, failureDetector);
-        this.config = config;
+  public InetSocketSender(Config config, FailureDetector failureDetector) {
+    super(config, failureDetector);
+    this.config = config;
+  }
+
+  public String getHost() {
+    return config.getHost();
+  }
+
+  public int getPort() {
+    return config.getPort();
+  }
+
+  @Override
+  public String toString() {
+    return "NetworkSender{" + "config=" + config + "} " + super.toString();
+  }
+
+  public static class Config extends NetworkSender.Config {
+    private String host = "127.0.0.1";
+    private int port = 24224;
+
+    public String getHost() {
+      return host;
     }
 
-    public String getHost()
-    {
-        return config.getHost();
+    public void setHost(String host) {
+      this.host = host;
     }
 
-    public int getPort()
-    {
-        return config.getPort();
+    public int getPort() {
+      return port;
+    }
+
+    public void setPort(int port) {
+      this.port = port;
     }
 
     @Override
-    public String toString()
-    {
-        return "NetworkSender{" +
-                "config=" + config +
-                "} " + super.toString();
+    public String toString() {
+      return "Config{" + "host='" + host + '\'' + ", port=" + port + "} " + super.toString();
     }
-
-    public static class Config
-            extends NetworkSender.Config
-    {
-        private String host = "127.0.0.1";
-        private int port = 24224;
-
-        public String getHost()
-        {
-            return host;
-        }
-
-        public void setHost(String host)
-        {
-            this.host = host;
-        }
-
-        public int getPort()
-        {
-            return port;
-        }
-
-        public void setPort(int port)
-        {
-            this.port = port;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    "} " + super.toString();
-        }
-    }
+  }
 }

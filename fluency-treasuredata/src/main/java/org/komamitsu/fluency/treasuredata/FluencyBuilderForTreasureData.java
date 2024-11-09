@@ -18,152 +18,136 @@ package org.komamitsu.fluency.treasuredata;
 
 import org.komamitsu.fluency.Fluency;
 import org.komamitsu.fluency.ingester.Ingester;
-import org.komamitsu.fluency.recordformat.RecordFormatter;
+import org.komamitsu.fluency.recordformat.MessagePackRecordFormatter;
 import org.komamitsu.fluency.treasuredata.ingester.TreasureDataIngester;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
-import org.komamitsu.fluency.recordformat.MessagePackRecordFormatter;
 
-public class FluencyBuilderForTreasureData
-        extends org.komamitsu.fluency.FluencyBuilder
-{
-    private Integer senderRetryMax;
-    private Integer senderRetryIntervalMillis;
-    private Integer senderMaxRetryIntervalMillis;
-    private Float senderRetryFactor;
-    private Integer senderWorkBufSize;
+public class FluencyBuilderForTreasureData extends org.komamitsu.fluency.FluencyBuilder {
+  private Integer senderRetryMax;
+  private Integer senderRetryIntervalMillis;
+  private Integer senderMaxRetryIntervalMillis;
+  private Float senderRetryFactor;
+  private Integer senderWorkBufSize;
 
-    public FluencyBuilderForTreasureData()
-    {
-        setBufferChunkRetentionTimeMillis(30 * 1000);
-        setBufferChunkInitialSize(4 * 1024 * 1024);
-        setBufferChunkRetentionSize(64 * 1024 * 1024);
+  public FluencyBuilderForTreasureData() {
+    setBufferChunkRetentionTimeMillis(30 * 1000);
+    setBufferChunkInitialSize(4 * 1024 * 1024);
+    setBufferChunkRetentionSize(64 * 1024 * 1024);
+  }
+
+  public Integer getSenderRetryMax() {
+    return senderRetryMax;
+  }
+
+  public void setSenderRetryMax(Integer senderRetryMax) {
+    this.senderRetryMax = senderRetryMax;
+  }
+
+  public Integer getSenderRetryIntervalMillis() {
+    return senderRetryIntervalMillis;
+  }
+
+  public void setSenderRetryIntervalMillis(Integer senderRetryIntervalMillis) {
+    this.senderRetryIntervalMillis = senderRetryIntervalMillis;
+  }
+
+  public Integer getSenderMaxRetryIntervalMillis() {
+    return senderMaxRetryIntervalMillis;
+  }
+
+  public void setSenderMaxRetryIntervalMillis(Integer senderMaxRetryIntervalMillis) {
+    this.senderMaxRetryIntervalMillis = senderMaxRetryIntervalMillis;
+  }
+
+  public Float getSenderRetryFactor() {
+    return senderRetryFactor;
+  }
+
+  public void setSenderRetryFactor(Float senderRetryFactor) {
+    this.senderRetryFactor = senderRetryFactor;
+  }
+
+  public Integer getSenderWorkBufSize() {
+    return senderWorkBufSize;
+  }
+
+  public void setSenderWorkBufSize(Integer senderWorkBufSize) {
+    this.senderWorkBufSize = senderWorkBufSize;
+  }
+
+  public Fluency build(String apikey, String endpoint) {
+    return buildFromIngester(
+        buildRecordFormatter(), buildIngester(createSenderConfig(endpoint, apikey)));
+  }
+
+  public Fluency build(String apikey) {
+    return buildFromIngester(
+        buildRecordFormatter(), buildIngester(createSenderConfig(null, apikey)));
+  }
+
+  private TreasureDataSender.Config createSenderConfig(String endpoint, String apikey) {
+    if (apikey == null) {
+      throw new IllegalArgumentException("`apikey` should be set");
     }
 
-    public Integer getSenderRetryMax()
-    {
-        return senderRetryMax;
+    TreasureDataSender.Config senderConfig = new TreasureDataSender.Config();
+    senderConfig.setApikey(apikey);
+
+    if (endpoint != null) {
+      senderConfig.setEndpoint(endpoint);
     }
 
-    public void setSenderRetryMax(Integer senderRetryMax)
-    {
-        this.senderRetryMax = senderRetryMax;
+    if (getSenderRetryMax() != null) {
+      senderConfig.setRetryMax(getSenderRetryMax());
     }
 
-    public Integer getSenderRetryIntervalMillis()
-    {
-        return senderRetryIntervalMillis;
+    if (getSenderRetryIntervalMillis() != null) {
+      senderConfig.setRetryIntervalMs(getSenderRetryIntervalMillis());
     }
 
-    public void setSenderRetryIntervalMillis(Integer senderRetryIntervalMillis)
-    {
-        this.senderRetryIntervalMillis = senderRetryIntervalMillis;
+    if (getSenderMaxRetryIntervalMillis() != null) {
+      senderConfig.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
     }
 
-    public Integer getSenderMaxRetryIntervalMillis()
-    {
-        return senderMaxRetryIntervalMillis;
+    if (getSenderRetryFactor() != null) {
+      senderConfig.setRetryFactor(getSenderRetryFactor());
     }
 
-    public void setSenderMaxRetryIntervalMillis(Integer senderMaxRetryIntervalMillis)
-    {
-        this.senderMaxRetryIntervalMillis = senderMaxRetryIntervalMillis;
+    if (getErrorHandler() != null) {
+      senderConfig.setErrorHandler(getErrorHandler());
     }
 
-    public Float getSenderRetryFactor()
-    {
-        return senderRetryFactor;
+    if (getSenderWorkBufSize() != null) {
+      senderConfig.setWorkBufSize(getSenderWorkBufSize());
     }
 
-    public void setSenderRetryFactor(Float senderRetryFactor)
-    {
-        this.senderRetryFactor = senderRetryFactor;
-    }
+    return senderConfig;
+  }
 
-    public Integer getSenderWorkBufSize()
-    {
-        return senderWorkBufSize;
-    }
+  @Override
+  public String toString() {
+    return "FluencyBuilder{"
+        + "senderRetryMax="
+        + senderRetryMax
+        + ", senderRetryIntervalMillis="
+        + senderRetryIntervalMillis
+        + ", senderMaxRetryIntervalMillis="
+        + senderMaxRetryIntervalMillis
+        + ", senderRetryFactor="
+        + senderRetryFactor
+        + ", senderWorkBufSize="
+        + senderWorkBufSize
+        + "} "
+        + super.toString();
+  }
 
-    public void setSenderWorkBufSize(Integer senderWorkBufSize)
-    {
-        this.senderWorkBufSize = senderWorkBufSize;
-    }
+  private MessagePackRecordFormatter buildRecordFormatter() {
+    return new MessagePackRecordFormatter();
+  }
 
-    public Fluency build(String apikey, String endpoint)
-    {
-        return buildFromIngester(
-                buildRecordFormatter(),
-                buildIngester(createSenderConfig(endpoint, apikey)));
-    }
+  private Ingester buildIngester(TreasureDataSender.Config senderConfig) {
+    TreasureDataSender sender = new TreasureDataSender(senderConfig);
 
-    public Fluency build(String apikey)
-    {
-        return buildFromIngester(
-                buildRecordFormatter(),
-                buildIngester(createSenderConfig(null, apikey)));
-    }
-
-    private TreasureDataSender.Config createSenderConfig(String endpoint, String apikey)
-    {
-        if (apikey == null) {
-            throw new IllegalArgumentException("`apikey` should be set");
-        }
-
-        TreasureDataSender.Config senderConfig = new TreasureDataSender.Config();
-        senderConfig.setApikey(apikey);
-
-        if (endpoint != null) {
-            senderConfig.setEndpoint(endpoint);
-        }
-
-        if (getSenderRetryMax() != null) {
-            senderConfig.setRetryMax(getSenderRetryMax());
-        }
-
-        if (getSenderRetryIntervalMillis() != null) {
-            senderConfig.setRetryIntervalMs(getSenderRetryIntervalMillis());
-        }
-
-        if (getSenderMaxRetryIntervalMillis() != null) {
-            senderConfig.setMaxRetryIntervalMs(getSenderMaxRetryIntervalMillis());
-        }
-
-        if (getSenderRetryFactor() != null) {
-            senderConfig.setRetryFactor(getSenderRetryFactor());
-        }
-
-        if (getErrorHandler() != null) {
-            senderConfig.setErrorHandler(getErrorHandler());
-        }
-
-        if (getSenderWorkBufSize() != null) {
-            senderConfig.setWorkBufSize(getSenderWorkBufSize());
-        }
-
-        return senderConfig;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "FluencyBuilder{" +
-                "senderRetryMax=" + senderRetryMax +
-                ", senderRetryIntervalMillis=" + senderRetryIntervalMillis +
-                ", senderMaxRetryIntervalMillis=" + senderMaxRetryIntervalMillis +
-                ", senderRetryFactor=" + senderRetryFactor +
-                ", senderWorkBufSize=" + senderWorkBufSize +
-                "} " + super.toString();
-    }
-
-    private MessagePackRecordFormatter buildRecordFormatter()
-    {
-        return new MessagePackRecordFormatter();
-    }
-
-    private Ingester buildIngester(TreasureDataSender.Config senderConfig)
-    {
-        TreasureDataSender sender = new TreasureDataSender(senderConfig);
-
-        return new TreasureDataIngester(sender);
-    }
+    return new TreasureDataIngester(sender);
+  }
 }

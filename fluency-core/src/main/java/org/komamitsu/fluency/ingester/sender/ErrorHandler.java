@@ -16,7 +16,6 @@
 
 package org.komamitsu.fluency.ingester.sender;
 
-public interface ErrorHandler
-{
-    void handle(Throwable e);
+public interface ErrorHandler {
+  void handle(Throwable e);
 }

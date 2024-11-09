@@ -16,68 +16,53 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class UnixSocketHeartbeater
-        extends Heartbeater
-{
-    private static final Logger LOG = LoggerFactory.getLogger(UnixSocketHeartbeater.class);
-    private final Config config;
+public class UnixSocketHeartbeater extends Heartbeater {
+  private static final Logger LOG = LoggerFactory.getLogger(UnixSocketHeartbeater.class);
+  private final Config config;
 
-    public UnixSocketHeartbeater()
-    {
-        this(new Config());
+  public UnixSocketHeartbeater() {
+    this(new Config());
+  }
+
+  public UnixSocketHeartbeater(final Config config) {
+    super(config);
+    this.config = config;
+  }
+
+  @Override
+  protected void invoke() throws IOException {
+    try (SocketChannel socketChannel =
+        SocketChannel.open(UnixDomainSocketAddress.of(config.getPath()))) {
+      LOG.trace("UnixSocketHeartbeat: {}", socketChannel);
+      pong();
+    }
+  }
+
+  public Path getPath() {
+    return config.getPath();
+  }
+
+  @Override
+  public String toString() {
+    return "UnixSocketHeartbeater{" + "config=" + config + "} " + super.toString();
+  }
+
+  public static class Config extends Heartbeater.Config {
+    private Path path;
+
+    public Path getPath() {
+      return path;
     }
 
-    public UnixSocketHeartbeater(final Config config)
-    {
-        super(config);
-        this.config = config;
+    public void setPath(Path path) {
+      this.path = path;
     }
-
-    @Override
-    protected void invoke()
-            throws IOException
-    {
-        try (SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(config.getPath()))) {
-            LOG.trace("UnixSocketHeartbeat: {}", socketChannel);
-            pong();
-        }
-    }
-
-    public Path getPath()
-    {
-        return config.getPath();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "UnixSocketHeartbeater{" +
-                "config=" + config +
-                "} " + super.toString();
-    }
-
-    public static class Config
-            extends Heartbeater.Config
-    {
-        private Path path;
-
-        public Path getPath()
-        {
-            return path;
-        }
-
-        public void setPath(Path path)
-        {
-            this.path = path;
-        }
-    }
+  }
 }
-

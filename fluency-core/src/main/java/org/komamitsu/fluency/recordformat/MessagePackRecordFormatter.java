@@ -16,85 +16,75 @@
 
 package org.komamitsu.fluency.recordformat;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
 import org.komamitsu.fluency.recordformat.recordaccessor.MapRecordAccessor;
 import org.komamitsu.fluency.recordformat.recordaccessor.MessagePackRecordAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
+public class MessagePackRecordFormatter extends AbstractRecordFormatter {
+  private static final Logger LOG = LoggerFactory.getLogger(MessagePackRecordFormatter.class);
 
-public class MessagePackRecordFormatter
-        extends AbstractRecordFormatter
-{
-    private static final Logger LOG = LoggerFactory.getLogger(MessagePackRecordFormatter.class);
+  public MessagePackRecordFormatter() {
+    this(new Config());
+  }
 
-    public MessagePackRecordFormatter()
-    {
-        this(new Config());
+  public MessagePackRecordFormatter(Config config) {
+    super(config);
+  }
+
+  @Override
+  public byte[] format(String tag, Object timestamp, Map<String, Object> data) {
+    try {
+      MapRecordAccessor recordAccessor = new MapRecordAccessor(data);
+      recordAccessor.setTimestamp(getEpoch(timestamp));
+      return recordAccessor.toMessagePack(objectMapperForMessagePack);
+    } catch (Throwable e) {
+      LOG.error(
+          String.format(
+              "Failed to format a Map record: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
+              e.getMessage(), tag, timestamp, data.size()));
+      throw e;
     }
+  }
 
-    public MessagePackRecordFormatter(Config config)
-    {
-        super(config);
+  @Override
+  public byte[] formatFromMessagePack(
+      String tag, Object timestamp, byte[] mapValue, int offset, int len) {
+    try {
+      MessagePackRecordAccessor recordAccessor =
+          new MessagePackRecordAccessor(ByteBuffer.wrap(mapValue, offset, len));
+      recordAccessor.setTimestamp(getEpoch(timestamp));
+      return recordAccessor.toMessagePack(objectMapperForMessagePack);
+    } catch (Throwable e) {
+      LOG.error(
+          String.format(
+              "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, offset=%d, len=%d",
+              e.getMessage(), tag, timestamp, offset, len));
+      throw e;
     }
+  }
 
-    @Override
-    public byte[] format(String tag, Object timestamp, Map<String, Object> data)
-    {
-        try {
-            MapRecordAccessor recordAccessor = new MapRecordAccessor(data);
-            recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePack(objectMapperForMessagePack);
-        }
-        catch (Throwable e) {
-            LOG.error(String.format(
-                    "Failed to format a Map record: cause=%s, tag=%s, timestamp=%s, recordCount=%d",
-                    e.getMessage(), tag, timestamp, data.size()));
-            throw e;
-        }
+  @Override
+  public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue) {
+    try {
+      MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(mapValue);
+      recordAccessor.setTimestamp(getEpoch(timestamp));
+      return recordAccessor.toMessagePack(objectMapperForMessagePack);
+    } catch (Throwable e) {
+      LOG.error(
+          String.format(
+              "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, bytebuf=%s",
+              e.getMessage(), tag, timestamp, mapValue));
+      throw e;
     }
+  }
 
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, byte[] mapValue, int offset, int len)
-    {
-        try {
-            MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(ByteBuffer.wrap(mapValue, offset, len));
-            recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePack(objectMapperForMessagePack);
-        }
-        catch (Throwable e) {
-            LOG.error(String.format(
-                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, offset=%d, len=%d",
-                    e.getMessage(), tag, timestamp, offset, len));
-            throw e;
-        }
-    }
+  @Override
+  public String formatName() {
+    return "msgpack";
+  }
 
-    @Override
-    public byte[] formatFromMessagePack(String tag, Object timestamp, ByteBuffer mapValue)
-    {
-        try {
-            MessagePackRecordAccessor recordAccessor = new MessagePackRecordAccessor(mapValue);
-            recordAccessor.setTimestamp(getEpoch(timestamp));
-            return recordAccessor.toMessagePack(objectMapperForMessagePack);
-        }
-        catch (Throwable e) {
-            LOG.error(String.format(
-                    "Failed to format a MessagePack record: cause=%s, tag=%s, timestamp=%s, bytebuf=%s",
-                    e.getMessage(), tag, timestamp, mapValue));
-            throw e;
-        }
-    }
-
-    @Override
-    public String formatName()
-    {
-        return "msgpack";
-    }
-
-    public static class Config
-            extends RecordFormatter.Config
-    {
-    }
+  public static class Config extends RecordFormatter.Config {}
 }

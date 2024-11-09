@@ -16,20 +16,16 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.failuredetect;
 
-public abstract class FailureDetectStrategy
-{
-    protected final Config config;
+public abstract class FailureDetectStrategy {
+  protected final Config config;
 
-    protected FailureDetectStrategy(Config config)
-    {
-        this.config = config;
-    }
+  protected FailureDetectStrategy(Config config) {
+    this.config = config;
+  }
 
-    public abstract void heartbeat(long now);
+  public abstract void heartbeat(long now);
 
-    public abstract boolean isAvailable();
+  public abstract boolean isAvailable();
 
-    public static class Config
-    {
-    }
+  public static class Config {}
 }

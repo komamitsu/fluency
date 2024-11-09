@@ -16,52 +16,41 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.heartbeat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TCPHeartbeater
-        extends InetSocketHeartbeater
-{
-    private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
-    private final Config config;
+public class TCPHeartbeater extends InetSocketHeartbeater {
+  private static final Logger LOG = LoggerFactory.getLogger(TCPHeartbeater.class);
+  private final Config config;
 
-    public TCPHeartbeater()
-    {
-        this(new Config());
+  public TCPHeartbeater() {
+    this(new Config());
+  }
+
+  public TCPHeartbeater(final Config config) {
+    super(config);
+    this.config = config;
+  }
+
+  @Override
+  protected void invoke() throws IOException {
+    try (SocketChannel socketChannel =
+        SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()))) {
+      LOG.trace(
+          "TCPHeartbeat: remotePort={}, localPort={}",
+          socketChannel.socket().getPort(),
+          socketChannel.socket().getLocalPort());
+      pong();
     }
+  }
 
-    public TCPHeartbeater(final Config config)
-    {
-        super(config);
-        this.config = config;
-    }
+  @Override
+  public String toString() {
+    return "TCPHeartbeater{" + "config=" + config + "} " + super.toString();
+  }
 
-    @Override
-    protected void invoke()
-            throws IOException
-    {
-        try (SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(config.getHost(), config.getPort()))) {
-            LOG.trace("TCPHeartbeat: remotePort={}, localPort={}",
-                    socketChannel.socket().getPort(), socketChannel.socket().getLocalPort());
-            pong();
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "TCPHeartbeater{" +
-                "config=" + config +
-                "} " + super.toString();
-    }
-
-    public static class Config
-            extends InetSocketHeartbeater.Config
-    {
-    }
+  public static class Config extends InetSocketHeartbeater.Config {}
 }
-

@@ -16,43 +16,34 @@
 
 package org.komamitsu.fluency.treasuredata.ingester;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.komamitsu.fluency.ingester.Ingester;
 import org.komamitsu.fluency.ingester.sender.Sender;
 import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+public class TreasureDataIngester implements Ingester {
+  private static final Logger LOG = LoggerFactory.getLogger(TreasureDataIngester.class);
+  private final TreasureDataSender sender;
 
-public class TreasureDataIngester
-        implements Ingester
-{
-    private static final Logger LOG = LoggerFactory.getLogger(TreasureDataIngester.class);
-    private final TreasureDataSender sender;
+  public TreasureDataIngester(TreasureDataSender sender) {
+    this.sender = sender;
+  }
 
-    public TreasureDataIngester(TreasureDataSender sender)
-    {
-        this.sender = sender;
-    }
+  @Override
+  public void ingest(String tag, ByteBuffer dataBuffer) throws IOException {
+    sender.send(tag, dataBuffer);
+  }
 
-    @Override
-    public void ingest(String tag, ByteBuffer dataBuffer)
-            throws IOException
-    {
-        sender.send(tag, dataBuffer);
-    }
+  @Override
+  public Sender getSender() {
+    return sender;
+  }
 
-    @Override
-    public Sender getSender()
-    {
-        return sender;
-    }
-
-    @Override
-    public void close()
-            throws IOException
-    {
-        sender.close();
-    }
+  @Override
+  public void close() throws IOException {
+    sender.close();
+  }
 }

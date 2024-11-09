@@ -18,26 +18,20 @@ package org.komamitsu.fluency.fluentd.ingester;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Response
-{
-    private final String ack;
+public class Response {
+  private final String ack;
 
-    public Response(@JsonProperty("ack") String ack)
-    {
-        this.ack = ack;
-    }
+  public Response(@JsonProperty("ack") String ack) {
+    this.ack = ack;
+  }
 
-    @JsonProperty("ack")
-    public String getAck()
-    {
-        return ack;
-    }
+  @JsonProperty("ack")
+  public String getAck() {
+    return ack;
+  }
 
-    @Override
-    public String toString()
-    {
-        return "ResponseOption{" +
-                "ack=" + ack +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "ResponseOption{" + "ack=" + ack + '}';
+  }
 }

@@ -16,15 +16,6 @@
 
 package org.komamitsu.fluency.treasuredata.ingester;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
-import org.mockito.ArgumentCaptor;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -32,47 +23,46 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class TreasureDataIngesterTest
-{
-    private static final Charset CHARSET = Charset.forName("UTF-8");
-    private static final String TAG = "foo.bar";
-    private static final byte[] DATA = "hello, world".getBytes(CHARSET);
-    private TreasureDataSender treasureDataSender;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.komamitsu.fluency.treasuredata.ingester.sender.TreasureDataSender;
+import org.mockito.ArgumentCaptor;
 
-    @BeforeEach
-    void setUp()
-            throws Exception
-    {
-        treasureDataSender = mock(TreasureDataSender.class);
-    }
+class TreasureDataIngesterTest {
+  private static final Charset CHARSET = Charset.forName("UTF-8");
+  private static final String TAG = "foo.bar";
+  private static final byte[] DATA = "hello, world".getBytes(CHARSET);
+  private TreasureDataSender treasureDataSender;
 
-    @Test
-    void ingest()
-            throws IOException
-    {
-        TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
-        ingester.ingest(TAG, ByteBuffer.wrap(DATA));
-        ArgumentCaptor<ByteBuffer> byteBufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
-        verify(treasureDataSender, times(1)).send(eq(TAG), byteBufferArgumentCaptor.capture());
+  @BeforeEach
+  void setUp() throws Exception {
+    treasureDataSender = mock(TreasureDataSender.class);
+  }
 
-        assertEquals(1, byteBufferArgumentCaptor.getAllValues().size());
-        assertArrayEquals(DATA, byteBufferArgumentCaptor.getAllValues().get(0).array());
-    }
+  @Test
+  void ingest() throws IOException {
+    TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
+    ingester.ingest(TAG, ByteBuffer.wrap(DATA));
+    ArgumentCaptor<ByteBuffer> byteBufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+    verify(treasureDataSender, times(1)).send(eq(TAG), byteBufferArgumentCaptor.capture());
 
-    @Test
-    void getSender()
-    {
-        assertEquals(treasureDataSender,
-                new TreasureDataIngester(treasureDataSender).getSender());
-    }
+    assertEquals(1, byteBufferArgumentCaptor.getAllValues().size());
+    assertArrayEquals(DATA, byteBufferArgumentCaptor.getAllValues().get(0).array());
+  }
 
-    @Test
-    void close()
-            throws IOException
-    {
-        TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
-        ingester.close();
+  @Test
+  void getSender() {
+    assertEquals(treasureDataSender, new TreasureDataIngester(treasureDataSender).getSender());
+  }
 
-        verify(treasureDataSender, times(1)).close();
-    }
+  @Test
+  void close() throws IOException {
+    TreasureDataIngester ingester = new TreasureDataIngester(treasureDataSender);
+    ingester.close();
+
+    verify(treasureDataSender, times(1)).close();
+  }
 }

@@ -25,87 +25,76 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ConfigurableTestServer
-{
-    private final boolean sslEnabled;
+public class ConfigurableTestServer {
+  private final boolean sslEnabled;
 
-    public ConfigurableTestServer(boolean sslEnabled)
-    {
-        this.sslEnabled = sslEnabled;
-    }
+  public ConfigurableTestServer(boolean sslEnabled) {
+    this.sslEnabled = sslEnabled;
+  }
 
-    Exception run(final WithClientSocket withClientSocket, final WithServerPort withServerPort, long timeoutMilli)
-            throws Throwable
-    {
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        final AtomicReference<ServerSocket> serverSocket = new AtomicReference<ServerSocket>();
+  Exception run(
+      final WithClientSocket withClientSocket,
+      final WithServerPort withServerPort,
+      long timeoutMilli)
+      throws Throwable {
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    final AtomicReference<ServerSocket> serverSocket = new AtomicReference<ServerSocket>();
 
-        try {
-            if (sslEnabled) {
-                serverSocket.set(SSLTestSocketFactories.createServerSocket());
-            }
-            else {
-                serverSocket.set(new ServerSocket(0));
-            }
+    try {
+      if (sslEnabled) {
+        serverSocket.set(SSLTestSocketFactories.createServerSocket());
+      } else {
+        serverSocket.set(new ServerSocket(0));
+      }
 
-            final int serverPort = serverSocket.get().getLocalPort();
+      final int serverPort = serverSocket.get().getLocalPort();
 
-            Future<Void> serverSideFuture = executorService.submit(new Callable<Void>()
-            {
+      Future<Void> serverSideFuture =
+          executorService.submit(
+              new Callable<Void>() {
                 @Override
-                public Void call()
-                        throws Exception
-                {
-                    Socket acceptSocket = serverSocket.get().accept();
-                    try {
-                        withClientSocket.run(acceptSocket);
-                    }
-                    finally {
-                        acceptSocket.close();
-                    }
-                    return null;
+                public Void call() throws Exception {
+                  Socket acceptSocket = serverSocket.get().accept();
+                  try {
+                    withClientSocket.run(acceptSocket);
+                  } finally {
+                    acceptSocket.close();
+                  }
+                  return null;
                 }
-            });
+              });
 
-            Future<Void> testTaskFuture = executorService.submit(new Callable<Void>()
-            {
+      Future<Void> testTaskFuture =
+          executorService.submit(
+              new Callable<Void>() {
                 @Override
-                public Void call()
-                        throws Exception
-                {
-                    withServerPort.run(serverPort);
-                    return null;
+                public Void call() throws Exception {
+                  withServerPort.run(serverPort);
+                  return null;
                 }
-            });
+              });
 
-            try {
-                testTaskFuture.get(timeoutMilli, TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e) {
-                return e;
-            }
-            finally {
-                serverSideFuture.get();
-            }
-        }
-        finally {
-            executorService.shutdownNow();
-            if (serverSocket.get() != null) {
-                serverSocket.get().close();
-            }
-        }
-        return null;
+      try {
+        testTaskFuture.get(timeoutMilli, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        return e;
+      } finally {
+        serverSideFuture.get();
+      }
+    } finally {
+      executorService.shutdownNow();
+      if (serverSocket.get() != null) {
+        serverSocket.get().close();
+      }
     }
+    return null;
+  }
 
-    interface WithClientSocket
-    {
-        void run(Socket clientSocket)
-                throws Exception;
-    }
+  interface WithClientSocket {
+    void run(Socket clientSocket) throws Exception;
+  }
 
-    interface WithServerPort
-    {
-        void run(int serverPort)
-                throws Exception;
-    }
+  interface WithServerPort {
+    void run(int serverPort) throws Exception;
+  }
 }

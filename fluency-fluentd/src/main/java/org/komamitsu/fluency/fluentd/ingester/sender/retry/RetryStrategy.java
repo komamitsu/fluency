@@ -16,59 +16,45 @@
 
 package org.komamitsu.fluency.fluentd.ingester.sender.retry;
 
-import org.komamitsu.fluency.validation.Validatable;
 import org.komamitsu.fluency.validation.annotation.Min;
 
-public abstract class RetryStrategy
-{
-    private final Config config;
+public abstract class RetryStrategy {
+  private final Config config;
 
-    protected RetryStrategy(Config config)
-    {
-        this.config = config;
+  protected RetryStrategy(Config config) {
+    this.config = config;
+  }
+
+  public abstract int getNextIntervalMillis(int retryCount);
+
+  public boolean isRetriedOver(int retryCount) {
+    return retryCount > config.getMaxRetryCount();
+  }
+
+  public int getMaxRetryCount() {
+    return config.getMaxRetryCount();
+  }
+
+  @Override
+  public String toString() {
+    return "RetryStrategy{" + "config=" + config + '}';
+  }
+
+  public static class Config {
+    @Min(0)
+    private int maxRetryCount = 7;
+
+    public int getMaxRetryCount() {
+      return maxRetryCount;
     }
 
-    public abstract int getNextIntervalMillis(int retryCount);
-
-    public boolean isRetriedOver(int retryCount)
-    {
-        return retryCount > config.getMaxRetryCount();
-    }
-
-    public int getMaxRetryCount()
-    {
-        return config.getMaxRetryCount();
+    public void setMaxRetryCount(int maxRetryCount) {
+      this.maxRetryCount = maxRetryCount;
     }
 
     @Override
-    public String toString()
-    {
-        return "RetryStrategy{" +
-                "config=" + config +
-                '}';
+    public String toString() {
+      return "Config{" + "maxRetryCount=" + maxRetryCount + '}';
     }
-
-    public static class Config
-    {
-        @Min(0)
-        private int maxRetryCount = 7;
-
-        public int getMaxRetryCount()
-        {
-            return maxRetryCount;
-        }
-
-        public void setMaxRetryCount(int maxRetryCount)
-        {
-            this.maxRetryCount = maxRetryCount;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Config{" +
-                    "maxRetryCount=" + maxRetryCount +
-                    '}';
-        }
-    }
+  }
 }
