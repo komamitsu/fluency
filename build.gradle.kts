@@ -40,7 +40,7 @@ subprojects {
     implementation("org.komamitsu:phi-accural-failure-detector:0.0.5")
     implementation("net.jodah:failsafe:2.4.4")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.3")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.11.3")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.2")
     testImplementation("ch.qos.logback:logback-classic:1.3.14")
