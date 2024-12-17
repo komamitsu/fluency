@@ -46,7 +46,7 @@ subprojects {
     testImplementation("ch.qos.logback:logback-classic:1.3.14")
     testImplementation("org.assertj:assertj-core:3.26.3")
     testImplementation("org.mockito:mockito-core:4.11.0")
-    testImplementation("com.google.guava:guava:33.1.0-jre")
+    testImplementation("com.google.guava:guava:33.4.0-jre")
   }
 
   base {
