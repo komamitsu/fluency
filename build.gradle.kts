@@ -13,7 +13,7 @@ plugins {
   signing
   `maven-publish`
   id("com.github.kt3k.coveralls") version "2.12.2"
-  id("com.github.johnrengelman.shadow") version "8.1.1"
+  id("com.gradleup.shadow") version "8.3.5"
   id("com.diffplug.spotless") version "6.13.0"
 }
 
@@ -22,7 +22,7 @@ subprojects {
   apply(from = "../version.gradle")
   apply(plugin = "java-library")
   apply(plugin = "idea")
-  apply(plugin = "com.github.johnrengelman.shadow")
+  apply(plugin = "com.gradleup.shadow")
   apply(plugin = "signing")
   apply(plugin = "maven-publish")
   apply(plugin = "jacoco")
