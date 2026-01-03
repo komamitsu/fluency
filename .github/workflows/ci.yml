@@ -13,18 +13,13 @@ jobs:
       matrix:
         java_version: [8, 11]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK ${{ matrix.java_version }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        cache: 'gradle'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-core
@@ -42,18 +37,13 @@ jobs:
       matrix:
         java_version: [16, 17]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK ${{ matrix.java_version }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        cache: 'gradle'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-fluentd-ext
@@ -66,24 +56,19 @@ jobs:
   prepare_for_integration_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: 17
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-17-gradle-${{ hashFiles('**/*.gradle*') }}
+        cache: 'gradle'
     - name: Install local maven package
       run: |
         ./gradlew -p fluency-core publishToMavenLocal --stacktrace --info
         ./gradlew -p fluency-fluentd publishToMavenLocal --stacktrace --info
     - name: Upload local Maven package just installed
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: local-m2
         path: ~/.m2
@@ -96,22 +81,17 @@ jobs:
       matrix:
         java_version: [8, 11, 17]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK ${{ matrix.java_version }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        cache: 'gradle'
     - name: Remove m2 directory just in case
       run: rm -rf ~/.m2
     - name: Download local Maven package prepared above
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: local-m2
         path: ~/.m2
@@ -128,18 +108,13 @@ jobs:
       matrix:
         java_version: [16, 17]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK ${{ matrix.java_version }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-${{ matrix.java_version }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        cache: 'gradle'
     - name: Install local maven package
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
