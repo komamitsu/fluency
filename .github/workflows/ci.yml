@@ -19,6 +19,7 @@ jobs:
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
+        cache: 'gradle'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-core
@@ -42,6 +43,7 @@ jobs:
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
+        cache: 'gradle'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Run tests fluency-fluentd-ext
@@ -60,6 +62,7 @@ jobs:
       with:
         distribution: temurin
         java-version: 17
+        cache: 'gradle'
     - name: Install local maven package
       run: |
         ./gradlew -p fluency-core publishToMavenLocal --stacktrace --info
@@ -84,6 +87,7 @@ jobs:
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
+        cache: 'gradle'
     - name: Remove m2 directory just in case
       run: rm -rf ~/.m2
     - name: Download local Maven package prepared above
@@ -110,6 +114,7 @@ jobs:
       with:
         distribution: temurin
         java-version: ${{ matrix.java_version }}
+        cache: 'gradle'
     - name: Install local maven package
       run: |
         ./gradlew publishToMavenLocal --stacktrace --info
