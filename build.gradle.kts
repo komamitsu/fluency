@@ -33,6 +33,9 @@ subprojects {
   apply(plugin = "com.github.kt3k.coveralls")
   apply(plugin = "com.diffplug.spotless")
 
+  group = rootProject.group
+  version = rootProject.version
+
   repositories {
     mavenCentral()
     mavenLocal()
