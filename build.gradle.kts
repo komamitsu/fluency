@@ -111,7 +111,7 @@ subprojects {
     repositories {
       maven {
         name = "staging"
-        url = uri(layout.buildDirectory.dir("staging-deploy"))
+        url = uri(rootProject.layout.buildDirectory.dir("staging-deploy"))
       }
     }
   }
@@ -144,7 +144,7 @@ jreleaser {
         active = Active.ALWAYS
         url = "https://central.sonatype.com/api/v1/publisher"
         applyMavenCentralRules = true
-        stagingRepositories.set(listOf("${layout.buildDirectory.get().asFile}/staging-deploy"))
+        stagingRepositories.set(listOf("${rootProject.layout.buildDirectory.get().asFile}/staging-deploy"))
       }
     }
   }
