@@ -19,9 +19,10 @@ plugins {
   id("org.jreleaser") version "1.22.0"
 }
 
+group = "org.komamitsu"
+apply(from = "version.gradle")
+
 subprojects {
-  group = "org.komamitsu"
-  apply(from = "../version.gradle")
   apply(plugin = "java-library")
   apply(plugin = "idea")
   apply(plugin = "com.gradleup.shadow")
