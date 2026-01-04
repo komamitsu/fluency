@@ -19,7 +19,11 @@ jobs:
       uses: actions/setup-java@v5
       with:
         distribution: temurin
-        java-version: 8
+        # Fluency uses java.nio.ByteBuffer which can cause inconsistent method signature issue between JDK 8 and 9.
+        # We've created Fluency jars using JDK 8 for that and we need to confirm an application built with JDK 9 or later
+        # can use Fluency jars built with JDK 8 without any problem.
+        # We're using --release option to build source code with JDK 8. So JDK 21 should work here.
+        java-version: 21
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v5
     - name: Build
