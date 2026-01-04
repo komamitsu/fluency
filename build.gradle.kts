@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jreleaser.model.Active
 
 buildscript {
   repositories {
@@ -15,6 +16,7 @@ plugins {
   id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.gradleup.shadow") version "8.3.5"
   id("com.diffplug.spotless") version "6.13.0"
+  id("org.jreleaser") version "1.22.0"
 }
 
 subprojects {
@@ -25,6 +27,7 @@ subprojects {
   apply(plugin = "com.gradleup.shadow")
   apply(plugin = "signing")
   apply(plugin = "maven-publish")
+  apply(plugin = "org.jreleaser")
   apply(plugin = "jacoco")
   apply(plugin = "com.github.kt3k.coveralls")
   apply(plugin = "com.diffplug.spotless")
@@ -109,48 +112,34 @@ subprojects {
     }
     repositories {
       maven {
-        url = uri(if (project.version.toString().endsWith("-SNAPSHOT")) {
-            "https://oss.sonatype.org/content/repositories/snapshots/"
-          }
-          else {
-            "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-          })
-
-        credentials {
-          username = if (project.hasProperty("ossrhUsername")) {
-            project.property("ossrhUsername").toString()
-          }
-          else {
-            ""
-          }
-
-          password = if (project.hasProperty("ossrhPassword")) {
-            project.property("ossrhPassword").toString()
-          }
-          else {
-            ""
-          }
-        }
+        name = "staging"
+        url = uri(layout.buildDirectory.dir("staging-deploy"))
       }
     }
   }
 
-  signing {
-    if (project.hasProperty("signing.gnupg.keyName")) {
-      setRequired(true)
+  jreleaser {
+    gitRootSearch = true
+
+    project {
+      inceptionYear = "2025"
     }
-    else if (project.hasProperty("signingKey")) {
-      val signingKeyId = project.property("signingKeyId").toString()
-      val signingKey = project.property("signingKey").toString()
-      val signingPassword = project.property("signingPassword").toString()
-      useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-      setRequired(true)
+
+    signing {
+      active = Active.ALWAYS
+      armored = true
     }
-    else {
-      setRequired(false)
+
+    deploy {
+      maven {
+        mavenCentral.create("sonatype") {
+          active = Active.ALWAYS
+          url = "https://central.sonatype.com/api/v1/publisher"
+          applyMavenCentralRules = true
+          stagingRepositories.set(listOf("${layout.buildDirectory.get().asFile}/staging-deploy"))
+        }
+      }
     }
-    sign(publishing.publications["maven"])
-    sign(configurations.archives.get())
   }
 
   val publishedProjects = project.subprojects
