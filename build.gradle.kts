@@ -9,14 +9,11 @@ buildscript {
 
 plugins {
   `java-library`
-  idea
-  jacoco
   signing
   `maven-publish`
-  id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.gradleup.shadow") version "8.3.5"
-  id("com.diffplug.spotless") version "6.13.0"
   id("org.jreleaser") version "1.22.0"
+  id("com.diffplug.spotless") version "6.13.0"
 }
 
 group = "org.komamitsu"
@@ -24,13 +21,10 @@ apply(from = "version.gradle")
 
 subprojects {
   apply(plugin = "java-library")
-  apply(plugin = "idea")
   apply(plugin = "com.gradleup.shadow")
   apply(plugin = "signing")
   apply(plugin = "maven-publish")
   apply(plugin = "org.jreleaser")
-  apply(plugin = "jacoco")
-  apply(plugin = "com.github.kt3k.coveralls")
   apply(plugin = "com.diffplug.spotless")
 
   group = rootProject.group
@@ -122,67 +116,6 @@ subprojects {
     }
   }
 
-  jreleaser {
-    gitRootSearch = true
-
-    project {
-      inceptionYear = "2025"
-    }
-
-    signing {
-      active = Active.ALWAYS
-      armored = true
-    }
-
-    deploy {
-      maven {
-        mavenCentral.create("sonatype") {
-          active = Active.ALWAYS
-          url = "https://central.sonatype.com/api/v1/publisher"
-          applyMavenCentralRules = true
-          stagingRepositories.set(listOf("${layout.buildDirectory.get().asFile}/staging-deploy"))
-        }
-      }
-    }
-  }
-
-  val publishedProjects = project.subprojects
-
-  val jacocoRootReport by tasks.creating(JacocoReport::class) {
-    description = "Generates an aggregate report from all subprojects"
-    group = "Coverage reports"
-    val jacocoReportTasks = publishedProjects
-      .map { it.tasks["jacocoTestReport"] as JacocoReport }
-      .toList()
-    dependsOn(jacocoReportTasks)
-
-    executionData.setFrom(Callable { jacocoReportTasks.map { it.executionData } })
-
-    publishedProjects.forEach { testedProject ->
-      val mainSourceSet = testedProject.sourceSets["main"]
-      additionalSourceDirs(mainSourceSet.allSource.sourceDirectories)
-      additionalClassDirs(mainSourceSet.output)
-    }
-
-    reports {
-      xml.required.set(true)
-      html.required.set(true)
-    }
-  }
-
-  coveralls {
-    sourceDirs = publishedProjects.map { proj ->
-        proj.sourceSets["main"].allSource.sourceDirectories.map {
-          it.toString()
-        }
-      }.flatten()
-    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
-  }
-
-  tasks.coveralls {
-    dependsOn(jacocoRootReport)
-  }
-
   spotless {
     java {
       target("src/*/java/**/*.java")
@@ -193,3 +126,26 @@ subprojects {
   }
 }
 
+jreleaser {
+  gitRootSearch = true
+
+  project {
+    inceptionYear = "2025"
+  }
+
+  signing {
+    active = Active.ALWAYS
+    armored = true
+  }
+
+  deploy {
+    maven {
+      mavenCentral.create("sonatype") {
+        active = Active.ALWAYS
+        url = "https://central.sonatype.com/api/v1/publisher"
+        applyMavenCentralRules = true
+        stagingRepositories.set(listOf("${layout.buildDirectory.get().asFile}/staging-deploy"))
+      }
+    }
+  }
+}
