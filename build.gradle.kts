@@ -16,7 +16,7 @@ plugins {
   id("com.github.kt3k.coveralls") version "2.12.2"
   id("com.gradleup.shadow") version "8.3.5"
   id("com.diffplug.spotless") version "6.13.0"
-  id("org.jreleaser") version "1.19.0"
+  id("org.jreleaser") version "1.22.0"
 }
 
 subprojects {
