@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.komamitsu.fluency.EventTime;
@@ -314,6 +316,78 @@ class FluencyTestWithMockServer {
           return new Fluency(buffer, flusher);
         },
         options);
+  }
+
+  /**
+   * Reproducer for https://github.com/komamitsu/fluency/issues/954
+   *
+   * <p>ACK mode detects stale connections via the ACK read path: after Fluentd drops all TCP
+   * connections, {@code recvResponse()} gets -1 from {@code read()}, which triggers {@code
+   * closeSocket()} and re-queues the in-flight chunk. All records are delivered after reconnection.
+   */
+  @Test
+  void testAckModeGuaranteesDeliveryAfterServerDropsConnections() throws Exception {
+    AtomicLong receivedRecords = new AtomicLong(0);
+    List<Socket> acceptedSockets = new CopyOnWriteArrayList<>();
+
+    AbstractFluentdServer server =
+        new AbstractFluentdServer(false) {
+          @Override
+          protected EventHandler getFluentdEventHandler() {
+            return new EventHandler() {
+              @Override
+              public void onConnect(Socket socket) {
+                acceptedSockets.add(socket);
+              }
+
+              @Override
+              public void onReceive(String tag, long timestampMillis, MapValue data) {
+                receivedRecords.incrementAndGet();
+              }
+
+              @Override
+              public void onClose(Socket socket) {}
+            };
+          }
+        };
+    server.start();
+
+    int recordsBeforeDrop = 200;
+    int recordsAfterDrop = 200;
+
+    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+    builder.setAckResponseMode(true);
+    builder.setFlushAttemptIntervalMillis(200);
+
+    try (Fluency fluency = builder.build(server.getLocalPort())) {
+      Map<String, Object> data = new HashMap<>();
+      data.put("key", "value");
+
+      for (int i = 0; i < recordsBeforeDrop; i++) {
+        fluency.emit("tag", data);
+      }
+      fluency.waitUntilAllBufferFlushed(10);
+
+      LOG.info("Dropping {} connections to simulate Fluentd restart", acceptedSockets.size());
+      for (Socket socket : acceptedSockets) {
+        try {
+          socket.close();
+        } catch (IOException e) {
+          LOG.warn("Failed to close socket", e);
+        }
+      }
+
+      for (int i = 0; i < recordsAfterDrop; i++) {
+        fluency.emit("tag", data);
+      }
+      fluency.waitUntilAllBufferFlushed(30);
+    } finally {
+      server.stop();
+    }
+
+    assertThat(receivedRecords.get())
+        .as("ACK mode must deliver all records despite connection drops")
+        .isEqualTo((long) recordsBeforeDrop + recordsAfterDrop);
   }
 
   private void testFluencyBase(final FluencyFactory fluencyFactory, final Options options)
