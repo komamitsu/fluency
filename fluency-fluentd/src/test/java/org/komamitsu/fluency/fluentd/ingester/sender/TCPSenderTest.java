@@ -323,7 +323,9 @@ class TCPSenderTest {
    * reconnects successfully.
    *
    * <p>The correct fix for silent data loss is ACK mode (setAckResponseMode(true)), which was
-   * designed for at-least-once delivery. See FluencyReconnectTest for the full-stack demonstration.
+   * designed for at-least-once delivery. See {@code
+   * FluencyTestWithMockServer#testAckModeGuaranteesDeliveryAfterServerDropsConnections} for the
+   * full-stack demonstration.
    */
   @Test
   void testReconnectAfterServerClosesConnectionWithRST() throws Exception {
@@ -368,45 +370,53 @@ class TCPSenderTest {
 
     TCPSender.Config config = new TCPSender.Config();
     config.setPort(server.getLocalPort());
-    TCPSender sender = new TCPSender(config);
 
-    byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+    try (TCPSender sender = new TCPSender(config)) {
+      byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
 
-    // Establish the connection by sending initial data
-    sender.send(ByteBuffer.wrap(data));
-    assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
+      // Establish the connection by sending initial data
+      sender.send(ByteBuffer.wrap(data));
+      assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
 
-    if (abruptClose) {
-      // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
-      firstAcceptedSocket.get().setSoLinger(true, 0);
-    }
-    firstAcceptedSocket.get().close();
-
-    // Allow the FIN/RST to propagate to the client
-    TimeUnit.MILLISECONDS.sleep(200);
-
-    // Keep sending until 3 consecutive successes confirm a stable reconnected state.
-    // - RST path: attempt 0 fails ("Connection reset"), attempt 1 reconnects and succeeds.
-    // - FIN path: attempt 0 silently "succeeds" (data lost — TCP two-write rule), attempt 1
-    //   fails ("Broken pipe" once RST arrives), attempt 2 reconnects and succeeds stably.
-    int consecutiveSuccesses = 0;
-    for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
-      try {
-        sender.send(ByteBuffer.wrap(data));
-        LOG.debug("Send succeeded on attempt {}", attempt);
-        consecutiveSuccesses++;
-      } catch (IOException e) {
-        LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
-        consecutiveSuccesses = 0;
+      if (abruptClose) {
+        // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
+        firstAcceptedSocket.get().setSoLinger(true, 0);
       }
+      firstAcceptedSocket.get().close();
+
+      // Allow the FIN/RST to propagate to the client
+      TimeUnit.MILLISECONDS.sleep(200);
+
+      // Keep sending until a reconnect is observed (connectCount > 1) and 3 consecutive successes
+      // confirm stable operation on the new connection.
+      // - RST path: attempt 0 fails ("Connection reset"), attempt 1 reconnects and succeeds.
+      // - FIN path: attempt 0 silently "succeeds" (data lost — TCP two-write rule), attempt 1
+      //   fails ("Broken pipe" once RST arrives), attempt 2 reconnects and succeeds stably.
+      int consecutiveSuccesses = 0;
+      for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
+        try {
+          sender.send(ByteBuffer.wrap(data));
+          LOG.debug("Send succeeded on attempt {}", attempt);
+          if (connectCount.get() > 1) {
+            consecutiveSuccesses++;
+          } else {
+            consecutiveSuccesses = 0;
+          }
+        } catch (IOException e) {
+          LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
+          consecutiveSuccesses = 0;
+        }
+      }
+
+      assertTrue(
+          connectCount.get() > 1,
+          "TCPSender should have reconnected after the server closed the connection");
+      assertTrue(
+          consecutiveSuccesses >= 3,
+          "TCPSender should reach stable operation on the new connection");
+    } finally {
+      server.stop();
     }
-
-    assertTrue(
-        consecutiveSuccesses >= 3,
-        "TCPSender should reconnect and reach stable operation after the server closed the connection");
-
-    sender.close();
-    server.stop();
   }
 
   interface TCPSenderCreater {
