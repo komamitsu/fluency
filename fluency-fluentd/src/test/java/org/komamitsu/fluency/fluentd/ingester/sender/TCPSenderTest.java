@@ -395,19 +395,22 @@ class TCPSenderTest {
         // - RST path: the first send fails ("Connection reset"), the next send reconnects.
         // - FIN path: sends may silently "succeed" (TCP half-close) before the RST triggers
         //   closeSocket(); after that a send fails ("Broken pipe") and the next reconnects.
-        for (int attempt = 0; attempt < 20 && reconnectedLatch.getCount() > 0; attempt++) {
+        // Sends are interleaved with latch checks so a reconnect is always triggered by an
+        // actual send(), even on slow CI machines where the OS takes longer to deliver FIN/RST.
+        boolean reconnected = false;
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (!reconnected && System.currentTimeMillis() < deadline) {
           try {
             sender.send(ByteBuffer.wrap(data));
-            LOG.debug("Send succeeded on attempt {}", attempt);
+            LOG.debug("Send succeeded");
           } catch (IOException e) {
-            LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
+            LOG.debug("Send failed (expected on stale socket): {}", e.getMessage());
           }
-          TimeUnit.MILLISECONDS.sleep(100);
+          reconnected = reconnectedLatch.await(100, TimeUnit.MILLISECONDS);
         }
 
         assertTrue(
-            reconnectedLatch.await(10, TimeUnit.SECONDS),
-            "TCPSender should reconnect after the server closed the connection");
+            reconnected, "TCPSender should reconnect after the server closed the connection");
 
         // Verify stable operation on the new connection
         int consecutiveSuccesses = 0;
