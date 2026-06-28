@@ -347,7 +347,7 @@ class FluencyTestWithMockServer {
 
               @Override
               public void onReceive(String tag, long timestampMillis, MapValue data) {
-                Value idValue = data.toMap().get(idKey);
+                Value idValue = data.map().get(idKey);
                 if (idValue != null) {
                   receivedIds.add(idValue.asIntegerValue().asInt());
                 }
