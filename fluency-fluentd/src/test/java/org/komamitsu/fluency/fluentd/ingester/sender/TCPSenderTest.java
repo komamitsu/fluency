@@ -318,9 +318,9 @@ class TCPSenderTest {
    *
    * <p>Scenario B (graceful / FIN): The server closes normally, sending FIN. Due to TCP half-close
    * the first write may silently "succeed" — the OS places data in the send buffer before the RST
-   * triggered by the peer's close arrives. That data is silently lost at the TCPSender level. The
-   * second write fails ("Broken pipe"), closeSocket() nulls the channel, and the third send
-   * reconnects successfully.
+   * triggered by the peer's close arrives. That data may be silently lost at the TCPSender level
+   * (this test only verifies reconnection, not data loss). The second write fails ("Broken pipe"),
+   * closeSocket() nulls the channel, and the third send reconnects successfully.
    *
    * <p>The correct fix for silent data loss is ACK mode (setAckResponseMode(true)), which was
    * designed for at-least-once delivery. See {@code

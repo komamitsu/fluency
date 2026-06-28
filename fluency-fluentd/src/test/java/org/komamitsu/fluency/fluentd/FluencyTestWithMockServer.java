@@ -369,6 +369,9 @@ class FluencyTestWithMockServer {
       assertTrue(
           fluency.waitUntilAllBufferFlushed(10), "Buffer should flush before dropping connections");
 
+      assertThat(acceptedSockets)
+          .as("At least one connection must have been established")
+          .isNotEmpty();
       LOG.info("Dropping {} connections to simulate Fluentd restart", acceptedSockets.size());
       for (Socket socket : acceptedSockets) {
         try {
