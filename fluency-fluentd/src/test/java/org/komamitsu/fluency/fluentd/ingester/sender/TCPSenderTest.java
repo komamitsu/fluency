@@ -419,6 +419,7 @@ class TCPSenderTest {
             sender.send(ByteBuffer.wrap(data));
             consecutiveSuccesses++;
           } catch (IOException e) {
+            LOG.debug("Send failed in stability check (attempt {}): {}", attempt, e.getMessage());
             consecutiveSuccesses = 0;
           }
         }

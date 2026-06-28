@@ -33,12 +33,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -59,6 +62,7 @@ import org.komamitsu.fluency.flusher.Flusher;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -327,7 +331,7 @@ class FluencyTestWithMockServer {
    */
   @Test
   void testAckModeGuaranteesDeliveryAfterServerDropsConnections() throws Exception {
-    AtomicLong receivedRecords = new AtomicLong(0);
+    Set<Integer> receivedIds = ConcurrentHashMap.newKeySet();
     List<Socket> acceptedSockets = new CopyOnWriteArrayList<>();
 
     AbstractFluentdServer server =
@@ -342,7 +346,10 @@ class FluencyTestWithMockServer {
 
               @Override
               public void onReceive(String tag, long timestampMillis, MapValue data) {
-                receivedRecords.incrementAndGet();
+                Value idValue = data.toMap().get(ValueFactory.newString("id"));
+                if (idValue != null) {
+                  receivedIds.add(idValue.asIntegerValue().asInt());
+                }
               }
 
               @Override
@@ -360,10 +367,12 @@ class FluencyTestWithMockServer {
       builder.setFlushAttemptIntervalMillis(200);
 
       try (Fluency fluency = builder.build(server.getLocalPort())) {
+        AtomicInteger recordId = new AtomicInteger(0);
         Map<String, Object> data = new HashMap<>();
         data.put("key", "value");
 
         for (int i = 0; i < recordsBeforeDrop; i++) {
+          data.put("id", recordId.getAndIncrement());
           fluency.emit("tag", data);
         }
         assertTrue(
@@ -383,6 +392,7 @@ class FluencyTestWithMockServer {
         }
 
         for (int i = 0; i < recordsAfterDrop; i++) {
+          data.put("id", recordId.getAndIncrement());
           fluency.emit("tag", data);
         }
         assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
@@ -391,9 +401,11 @@ class FluencyTestWithMockServer {
       server.stop();
     }
 
-    assertThat(receivedRecords.get())
-        .as("ACK mode must deliver all records despite connection drops")
-        .isEqualTo((long) recordsBeforeDrop + recordsAfterDrop);
+    assertThat(receivedIds)
+        .as(
+            "ACK mode must deliver all %d distinct records despite connection drops",
+            recordsBeforeDrop + recordsAfterDrop)
+        .hasSize(recordsBeforeDrop + recordsAfterDrop);
   }
 
   private void testFluencyBase(final FluencyFactory fluencyFactory, final Options options)
