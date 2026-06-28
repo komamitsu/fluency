@@ -333,6 +333,7 @@ class FluencyTestWithMockServer {
   void testAckModeGuaranteesDeliveryAfterServerDropsConnections() throws Exception {
     Set<Integer> receivedIds = ConcurrentHashMap.newKeySet();
     List<Socket> acceptedSockets = new CopyOnWriteArrayList<>();
+    AtomicReference<AssertionError> backgroundError = new AtomicReference<>();
     Value idKey = ValueFactory.newString("id");
 
     AbstractFluentdServer server =
@@ -351,7 +352,8 @@ class FluencyTestWithMockServer {
                 if (idValue != null) {
                   int id = idValue.asIntegerValue().asInt();
                   if (!receivedIds.add(id)) {
-                    throw new AssertionError("Duplicate record received: id=" + id);
+                    backgroundError.compareAndSet(
+                        null, new AssertionError("Duplicate record received: id=" + id));
                   }
                 }
               }
@@ -402,6 +404,10 @@ class FluencyTestWithMockServer {
           fluency.emit("tag", record);
         }
         assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
+      }
+      AssertionError error = backgroundError.get();
+      if (error != null) {
+        throw error;
       }
       assertThat(receivedIds)
           .as(
