@@ -333,6 +333,7 @@ class FluencyTestWithMockServer {
   void testAckModeGuaranteesDeliveryAfterServerDropsConnections() throws Exception {
     Set<Integer> receivedIds = ConcurrentHashMap.newKeySet();
     List<Socket> acceptedSockets = new CopyOnWriteArrayList<>();
+    Value idKey = ValueFactory.newString("id");
 
     AbstractFluentdServer server =
         new AbstractFluentdServer(false) {
@@ -346,7 +347,7 @@ class FluencyTestWithMockServer {
 
               @Override
               public void onReceive(String tag, long timestampMillis, MapValue data) {
-                Value idValue = data.toMap().get(ValueFactory.newString("id"));
+                Value idValue = data.toMap().get(idKey);
                 if (idValue != null) {
                   receivedIds.add(idValue.asIntegerValue().asInt());
                 }
@@ -368,12 +369,12 @@ class FluencyTestWithMockServer {
 
       try (Fluency fluency = builder.build(server.getLocalPort())) {
         AtomicInteger recordId = new AtomicInteger(0);
-        Map<String, Object> data = new HashMap<>();
-        data.put("key", "value");
 
         for (int i = 0; i < recordsBeforeDrop; i++) {
-          data.put("id", recordId.getAndIncrement());
-          fluency.emit("tag", data);
+          Map<String, Object> record = new HashMap<>();
+          record.put("key", "value");
+          record.put("id", recordId.getAndIncrement());
+          fluency.emit("tag", record);
         }
         assertTrue(
             fluency.waitUntilAllBufferFlushed(10),
@@ -392,8 +393,10 @@ class FluencyTestWithMockServer {
         }
 
         for (int i = 0; i < recordsAfterDrop; i++) {
-          data.put("id", recordId.getAndIncrement());
-          fluency.emit("tag", data);
+          Map<String, Object> record = new HashMap<>();
+          record.put("key", "value");
+          record.put("id", recordId.getAndIncrement());
+          fluency.emit("tag", record);
         }
         assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
       }

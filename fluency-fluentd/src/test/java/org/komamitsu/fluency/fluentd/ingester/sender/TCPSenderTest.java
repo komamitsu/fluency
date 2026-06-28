@@ -384,7 +384,7 @@ class TCPSenderTest {
         assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
 
         Socket socket = firstAcceptedSocket.get();
-        assertThat(socket).isNotNull();
+        assertThat(socket).as("Server should have accepted the initial connection").isNotNull();
         if (abruptClose) {
           // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
           socket.setSoLinger(true, 0);
@@ -398,8 +398,8 @@ class TCPSenderTest {
         // Sends are interleaved with latch checks so a reconnect is always triggered by an
         // actual send(), even on slow CI machines where the OS takes longer to deliver FIN/RST.
         boolean reconnected = false;
-        long deadline = System.currentTimeMillis() + 30_000;
-        while (!reconnected && System.currentTimeMillis() < deadline) {
+        long deadline = System.nanoTime() + 30_000_000_000L;
+        while (!reconnected && System.nanoTime() < deadline) {
           try {
             sender.send(ByteBuffer.wrap(data));
             LOG.debug("Send succeeded");
@@ -412,15 +412,20 @@ class TCPSenderTest {
         assertTrue(
             reconnected, "TCPSender should reconnect after the server closed the connection");
 
-        // Verify stable operation on the new connection
+        // Verify stable operation on the new connection.
+        // Counts failures separately so a late transient failure doesn't exhaust the attempt budget
+        // before 3 consecutive successes can be accumulated.
         int consecutiveSuccesses = 0;
-        for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
+        int failureCount = 0;
+        while (consecutiveSuccesses < 3 && failureCount <= 10) {
           try {
             sender.send(ByteBuffer.wrap(data));
             consecutiveSuccesses++;
           } catch (IOException e) {
-            LOG.debug("Send failed in stability check (attempt {}): {}", attempt, e.getMessage());
+            LOG.debug(
+                "Send failed in stability check (failure {}): {}", failureCount, e.getMessage());
             consecutiveSuccesses = 0;
+            failureCount++;
           }
         }
         assertTrue(
