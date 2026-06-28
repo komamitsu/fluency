@@ -400,15 +400,14 @@ class FluencyTestWithMockServer {
         }
         assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
       }
+      assertThat(receivedIds)
+          .as(
+              "ACK mode must deliver all %d distinct records despite connection drops",
+              recordsBeforeDrop + recordsAfterDrop)
+          .hasSize(recordsBeforeDrop + recordsAfterDrop);
     } finally {
       server.stop();
     }
-
-    assertThat(receivedIds)
-        .as(
-            "ACK mode must deliver all %d distinct records despite connection drops",
-            recordsBeforeDrop + recordsAfterDrop)
-        .hasSize(recordsBeforeDrop + recordsAfterDrop);
   }
 
   private void testFluencyBase(final FluencyFactory fluencyFactory, final Options options)
