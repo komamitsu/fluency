@@ -350,41 +350,43 @@ class FluencyTestWithMockServer {
             };
           }
         };
-    server.start();
-
     int recordsBeforeDrop = 200;
     int recordsAfterDrop = 200;
 
-    FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
-    builder.setAckResponseMode(true);
-    builder.setFlushAttemptIntervalMillis(200);
+    server.start();
+    try {
+      FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
+      builder.setAckResponseMode(true);
+      builder.setFlushAttemptIntervalMillis(200);
 
-    try (Fluency fluency = builder.build(server.getLocalPort())) {
-      Map<String, Object> data = new HashMap<>();
-      data.put("key", "value");
+      try (Fluency fluency = builder.build(server.getLocalPort())) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("key", "value");
 
-      for (int i = 0; i < recordsBeforeDrop; i++) {
-        fluency.emit("tag", data);
-      }
-      assertTrue(
-          fluency.waitUntilAllBufferFlushed(10), "Buffer should flush before dropping connections");
-
-      assertThat(acceptedSockets)
-          .as("At least one connection must have been established")
-          .isNotEmpty();
-      LOG.info("Dropping {} connections to simulate Fluentd restart", acceptedSockets.size());
-      for (Socket socket : acceptedSockets) {
-        try {
-          socket.close();
-        } catch (IOException e) {
-          LOG.warn("Failed to close socket", e);
+        for (int i = 0; i < recordsBeforeDrop; i++) {
+          fluency.emit("tag", data);
         }
-      }
+        assertTrue(
+            fluency.waitUntilAllBufferFlushed(10),
+            "Buffer should flush before dropping connections");
 
-      for (int i = 0; i < recordsAfterDrop; i++) {
-        fluency.emit("tag", data);
+        assertThat(acceptedSockets)
+            .as("At least one connection must have been established")
+            .isNotEmpty();
+        LOG.info("Dropping {} connections to simulate Fluentd restart", acceptedSockets.size());
+        for (Socket socket : acceptedSockets) {
+          try {
+            socket.close();
+          } catch (IOException e) {
+            LOG.warn("Failed to close socket", e);
+          }
+        }
+
+        for (int i = 0; i < recordsAfterDrop; i++) {
+          fluency.emit("tag", data);
+        }
+        assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
       }
-      assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
     } finally {
       server.stop();
     }

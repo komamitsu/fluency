@@ -372,56 +372,57 @@ class TCPSenderTest {
           }
         };
     server.start();
+    try {
+      TCPSender.Config config = new TCPSender.Config();
+      config.setPort(server.getLocalPort());
 
-    TCPSender.Config config = new TCPSender.Config();
-    config.setPort(server.getLocalPort());
+      try (TCPSender sender = new TCPSender(config)) {
+        byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
 
-    try (TCPSender sender = new TCPSender(config)) {
-      byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+        // Establish the connection by sending initial data
+        sender.send(ByteBuffer.wrap(data));
+        assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
 
-      // Establish the connection by sending initial data
-      sender.send(ByteBuffer.wrap(data));
-      assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
-
-      Socket socket = firstAcceptedSocket.get();
-      assertThat(socket).isNotNull();
-      if (abruptClose) {
-        // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
-        socket.setSoLinger(true, 0);
-      }
-      socket.close();
-
-      // Keep sending until the server observes the reconnect (second onConnect).
-      // - RST path: the first send fails ("Connection reset"), the next send reconnects.
-      // - FIN path: sends may silently "succeed" (TCP half-close) before the RST triggers
-      //   closeSocket(); after that a send fails ("Broken pipe") and the next reconnects.
-      for (int attempt = 0; attempt < 20 && reconnectedLatch.getCount() > 0; attempt++) {
-        try {
-          sender.send(ByteBuffer.wrap(data));
-          LOG.debug("Send succeeded on attempt {}", attempt);
-        } catch (IOException e) {
-          LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
+        Socket socket = firstAcceptedSocket.get();
+        assertThat(socket).isNotNull();
+        if (abruptClose) {
+          // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
+          socket.setSoLinger(true, 0);
         }
-        TimeUnit.MILLISECONDS.sleep(100);
-      }
+        socket.close();
 
-      assertTrue(
-          reconnectedLatch.await(10, TimeUnit.SECONDS),
-          "TCPSender should reconnect after the server closed the connection");
-
-      // Verify stable operation on the new connection
-      int consecutiveSuccesses = 0;
-      for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
-        try {
-          sender.send(ByteBuffer.wrap(data));
-          consecutiveSuccesses++;
-        } catch (IOException e) {
-          consecutiveSuccesses = 0;
+        // Keep sending until the server observes the reconnect (second onConnect).
+        // - RST path: the first send fails ("Connection reset"), the next send reconnects.
+        // - FIN path: sends may silently "succeed" (TCP half-close) before the RST triggers
+        //   closeSocket(); after that a send fails ("Broken pipe") and the next reconnects.
+        for (int attempt = 0; attempt < 20 && reconnectedLatch.getCount() > 0; attempt++) {
+          try {
+            sender.send(ByteBuffer.wrap(data));
+            LOG.debug("Send succeeded on attempt {}", attempt);
+          } catch (IOException e) {
+            LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
+          }
+          TimeUnit.MILLISECONDS.sleep(100);
         }
+
+        assertTrue(
+            reconnectedLatch.await(10, TimeUnit.SECONDS),
+            "TCPSender should reconnect after the server closed the connection");
+
+        // Verify stable operation on the new connection
+        int consecutiveSuccesses = 0;
+        for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
+          try {
+            sender.send(ByteBuffer.wrap(data));
+            consecutiveSuccesses++;
+          } catch (IOException e) {
+            consecutiveSuccesses = 0;
+          }
+        }
+        assertTrue(
+            consecutiveSuccesses >= 3,
+            "TCPSender should reach stable operation on the new connection");
       }
-      assertTrue(
-          consecutiveSuccesses >= 3,
-          "TCPSender should reach stable operation on the new connection");
     } finally {
       server.stop();
     }
