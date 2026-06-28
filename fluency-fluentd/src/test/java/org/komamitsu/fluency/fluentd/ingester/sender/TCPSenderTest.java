@@ -316,11 +316,11 @@ class TCPSenderTest {
    * <p>Scenario A (abrupt / RST): The server closes with SO_LINGER=0, sending a TCP RST. The first
    * write on the stale channel fails immediately and the sender reconnects on the next attempt.
    *
-   * <p>Scenario B (graceful / FIN): The server closes normally, sending FIN. Due to TCP half-close
-   * the first write may silently "succeed" — the OS places data in the send buffer before the RST
-   * triggered by the peer's close arrives. That data may be silently lost at the TCPSender level
-   * (this test only verifies reconnection, not data loss). The second write fails ("Broken pipe"),
-   * closeSocket() nulls the channel, and the third send reconnects successfully.
+   * <p>Scenario B (graceful / FIN): The server closes normally, sending FIN. Due to TCP half-close,
+   * one or more writes may silently "succeed" — the OS buffers the data before the peer's RST
+   * arrives. That data may be silently lost at the TCPSender level (this test only verifies
+   * reconnection, not data loss). Eventually a write fails ("Broken pipe"), closeSocket() nulls the
+   * channel, and the next send reconnects successfully.
    *
    * <p>The correct fix for silent data loss is ACK mode (setAckResponseMode(true)), which was
    * designed for at-least-once delivery. See {@code
@@ -371,8 +371,8 @@ class TCPSenderTest {
             };
           }
         };
-    server.start();
     try {
+      server.start();
       TCPSender.Config config = new TCPSender.Config();
       config.setPort(server.getLocalPort());
 

@@ -361,8 +361,8 @@ class FluencyTestWithMockServer {
     int recordsBeforeDrop = 200;
     int recordsAfterDrop = 200;
 
-    server.start();
     try {
+      server.start();
       FluencyBuilderForFluentd builder = new FluencyBuilderForFluentd();
       builder.setAckResponseMode(true);
       builder.setFlushAttemptIntervalMillis(200);
