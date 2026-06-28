@@ -366,7 +366,8 @@ class FluencyTestWithMockServer {
       for (int i = 0; i < recordsBeforeDrop; i++) {
         fluency.emit("tag", data);
       }
-      fluency.waitUntilAllBufferFlushed(10);
+      assertTrue(
+          fluency.waitUntilAllBufferFlushed(10), "Buffer should flush before dropping connections");
 
       LOG.info("Dropping {} connections to simulate Fluentd restart", acceptedSockets.size());
       for (Socket socket : acceptedSockets) {
@@ -380,7 +381,7 @@ class FluencyTestWithMockServer {
       for (int i = 0; i < recordsAfterDrop; i++) {
         fluency.emit("tag", data);
       }
-      fluency.waitUntilAllBufferFlushed(30);
+      assertTrue(fluency.waitUntilAllBufferFlushed(30), "Buffer should flush after reconnection");
     } finally {
       server.stop();
     }

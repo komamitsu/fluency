@@ -339,7 +339,7 @@ class TCPSenderTest {
 
   private void doTestReconnectAfterServerClosesConnection(boolean abruptClose) throws Exception {
     CountDownLatch firstDataReceivedLatch = new CountDownLatch(1);
-    AtomicInteger connectCount = new AtomicInteger(0);
+    CountDownLatch reconnectedLatch = new CountDownLatch(1);
     AtomicReference<Socket> firstAcceptedSocket = new AtomicReference<>();
 
     MockTCPServer server =
@@ -347,10 +347,15 @@ class TCPSenderTest {
           @Override
           protected EventHandler getEventHandler() {
             return new EventHandler() {
+              private final AtomicInteger connectCount = new AtomicInteger(0);
+
               @Override
               public void onConnect(Socket socket) {
-                if (connectCount.incrementAndGet() == 1) {
+                int count = connectCount.incrementAndGet();
+                if (count == 1) {
                   firstAcceptedSocket.set(socket);
+                } else if (count == 2) {
+                  reconnectedLatch.countDown();
                 }
               }
 
@@ -378,39 +383,42 @@ class TCPSenderTest {
       sender.send(ByteBuffer.wrap(data));
       assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
 
+      Socket socket = firstAcceptedSocket.get();
+      assertThat(socket).isNotNull();
       if (abruptClose) {
         // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
-        firstAcceptedSocket.get().setSoLinger(true, 0);
+        socket.setSoLinger(true, 0);
       }
-      firstAcceptedSocket.get().close();
+      socket.close();
 
-      // Allow the FIN/RST to propagate to the client
-      TimeUnit.MILLISECONDS.sleep(200);
+      // Keep sending until the server observes the reconnect (second onConnect).
+      // - RST path: the first send fails ("Connection reset"), the next send reconnects.
+      // - FIN path: sends may silently "succeed" (TCP half-close) before the RST triggers
+      //   closeSocket(); after that a send fails ("Broken pipe") and the next reconnects.
+      for (int attempt = 0; attempt < 20 && reconnectedLatch.getCount() > 0; attempt++) {
+        try {
+          sender.send(ByteBuffer.wrap(data));
+          LOG.debug("Send succeeded on attempt {}", attempt);
+        } catch (IOException e) {
+          LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
+        }
+        TimeUnit.MILLISECONDS.sleep(100);
+      }
 
-      // Keep sending until a reconnect is observed (connectCount > 1) and 3 consecutive successes
-      // confirm stable operation on the new connection.
-      // - RST path: attempt 0 fails ("Connection reset"), attempt 1 reconnects and succeeds.
-      // - FIN path: attempt 0 silently "succeeds" (data lost — TCP two-write rule), attempt 1
-      //   fails ("Broken pipe" once RST arrives), attempt 2 reconnects and succeeds stably.
+      assertTrue(
+          reconnectedLatch.await(10, TimeUnit.SECONDS),
+          "TCPSender should reconnect after the server closed the connection");
+
+      // Verify stable operation on the new connection
       int consecutiveSuccesses = 0;
       for (int attempt = 0; attempt < 10 && consecutiveSuccesses < 3; attempt++) {
         try {
           sender.send(ByteBuffer.wrap(data));
-          LOG.debug("Send succeeded on attempt {}", attempt);
-          if (connectCount.get() > 1) {
-            consecutiveSuccesses++;
-          } else {
-            consecutiveSuccesses = 0;
-          }
+          consecutiveSuccesses++;
         } catch (IOException e) {
-          LOG.debug("Attempt {} failed (expected on stale socket): {}", attempt, e.getMessage());
           consecutiveSuccesses = 0;
         }
       }
-
-      assertTrue(
-          connectCount.get() > 1,
-          "TCPSender should have reconnected after the server closed the connection");
       assertTrue(
           consecutiveSuccesses >= 3,
           "TCPSender should reach stable operation on the new connection");
