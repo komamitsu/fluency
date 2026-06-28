@@ -412,25 +412,10 @@ class TCPSenderTest {
         assertTrue(
             reconnected, "TCPSender should reconnect after the server closed the connection");
 
-        // Verify stable operation on the new connection.
-        // Counts failures separately so a late transient failure doesn't exhaust the attempt budget
-        // before 3 consecutive successes can be accumulated.
-        int consecutiveSuccesses = 0;
-        int failureCount = 0;
-        while (consecutiveSuccesses < 3 && failureCount <= 10) {
-          try {
-            sender.send(ByteBuffer.wrap(data));
-            consecutiveSuccesses++;
-          } catch (IOException e) {
-            LOG.debug(
-                "Send failed in stability check (failure {}): {}", failureCount, e.getMessage());
-            consecutiveSuccesses = 0;
-            failureCount++;
-          }
+        // Verify the new connection is stable
+        for (int i = 0; i < 3; i++) {
+          sender.send(ByteBuffer.wrap(data));
         }
-        assertTrue(
-            consecutiveSuccesses >= 3,
-            "TCPSender should reach stable operation on the new connection");
       }
     } finally {
       server.stop();
