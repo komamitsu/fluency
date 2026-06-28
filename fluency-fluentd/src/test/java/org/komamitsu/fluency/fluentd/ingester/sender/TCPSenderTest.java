@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -33,7 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.komamitsu.fluency.fluentd.MockTCPServer;
@@ -304,6 +307,118 @@ class TCPSenderTest {
       TCPSender.Config config = new TCPSender.Config();
       config.setWaitBeforeCloseMilli(-1);
       assertThrows(IllegalArgumentException.class, () -> new TCPSender(config));
+    }
+  }
+
+  /**
+   * Reproducer for https://github.com/komamitsu/fluency/issues/954
+   *
+   * <p>Scenario A (abrupt / RST): The server closes with SO_LINGER=0, sending a TCP RST. The first
+   * write on the stale channel fails immediately and the sender reconnects on the next attempt.
+   *
+   * <p>Scenario B (graceful / FIN): The server closes normally, sending FIN. Due to TCP half-close,
+   * one or more writes may silently "succeed" — the OS buffers the data before the peer's RST
+   * arrives. That data may be silently lost at the TCPSender level (this test only verifies
+   * reconnection, not data loss). Eventually a write fails ("Broken pipe"), closeSocket() nulls the
+   * channel, and the next send reconnects successfully.
+   *
+   * <p>The correct fix for silent data loss is ACK mode (setAckResponseMode(true)), which was
+   * designed for at-least-once delivery. See {@code
+   * FluencyTestWithMockServer#testAckModeGuaranteesDeliveryAfterServerDropsConnections} for the
+   * full-stack demonstration.
+   */
+  @Test
+  void testReconnectAfterServerClosesConnectionWithRST() throws Exception {
+    doTestReconnectAfterServerClosesConnection(true);
+  }
+
+  @Test
+  void testReconnectAfterServerClosesConnectionWithFIN() throws Exception {
+    doTestReconnectAfterServerClosesConnection(false);
+  }
+
+  private void doTestReconnectAfterServerClosesConnection(boolean abruptClose) throws Exception {
+    CountDownLatch firstDataReceivedLatch = new CountDownLatch(1);
+    CountDownLatch reconnectedLatch = new CountDownLatch(1);
+    AtomicReference<Socket> firstAcceptedSocket = new AtomicReference<>();
+
+    MockTCPServer server =
+        new MockTCPServer(false) {
+          @Override
+          protected EventHandler getEventHandler() {
+            return new EventHandler() {
+              private final AtomicInteger connectCount = new AtomicInteger(0);
+
+              @Override
+              public void onConnect(Socket socket) {
+                int count = connectCount.incrementAndGet();
+                if (count == 1) {
+                  firstAcceptedSocket.set(socket);
+                } else if (count == 2) {
+                  reconnectedLatch.countDown();
+                }
+              }
+
+              @Override
+              public void onReceive(Socket socket, int len, byte[] data) {
+                if (socket == firstAcceptedSocket.get()) {
+                  firstDataReceivedLatch.countDown();
+                }
+              }
+
+              @Override
+              public void onClose(Socket socket) {}
+            };
+          }
+        };
+    try {
+      server.start();
+      TCPSender.Config config = new TCPSender.Config();
+      config.setPort(server.getLocalPort());
+
+      try (TCPSender sender = new TCPSender(config)) {
+        byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+
+        // Establish the connection by sending initial data
+        sender.send(ByteBuffer.wrap(data));
+        assertTrue(firstDataReceivedLatch.await(5, TimeUnit.SECONDS));
+
+        Socket socket = firstAcceptedSocket.get();
+        assertThat(socket).as("Server should have accepted the initial connection").isNotNull();
+        if (abruptClose) {
+          // RST path: SO_LINGER with timeout=0 makes close() send RST instead of FIN
+          socket.setSoLinger(true, 0);
+        }
+        socket.close();
+
+        // Keep sending until the server observes the reconnect (second onConnect).
+        // - RST path: the first send fails ("Connection reset"), the next send reconnects.
+        // - FIN path: sends may silently "succeed" (TCP half-close) before the RST triggers
+        //   closeSocket(); after that a send fails ("Broken pipe") and the next reconnects.
+        // Sends are interleaved with latch checks so a reconnect is always triggered by an
+        // actual send(), even on slow CI machines where the OS takes longer to deliver FIN/RST.
+        boolean reconnected = false;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (!reconnected && System.nanoTime() < deadline) {
+          try {
+            sender.send(ByteBuffer.wrap(data));
+            LOG.debug("Send succeeded");
+          } catch (IOException e) {
+            LOG.debug("Send failed (expected on stale socket): {}", e.getMessage());
+          }
+          reconnected = reconnectedLatch.await(100, TimeUnit.MILLISECONDS);
+        }
+
+        assertTrue(
+            reconnected, "TCPSender should reconnect after the server closed the connection");
+
+        // Verify the new connection is stable
+        for (int i = 0; i < 3; i++) {
+          sender.send(ByteBuffer.wrap(data));
+        }
+      }
+    } finally {
+      server.stop();
     }
   }
 
