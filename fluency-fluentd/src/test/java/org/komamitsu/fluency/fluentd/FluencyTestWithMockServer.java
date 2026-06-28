@@ -349,7 +349,10 @@ class FluencyTestWithMockServer {
               public void onReceive(String tag, long timestampMillis, MapValue data) {
                 Value idValue = data.map().get(idKey);
                 if (idValue != null) {
-                  receivedIds.add(idValue.asIntegerValue().asInt());
+                  int id = idValue.asIntegerValue().asInt();
+                  if (!receivedIds.add(id)) {
+                    throw new AssertionError("Duplicate record received: id=" + id);
+                  }
                 }
               }
 
