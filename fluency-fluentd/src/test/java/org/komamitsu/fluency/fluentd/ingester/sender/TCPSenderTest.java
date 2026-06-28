@@ -398,7 +398,7 @@ class TCPSenderTest {
         // Sends are interleaved with latch checks so a reconnect is always triggered by an
         // actual send(), even on slow CI machines where the OS takes longer to deliver FIN/RST.
         boolean reconnected = false;
-        long deadline = System.nanoTime() + 30_000_000_000L;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
         while (!reconnected && System.nanoTime() < deadline) {
           try {
             sender.send(ByteBuffer.wrap(data));
